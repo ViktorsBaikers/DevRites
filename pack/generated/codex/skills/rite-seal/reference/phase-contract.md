@@ -40,8 +40,10 @@
    and exactly one `Candidate SHA-256: <64 lowercase hex>` line. Then run:
    ```bash
    devrites-engine check seal "<slug>"
+   devrites-engine check regression "<slug>"
    ```
-   Structure/bindings only: blocks exit `3`, invalid state `2`. GO sets
+   Structure/bindings only: blocks exit `3`, invalid state `2`. A regression
+   `BLOCKED` is NO-GO; `unproven` (no baseline) does not block. GO sets
    `Next step: $rite-ship`; NO-GO names the fix. No commit/push/tag/publish/deploy/close.
 
 Apply [`anti-patterns.md`](anti-patterns.md); never average away disagreement.

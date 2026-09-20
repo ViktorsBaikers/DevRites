@@ -139,6 +139,45 @@ func verifyReadinessBinding(observation *state.WorkspaceObservation) (string, er
 	return expected, nil
 }
 
+// ReadinessInputDigest is one readiness input's content identity at a moment
+// in time. The aggregate binding answers "did anything change"; the per-input
+// digest answers "which artifact changed", which is what a drift diagnosis and
+// a re-vet route need.
+type ReadinessInputDigest struct {
+	Path    string `json:"path"`
+	Present bool   `json:"present"`
+	SHA256  string `json:"sha256,omitempty"`
+}
+
+// ReadinessInputDigests returns each readiness input's content digest plus the
+// aggregate binding line Vet records in eng-review.md. A required input that
+// is missing, or any unreadable input, is an error — the same refusal the
+// readiness gate applies.
+func ReadinessInputDigests(root, slug string) ([]ReadinessInputDigest, string, error) {
+	observation, err := state.ObserveWorkspace(root, slug)
+	if err != nil {
+		return nil, "", err
+	}
+	binding, err := readinessBindingFromObservation(observation)
+	if err != nil {
+		return nil, "", err
+	}
+	digests := make([]ReadinessInputDigest, 0, len(readinessInputs))
+	for _, input := range readinessInputs {
+		content, present, err := retainedReadinessInput(observation, input)
+		if err != nil {
+			return nil, "", err
+		}
+		entry := ReadinessInputDigest{Path: string(input.logical), Present: present}
+		if present {
+			sum := sha256.Sum256(content)
+			entry.SHA256 = hex.EncodeToString(sum[:])
+		}
+		digests = append(digests, entry)
+	}
+	return digests, binding, nil
+}
+
 func readinessDiagnosticError(diagnostic state.ArtifactDiagnostic) error {
 	prefix := fmt.Sprintf("readiness input %s is %s (%s); ", diagnostic.Path, diagnostic.State, diagnostic.Code)
 	repair := diagnosticRepair(diagnostic.Code)

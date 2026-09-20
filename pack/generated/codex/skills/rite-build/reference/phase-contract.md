@@ -6,7 +6,8 @@ Opt-in `--parallel N` replaces steps 2–8 with [`parallel-batch.md`](parallel-b
 Spec Drift Guard still applies.
 
 1. **Gate.** Read core, `.devrites/ACTIVE`, then `devrites-engine orient <slug>`
-   and the Build read-next in
+   (`devrites-engine next <slug>` prints the minimal remaining path) and the
+   Build read-next in
    [`workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md#read-next-by-phase):
    the selected slice via `devrites-engine observe slice <slug> <SLICE-ID>`, not whole
    `tasks.md`; over-budget or `bulk_files` artifacts are read by anchor only. Require
@@ -26,9 +27,12 @@ Spec Drift Guard still applies.
    dispatch the exact `devrites-slice-wright` fresh. Root never writes product
    paths; wright cannot widen scope; missing profile blocks.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Build gate enters or resumes transaction","action":"invoke canonical operation table; reconcile exact result","return":"same slice/checkpoint cursor or Plan/Vet route"} -->
-4. **Inspect.** Wait; compare returned paths and `git diff --name-only` with the
-   contract. Reject stale/partial/malformed/out-of-scope work; preserve user work.
-   Restoration uses the bounded wright.
+4. **Inspect.** Wait; run `devrites-engine check diff-scope <slug> --allow
+   <contract-paths>` for the mechanical returned-paths ⊆ contract check **before**
+   any reviewer dispatch — a violation returns through the bounded wright without
+   spending review. Then compare returned paths and `git diff --name-only` with the
+   contract for semantics diff-scope cannot judge (stale/partial/malformed work;
+   preserved user work). Restoration uses the bounded wright.
 5. **Review.** Apply [Independent Build review](#independent-build-review).
    Missing verdicts, principle breaches and open Critical/Important block acceptance.
 6. **Prove.** Against the frozen pre-slice candidate inspect

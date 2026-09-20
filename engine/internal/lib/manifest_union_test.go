@@ -35,7 +35,7 @@ func unionWorkspace(t *testing.T, root, slug, rows string, archived bool) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	stateBody := "| phase | seal |\n| schema | 3 |\n"
+	stateBody := "| phase | seal |\n| schema | 4 |\n"
 	if err := os.WriteFile(filepath.Join(dir, "state.md"), []byte(stateBody), 0o644); err != nil {
 		t.Fatal(err)
 	}

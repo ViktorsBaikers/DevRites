@@ -3,6 +3,8 @@ name: rite-watch-pr
 description: Observe one GitHub PR and CI state without mutating code, Git, threads, checks, or shared state. Safe for native host schedules and events.
 argument-hint: "[PR number|PR URL|blank for current branch]"
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/loop-operations.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"]},"workspace":[]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-watch-pr` bundles every file named below into one deduplicated read.
 
 # /rite-watch-pr: read-only PR and CI observation
 

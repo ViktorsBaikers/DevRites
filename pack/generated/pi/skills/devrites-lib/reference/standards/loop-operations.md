@@ -1,5 +1,7 @@
 # Host-native loop operations
 
+> Applies when: host-native loop and AFK execution semantics.
+
 DevRites owns objectives, durable state, gates, proof, budgets, and stop conditions.
 Claude or Codex owns activation, scheduling, waiting, and event delivery. Never add a
 DevRites daemon, polling broker, background receipt, or second state machine around
@@ -37,7 +39,9 @@ Every unattended loop must name:
 3. **Cycle:** one documented skill invocation; no hidden command chain.
 4. **Evaluator:** the skill's existing readiness, proof, review, or watcher verdict.
 5. **Budget:** every applicable `.devrites/AFK` resource cap.
-6. **Checkpoint:** durable workspace/evidence update before the turn ends.
+6. **Checkpoint:** durable workspace/evidence update before the turn ends; a
+   `devrites-engine check regression <slug> --update` ratchet after each durable
+   advance records the new progress floor.
 7. **Stop:** success, human/safety/access gate, budget exhaustion, unchanged
    no-progress fingerprint, host failure, or terminal external state.
 8. **Notification:** optional native-host notification after state is durable; never a
@@ -52,6 +56,23 @@ Before each wake or dispatch, re-read `.devrites/ACTIVE`, the active workspace,
 `.devrites/AFK`, and current external state. Do not infer authority from an earlier
 chat turn. Refuse overlapping writer cycles for the same workspace; a still-running
 native task is a gap, not a reason to start another.
+
+## Health-check cycles (watchdogs)
+
+A watchdog cycle inspects live state and acts only inside its enumerated scope:
+
+- **Enumerate, don't assume.** Build the check set from a live registry (running
+  sessions, active workspaces, open runs); an unlisted entity does not exist for the
+  cycle — never extend scope by judgment.
+- **Distinguish states before acting.** `crashed` (confirmed dead by durable state),
+  `stuck` (no progress fingerprint change over the window), and `busy`/`idle-waiting`
+  are different verdicts. Observe-only states are never restarted or killed; idle
+  waiting on a human is healthy, not stuck.
+- **Cooldown every action**; repeated firing on an unchanged fingerprint is the
+  no-progress stop, not a retry.
+- **Kill/restart needs proof of death** — durable-state evidence of a crash; silence or
+  a stale heartbeat is `gap`, not a corpse.
+- **Report the sweep** durably: enumerated set, checks, verdicts, actions, next wake.
 
 ## Safe host recipes
 
@@ -78,6 +99,16 @@ armed AFK workspace whose exact scope, gates, and budgets permit it.
   causal-fingerprint recovery cap ([`afk-hitl.md`](afk-hitl.md)).
 - A cold resume continues durable slice/recovery state. Fresh
   native activation counters follow `afk-hitl.md`; no durable bound is reinitialized.
+- A cold resume or wake first runs `devrites-engine check regression <slug>`
+  when a `regression-baseline.json` exists: `BLOCKED` means the workspace lost a
+  recorded fact since the last checkpoint — restore or route the lost fact
+  through its owning phase before continuing; `unproven` means no baseline yet
+  and does not block. `--update` is a checkpoint action, never a way to silence
+  an unreconciled regression.
+- When a readiness or seal check reports a stale `Readiness inputs` binding,
+  run `devrites-engine check drift <slug>` before re-vetting: it names the
+  exact input artifact that changed (or `missing`/`added`) since the recorded
+  baseline, so the Spec Drift Guard or `/rite-vet` starts at the right file.
 - Native notifications fire only after evidence and stop state are written.
 
 Use [`afk-hitl.md`](afk-hitl.md) for unattended authority and resource budgets,

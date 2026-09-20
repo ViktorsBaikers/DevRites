@@ -1,5 +1,7 @@
 # Context hygiene
 
+> Applies when: persisting phase results, resuming after compaction, before /clear.
+
 Persist phase results before starting fresh. The feature workspace, not chat memory,
 stores continuity.
 
@@ -44,9 +46,16 @@ changed contracts, implementation, proof, or dependencies, not every prior gener
 Required review rosters and final proof remain. Preserve protected history unchanged;
 a compact current view references originals without omitting active requirements.
 
-**Compaction fallback:** when hooks do not restore context, read `.devrites/ACTIVE`,
-then the `state.md` cursor, open `questions.md` gates, `decisions.md`, and
-`test-plan.md`/`evidence.md` proof pointers.
+**Compaction fallback:** after compaction, reload `.devrites/ACTIVE`, `state.md`,
+`questions.md`, `decisions.md`, `test-plan.md`, and `evidence.md`. When hooks do
+not restore context, run
+`devrites-engine handoff [slug]` first — one deterministic resume record reduced
+from durable artifacts (cursor, `awaiting_human`, open `questions.md` gates,
+the `gates.md` reduction with unmet/stale ids, `decisions.md` dead ends, and the
+canonical read-next order). Open the artifacts `read_next` names; resume from
+the record, not from transcript memory. Then `devrites-engine check
+regression <slug>`: `BLOCKED` names a durable fact lost since the last
+checkpoint; `unproven` does not block.
 
 ## Authority and trust
 
@@ -107,3 +116,11 @@ handoff.
 
 For a break longer than a few hours, point the footer at `/rite-handoff`: persist
 chat-only context to canonical files before clearing or closing the session.
+
+## Resume reconciliation
+
+Before trusting recorded state on resume, reconcile it against the tree:
+`git status --short` and `git diff --stat` versus the `state.md` cursor,
+`touched-files.md`, and the last recorded phase. Tree changes with no recorded
+provenance are drift — surface them (`drift.md` or a question) before doing new
+work on top, never silently absorb them into the current change.

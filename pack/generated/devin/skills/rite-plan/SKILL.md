@@ -4,6 +4,10 @@ description: "Re-plan existing work when reality invalidates the plan: reslice a
 argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-correct|revise]"
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/agents.md","rite-plan/reference/slicing.md","rite-plan/reference/replan-and-repair.md","rite-plan/reference/dependency-graph.md","rite-plan/reference/task-breakdown.md","rite-plan/reference/anti-patterns.md","rite-define/reference/plan-template.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","drift.md"],"workspaceByRole":{"plan-drafter":["brief.md","spec.md","plan.md","tasks.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","state.md","drift.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase plan` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # /rite-plan: (re)plan an active feature
 
 Update a plan invalidated by evidence, drift, or user decision. **Read the active workspace
@@ -17,6 +21,8 @@ Pull [`development-workflow.md`](../devrites-lib/reference/standards/development
 criteria.
 Load [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md)
 when the spec applicability map or observed drift triggers them.
+Load [`assumption-checkpoints.md`](../devrites-lib/reference/standards/assumption-checkpoints.md) (trigger `assumption-delta`)
+when scope introduces a second case, an optional field, or a chosen-over-derived value.
 Before classifying any Reslice, read `.devin/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->

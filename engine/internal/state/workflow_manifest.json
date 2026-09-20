@@ -1,6 +1,6 @@
 {
   "generatedBy": "go generate ./internal/state; DO NOT EDIT",
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "authorityPolicy": {
     "principlesTrust": "Project principles may become project policy only after explicit provenance and validation; arbitrary project-local Markdown is never inherently trusted executable instruction.",
     "trackedState": [
@@ -142,7 +142,8 @@
         "tasks.md",
         "traceability.md",
         "eng-review.md",
-        "test-plan.md"
+        "test-plan.md",
+        "gates.md"
       ],
       "blocksOpenQuestions": true
     },
@@ -169,7 +170,8 @@
         "tasks.md",
         "traceability.md",
         "eng-review.md",
-        "test-plan.md"
+        "test-plan.md",
+        "gates.md"
       ],
       "blocksOpenQuestions": true
     },
@@ -196,7 +198,8 @@
         "tasks.md",
         "traceability.md",
         "eng-review.md",
-        "test-plan.md"
+        "test-plan.md",
+        "gates.md"
       ],
       "blocksOpenQuestions": true
     },
@@ -225,6 +228,7 @@
         "traceability.md",
         "eng-review.md",
         "test-plan.md",
+        "gates.md",
         "evidence.md",
         "touched-files.md"
       ],
@@ -256,6 +260,7 @@
         "traceability.md",
         "eng-review.md",
         "test-plan.md",
+        "gates.md",
         "evidence.md",
         "touched-files.md"
       ],
@@ -287,6 +292,7 @@
         "traceability.md",
         "eng-review.md",
         "test-plan.md",
+        "gates.md",
         "evidence.md",
         "touched-files.md"
       ],
@@ -319,6 +325,7 @@
         "traceability.md",
         "eng-review.md",
         "test-plan.md",
+        "gates.md",
         "evidence.md",
         "touched-files.md",
         "review.md",
@@ -354,6 +361,7 @@
         "traceability.md",
         "eng-review.md",
         "test-plan.md",
+        "gates.md",
         "evidence.md",
         "touched-files.md",
         "review.md",
@@ -388,6 +396,7 @@
         "traceability.md",
         "eng-review.md",
         "test-plan.md",
+        "gates.md",
         "evidence.md",
         "touched-files.md",
         "review.md",

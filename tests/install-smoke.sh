@@ -207,7 +207,7 @@ grep -q 'exact project-relative source/test path list directly in the task' "$T/
   && ! grep -q 'devrites-engine reconcile\\|devrites-engine test-integrity' "$T/.agents/skills/rite-build/reference/phase-contract.md" \
   && ok "Codex build contract keeps native boundary review with root" \
   || no "Codex build contract assigns deterministic gates inconsistently"
-if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out|migrate)([[:space:]`]|$)' \
+if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out)([[:space:]`]|$)' \
   "$T/.claude/skills" "$T/.claude/agents" "$T/.agents/skills" "$T/.codex/agents" "$T/.devin/skills" "$T/.devin/agents" \
   >/tmp/dr_install_retired_engine 2>/dev/null; then
   no "installed guidance retains retired engine commands"

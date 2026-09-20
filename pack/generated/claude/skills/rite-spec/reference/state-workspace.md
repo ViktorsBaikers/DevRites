@@ -218,6 +218,11 @@ command.
 
 ## Success definition
 <One sentence that says what "done" means.>
+
+## Route
+Size: <small | standard | large>
+Profile: <quick | standard | full>
+Why: <one line — the significance signals that picked the profile>
 ```
 
 ## Compactness

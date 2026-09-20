@@ -51,8 +51,9 @@ budgets, IDs, and read order live in
 ```
 
 Conditional artifacts include strategy, design/browser evidence, drift,
-handoff, references, flows, and other phase-specific Markdown named by the
-canonical schema.
+handoff, references, flows, `notes.md` anchored notes (written only via
+`devrites-engine note`; non-`exact` anchors block `check seal`), and other
+phase-specific Markdown named by the canonical schema.
 
 ## Build-readiness binding
 
@@ -75,6 +76,13 @@ non-regular files fail closed. Ordinary readiness verifies the binding whenever
 its target phase requires `eng-review.md`, and Seal verifies it again. A missing,
 malformed, duplicate, or stale line routes through `/rite-vet`; replacing the
 line without rerunning Vet is not review.
+
+`devrites-engine check drift <slug> --record` may additionally snapshot each
+readiness input's SHA-256 into `readiness-inputs.json` in the workspace. That
+baseline is advisory and never a gate input: a later `check drift` names each
+`changed`/`missing`/`added` input so a stale-binding repair starts at the right
+file. Without the baseline the check falls back to comparing the aggregate
+binding recorded in `eng-review.md`.
 
 ## Candidate manifest and bindings
 

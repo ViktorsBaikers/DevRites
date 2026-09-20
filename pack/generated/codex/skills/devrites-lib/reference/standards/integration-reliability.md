@@ -1,5 +1,7 @@
 # Integration reliability
 
+> Applies when: third-party APIs, webhooks, queues, caches, background jobs.
+
 Load this for third-party APIs, webhooks, queues, background jobs, caches, or
 cross-service calls. The boundary contract includes failure, timing, duplication, and
 recovery—not only the success payload.
@@ -60,6 +62,23 @@ For every call or delivery, classify the observed outcome:
   as the signal-taxonomy owner. A queue backlog still needs an accepted
   capacity/drain/recovery action; auto-scaling without downstream capacity protection
   only moves the outage.
+
+## Idempotency identity and lifetime
+
+Scope a key to the authenticated tenant/principal and operation, and bind it to
+the canonical payload identity. Same key with a different payload is a conflict,
+not a cached success. Atomically claim the key at the existing durable owner
+before the effect; a check-then-insert race is not deduplication. Couple effect
+and completion where possible, or reconcile the unknown interval.
+
+Define what an in-flight duplicate receives: bounded wait, pending/status, or
+conflict. It must not launch a second effect. Retain completion records across
+the full permitted retry, queue-redelivery and manual-replay window. After key
+expiry, reject stale replay or reconcile against authoritative effect identity
+before treating it as new work; a TTL alone does not make replay safe.
+
+Proof races two same-key deliveries, changes the payload and tenant scope,
+interrupts after the effect but before completion, and replays at/after expiry.
 
 ## Partial failure and recovery
 

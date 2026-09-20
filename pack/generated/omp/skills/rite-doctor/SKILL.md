@@ -4,6 +4,8 @@ description: Check DevRites install, installed pack, or host configuration. Not 
 argument-hint: ""
 user-invocable: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["state.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-doctor` bundles every file named below into one deduplicated read.
 
 # /rite-doctor: DevRites diagnostics
 
@@ -34,7 +36,10 @@ Read-only: never repair files, advance a feature, or diagnose the application.
    contained regular `.devrites/work/<slug>/state.md`, and no symlink in the
    `.devrites`, `work`, workspace, or state path. A missing target, unsafe slug,
    archive/work collision, or escape is `FAIL`. Report phase/status/next action
-   from `state.md` without changing them.
+   from `state.md` without changing them. Also report the cursor's `schema` row:
+   absent on a live workspace means it predates the current engine schema — `WARN`
+   with `devrites-engine migrate <slug>` remediation; an engine refusal naming a
+   newer schema than the binary's is `WARN` to upgrade the binary.
 5. **Compare versions.** The manifest version is the installed-pack authority.
    When this repository is the DevRites source (its `package.json` name is
    `devrites`), compare that local package candidate version with the manifest.

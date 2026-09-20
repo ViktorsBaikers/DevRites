@@ -1,5 +1,7 @@
 # Development workflow
 
+> Applies when: slicing work, committing, keeping trunk green.
+
 Ship small, integrate often, and keep the main branch releasable. Workflow phase order comes from the engine manifest, not this standard.
 
 ## Work in small batches

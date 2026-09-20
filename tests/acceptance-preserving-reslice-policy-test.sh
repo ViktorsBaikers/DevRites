@@ -968,7 +968,29 @@ def has_local_count_pause_rule(text):
     return False
 
 
-def validate_adapter_text(text, raw, token):
+INCLUDE_MARKER = re.compile(r"<!--\s*include:([^\s>]+)\s*-->")
+
+
+def expand_include_markers(text, source_dir):
+    # Mirror scripts/expand-includes.py: resolve <!-- include:REL --> against
+    # the including file's directory. Canonical adapters may hold markers where
+    # generated hosts hold the expanded bytes; an unresolvable marker passes
+    # through literally so the pinned block comparison still fails on it.
+    def repl(match):
+        target = (source_dir / match.group(1)).resolve()
+        try:
+            if target.is_file():
+                return target.read_text().rstrip("\n")
+        except OSError:
+            pass
+        return match.group(0)
+
+    return INCLUDE_MARKER.sub(repl, text)
+
+
+def validate_adapter_text(text, raw, token, source_dir=None):
+    if source_dir is not None:
+        text = expand_include_markers(text, source_dir)
     if text.count(token) != 1:
         raise ContractFailure(f"{raw}: must link canonical standard exactly once")
     action_body, outside = marked(text, BEGIN_ACTION, END_ACTION, raw)
@@ -1018,7 +1040,8 @@ def validate_source_descriptor(root, source_descriptor):
         )
         if text is None:
             raise ContractFailure(f"adapter missing: {raw}")
-        validate_adapter_text(text, raw, STANDARD_TOKEN)
+        validate_adapter_text(text, raw, STANDARD_TOKEN,
+                              source_dir=(Path(root) / Path(raw).parent))
     policy_phrases = {
         "pack/.claude/skills/rite-vet/reference/depth.md": "Multi-slice / multi-day work",
         "pack/.claude/skills/rite-vet/reference/anti-patterns.md": "Acceptance/product-behavior growth auto-applied in AFK, or an orthogonal human-owned gate",
@@ -1205,7 +1228,7 @@ def validate_host_tree(generated, host):
         path = prefix / rel
         if not path.is_file():
             raise ContractFailure(f"{host}: generated adapter missing")
-        validate_adapter_text(path.read_text(), raw, token)
+        validate_adapter_text(path.read_text(), raw, token, source_dir=path.parent)
 
 
 def write_json(path, mutate):
@@ -1253,6 +1276,28 @@ def copy_validation_base(destination):
             target = destination / raw
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(read_bytes_at(source_descriptor, raw, owner=raw))
+        shared_rel = Path("pack/.claude/skills/devrites-lib/reference/_shared")
+        for name in sorted(os.listdir(ROOT / shared_rel)):
+            raw = shared_rel / name
+            target = destination / raw
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(read_bytes_at(source_descriptor, raw.as_posix(), owner=raw.as_posix()))
+
+
+def mutate_adapter_action_text(case, adapter_rel, old, new):
+    # Canonical adapters may hold <!-- include:... --> markers instead of the
+    # literal route-to-action text; follow the marker so the corruption lands in
+    # the block the pin actually verifies.
+    adapter = case / adapter_rel
+    text = adapter.read_text()
+    if old in text:
+        adapter.write_text(text.replace(old, new, 1))
+        return
+    marker = INCLUDE_MARKER.search(text)
+    target = (adapter.parent / marker.group(1)).resolve() if marker else None
+    if target is None or not target.is_file() or old not in target.read_text():
+        raise ContractFailure(f"{adapter_rel}: mutation target text absent")
+    target.write_text(target.read_text().replace(old, new, 1))
 
 
 def expect_invalid(base, label, needle, mutate):
@@ -2736,7 +2781,7 @@ def protected_gate(root):
             ".devrites/work/workspace-observation/touched-files.md",
             owner="Workspace Observation manifest",
         )
-        if sha256(manifest_bytes).hexdigest() != "742b66d07324711ed6f0217e7ec32a654c831bc345ae9bed369aa69b420312ad":
+        if sha256(manifest_bytes).hexdigest() != "cf5ef8aec435896c6844a47ef8a50ae5cacc44e23ab19be7c069f58fa44c871a":
             raise ContractFailure("Workspace Observation manifest changed")
         section = manifest_bytes.decode("utf-8").split("## Source hashes", 1)[1].split("## Deliberately untouched", 1)[0]
         rows = re.findall(r"^\| `([^`]+)` \| `([0-9a-f]{64})` \|$", section, re.M)
@@ -2747,7 +2792,7 @@ def protected_gate(root):
             if sha256(payload).hexdigest() != expected:
                 raise ContractFailure(f"accepted baseline changed: logical_id={raw}")
         fixed = {
-            ".gitignore": "659fcab79eda5931a2cf6f19a76a1178064bd26aa1271ff05e3de24ceefdb021",
+            ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
             ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
         }
         for raw, expected in fixed.items():
@@ -2992,19 +3037,19 @@ def default_validation_and_drills():
         base,
         "slice-count pause action mutant rejected",
         "wrong phase action block",
-        lambda case: (case / ADAPTERS[8]).write_text((case / ADAPTERS[8]).read_text().replace("no stop solely for topology/count", "pause when slice count changes", 1)),
+        lambda case: mutate_adapter_action_text(case, ADAPTERS[8], "no stop solely for topology/count", "pause when slice count changes"),
     )
     expect_invalid(
         base,
         "wrong phase action mutant rejected",
         "wrong phase action block",
-        lambda case: (case / ADAPTERS[1]).write_text((case / ADAPTERS[1]).read_text().replace("; Vet.", "; Build.", 1)),
+        lambda case: mutate_adapter_action_text(case, ADAPTERS[1], "; Vet.", "; Build."),
     )
     expect_invalid(
         base,
         "Blocked write-permission mutant rejected",
         "wrong phase action block",
-        lambda case: (case / ADAPTERS[3]).write_text((case / ADAPTERS[3]).read_text().replace("no planning writes; exact diagnostic", "write planning artifacts; exact diagnostic", 1)),
+        lambda case: mutate_adapter_action_text(case, ADAPTERS[3], "no planning writes; exact diagnostic", "write planning artifacts; exact diagnostic"),
     )
     expect_invalid(
         base,

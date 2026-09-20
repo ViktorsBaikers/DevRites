@@ -1,5 +1,7 @@
 # Skill authoring
 
+> Applies when: creating or editing skills, agents, hooks, or standards.
+
 > **Source-checkout only:** where `pack/.claude/` exists, edit canonical source; run
 > `bash scripts/build-host-artifacts.sh`, then validate. Installed generated mirrors are not authoring surfaces.
 
@@ -68,6 +70,10 @@ Optional flags obey `core.md` rule 10.
   core.md's PASS/FAIL/NOT-RUN contract beside a pointer to the same section.
 - One read shows outcome, triggers, preconditions, decisions/failure, write owner,
   proof, exit; omit irrelevant fields. Examples distinguish branches.
+- Name the capability before the tool: "check the worktree is clean" before
+  `git status`. A tool rename must never orphan the contract it serves.
+- Keep quantifiers local to the action: "every dispatch" reads next to the step that
+  dispatches, not in a distant header the reader must carry forward.
 - Split only for independent load path or eval-proven inline failure; keep one owner; co-locate each rule/caveat/example cluster.
 - Every public optional-flag skill obeys the shared
   [`core.md`](core.md#operating-rules-every-phase): declare its
@@ -84,6 +90,31 @@ Optional flags obey `core.md` rule 10.
   point onward. Shared `standards/` and `visual-playbooks/` catalogs use
   those indexes. A skill-local reference must not be the only path to
   another non-catalog file in that skill.
+
+## Read-set manifest
+
+Every executable skill declares a `loads:` manifest (HTML comment, strict JSON)
+immediately after frontmatter, followed by a `> Read-set manifest:` line naming
+the engine command that bundles it. The engine fails closed on malformed JSON.
+
+- `always`: files loaded on every `context` call — keep to what every invocation
+  truly needs; a file read only under a named condition belongs in `triggers`.
+- `triggers`: name → files loaded only when the caller passes `--trigger <name>`
+  or the engine lists it under `suggested=[...]`. Names are validated against the
+  manifest; inventing one fails the call.
+- `workspace`: feature artifacts any reader of this skill may need.
+- `workspaceByRole`: dispatch role → its artifact subset. A listed role reads only
+  its own list (empty list = no workspace files); an unlisted role falls back to
+  `workspace`. Author lists from what the role's contract actually cites, not the
+  union of everything.
+- A body reference to a trigger-gated file names its trigger in prose
+  (e.g. "trigger `workflow-artifacts`") so the caller passes it; an omitted
+  applicable trigger is a gap, not a shortcut.
+- Re-wrap edits must keep asserted literal phrases on a single line —
+  validators grep `grep -F` fixed strings and a mid-phrase line break silently
+  deletes the check's target. **Failing case:** re-flowing "Reject a result that
+  omits any required key" across two lines while the phase-gate test still
+  asserts the single-line phrase.
 
 Classify active instructions by load path:
 
@@ -103,6 +134,23 @@ regresses.
   strings, eval corpora, gates) and re-home each one; prose that survives a merge while
   its enforcement does not is decoration. **Failing case:** a merged rule whose asserted
   string or eval case no longer exists anywhere — the merge silently deleted the check.
+
+## Agent-facing surfaces
+
+Design for the call the agent already makes; instructions and descriptions are
+low-salience steering — making the default output sufficient lands where exhortation
+does not.
+
+- A tool's first answer must be usable alone: agents abandon tools whose output
+  needs a follow-up call to become actionable, and a couple of hard errors teach
+  abandonment for the rest of the session.
+- Reserve hard errors for genuine stop conditions; a recoverable empty result is
+  data with a stated meaning, not an error.
+- Serve state honestly: when output may lag the working tree, say so on the
+  response (a staleness note naming the lagging inputs) rather than answering
+  stale silently.
+- Keep agent-facing rules on one canonical surface; a repeated rule is two copies
+  that drift.
 
 ## Router, docs, and evals
 

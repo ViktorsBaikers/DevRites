@@ -1,5 +1,7 @@
 # Debug recovery (async wait discipline)
 
+> Applies when: polling async readiness, timeouts, retries, stuck-wait triage.
+
 Triggered standard for polling async readiness without blind sleep. Skill owner:
 [`devrites-debug-recovery`](../../../devrites-debug-recovery/SKILL.md).
 
@@ -14,6 +16,18 @@ When waiting for async readiness (server start, job completion, browser signal):
 
 **Failing case:** `sleep(5)` loop with no captured last signal → recovery incomplete;
 treat as flaky/unproven.
+
+## Service readiness (spawned process)
+
+When the thing waited on is a process the task started (dev server, build watch,
+test service):
+
+- Retain its handle/PID and separate stdout/stderr captures from the start.
+- Poll readiness **and** process liveness together: an early exit is an immediate
+  fail with exit code and log tail — never keep polling a dead process.
+- On timeout, capture the last signal (log tail, bound port, exit status) before teardown.
+- Clean up only the process tree this task started; never kill by port or name pattern
+  that could match a neighbor's process.
 
 ## Diagnosis write freeze
 

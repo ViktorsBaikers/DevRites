@@ -1,7 +1,7 @@
 ---
 name: devrites-strategy-reviewer
 description: Read-only /rite-temper reviewer for a hardened spec before planning or code. Tests ambition, scope, premise, pre-mortem risk, over-engineering, testability, irreversibility, cross-cutting concerns, and convention fit; scores from evidence and reports defects without editing.
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

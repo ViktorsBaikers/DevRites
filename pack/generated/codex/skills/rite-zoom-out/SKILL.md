@@ -5,6 +5,8 @@ argument-hint: "[symbol | file | area to map]"
 user-invocable: true
 disable-model-invocation: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/tooling.md"],"workspace":["spec.md","plan.md","decisions.md","state.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-zoom-out` bundles every file named below into one deduplicated read.
 
 # $rite-zoom-out: step up one abstraction layer
 

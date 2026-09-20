@@ -1,7 +1,7 @@
 ---
 name: devrites-slice-wright
 description: Sole source/test writer for one /rite-build slice or accepted prove, polish, or review correction. Executes a fresh path-bounded contract, proves the smallest complete change, returns evidence, and never plans, reviews, or writes workspace bookkeeping.
-tools: Read, Edit, Write, Bash, Glob, Grep, Skill
+tools: Read, Edit, Write, Bash, Glob, Grep, Skill, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: acceptEdits
 ---
 

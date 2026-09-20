@@ -75,7 +75,13 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 
 Before advancing, check
 [stop-conditions.md](stop-conditions.md). After source edits, discard stale pass
-evidence. Re-read the active workspace before each phase.
+evidence. Re-read the active workspace before each phase. On a cold resume or
+new activation, run `devrites-engine check regression <slug>`: `BLOCKED` names a
+durable fact lost since the last checkpoint — restore or route it through its
+owning phase before continuing; `unproven` does not block. After each phase's
+durable advance lands (green check loop, checkpoint commit), run
+`devrites-engine check regression <slug> --update` to ratchet the progress
+floor; `--update` never excuses an unreconciled regression.
 
 ## Sequence continuation
 

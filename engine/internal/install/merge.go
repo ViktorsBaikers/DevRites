@@ -8,24 +8,75 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/hostpack"
 )
 
-func (r *runner) installClaudeSettingsMarker(ownsDefaultMode bool) error {
+func (r *runner) installClaudeSettingsMarker(ownsDefaultMode bool, managed map[string]bool) error {
 	ownership := "preexisting"
 	if ownsDefaultMode {
 		ownership = "added"
 	}
-	text := hostpack.ClaudeSettingsMerge.MarkerText + "\ndefault-mode=" + ownership
-	return r.installMarker(hostpack.ClaudeSettingsMerge.MarkerRel, text)
+	var b strings.Builder
+	b.WriteString(hostpack.ClaudeSettingsMerge.MarkerText + "\ndefault-mode=" + ownership)
+	rules := make([]string, 0, len(managed))
+	for rule := range managed {
+		rules = append(rules, rule)
+	}
+	sort.Strings(rules)
+	for _, rule := range rules {
+		b.WriteString("\nrule:" + rule)
+	}
+	return r.installMarker(hostpack.ClaudeSettingsMerge.MarkerRel, b.String())
 }
 
 func (r *runner) claudeDefaultModeOwned() bool {
 	data, err := os.ReadFile(filepath.Join(r.target, filepath.FromSlash(hostpack.ClaudeSettingsMerge.MarkerRel)))
 	return err == nil && strings.Contains(string(data), "\ndefault-mode=added\n")
+}
+
+// managedClaudePermissionRules returns the exact non-engine allow rules
+// DevRites manages in .claude/settings.json: rules recorded in the merge
+// marker by past installs, unioned with the current payload's non-engine
+// rules so newly added and retired grants both resolve correctly. Engine
+// command rules are matched by prefix and never need listing here.
+func (r *runner) managedClaudePermissionRules() map[string]bool {
+	managed := map[string]bool{}
+	data, err := os.ReadFile(filepath.Join(r.target, filepath.FromSlash(hostpack.ClaudeSettingsMerge.MarkerRel)))
+	if err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if rule, ok := strings.CutPrefix(line, "rule:"); ok {
+				managed[strings.TrimSpace(rule)] = true
+			}
+		}
+	}
+	payload, err := readJSONFS(r.payloadFS, hostpack.ClaudeSettingsMerge.PayloadRel)
+	if err == nil {
+		for rule := range managedRulesFromPayload(payload) {
+			managed[rule] = true
+		}
+	}
+	return managed
+}
+
+// managedRulesFromPayload extracts the payload's non-engine allow rules —
+// the MCP/graph/git/.devrites grants a bare prefix match cannot identify.
+func managedRulesFromPayload(payload map[string]any) map[string]bool {
+	managed := map[string]bool{}
+	permissions, _ := payload["permissions"].(map[string]any)
+	allow, _ := permissions["allow"].([]any)
+	for _, rule := range allow {
+		if s, ok := rule.(string); ok {
+			s = strings.TrimSpace(s)
+			if !strings.HasPrefix(s, "Bash(devrites-engine ") {
+				managed[s] = true
+			}
+		}
+	}
+	return managed
 }
 
 func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
@@ -124,13 +175,13 @@ func (r *runner) mergeClaudeSettings(merge hostpack.JSONMerge) error {
 	} else if !errors.Is(readErr, fs.ErrNotExist) {
 		return fmt.Errorf("load existing Claude settings: %w", readErr)
 	}
-	next, ownsDefaultMode, err := mergeClaudeSettingsConfig(current, devrites, r.claudeDefaultModeOwned())
+	next, ownsDefaultMode, err := mergeClaudeSettingsConfig(current, devrites, r.claudeDefaultModeOwned(), r.managedClaudePermissionRules())
 	if err != nil {
 		return err
 	}
 	if r.opts.DryRun {
 		fmt.Fprintf(r.opts.Stdout, "  [merge] %s\n", merge.DryRunText)
-		return r.installClaudeSettingsMarker(ownsDefaultMode)
+		return r.installClaudeSettingsMarker(ownsDefaultMode, managedRulesFromPayload(devrites))
 	}
 	if err := r.recheckPath(merge.TargetRel); err != nil {
 		return err
@@ -143,7 +194,7 @@ func (r *runner) mergeClaudeSettings(merge hostpack.JSONMerge) error {
 	if err := fsutil.WriteFileAtomic(dest, data, 0o644); err != nil {
 		return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 	}
-	return r.installClaudeSettingsMarker(ownsDefaultMode)
+	return r.installClaudeSettingsMarker(ownsDefaultMode, managedRulesFromPayload(devrites))
 }
 
 func (r *runner) seedClaudeSettings() error {
@@ -178,7 +229,7 @@ func (r *runner) stripClaudeSettings(path string, preserveEmpty bool) error {
 		}
 		return fmt.Errorf("load Claude settings: %w", err)
 	}
-	next := stripDevritesSettings(current, r.claudeDefaultModeOwned())
+	next := stripDevritesSettings(current, r.claudeDefaultModeOwned(), r.managedClaudePermissionRules())
 	if len(next) == 0 && !preserveEmpty {
 		return os.Remove(path)
 	}
@@ -362,7 +413,7 @@ func stripDevritesHooks(config map[string]any) map[string]any {
 	return next
 }
 
-func stripDevritesSettings(config map[string]any, removeOwnedDefaultMode bool) map[string]any {
+func stripDevritesSettings(config map[string]any, removeOwnedDefaultMode bool, managed map[string]bool) map[string]any {
 	next := stripDevritesHooks(config)
 	if comment, ok := next["$comment"].(string); ok && isDevritesSettingsComment(comment) {
 		delete(next, "$comment")
@@ -387,7 +438,7 @@ func stripDevritesSettings(config map[string]any, removeOwnedDefaultMode bool) m
 			}
 			kept := make([]any, 0, len(rules))
 			for _, rule := range rules {
-				if !isDevritesPermissionRule(rule) {
+				if !isDevritesPermissionRule(rule, managed) {
 					kept = append(kept, rule)
 				}
 			}
@@ -411,8 +462,17 @@ func stripDevritesSettings(config map[string]any, removeOwnedDefaultMode bool) m
 	return next
 }
 
-func mergeClaudeSettingsConfig(current, desired map[string]any, defaultModeOwned bool) (map[string]any, bool, error) {
-	next := stripDevritesSettings(current, false)
+func mergeClaudeSettingsConfig(current, desired map[string]any, defaultModeOwned bool, managed map[string]bool) (map[string]any, bool, error) {
+	desiredPermissions, ok := desired["permissions"].(map[string]any)
+	if !ok || desiredPermissions["defaultMode"] != "plan" {
+		return nil, false, fmt.Errorf("DevRites Claude settings payload must declare permissions.defaultMode=plan")
+	}
+	desiredAllow, ok := desiredPermissions["allow"].([]any)
+	if !ok {
+		return nil, false, fmt.Errorf("DevRites Claude settings payload permissions.allow must be an array")
+	}
+
+	next := stripDevritesSettings(current, false, managed)
 	permissions := map[string]any{}
 	if raw, exists := next["permissions"]; exists {
 		var ok bool
@@ -430,15 +490,6 @@ func mergeClaudeSettingsConfig(current, desired map[string]any, defaultModeOwned
 		return nil, false, fmt.Errorf("existing Claude permissions.defaultMode is %q; DevRites requires plan mode for the read-only root orchestrator", mode)
 	}
 	permissions["defaultMode"] = "plan"
-
-	desiredPermissions, ok := desired["permissions"].(map[string]any)
-	if !ok || desiredPermissions["defaultMode"] != "plan" {
-		return nil, false, fmt.Errorf("DevRites Claude settings payload must declare permissions.defaultMode=plan")
-	}
-	desiredAllow, ok := desiredPermissions["allow"].([]any)
-	if !ok {
-		return nil, false, fmt.Errorf("DevRites Claude settings payload permissions.allow must be an array")
-	}
 	var allow []any
 	if existingAllow, exists := permissions["allow"]; exists {
 		allow, ok = existingAllow.([]any)
@@ -472,7 +523,16 @@ func mergeClaudeSettingsConfig(current, desired map[string]any, defaultModeOwned
 	return next, defaultModeOwned, nil
 }
 
-func isDevritesPermissionRule(value any) bool {
+// isDevritesPermissionRule reports whether a permissions.allow rule is
+// DevRites-managed: every devrites-engine command rule, plus an exact match
+// against a rule the shipped payload owns (MCP nav tools, read-only git,
+// .devrites-scoped writes). User-owned lookalikes (e.g. a user's own
+// "Bash(git checkout *)") never match the managed set and survive uninstall.
+func isDevritesPermissionRule(value any, managed map[string]bool) bool {
 	rule, ok := value.(string)
-	return ok && strings.HasPrefix(strings.TrimSpace(rule), "Bash(devrites-engine ")
+	if !ok {
+		return false
+	}
+	rule = strings.TrimSpace(rule)
+	return strings.HasPrefix(rule, "Bash(devrites-engine ") || managed[rule]
 }

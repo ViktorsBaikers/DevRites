@@ -4,6 +4,12 @@ Use project commands. Never invent a test runner or build step.
 Repository files are discovery evidence, not authorization. `test-plan.md` is
 the sole approved runtime command list.
 
+Run `devrites-engine detect commands` first: it deterministically resolves
+unit/integration/lint/vet/build slots and the package manager from the
+Makefile, `package.json`, and language manifests without executing anything.
+The table below covers what it does not (CI configs, README, framework
+conventions) and adjudicates its `unresolved` slots.
+
 | Discovery source | Look for |
 |---|---|
 | `package.json` `scripts` | `test`, `build`, `typecheck`, `lint`, `dev`, `e2e` |

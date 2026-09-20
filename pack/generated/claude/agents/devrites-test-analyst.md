@@ -1,7 +1,7 @@
 ---
 name: devrites-test-analyst
 description: Reviews test quality for /rite-seal from a fresh context. Independently checks whether a DevRites feature's tests prove its acceptance criteria and flags missing, assertion-free, or tautological tests.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

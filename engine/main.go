@@ -7,9 +7,11 @@ import (
 	"io"
 	"os"
 
+	"github.com/devrites/devrites/internal/acceptance"
 	"github.com/devrites/devrites/internal/gate"
 	"github.com/devrites/devrites/internal/install"
 	"github.com/devrites/devrites/internal/lib"
+	"github.com/devrites/devrites/internal/notes"
 	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/version"
 )
@@ -27,12 +29,35 @@ Usage:
   devrites-engine check path-disjoint [--root <dir>] [<json-file>|-]
                                          Verify slice path sets are pairwise disjoint
   devrites-engine check task-graph <slug>  Validate tasks.md slice dependency graph
+  devrites-engine check slice <slug> <SLICE-ID>  Pre-dispatch lint of one slice's wright contract
+  devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path> [--worktree|--staged|--base <ref>]
+                                         Verify the changed-path set stays inside the declared allowlist
   devrites-engine check skill-trust <path> Scan one skill/agent Markdown for trust violations
+  devrites-engine check regression <slug> [--update]
+                                         Compare workspace progress against the recorded baseline; --update ratchets it
+  devrites-engine check drift <slug> [--record]
+                                         Attribute readiness-input changes to the exact artifact since the Vet baseline
+  devrites-engine check windows <slug> [--worktree|--staged|--base <ref>]
+                                         Fail on deferral markers the change adds without a windows.md waiver
+  devrites-engine check dup [slug] [--all|--worktree|--staged|--base <ref>]
+                                         Report near-duplicate code clusters that survive renaming (advisory)
   devrites-engine observe summary <slug>   Emit sanitized JSON workspace summary
   devrites-engine orient <slug>            Alias for observe summary
+  devrites-engine next [slug]              Print the minimal remaining lifecycle path with advisory skips
+  devrites-engine handoff [slug]           Emit the deterministic resume record (cursor, blocking gates, ledger, dead ends)
+  devrites-engine context <slug> --phase <p> [--role <r>] [--trigger a,b]
+                                         Emit one deduplicated read-set bundle for a phase or dispatch role
+  devrites-engine metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
+  devrites-engine metrics summary [slug]   Summarize the per-feature metrics.jsonl event ledger
+  devrites-engine dispatch <slug> <sub>    Launch-wave barrier for parallel dispatch: open/start/seal/return/status/abandon
+  devrites-engine claim <add|release|list|check>   Advisory session-scoped file claims for same-tree concurrent sessions (.devrites/claims.jsonl)
+  devrites-engine note <subcommand> <slug>         Anchored workspace notes bound to verbatim code quotes; drift regrades them (notes.md)
   devrites-engine observe slice <slug> <SLICE-ID>  Print one SLICE-### section of tasks.md
   devrites-engine check indexes [--root <dir>]  Report manifest and code-index presence as JSON
+  devrites-engine detect commands [--root <dir>] [--json]
+                                         Resolve test/lint/vet/build commands from the repository's own wiring
   devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/cleanup
+  devrites-engine gates <subcommand> <slug>  Machine-checked gates.md ledger: scaffold/status/run/reverify/lint/attest/abandon
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
@@ -90,10 +115,26 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdCheck(root, args[1:], stdin, stdout, stderr)
 	case "parallel":
 		return parallel.Run("parallel", args[1:], stdin, stdout, stderr)
+	case "gates":
+		return acceptance.Run(root, args[1:], stdout, stderr)
 	case "observe":
 		return cmdObserve(root, args[1:], stdout, stderr)
 	case "orient":
 		return cmdOrient(root, args[1:], stdout, stderr)
+	case "next":
+		return lib.RunNext(root, args[1:], stdout, stderr)
+	case "handoff":
+		return lib.RunHandoff(root, args[1:], stdout, stderr)
+	case "context":
+		return lib.RunContext(root, args[1:], stdout, stderr)
+	case "metrics":
+		return lib.RunMetrics(root, args[1:], stdout, stderr)
+	case "dispatch":
+		return lib.RunDispatch(root, args[1:], stdout, stderr)
+	case "claim":
+		return lib.RunClaim(root, args[1:], stdout, stderr)
+	case "note":
+		return notes.Run(root, args[1:], stdout, stderr)
 	case "state":
 		return cmdState(root, args[1:], stdout, stderr)
 	case "migrate":
@@ -102,6 +143,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.SecretScan(root, args[1:], stdin, stdout, stderr)
 	case "open-visual":
 		return lib.OpenVisual(root, args[1:], stdout, stderr)
+	case "detect":
+		return lib.RunDetectCommands(root, args[1:], stdout, stderr)
 	case "version", "--version":
 		fmt.Fprintln(stdout, version.Version)
 		return exitOK
@@ -129,10 +172,22 @@ func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 		return parallel.Run("path-disjoint", rest, stdin, stdout, stderr)
 	case "task-graph":
 		return cmdTaskGraph(root, rest, stdout, stderr)
+	case "slice":
+		return lib.RunCheckSlice(root, rest, stdout, stderr)
+	case "diff-scope":
+		return lib.RunCheckDiffScope(root, rest, stdout, stderr)
 	case "skill-trust":
 		return cmdSkillTrust(rest, stdout, stderr)
 	case "indexes":
 		return lib.RunEnvironmentCheck(root, rest, stdout, stderr)
+	case "regression":
+		return lib.RunCheckRegression(root, rest, stdout, stderr)
+	case "windows":
+		return lib.RunCheckWindows(root, rest, stdout, stderr)
+	case "dup":
+		return lib.RunCheckDup(root, rest, stdout, stderr)
+	case "drift":
+		return lib.RunCheckDrift(root, rest, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "devrites: unknown check %q\n", sub)
 		return exitUsage
@@ -216,6 +271,10 @@ func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Write
 			return exitUsage
 		}
 		if code != exitOK {
+			fmt.Fprintf(stdout, "reason: %s\n", gate.ResultReasonID(kind, true))
+			return exitBlocked
+		}
+		if !notes.SealCheck(root, args[0], stdout) {
 			fmt.Fprintf(stdout, "reason: %s\n", gate.ResultReasonID(kind, true))
 			return exitBlocked
 		}

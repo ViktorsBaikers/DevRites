@@ -3,6 +3,8 @@ name: devrites-source-driven
 description: Verify uncertain framework or library behavior in installed source or official docs. Use for unfamiliar APIs; not internal code.
 user-invocable: false
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/tooling.md"],"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]},"workspace":["state.md","spec.md","plan.md","decisions.md","evidence.md","references.md"],"workspaceByRole":{"evidence-scout":["state.md","spec.md","plan.md","references.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-source-driven` bundles every file named below into one deduplicated read.
 
 # devrites-source-driven: verify, don't guess
 

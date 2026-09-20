@@ -4,6 +4,8 @@ description: Stress-test one consequential decision independently. Use for uncer
 triggers:
   - model
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/agents.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"security":["devrites-lib/reference/standards/security.md"],"tooling":["devrites-lib/reference/standards/tooling.md"]},"workspace":["spec.md","plan.md","tasks.md","state.md","decisions.md"],"workspaceByRole":{"doubt-reviewer":["spec.md","plan.md","tasks.md","state.md","decisions.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-doubt` bundles every file named below into one deduplicated read.
 
 # devrites-doubt: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP
 

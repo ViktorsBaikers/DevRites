@@ -1,4 +1,6 @@
 # Acceptance-preserving Reslice
+> Applies when: before classifying or executing any reslice/split/reorder of an approved plan.
+
 ## Packet
 Exactly six groups;one slug/attempt;exact unordered keys
 <!-- BEGIN RESLICE PACKET -->

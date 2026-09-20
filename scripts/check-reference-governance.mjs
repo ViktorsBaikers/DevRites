@@ -32,6 +32,7 @@ const reachable = new Set(entries);
 const queue = [...entries];
 const markdownLink = /\]\(([^)#]+\.md)(?:#[^)]*)?\)/g;
 const backtickPath = /`([A-Za-z0-9._/\-]+\.md)`/g;
+const includeMarker = /<!--\s*include:([^\s>]+\.md)\s*-->/g;
 
 function candidates(from, token) {
   if (/^(?:https?:|mailto:)/.test(token)) return [];
@@ -45,6 +46,7 @@ function refsFrom(from) {
   const tokens = [
     ...[...text.matchAll(markdownLink)].map((match) => match[1]),
     ...[...text.matchAll(backtickPath)].map((match) => match[1]),
+    ...[...text.matchAll(includeMarker)].map((match) => match[1]),
   ];
   const out = new Set();
   for (const token of tokens) {

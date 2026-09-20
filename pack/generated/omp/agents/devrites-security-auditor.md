@@ -76,6 +76,28 @@ Explicitly trace authn versus per-resource authz, tenant scope across storage/ca
 jobs/model context, privilege-changing actions, resolved filesystem/archive paths, request
 forgery control, unsafe deserialization, and fail-closed environment defaults when relevant.
 
+## Verification discipline
+
+- Enumerate the diff's security-relevant units before judging: endpoints, handlers,
+  trust boundaries, auth paths, deserialization sinks, and touched files. Audit each
+  and report audited-vs-total; unchecked units are a declared gap, never coverage by
+  omission.
+- Try to disprove every candidate before reporting it: re-check the cited site for
+  validation, authorization, escaping, or an existing guard that already neutralizes
+  it. A candidate that survives disproof is a finding; an unresolved fact names the
+  exact unknown (no severity claim); a disproved candidate stays visible as rejected
+  with the disproof, per [`agents.md`](../skills/devrites-lib/reference/standards/agents.md) § Result admission.
+- **Severity is capped at demonstrated impact in this codebase.** A candidate that
+  names principal, input, boundary, and observed crossing earns Critical; one that
+  weakens but does not defeat an explicit control caps at Important; a pattern
+  match with no shown crossing is Suggestion/FYI at most. "Best practice says so"
+  without a demonstrated boundary crossing is not a finding.
+- When scope is a surface larger than this diff — a subsystem, protocol surface, or
+  repo sweep — apply `.omp/skills/devrites-lib/reference/standards/audit-coverage.md`
+ : coverage ledger, finder≠verifier, three-verdict
+  records, honest `deferred`/`blocked`. A unit never audited is a declared gap, not
+  coverage.
+
 ## Rules
 
 - Don't edit. Findings only, labeled Critical / Important / Suggestion / Nit / FYI with

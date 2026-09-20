@@ -24,10 +24,10 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | clarify | spec artifacts plus `decision-coverage.md` |
 | temper | clarified spec artifacts plus `strategy.md` when temper runs |
 | define/plan | clarified spec artifacts plus `architecture.md`, `plan.md`, `tasks.md`, `traceability.md` |
-| vet/build/converge | plan artifacts plus `eng-review.md`, `test-plan.md`; Build creates and maintains `touched-files.md` after its first green slice |
+| vet/build/converge | plan artifacts plus `eng-review.md`, `test-plan.md`, `gates.md`; Build creates and maintains `touched-files.md` after its first green slice |
 | prove/polish/review | vetted plan artifacts plus `evidence.md`, `touched-files.md` |
 | seal/ship/done | proof artifacts plus `review.md`, `seal.md`; Ship writes `ship.md` |
-| conditional | `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `drift.md` for drift; `polish-report.md` for polish; `handoff.md` only when requested; `references.md` + `references/` when references exist; `investigation-map.md` for pressure-test; `dogfood.md` for dogfood; `packets/` for by-reference dispatch packets and admitted accounts (≤ 64 KiB each; older closed rounds may be deleted; never transcripts); `history/` for verbatim relocated checkpoint narrative (append-only, never a read-next) |
+| conditional | `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `drift.md` for drift; `polish-report.md` for polish; `handoff.md` only when requested; `references.md` + `references/` when references exist; `investigation-map.md` for pressure-test; `dogfood.md` for dogfood; `windows.md` when the diff introduces deferral markers (waiver ledger for `check windows`); `packets/` for by-reference dispatch packets and admitted accounts (≤ 64 KiB each; older closed rounds may be deleted; never transcripts); `history/` for verbatim relocated checkpoint narrative (append-only, never a read-next); `readiness-inputs.json` as the advisory per-input drift baseline written by `check drift --record` after Vet's binding (never a gate input; regenerated, not hand-edited); `notes.md` for anchored notes bound to verbatim code quotes (engine-regraded; non-exact anchors block seal) |
 
 ## What each file owns
 
@@ -43,7 +43,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `visual/<name>.html` | optional portable human-viewable visualization; pair with sibling `.outline.md`; self-contained preferred | 400 lines |
 | `visual/<name>.outline.md` | required machine dual-read companion for the sibling HTML; outline wins on conflict; never a candidate path | 200 lines |
 | `visual/README.md` | optional index of visuals in the workspace | 80 lines |
-| `decisions.md` | ADR-style `DEC-###` log: status, context, options, decision, consequences, related IDs | 200 lines |
+| `decisions.md` | ADR-style `DEC-###` log: status, context, options, decision, consequences, related IDs; optional `Files:`/`Tags:` fields make entries queryable by path or theme | 200 lines |
 | `assumptions.md` | assumptions with confidence, owner, validation status | 160 lines |
 | `questions.md` | current `q-YYYY-MM-DD-NNN` (or released `Q-###`) open/resolved questions, gate, answer, impact | 180 lines |
 | `plan.md` | technical approach, slice strategy, canonical shared-contract proof, validation strategy, rollback | 220 lines |
@@ -51,6 +51,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `traceability.md` | matrix: AC/REQ ID, slice IDs, test/proof, evidence ID, touched files, status | 220 lines |
 | `eng-review.md` | vetted scope/architecture/quality/performance, failure modes, preflight, stable-input binding, `## Deferred findings` (late rows: severity · site · role · kind · round) for Review | 240 lines |
 | `test-plan.md` | executable proof commands, preflight/provenance contract, acceptance and interaction coverage | 260 lines |
+| `gates.md` | machine-checked acceptance ledger: one gate per required outcome — runnable `CHECK`/`EXPECT`/`CWD` or manual `EVIDENCE`; engine-bound evidence, `ABANDON:` handoffs | 200 lines |
 | `state.md` | compact cursor table/key-values; no narrative log | 120 lines |
 | `evidence.md` | `EVID-###` command/action, result, timestamp if available, related AC/slice IDs, limitation | 280 lines |
 | `browser-evidence.md` | UI route/viewports/screenshots/console/network/interactions and Visual Verdict | 220 lines |
@@ -63,6 +64,8 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `review.md` | reconciled Review verdict: `## Spec` and `## Code review` accounts, deferred-finding labels/actions, drift | 240 lines |
 | `seal.md` | seal preflight, exact reviewer roster accounts, GO/NO-GO verdict and disclosures | 200 lines |
 | `ai-spec.md` | model/RAG/agent/eval/LLM-output scope for AI surfaces | 160 lines |
+| `windows.md` | deferral-marker waiver ledger: one `- path | marker | reason` row per introduced marker; `check windows` fails on unwaived hits | 120 lines |
+| `notes.md` | `NOTE-###` anchored notes — rationale/warnings bound to a verbatim quote in one repository file; `note check` regrades anchors and drift blocks seal | 160 lines |
 
 For visual pairs load only matching [playbooks](visual-playbooks/index.md); use
 the [required outline headings](visual-playbooks/outline-template.md).
@@ -158,6 +161,23 @@ Apply [[`context-hygiene.md`](standards/context-hygiene.md) dispatch packets](st
 for byte-size checks and lossless retrieval; budget overrides neither rewrite protected
 history nor require loading it all.
 
+## Anchored notes
+
+`notes.md` carries agent-authored knowledge bound to code it describes — a rationale,
+warning, or review stop that must not silently drift when the code moves or changes.
+Write it only through `devrites-engine note add <slug> <subject> <quote> <title>
+[body]`: the engine assigns `NOTE-###` IDs, stores the subject path and verbatim
+`quote`, and keeps the file parseable. One note per fact; quote the smallest
+contiguous run that identifies the anchor (identifiers, literals, signatures —
+whitespace is normalized, other edits stale it).
+
+`note list` and `note check` regrade every anchor: `exact` (quote found in subject),
+`moved` (quote lives in exactly one other file — `note check --repair` rewrites the
+subject), `stale`/`ambiguous`/`lost` otherwise. Dependency and workspace trees
+(`node_modules`, `.devrites`, vendor, build output) never count as relocation.
+`check seal` refuses malformed notes and non-exact anchors; fix or `note rm` them,
+never attest past them.
+
 ## Native readiness ownership
 
 `decision-coverage.md` owns topology; `test-plan.md`, executable proof; `eng-review.md`,
@@ -213,6 +233,11 @@ slices; use `none` when they do not apply. Complexity above 3 triggers reslicing
 unless the stated reason makes the boundary irreducible.
 
 ## Read next by phase
+
+Run `devrites-engine next <slug>` at phase entry for the minimal remaining path
+(current phase, open questions, missing artifacts, next `/rite-*` command), then
+read the phase row below — or hand `devrites-engine context <slug> --phase <p>`
+to the engine and read the bundle it emits.
 
 | Phase | Read |
 | --- | --- |

@@ -1,5 +1,7 @@
 # AFK & HITL: the pause/resume contract
 
+> Applies when: any rite/devrites skill that can pause for a human or run unattended; irreversible-risk list, budgets, recovery accounting.
+
 Defines two modes for `rite-*`/`devrites-*` skills that may pause; main
 callers are `/rite-build`, `/rite-status`, `/rite-resolve`, and
 `devrites-doubt`.

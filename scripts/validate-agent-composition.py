@@ -26,11 +26,17 @@ REVIEW_OUTCOME=re.compile(
     r'^Outcome:\s*<findings\s*\|\s*no-findings\s*\|\s*gap>\s*$', re.M
 )
 
+INCLUDE=re.compile(r'<!--\s*include:([^\s>]+)\s*-->')
+
+def expand(text:str, base:Path)->str:
+    return INCLUDE.sub(lambda m:(base/m.group(1)).read_text(encoding='utf-8').rstrip('\n')
+                       if (base/m.group(1)).is_file() else m.group(0), text)
+
 def validate(agents_dir:Path):
     errors=[]
     for f in sorted(agents_dir.glob('*.md')):
         name=f.stem
-        text=f.read_text(encoding='utf-8')
+        text=expand(f.read_text(encoding='utf-8'), f.parent)
         for label,pats in REQUIRED.items():
             if not any(re.search(p,text,re.I|re.M) for p in pats):
                 errors.append(f'{f}: missing {label}')

@@ -1,5 +1,7 @@
 # CI/CD & automation
 
+> Applies when: creating or changing a build/deploy pipeline or CI config.
+
 Read this only when creating or changing a build/deploy pipeline. [`hooks.md`](hooks.md) owns local checks, [`development-workflow.md`](development-workflow.md) owns trunk health, and [`deprecation.md`](deprecation.md) owns migrations.
 
 ## Pipeline gates
@@ -13,6 +15,15 @@ Read this only when creating or changing a build/deploy pipeline. [`hooks.md`](h
 Read the specific failure, fix its root cause, verify locally, then push again. Do not blind-rerun a flaky pipeline. Use `devrites-debug-recovery` when a test or build failure needs reproduction.
 
 A designated Build Cop (a human/team role, not a pack agent) owns restoring a broken trunk by fixing or reverting, whichever is faster. Restoring trunk outranks feature work.
+
+## Verification economy
+
+Paid or remote validation runs once per prepared state, not per attempt: batch repairs,
+verify locally first, and never blind-retry an infra operation that already reported
+failure (deploy, migrate, seed) — read the failure output, fix the cause, then re-run.
+A green check the diff cannot affect is not re-run; an expected run that is deliberately
+skipped is named in the report, not omitted. Capture failure output as an artifact so the
+next attempt starts from evidence, not memory.
 
 ## Deploy versus release
 

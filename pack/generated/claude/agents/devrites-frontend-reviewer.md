@@ -1,7 +1,7 @@
 ---
 name: devrites-frontend-reviewer
 description: Reviews one DevRites UI feature for /rite-seal from a fresh context. Checks UX flow, accessibility, responsive behavior, design-system alignment, and AI slop independently and adversarially.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 skills:
   - devrites-frontend-craft
 permissionMode: plan

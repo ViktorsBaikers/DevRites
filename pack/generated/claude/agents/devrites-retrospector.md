@@ -1,7 +1,7 @@
 ---
 name: devrites-retrospector
 description: Read-only analyst of recurring cross-feature lessons in reviewed Markdown.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

@@ -1,5 +1,7 @@
 # One-shot evidence completeness
 
+> Applies when: a failed attempt is not safely retryable (consumptive action).
+
 An action is **consumptive** when a failed attempt is not safely equivalent to a
 normal rerun. This includes commands limited to one attempt, commands whose retry
 needs fresh human authorization, actions that spend external quota or mutate

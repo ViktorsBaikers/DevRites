@@ -63,6 +63,7 @@ func EnvironmentReportFor(devritesRoot, projectRoot string) (EnvironmentReport, 
 			probePath(abs, ".codegraph"),
 			probePath(abs, ".code-review-graph"),
 			probePath(abs, ".codebase-memory"),
+			probePath(abs, "graph.json"),
 		},
 	}
 	if devritesRoot != "" {

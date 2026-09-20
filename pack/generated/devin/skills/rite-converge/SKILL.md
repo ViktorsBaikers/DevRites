@@ -4,6 +4,10 @@ description: Converge intent and live code. Use when resuming a half-built featu
 argument-hint: "[feature-slug]"
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/testing.md","rite-converge/reference/convergence-assessment.md","rite-converge/reference/anti-patterns.md","rite-build/reference/spec-drift-guard.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"principles":["devrites-lib/reference/standards/principles.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md"],"workspaceByRole":{"evidence-scout":["spec.md","plan.md","tasks.md","state.md","evidence.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase converge` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # /rite-converge: compare live code with intent
 
 Read `spec.md`, `plan.md`, and `tasks.md` as the **sole source of intent** (with
@@ -88,7 +92,13 @@ Pull on demand:
    acceptance criterion / scenario, every plan touch-point, and every existing slice's stated
    Produces. A principle violated in the current code is its own top-severity gap.
    Dispatch up to three independent inventory partitions to `devrites-evidence-scout` on the
-   same live-code snapshot, await their dossiers, then reconcile the cited facts in the root
+   same live-code snapshot — build each scout's read-set once with
+   `devrites-engine context <slug> --phase converge --role evidence-scout` and hand it the
+   bundle path; run the wave through
+   `devrites-engine dispatch <slug> open|start|seal|return` (per
+   [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)), which
+   auto-records dispatch/return metrics. Await their
+   dossiers, then reconcile the cited facts in the root
    context. **Completion:** every inventory unit is classified once with live-code evidence.
 5. **Enqueue the remainder as new slices.** For each *partial* or *absent* unit, append a
    `## SLICE-###` (continue the numbering after the highest existing id), each with a `Satisfies:` line tracing to the AC/REQ it closes and a
@@ -101,7 +111,9 @@ Pull on demand:
    update `state.md` to `Phase: plan`, `Next step: /rite-vet`, and set an existing
    `eng-review.md` field to `Implementation readiness: NEEDS REPLAN`. When nothing was unmet,
    leave the plan/vet verdict untouched and set `Next step: /rite-prove`. Append
-   `decisions.md` for any material call.
+   `decisions.md` for any material call. When slices were appended, run
+   `devrites-engine check task-graph <slug>` before invoking Vet; failure stays in
+   Converge for correction and never spends a Vet reviewer context.
 7. **STOP.** Report units assessed, built / partial / absent counts, slices appended, and any
    principle violation found. A direct invocation that appended slices becomes
    the caller for the mandated next step: save a return cursor

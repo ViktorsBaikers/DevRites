@@ -1,5 +1,7 @@
 # Browser proof checklist
 
+> Applies when: UI proof: compact sweep before claiming a rendered/browser pass.
+
 Compact sweep only. Numbers and failing cases live in
 [`quality-standards.md`](../../../devrites-frontend-craft/reference/quality-standards.md)
 § Focus & states, § Responsive, and § Browser chrome — do not restate a shorter

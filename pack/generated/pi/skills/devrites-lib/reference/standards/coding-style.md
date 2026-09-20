@@ -1,5 +1,7 @@
 # Coding style
 
+> Applies when: writing or editing code; naming, reuse, guard clauses, readability.
+
 Write code the next engineer can read without you in the room. Match the project's
 existing idiom first; these rules fill the gaps.
 
@@ -30,10 +32,13 @@ Handle unwanted cases first and return early; keep the success path flat.
 
 ## Reuse before you write
 Before adding a new util, helper, hook, type, component, or formatter, **search** for an
-existing one. **Reuse → extend → build new**, in that order. Don't re-implement what the
-project (or stdlib) already provides. If forcing reuse would distort the existing thing's
-shape, build a sibling and consolidate later: duplication is cheaper than the wrong
-abstraction (AHA).
+existing one. Search by *problem shape*, not just name — the same problem solved under
+different names is still an existing implementation, and the hardest duplicates to spot
+are the renamed and reshaped ones. **Reuse → extend → build new**, in that order. Don't
+re-implement what the project (or stdlib) already provides. If forcing reuse would
+distort the existing thing's shape, build a sibling and consolidate later: duplication
+is cheaper than the wrong abstraction (AHA). When a plan or slice adds a new
+implementation, name the nearest existing analog it considered — or record `none found`.
 
 ## Edit reliably, change only what's asked
 - **No elision.** Never write `// ... rest unchanged` / `# ... existing code` in place of an

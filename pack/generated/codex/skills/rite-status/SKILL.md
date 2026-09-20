@@ -5,6 +5,8 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 disable-model-invocation: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["state.md","tasks.md","questions.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-status` bundles every file named below into one deduplicated read.
 
 # $rite-status: active feature status
 
@@ -40,6 +42,13 @@ A workspace is handoff-ready when it records one next action, all unresolved
 questions, non-obvious decisions, load-bearing assumptions, current drift
 status, and evidence for its claims. If chat contains missing durable context,
 recommend `$rite-handoff` before the lifecycle command.
+`devrites-engine handoff [slug]` emits the deterministic resume record (cursor,
+`awaiting_human`, blocking question gates, ledger reduction, dead ends,
+read-next order) — cite it for items 3–6 and the handoff-readiness verdict
+rather than re-deriving them. When `metrics.jsonl` exists,
+`devrites-engine metrics summary <slug>` rolls up dispatch/return counts and
+bundle bytes per phase — cite it for dispatch accounting rather than
+re-counting the ledger.
 
 Do not derive a command from host identity or invent one from phase names. Read
 the persisted `Next step`.

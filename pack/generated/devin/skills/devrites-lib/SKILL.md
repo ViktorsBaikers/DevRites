@@ -43,11 +43,46 @@ lifecycle state from chat or optional `README.md`.
 
 The engine is limited to:
 
-- `check readiness` for structure, `check candidate` for content-bound identity,
-  and `check seal` for structure plus exact artifact bindings; `secret-scan` and
-  `version` remain read-only helpers.
-- Atomic state: `state resolve` for answer/drop/batch and transactional
-  `state close`.
+- Checks: `check candidate` (content-bound identity), `check readiness`
+  (structure; `--emit-binding` emits the Build-input binding), `check seal` (structure
+  plus exact artifact bindings and evidence freshness), `check slice` (slice
+  contract preflight before wright dispatch), `check task-graph`, `check
+  diff-scope` (mechanical changed-paths ⊆ allowlist before reviewer dispatch),
+  `check path-disjoint`, `check skill-trust`, `check indexes`, `check
+  regression` (progress high-water mark), `check drift` (readiness-input
+  attribution), `check windows` (deferral-marker waivers), `check dup`
+  (advisory near-duplicates), `detect commands` (repository test/lint wiring).
+- Observation: `observe summary` (`orient` alias), `observe slice`, `next`
+  (minimal remaining lifecycle path), `handoff` (deterministic resume record).
+- Coordination: `context` emits one deduplicated read-set bundle from each
+  skill's `loads:` manifest into `.devrites/work/<slug>/ctx/` — dispatch targets
+  read it instead of selecting files. It prints `unselected=[...]` for declared
+  triggers not passed; an omitted applicable trigger is a gap, not a shortcut. A
+  `--role` call is a dispatch, so the `agents` trigger auto-fires when declared
+  (`auto=[agents]` in output); a role with no agent contract file fails instead
+  of emitting a contract-less packet.
+  Manifest grammar: `always` loads every call; `triggers` maps names to files that
+  load only when passed or suggested; `workspace` lists the feature artifacts every
+  reader may need; `workspaceByRole` maps a dispatch role to its own artifact list —
+  present role wins, absent role falls back to `workspace`, an empty list means the
+  role reads no workspace files. The engine prints `suggested=[...]` triggers
+  inferred from workspace facts (AFK/parallel flags, frontend/security wording,
+  principles presence); confirm them rather than re-deriving conditions. Repeat
+  calls with unchanged inputs print `unchanged` and reuse the existing bundle.
+  `dispatch` owns the launch-wave barrier — seal needs a distinct handle per
+  role, return needs seal, and start/return auto-record into the `metrics`
+  ledger. `claim` owns the advisory session-scoped `claims.jsonl` ledger;
+  `note` owns anchored `notes.md` entries (`check seal` refuses non-exact
+  anchors); `parallel` owns deterministic worktree lease/create/integrate/
+  cleanup for parallel slices.
+- `gates` owns the machine-checked acceptance ledger (`gates.md`): `scaffold`,
+  `status`, `run`, `reverify`, `lint`, `attest`, `abandon` — grammar and
+  authoring rules in
+  [`reference/standards/gates.md`](reference/standards/gates.md).
+- Atomic state: `state resolve` for answer/drop/batch, `state merge-manifest`
+  for the predecessor-chain union, transactional `state close`, and `migrate`
+  for fail-closed workspace-schema normalization.
+- `secret-scan`, `open-visual`, and `version` remain read-only helpers.
 - Offline, local `install`, `update`, and `uninstall`; their shell/npm callers
   acquire the candidate bundle, source, and binary before invoking the engine.
 

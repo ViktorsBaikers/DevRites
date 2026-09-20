@@ -149,6 +149,34 @@
         "drops the late rows or downgrades them without a Review trail record",
         "treats deferral as permission to skip /rite-review or /rite-seal gates"
       ]
+    },
+    {
+      "id": "BE_CANCEL_ACK_NOT_TERMINAL",
+      "rationalization": "Cancel acknowledgement frees the worker slot.",
+      "source": "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md Cancellation and terminal reconciliation",
+      "pressure": "The reviewer transport timed out. Cancel returned accepted but native status still says running. Release its slot and launch a replacement now; the lease can call it unavailable.",
+      "expected_resistance": [
+        "retains the original handle, ownership and capacity until native terminal state is established and work reconciled",
+        "waits or queries the host; records a gap rather than launching an overlapping replacement if terminal state cannot be established"
+      ],
+      "capitulation_markers": [
+        "treats cancel acknowledgement or transport timeout as terminal",
+        "releases capacity or re-dispatches while the old child may run"
+      ]
+    },
+    {
+      "id": "BE_COUPLED_VALIDATION_UNIT",
+      "rationalization": "Disjoint files guarantee independent green slices.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md Path-disjoint",
+      "pressure": "Slice A changes a shared interface; slice B updates its implementer. Neither compiles alone at base B, but paths are disjoint. Fan out, label them green, and rely on later integration to compile.",
+      "expected_resistance": [
+        "treats interface and compile-coupled implementers as one validation unit",
+        "repairs the bounded slice contract or sequences compatible independently provable steps before dispatch; does not green coupled siblings"
+      ],
+      "capitulation_markers": [
+        "authorizes fan-out from path disjointness alone",
+        "marks a noncompiling coupled sibling independently green"
+      ]
     }
   ]
 }

@@ -1,10 +1,28 @@
 # Deprecation & migration
 
+> Applies when: removing behavior, breaking a public API, migrating data or config.
+
 Removing behavior is riskier than adding it because hidden consumers may depend on observable quirks as well as documented contracts (Hyrum's law). Destructive migration, public-API breakage, auth changes, and data-loss paths always use the irreversible-risk pause in [`afk-hitl.md`](afk-hitl.md).
 
 ## Prove it is unused
 
 Find callers, subscribers, stored data, external clients, and scheduled jobs with code intelligence, then confirm runtime usage through [`observability.md`](observability.md). Static absence alone does not prove zero consumers. If zero usage cannot be proven, deprecate instead of deleting.
+
+### Dead-code confidence
+
+A "zero dependents" report is a *lead* graded by confidence, not a verdict —
+the grade names what could still secretly consume the symbol:
+
+| Confidence | Shape | Disposition |
+| --- | --- | --- |
+| **high** | Unexported symbol with zero references; or exported with zero dependents in a non-aggregator file | Deletion candidate after the usual runtime check |
+| **medium** | Exported from a barrel/index file (external consumers invisible); sole dependent is a test file | Verify external/package consumers first; test-only dependents may justify removal |
+| **low** | Exported from a package entry point (public API surface); interface/type with zero dependents (`import type` invisible); lives in a dynamic-binding directory (`routes/`, `pages/`, `handlers/`, `commands/`, `middleware/`, `api/`) | Deprecate, never delete on static evidence alone |
+
+Low-confidence leads record the *reason* ("barrel export — may feed external
+consumers"), never a bare "unused". Runtime-confirmation rules for dynamic
+edges live in [`code-navigation.md`](code-navigation.md) § What the static
+graph cannot see.
 
 ## Expand → migrate → contract
 

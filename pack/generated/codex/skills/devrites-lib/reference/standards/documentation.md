@@ -1,5 +1,7 @@
 # Documentation
 
+> Applies when: writing docs, comments, READMEs; recording decisions.
+
 Document intent/decisions; public inputs, outputs, errors, and gotchas; non-obvious
 constraints; and real build/test/run commands. Update with behavior; prefer one runnable
 example. Do not restate code or types.
@@ -41,3 +43,13 @@ Promotion is maintenance of an existing authority, not a new memory system.
    required. Never create a learning ledger, index, queue, score, or parallel authority.
 
 Long reference material stays behind its existing on-demand route.
+
+## Living documents
+
+Canonical documents are updated, not appended to. When truth changes, rewrite the
+owning section in the present tense; sealed artifacts take dated deltas through the
+owning rite instead ([`core.md`](core.md) #4). Pick a steering verb deliberately —
+`create`, `consolidate`, `split`, `trim`, `retire` — rather than letting the last-opened
+file absorb every new topic. Document what code cannot own (contracts, invariants,
+decisions, rationale); a doc that restates implementation drifts the day it lands.
+Sparse is correct — never pad a document to look complete.

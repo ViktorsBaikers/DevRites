@@ -4,6 +4,8 @@ description: Shape stable API, type, module, or frontend/backend contracts befor
 triggers:
   - model
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"deprecation":["devrites-lib/reference/standards/deprecation.md"],"security":["devrites-lib/reference/standards/security.md","rite-review/reference/security-review.md"]},"workspace":["spec.md","plan.md","tasks.md","state.md","decisions.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-api-interface` bundles every file named below into one deduplicated read.
 
 # devrites-api-interface: contract before implementation
 

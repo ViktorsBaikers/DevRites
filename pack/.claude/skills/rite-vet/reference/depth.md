@@ -11,9 +11,7 @@ recorded engineering verdict and a coverage plan.
 Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
-- `FOLD` → fold technical topology; invalidate Vet/readiness; affected Vet before Build.
-- `GUARD_AND_REPAIR` → no planning writes; Spec Drift Guard → Clarify → Plan repair → affected Vet.
-- `BLOCKED_INPUT` → no planning writes; exact diagnostic; recover input; reclassify.
+<!-- include:../../devrites-lib/reference/_shared/reslice-vet.md -->
 <!-- END RESLICE ROUTE-TO-ACTION -->
 
 ## Full pass when ANY trips

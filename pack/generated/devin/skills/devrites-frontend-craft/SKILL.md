@@ -4,6 +4,8 @@ description: Build accessible production UI and all states during /rite-build. U
 triggers:
   - model
 ---
+<!-- loads: {"always":["devrites-frontend-craft/reference/craft.md","devrites-frontend-craft/reference/design-references.md","devrites-frontend-craft/reference/quality-standards.md","devrites-frontend-craft/reference/reuse-first.md","devrites-frontend-craft/reference/shape.md","rite-polish/reference/anti-ai-slop.md"],"triggers":{"fullstack":["devrites-frontend-craft/reference/fullstack.md"],"testing":["devrites-lib/reference/standards/testing.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-frontend-craft` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # devrites-frontend-craft: UI like a senior designer-engineer
 

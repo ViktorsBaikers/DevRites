@@ -51,6 +51,7 @@ WORKSPACE_ARTIFACTS = {
     "architecture.md", "traceability.md", "flows.md",
     # Named outputs created in the user's workspace by their owning workflow.
     "agent.md", "dogfood.md", "walkthrough.md", "ai-spec.md", "investigation-map.md",
+    "gates.md", "windows.md", "notes.md",
     # Parallel batch lease under .devrites/work/<slug>/ (rite-build --parallel).
     "parallel-lease.md",
     # rite-explain primary output (.devrites/explainers/<date>-<slug>/).

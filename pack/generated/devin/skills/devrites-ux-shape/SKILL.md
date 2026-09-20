@@ -4,6 +4,8 @@ description: Shape UX/UI direction, states, and interactions before code. Use fo
 triggers:
   - model
 ---
+<!-- loads: {"always":["devrites-ux-shape/reference/brief-template.md","devrites-ux-shape/reference/visual-direction-probe.md","rite-build/reference/frontend-trigger.md","devrites-frontend-craft/reference/design-references.md","devrites-frontend-craft/reference/quality-standards.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-ux-shape` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # devrites-ux-shape: plan the UX/UI before code
 

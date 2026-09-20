@@ -78,6 +78,40 @@ func TestLeaseRoundTrip(t *testing.T) {
 	}
 }
 
+func TestWriteLeasePreservesFixedTemp(t *testing.T) {
+	for _, directory := range []bool{false, true} {
+		t.Run(fmt.Sprint(directory), func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "lease.md")
+			sentinel := path + ".tmp"
+			if directory {
+				if err := os.Mkdir(sentinel, 0755); err != nil {
+					t.Fatal(err)
+				}
+			} else if err := os.WriteFile(sentinel, []byte("owned elsewhere"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			lease := &Lease{BatchID: "batch", CreatedAt: "now", BaseSHA: "abcdef1", N: 2, Status: StatusRunning, Slices: []LeaseSlice{{ID: "a", Paths: []string{"a.go"}}, {ID: "b", Paths: []string{"b.go"}}}}
+			if err := WriteLease(path, lease); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := ReadLease(path); err != nil {
+				t.Fatal(err)
+			}
+			if directory {
+				info, err := os.Stat(sentinel)
+				if err != nil || !info.IsDir() {
+					t.Fatalf("sentinel changed: %v", err)
+				}
+			} else {
+				raw, err := os.ReadFile(sentinel)
+				if err != nil || string(raw) != "owned elsewhere" {
+					t.Fatalf("sentinel changed: %q %v", raw, err)
+				}
+			}
+		})
+	}
+}
+
 func TestCreateAbortCleanup(t *testing.T) {
 	repo, base := setupRepo(t)
 	slug := "demo-feature"

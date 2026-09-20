@@ -4,6 +4,10 @@ description: Run the full DevRites lifecycle unattended; --ship continues to the
 argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] [--cross-model]"
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"]} -->
+> Read-set manifest: `devrites-engine context <slug> --phase autocomplete` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # /rite-autocomplete: full lifecycle, unattended
 
 Run every phase after one clarification window. Irreversible-risk,
@@ -20,7 +24,8 @@ Read [`core.md`](../devrites-lib/reference/standards/core.md) and [`afk-hitl.md`
 [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md) before any stop/continue or execution decision involving a
 consumptive action. Before honoring a terminal cursor that names missing
 executable controller/harness/bundle bytes or a missing writer, read
-[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md). Before classifying any Reslice, read `.devin/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
+[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
+(trigger `workflow-artifacts` — only when a workspace declares them). Before classifying any Reslice, read `.devin/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
 - `FOLD` → keep Plan repair/affected Vet internal; no stop solely for topology/count.

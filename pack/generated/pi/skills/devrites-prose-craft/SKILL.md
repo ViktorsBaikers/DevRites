@@ -3,6 +3,8 @@ name: devrites-prose-craft
 description: Rewrite prose to remove AI tells while preserving meaning and voice. Use for artifacts, replies, commits, or PR copy; not code comments or UI craft.
 user-invocable: false
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/prose-style.md"],"triggers":{"word-choice":["devrites-prose-craft/reference/banned-phrases.md"],"structure":["devrites-prose-craft/reference/structures.md"],"examples":["devrites-prose-craft/reference/examples.md"]}} -->
+> Read-set manifest: `devrites-engine context [slug] --skill devrites-prose-craft` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # devrites-prose-craft: prose that reads human
 
@@ -56,7 +58,7 @@ In detect-only, report Tier 1A (figurative filler) separately from Tier 1B (word
 - Always read [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md) for the two
   registers, preservation contract, and core checks.
 - Load [`reference/banned-phrases.md`](reference/banned-phrases.md) when word choice or tone is
-  the problem.
+  the problem (trigger `word-choice`).
 - Load [`reference/structures.md`](reference/structures.md) when sentence shape, rhythm, or
   formatting is the problem.
 - Load [`reference/examples.md`](reference/examples.md) when the target artifact's shape is

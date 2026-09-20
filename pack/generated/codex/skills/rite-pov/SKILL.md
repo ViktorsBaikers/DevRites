@@ -4,6 +4,8 @@ description: Project-grounded verdict for adopting, switching, rejecting, or rev
 argument-hint: "[candidate/link/question]"
 user-invocable: true
 ---
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["decisions.md"]} -->
+> Read-set manifest: `devrites-engine context [slug] --skill rite-pov` bundles every file named below into one deduplicated read.
 
 # $rite-pov: project-grounded external verdict
 

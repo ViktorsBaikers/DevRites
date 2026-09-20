@@ -5,9 +5,7 @@ routine phases. Acceptance-preserving Reslice authority is
 `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
-- `FOLD` → keep Plan repair/affected Vet internal; no stop solely for topology/count.
-- `GUARD_AND_REPAIR` → enter Spec Drift Guard/Clarify; pause only at an existing human-owned gate; resume Plan/Vet internally.
-- `BLOCKED_INPUT` → no planning writes; stop internal branch; exact diagnostic; recover authority; reclassify.
+<!-- include:../../devrites-lib/reference/_shared/reslice-autocomplete.md -->
 <!-- END RESLICE ROUTE-TO-ACTION -->
 
 ## Arm AFK once
@@ -75,7 +73,13 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 
 Before advancing, check
 [stop-conditions.md](stop-conditions.md). After source edits, discard stale pass
-evidence. Re-read the active workspace before each phase.
+evidence. Re-read the active workspace before each phase. On a cold resume or
+new activation, run `devrites-engine check regression <slug>`: `BLOCKED` names a
+durable fact lost since the last checkpoint — restore or route it through its
+owning phase before continuing; `unproven` does not block. After each phase's
+durable advance lands (green check loop, checkpoint commit), run
+`devrites-engine check regression <slug> --update` to ratchet the progress
+floor; `--update` never excuses an unreconciled regression.
 
 ## Sequence continuation
 

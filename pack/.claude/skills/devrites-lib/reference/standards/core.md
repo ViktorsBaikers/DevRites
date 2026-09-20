@@ -1,6 +1,12 @@
 # DevRites core rules
 
+> Applies when: always; every workspace rite reads it first.
+
 Each workspace rite reads core first; load phase files from `README.md` on demand.
+
+Rules are cited as `core.md #N` (CORE-N). Numbering is stable: text may be
+reworded, an ID never changes meaning. Other files name the ID instead of
+repeating the rule.
 
 Repository conventions follow [Precedence](#precedence).
 
@@ -25,7 +31,10 @@ Repository conventions follow [Precedence](#precedence).
    stop. HITL never auto-continues; AFK runs to its slice budget
    ([`afk-hitl.md`](afk-hitl.md)).
 6. **Evidence over confidence:** tests, builds, runtime, screenshots beat
-   assertions; record commands and output.
+   assertions; record commands and output. Tag how each claim was known:
+   `observed` (you ran or read the evidence), `inferred` (deduced — name the
+   step), `asserted` (unverified). An `inferred`/`asserted` claim never reads
+   as `observed`.
 7. **Feature scope only:** keep review/simplify/polish/security within the active
    feature and touched files; no drive-by refactor. Route account creation,
    production provisioning/testing, and credential/secret work to the human.

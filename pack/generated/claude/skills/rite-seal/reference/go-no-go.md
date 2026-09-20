@@ -13,6 +13,7 @@ rollback, or an unapproved principle violation. Also block:
 - deleted/skipped/focused/tautological/weakened tests;
 - missing/silent required review or invalid conditional account;
 - a stood decision without reconciled exact doubt verdict;
+- an unblessed loss vs the recorded progress baseline (`check regression` `BLOCKED`);
 - opted-in mutation missing/below threshold (otherwise optional).
 
 ## GO

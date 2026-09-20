@@ -1,5 +1,7 @@
 # Prose style: write like a human, not a model
 
+> Applies when: writing user-facing prose, artifacts, or replies.
+
 Every chat reply and artifact DevRites writes (`spec.md`, `plan.md`, `decisions.md`,
 `review.md`, `seal.md`, commit bodies, PR descriptions) should read like a senior engineer
 wrote it for a teammate. The default LLM voice (filler openers,
@@ -94,6 +96,7 @@ The cut-list removes tells; specificity prevents them. Fast tests before deliver
 
 - **Topic-swap test.** If swapping the subject for any other feature still reads true, it says nothing — name the specific thing.
 - **Surprise test.** One concrete unguessable detail (real number, constraint, trade-off)? Slop never surprises; add it.
+- **First-read test.** A sentence the reader must re-read to hold gets split.
 
 A paragraph you could cut 40-60% with no information lost is padding. Cut it.
 

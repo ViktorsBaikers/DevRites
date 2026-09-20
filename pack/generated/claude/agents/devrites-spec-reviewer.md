@@ -1,7 +1,7 @@
 ---
 name: devrites-spec-reviewer
 description: Independently checks one feature candidate against its spec for /rite-review and /rite-seal. Finds missing or wrong acceptance coverage, preservation regressions, scope creep, placement drift, and design-reference mismatches. Never edits.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
 permissionMode: plan
 ---
 

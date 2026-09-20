@@ -1,5 +1,7 @@
 # Edge-case trace
 
+> Applies when: a boundary, branch, or failure mode changes in spec, plan, diff, or proof.
+
 Use this when requirements, plans, diffs, or proof change a boundary, branch,
 validation rule, deletion contract, retryable action, or claim that a path is safe.
 The trace finds relevant cases, records why irrelevant ones were dismissed, and prevents

@@ -217,7 +217,7 @@ func TestInstallMergesClaudePermissionsIntoExistingSettings(t *testing.T) {
   "statusLine": {"type":"command","command":"DEVRITES_THEME=dark echo user-status"},
   "permissions": {
     "defaultMode": "plan",
-    "allow": ["Bash(user-tool *)"],
+    "allow": ["Bash(user-tool *)", "Bash(git checkout *)", "Bash(devrites-engine retired-cmd *)"],
     "ask": ["Bash(rm *)"]
   },
   "hooks": {"Stop":[{"hooks":[
@@ -231,13 +231,21 @@ func TestInstallMergesClaudePermissionsIntoExistingSettings(t *testing.T) {
 	runInstall(t, target, payload, func(o *Options) { o.Stderr = &stderr })
 
 	settings := testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	for _, preserved := range []string{"keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop", "Bash(user-tool *)", "Bash(rm *)"} {
+	for _, preserved := range []string{"keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop", "Bash(user-tool *)", "Bash(git checkout *)", "Bash(rm *)"} {
 		if !strings.Contains(settings, preserved) {
 			t.Fatalf("Claude settings lost user content %q:\n%s", preserved, settings)
 		}
 	}
 	if strings.Count(settings, "Bash(devrites-engine check readiness *)") != 1 {
 		t.Fatalf("Claude permission was not merged exactly once:\n%s", settings)
+	}
+	for _, managed := range []string{"mcp__codegraph__*", "Bash(git diff *)", "Edit(.devrites/**)"} {
+		if !strings.Contains(settings, managed) {
+			t.Fatalf("Claude settings merge missed managed rule %q:\n%s", managed, settings)
+		}
+	}
+	if strings.Contains(settings, "retired-cmd") {
+		t.Fatalf("Claude settings merge kept a retired engine rule:\n%s", settings)
 	}
 	if strings.Contains(settings, "devrites-engine hook") {
 		t.Fatalf("installer retained a legacy DevRites hook:\n%s", settings)
@@ -253,13 +261,18 @@ func TestInstallMergesClaudePermissionsIntoExistingSettings(t *testing.T) {
 
 	runUninstall(t, target)
 	settings = testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json"))
-	for _, preserved := range []string{"keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop", "Bash(user-tool *)", "Bash(rm *)", `"defaultMode": "plan"`} {
+	for _, preserved := range []string{"keep my local notes", `"theme": "dark"`, "echo user-status", "echo user-stop", "Bash(user-tool *)", "Bash(git checkout *)", "Bash(rm *)", `"defaultMode": "plan"`} {
 		if !strings.Contains(settings, preserved) {
 			t.Fatalf("Claude settings uninstall lost user content %q:\n%s", preserved, settings)
 		}
 	}
 	if strings.Contains(settings, "Bash(devrites-engine ") || strings.Contains(settings, "devrites-engine hook") {
 		t.Fatalf("Claude settings uninstall left DevRites configuration:\n%s", settings)
+	}
+	for _, managed := range []string{"mcp__codegraph__*", "Bash(git diff *)", "Edit(.devrites/**)"} {
+		if strings.Contains(settings, managed) {
+			t.Fatalf("Claude settings uninstall left managed non-engine rule %q:\n%s", managed, settings)
+		}
 	}
 }
 
@@ -1245,7 +1258,7 @@ func writeTestPayload(t *testing.T, root string) {
 	testutil.WriteFile(t, filepath.Join(root, "claude", "settings.json"), `{
   "permissions": {
     "defaultMode": "plan",
-    "allow": ["Bash(devrites-engine check readiness *)"]
+    "allow": ["Bash(devrites-engine check readiness *)", "mcp__codegraph__*", "Bash(git diff *)", "Edit(.devrites/**)"]
   }
 }`+"\n")
 	testutil.WriteFile(t, filepath.Join(root, "codex", "skills", "rite", "SKILL.md"), "codex rite\n")

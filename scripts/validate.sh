@@ -181,6 +181,18 @@ else
   echo "skip: python3 not found"
 fi
 
+# ---- 6d. loads: manifests ------------------------------------------------
+# Every declared file must exist, every trigger must have an activation path
+# (engine signal, `(trigger `name`)` annotation, prose mention, or reserved
+# `agents`), and every role/agent/artifact name must resolve. This turns the
+# dead-trigger and stale-role audit into a permanent gate.
+section "loads: manifest integrity"
+if command -v python3 >/dev/null 2>&1; then
+  if python3 "$ROOT/scripts/check-loads-manifest.py" >${DR_SCRATCH}/dr_loads_manifest 2>&1; then cat ${DR_SCRATCH}/dr_loads_manifest; good "loads: manifests valid"; else cat ${DR_SCRATCH}/dr_loads_manifest; bad "loads: manifest validation failed"; fi
+else
+  echo "skip: python3 not found"
+fi
+
 # ---- 7. broken reference links -------------------------------------------
 section "reference links resolve"
 if command -v python3 >/dev/null 2>&1; then

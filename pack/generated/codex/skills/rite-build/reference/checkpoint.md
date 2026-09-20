@@ -42,6 +42,12 @@ BODY
 
 **Local-only:** never push or let scratch work trigger CI.
 
+After the commit lands, run `devrites-engine check regression <slug> --update`
+to ratchet the workspace progress baseline — the landed slice, newly checked
+acceptance criteria, and resolved questions become the new floor that later
+checks compare against. A `BLOCKED` compare before that ratchet means durable
+facts were lost this cycle; restore or route them before landing the commit.
+
 ## Restore
 After a crash, a fresh session may read the last `WIP(<slug>)` body as crash context.
 Authoritative state remains in `.devrites/`: validate the body against that workspace;

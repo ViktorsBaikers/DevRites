@@ -5,6 +5,10 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/candidate-integrity.md","devrites-lib/reference/standards/testing.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/test-proof-checklist.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/gates.md","devrites-lib/reference/standards/verification-methods.md","rite-prove/reference/acceptance-proof.md","rite-prove/reference/proof-ladder.md","rite-prove/reference/failure-triage.md","rite-prove/reference/test-command-discovery.md","rite-prove/reference/anti-patterns.md","rite-build/reference/checkpoint.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"browser":["devrites-lib/reference/standards/browser-proof-checklist.md","rite-prove/reference/browser-proof.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"observability":["devrites-lib/reference/standards/observability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md","touched-files.md","browser-evidence.md"],"workspaceByRole":{"proof-runner":["spec.md","test-plan.md","tasks.md","evidence.md","touched-files.md","browser-evidence.md","state.md"],"spec-reviewer":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","state.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase prove` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+
+
 # $rite-prove: prove the completed feature
 
 Prove the assembled feature once. No workspace: use `/verify` or `/run`;
@@ -21,10 +25,12 @@ Read the applicable standards: [`testing.md`](../devrites-lib/reference/standard
 [`observability.md`](../devrites-lib/reference/standards/observability.md), topology/data/integration rules named by the plan,
 [`developer-experience.md`](../devrites-lib/reference/standards/developer-experience.md), [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md), [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md), and
 [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md). Developer surfaces require an observed flow, measured
-TTHW, and exact signal-bearing errors; never assert DX.
+TTHW, and exact signal-bearing errors; never assert DX (trigger `devex`).
 
 - Each claim needs an executed positive, discriminating assertion and decisive
-  signal; green commands alone are unproven.
+  signal; green commands alone are unproven. Methods must be genuinely distinct
+  and coverage counted against an explicit denominator — apply
+  [`verification-methods.md`](../devrites-lib/reference/standards/verification-methods.md).
 - Follow [`candidate-integrity.md`](../devrites-lib/reference/candidate-integrity.md). Prove owns proof binding, not candidate
   grammar/hashing. Spec Drift Guard owns revealed contract drift.
 - Root runs vetted gates/browser and records immutable evidence; proof runner
@@ -71,6 +77,13 @@ test changes.
    commands, malformed manifests, zero-test/skipped/filtered behavioral claims,
    exit-status-only claims, and source drift. Static gates prove only their named
    static criterion.
+   Run the acceptance ledger: `devrites-engine gates run <slug>` executes every
+   unmet runnable gate against the same approved preflight rows and records
+   definition-bound evidence; `gates reverify <slug>` re-executes all of them
+   when any prior pass is in doubt. Attest manual gates with `gates attest
+   <slug> <id> <note>` only against observed judgment; an impossible outcome
+   is `gates abandon` plus a handoff, never a deleted row or a false pass.
+   `gates status <slug>` must reduce to `all-met` before Prove records green.
 5. **Gate consumptive actions.** Immediately before execution, apply
    [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md): current retained identity, bounds/sanitization,
    injective boundary map, per-seam fault fixtures, collision mutant, terminal
@@ -116,7 +129,8 @@ test changes.
 ## Phase exit
 
 **Complete when:** every criterion in `acceptance-proof.md` has discriminating
-evidence bound to the current candidate digest, both independent validators admit
+evidence bound to the current candidate digest, `gates status` reduces to
+`all-met` with no handoffs, both independent validators admit
 accounts, and `state.md` records Prove complete with no open `cannot_verify` rows.
 
 **Failing case:** narrative "all tests passed" without `evidence.md` binding and
