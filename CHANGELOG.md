@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.12.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.11.0...v5.12.0) (2026-09-20)
+
+### Added
+
+* **rite:** add machine-checked acceptance and workflow controls ([#80](https://github.com/ViktorsBaikers/DevRites/issues/80)) ([4b72202](https://github.com/ViktorsBaikers/DevRites/commit/4b722020a22c884d044f8782f6e14c946b08c069))
+
 ## [5.11.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.10.2...v5.11.0) (2026-09-16)
 
 ### Added
