@@ -319,20 +319,17 @@ jobs:
         with:
           persist-credentials: false
 
-      # ReFS Dev Drive for the build cache and test temp dirs: Windows NTFS is
-      # the slow part of this job (many small files per test).
+      # ReFS Dev Drive for the Go build cache only (many small files per
+      # compile). Test temp dirs stay on NTFS, the filesystem users run on:
+      # ReFS file IDs made os.SameFile report an unchanged file as changed.
       - name: Set up Dev Drive (windows)
         if: runner.os == 'Windows'
         uses: samypr100/setup-dev-drive@562171fe8df7401fdf582d766cd3b6ab80d5b1a0 # v4.1.0
         with:
           drive-size: 8GB
           trusted-dev-drive: true
-          # Temp dirs point at the drive root: it exists before setup-go's
-          # first `go env`, and Go and the tests create everything below it.
           env-mapping: |
             GOCACHE,{{ DEV_DRIVE }}/go-build
-            TMP,{{ DEV_DRIVE }}
-            TEMP,{{ DEV_DRIVE }}
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
