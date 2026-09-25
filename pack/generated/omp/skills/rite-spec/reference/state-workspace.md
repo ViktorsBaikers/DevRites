@@ -219,6 +219,9 @@ command.
 ## Success definition
 <One sentence that says what "done" means.>
 
+## Asks
+- "<the user's words, verbatim>" → <REQ/AC-ID | Non-goal: reason | q-YYYY-MM-DD-NNN>
+
 ## Route
 Size: <small | standard | large>
 Profile: <quick | standard | full>

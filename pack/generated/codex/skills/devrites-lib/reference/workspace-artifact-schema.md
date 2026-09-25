@@ -53,7 +53,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `test-plan.md` | executable proof commands, preflight/provenance contract, acceptance and interaction coverage | 260 lines |
 | `gates.md` | machine-checked acceptance ledger: one gate per required outcome — runnable `CHECK`/`EXPECT`/`CWD` or manual `EVIDENCE`; engine-bound evidence, `ABANDON:` handoffs | 200 lines |
 | `state.md` | compact cursor table/key-values; no narrative log | 120 lines |
-| `evidence.md` | `EVID-###` command/action, result, timestamp if available, related AC/slice IDs, limitation | 280 lines |
+| `evidence.md` | `EVID-###` command/action, result, timestamp if available, related AC/slice IDs, limitation; behavioral rows add selector, runner counts (collected/ran/passed/failed/skipped), and `attempt n; first: <result>`, with output and exit from one execution | 280 lines |
 | `browser-evidence.md` | UI route/viewports/screenshots/console/network/interactions and Visual Verdict | 220 lines |
 | `drift.md` | `DRIFT-###` spec/plan drift and resolution | 160 lines |
 | `touched-files.md` | sole candidate manifest plus a concern-ordered `## Review trail` of `path:line` stops for human review and Build's deferred late findings (severity · site · role · round) that `$rite-review` must close | 160 lines |

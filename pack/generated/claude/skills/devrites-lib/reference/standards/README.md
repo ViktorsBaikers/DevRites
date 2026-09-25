@@ -31,7 +31,6 @@ topic's owner.
 | `observability.md` | A changed runtime path must be diagnosed in production. |
 | `developer-experience.md` | A public API, CLI, SDK, webhook, config, error, or getting-started surface changes. |
 | `patterns.md` | Choosing or simplifying architecture. |
-| `architecture-health.md` | An audit needs a structural read on the whole codebase — coupling/cohesion/cycle score from a dependency index. |
 | `git-workflow.md` | Preparing commits, branches, tags, or changelog entries. |
 | `hooks.md` | Creating or changing repository hooks. |
 | `ci-cd.md` | Creating or changing a build/deploy pipeline. |

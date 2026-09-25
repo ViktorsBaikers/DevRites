@@ -40,7 +40,8 @@ score and a code index is present, apply
 4. Objective: derive expected behavior independently, apply the role's documented
    discipline, and return one labeled finding per line with `file:line`.
 5. Wait for, validate, and pass the role result to the caller. The root
-   reconciles and decides what to accept.
+   reconciles and decides what to accept. A failed validation, timeout, or empty
+   return reaches the caller as `Outcome: gap` naming the cause — never as no findings.
 
 Use one task per axis. If several axes are requested, keep their inputs separate with
 no cross-pollination; batch or serialize per

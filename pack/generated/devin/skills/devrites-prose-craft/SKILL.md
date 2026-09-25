@@ -46,13 +46,19 @@ In detect-only, report Tier 1A (figurative filler) separately from Tier 1B (word
    Leave tables, YAML frontmatter, URLs, and file paths untouched unless the caller asked to
    change them. Scan for clusters of tells; one isolated marker is not a verdict. Done when
    every claim, constraint, identifier, example, quotation, and deliberate uncertainty is
-   accounted for.
+   accounted for. Admitted reviewer rows (`Finding:`/`Basis:`), `Outcome:`/`Verdict:`
+   lines, counts, and the candidate binding are technical register: skip them, because
+   [`agents.md`](../devrites-lib/reference/standards/agents.md#return-budget) § Return budget
+   (the root never rewrites an admitted row) wins over this skill.
 3. **Rewrite.** Remove P0/P1 tells and P2 when the caller asked for a full pass. Match the
    baseline's vocabulary and cadence without inventing facts, opinions, or quirks. Done when the
    same reader can make the same decisions from the rewrite as from the source.
 4. **Audit.** Compare source and result, read the prose aloud, and run the relevant references
-   below. Done when the preservation contract passes, the technical register remains exact,
-   and no in-scope tell remains.
+   below. Diff severity labels, REQ/AC/finding IDs, counts, verdict words, rankings,
+   order/causality claims, and `file:line` pointers between source and result; any
+   difference fails the pass. Done when the preservation contract passes, the technical
+   register remains exact, and no in-scope tell remains. **Failing case:** a pass turns
+   "3 Important" into "several issues" or upgrades a hedged note to "Critical".
 
 ## References
 

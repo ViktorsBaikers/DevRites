@@ -39,8 +39,7 @@ evidence binding.
 
 A child result is a claim. Admit it only against observations (`git diff
 --name-only`, recorded commands, artifact existence) — never against the
-child's prose. **Failing case:** a wright reports "done" and the parent
-advances without comparing touched paths to the path contract.
+child's prose ([agents.md § Result admission](standards/agents.md#result-admission)).
 
 The complete 17-role catalog and source-writing boundary live in
 [`standards/agents.md`](standards/agents.md). Review-specific applicability

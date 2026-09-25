@@ -101,8 +101,9 @@ If you lose track, `/rite-status` prints the next command.
 
 Every command has four equivalent forms: `/rite <verb>` and `/rite-<verb>` in
 Claude Code, omp, pi, and Devin CLI, and `$rite <verb>` and `$rite-<verb>` in
-Codex. On pi, commands run as prompt templates under `.pi/prompts`, and
-`/skill:rite-<verb>` is equivalent.
+Codex. On pi, commands run as prompt templates under `.pi/prompts`; on omp,
+as command stubs under `.omp/commands`. On both, `/skill:rite-<verb>` is
+equivalent.
 
 ### Shape (steps 1 to 4): agree on what "done" means
 
@@ -289,7 +290,7 @@ Run `npx devrites@latest --help` for common flags and
 | `--dry-run` | Show planned file operations without changing anything. |
 | `--force` | Replace or remove foreign or customized managed files. The installer still rejects symlinks and path escapes. |
 | `--no-codex` | Skip `.agents`, `.codex`, and the Codex `AGENTS.md` block. |
-| `--no-omp` | Skip `.omp` skills and agents. |
+| `--no-omp` | Skip `.omp` skills, agents, and command stubs. |
 | `--no-pi` | Skip `.pi` skills, agents, prompt commands, and the pi `AGENTS.md` block. |
 | `--no-devin` | Skip `.devin` skills, agents, and the Devin `AGENTS.md` block. |
 | `--no-agents` | Skip hook-free native specialist profiles. |
@@ -406,7 +407,7 @@ but does not show that the intended publishing step produced it. See
 | --- | --- | --- | --- | --- |
 | **Claude Code** | `.claude/skills/` | `.claude/agents/` | Native root permissions merged into `.claude/settings.json` | `/rite-spec` |
 | **Codex** | `.agents/skills/` | `.codex/agents/` | Permissions in `.codex/config.toml`, marked block in `AGENTS.md` | `$rite-spec` or `/skills` |
-| **omp** | `.omp/skills/` | `.omp/agents/` | | `/rite-spec` |
+| **omp** | `.omp/skills/` | `.omp/agents/` | Command stubs in `.omp/commands/` | `/rite-spec` or `/skill:rite-spec` |
 | **pi** | `.pi/skills/` | `.pi/agents/` | Prompt commands in `.pi/prompts/`, marked block in `AGENTS.md` | `/rite-spec` or `/skill:rite-spec` |
 | **Devin CLI** | `.devin/skills/` | `.devin/agents/` | Marked block in `AGENTS.md` | `/rite-spec` |
 

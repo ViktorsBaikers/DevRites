@@ -113,6 +113,24 @@
       "rationale": "Conversation handoff is handoff (and /rite-handoff).",
       "owner": null,
       "owner_rationale": "Conversation handoff is handoff (and /rite-handoff). The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Specify the CSV export feature for the billing page.",
+      "expected": "should_not_trigger",
+      "owner": "rite-spec",
+      "rationale": "A named feature to specify goes to spec; interview is for intent that cannot yet be named."
+    },
+    {
+      "text": "Fix the flaky login thing, whatever that means for done.",
+      "expected": "should_not_trigger",
+      "owner": "rite-frame",
+      "rationale": "One imperative task whose outcome/done check is unnamed is framed, not interviewed."
+    },
+    {
+      "text": "The spec is complete; audit it for missing decisions before we temper.",
+      "expected": "should_not_trigger",
+      "owner": "rite-clarify",
+      "rationale": "A completed spec.md is audited by clarify."
     }
   ]
 }

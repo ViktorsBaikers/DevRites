@@ -115,6 +115,12 @@
       "rationale": "handoff owns conversation compaction for handoff.",
       "owner": null,
       "owner_rationale": "handoff owns conversation compaction for handoff."
+    },
+    {
+      "text": "devrites-engine says the pack hooks are missing after the install; check the DevRites setup.",
+      "expected": "should_not_trigger",
+      "owner": "rite-doctor",
+      "rationale": "The failed artifact is DevRites install/host configuration, not the product."
     }
   ]
 }

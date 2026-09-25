@@ -66,6 +66,8 @@ Load this lane's conditional standards when needed:
 4. **Prove (scoped).** Run the **targeted** tests + typecheck / lint for what changed (not
    the whole suite) → green. Record the command + output — resolve the project's real
    typecheck/lint commands with `devrites-engine detect commands` rather than guessing.
+   Engine missing or erroring, or zero detected commands for the changed surface:
+   stop with `unproven: <what could not run>`, never green and never a guessed command.
    A tautological test that can't
    fail is not proof.
 5. **Review-lite + ship.** Self-review the diff for correctness, scope, and idiom. If

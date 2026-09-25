@@ -5,7 +5,7 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/candidate-integrity.md","devrites-lib/reference/standards/testing.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/test-proof-checklist.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/gates.md","devrites-lib/reference/standards/verification-methods.md","rite-prove/reference/acceptance-proof.md","rite-prove/reference/proof-ladder.md","rite-prove/reference/failure-triage.md","rite-prove/reference/test-command-discovery.md","rite-prove/reference/anti-patterns.md","rite-build/reference/checkpoint.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"browser":["devrites-lib/reference/standards/browser-proof-checklist.md","rite-prove/reference/browser-proof.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"observability":["devrites-lib/reference/standards/observability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md","touched-files.md","browser-evidence.md"],"workspaceByRole":{"proof-runner":["spec.md","test-plan.md","tasks.md","evidence.md","touched-files.md","browser-evidence.md","state.md"],"spec-reviewer":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","state.md"]}} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/candidate-integrity.md","devrites-lib/reference/standards/testing.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/test-proof-checklist.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/gates.md","devrites-lib/reference/standards/verification-methods.md","rite-prove/reference/acceptance-proof.md","rite-prove/reference/proof-ladder.md","rite-prove/reference/failure-triage.md","rite-prove/reference/test-command-discovery.md","rite-prove/reference/anti-patterns.md","rite-build/reference/checkpoint.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"browser":["devrites-lib/reference/standards/browser-proof-checklist.md","rite-prove/reference/browser-proof.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"observability":["devrites-lib/reference/standards/observability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md","touched-files.md","browser-evidence.md"],"workspaceByRole":{"proof-runner":["spec.md","test-plan.md","tasks.md","gates.md","evidence.md","touched-files.md","browser-evidence.md","state.md"],"spec-reviewer":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","state.md"]}} -->
 > Read-set manifest: `devrites-engine context <slug> --phase prove` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -72,16 +72,24 @@ test changes.
 4. **Execute a frozen candidate.** Run `devrites-engine check candidate <slug>` and retain its digest.
    The root runs only commands declared by `test-plan.md`, with exact approved
    command, cwd, prerequisites, exit, and sanitized
-   decisive output. Run relevant suite plus build/typecheck/lint. Recheck the
+   decisive output, plus the test selector, runner counts
+   (collected/ran/passed/failed/skipped), and attempt number with first-attempt
+   outcome; output and exit come from one execution. Run relevant suite plus build/typecheck/lint. Recheck the
    candidate and require identical digest/no source mutation. Reject substituted
    commands, malformed manifests, zero-test/skipped/filtered behavioral claims,
-   exit-status-only claims, and source drift. Static gates prove only their named
+   exit-status-only claims, status-masking forms, and source drift. A retry-only
+   pass is `flaky` per [`testing.md`](../devrites-lib/reference/standards/testing.md#determinism-no-flaky-tests),
+   never green. Static gates prove only their named
    static criterion.
    Run the acceptance ledger: `devrites-engine gates run <slug>` executes every
    unmet runnable gate against the same approved preflight rows and records
    definition-bound evidence; `gates reverify <slug>` re-executes all of them
    when any prior pass is in doubt. Attest manual gates with `gates attest
-   <slug> <id> <note>` only against observed judgment; an impossible outcome
+   <slug> <id> <note>` only against observed judgment whose note cites the
+   human's own words or source; placeholder notes are unmet and an AFK run never
+   self-attests. Only gates manual at Vet are attested; runnable-to-manual
+   conversion, EXPECT loosening, or CHECK/CWD/row change here is Plan repair plus
+   re-Vet ([`gates.md`](../devrites-lib/reference/standards/gates.md)). An impossible outcome
    is `gates abandon` plus a handoff, never a deleted row or a false pass.
    `gates status <slug>` must reduce to `all-met` before Prove records green.
 5. **Gate consumptive actions.** Immediately before execution, apply

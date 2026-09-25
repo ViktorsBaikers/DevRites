@@ -2,7 +2,7 @@
 
 HITL slices pause **pre-action** as a ranked **option set** before any code:
 
-- **Interactive:** `AskUserQuestion`; record to `questions.md`/`decisions.md`; clear gate;
+- **Interactive:** `ask`; record to `questions.md`/`decisions.md`; clear gate;
   continue in place (no `/rite-resolve` round-trip).
 - **Absent / AFK / notify-only:** persist open question + `Awaiting human`, notify, **stop**.
   Resume via `/rite-resolve` (or `--batch`).
@@ -14,7 +14,7 @@ observer.
 
 ### User-facing render: the option set
 
-Present as `AskUserQuestion` ranked **option set** ([`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)): 2–4 options,
+Present as `ask` ranked **option set** ([`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)): 2–4 options,
 recommended first + `(Recommended)`, dimension-tagged trade-offs, plus escape hatch.
 Header names slice + gate:
 
@@ -52,22 +52,14 @@ rewrite; do not claim cross-file atomicity):
    raised_at: <iso>
    ```
 
-2. **`state.md` updates:**
-
-   ```markdown
-   - Status: awaiting_human
-   - Active slice: <N — name>
-   - Slice mode: HITL
-   - Next step: /rite-resolve <qid> "<answer>"
-
-   ## Awaiting human
-   - qid: <q-...-NNN>
-   - gate: <gate>
-   - question: <Checkpoint text>
-   - proposed: <one-paragraph best-guess>
-   - raised_at: <iso>
-   - blocking_slices: [<list, from `Blocked by` lookups>]
-   ```
+2. **`state.md` updates:** cursor `status` = `awaiting_human`, `active_slice` =
+   `<N — name>`, `slice_mode` = `HITL`, `next_action` = `/rite-resolve <qid> "<answer>"`;
+   then the `Awaiting human` table (`question_id`, `gate`, `blocking_slices` from
+   `Blocked by` lookups) per its owner,
+   [`state-workspace.md`](../../rite-spec/reference/state-workspace.md#statemd-template) § state.md template.
+   Question text, `proposed`, and `raised_at` stay in the step 1 entry. Legacy
+   `- Status:`/`- Next step:`/`- qid:` bullets are engine-accepted aliases, not the
+   authoring format.
 
 3. **`notify:` hook (if `.devrites/AFK` defines one):** export all six env vars from the
    canonical contract in [`afk-discipline.md`](afk-discipline.md) (the `notify:` hook

@@ -86,7 +86,8 @@ Pull these via `Read` when the diff demands them:
    what the spec asked but breaks project conventions (Spec pass, Code-review fail).
    Separate contexts prevent one axis from masking the other. This is the initial
    full pass; a correction uses step 7's bounded recheck:
-   - Freeze that closed digest and give the same digest to **two** read-only reviewers in
+   - Freeze that closed digest and give the same digest to the **two** axis reviewers (three when
+     [engineering lanes](../devrites-lib/reference/parallel-dispatch.md) split the code axis) in
      parallel, each with its own narrow brief and no
      cross-pollination — and evaluate the frontend (step 4), security (step 5),
      and performance (step 6) dispatch conditions from this same diff now,
@@ -103,6 +104,8 @@ Pull these via `Read` when the diff demands them:
        checks. Apply canonical anti-slop and silent-failure lenses; inspect each hunk
        for unrequested deletion. Unexcepted `.devrites/principles.md` violations are
        Critical. Distinguish binding standards from judgment-only baseline smells."
+       Route it through [parallel-dispatch.md § Engineering lanes](../devrites-lib/reference/parallel-dispatch.md#engineering-lanes):
+       a frontend+backend diff gets two lane reviewers in this cohort.
    - **Do NOT merge or re-rank** their findings. Present them under separate
      `## Spec` and `## Code review` sub-sections in `review.md`. Surface contradictions
      between the axes explicitly (e.g. "Spec axis says complete, Code-review axis says

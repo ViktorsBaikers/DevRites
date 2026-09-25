@@ -83,6 +83,12 @@ exhausted.
   Do not stop on `--max-slices`, `max_agents`, `max_minutes`, or `max_review_queue`.
 - **Confidence:** intent still cannot become testable acceptance after interview.
 - **Repeated failure:** the exact fingerprint's bounded recovery is exhausted.
+- **Resolver failure:** `devrites-engine state resolve` not found, or nonzero exit.
+  Never hand-edit `questions.md`/`state.md` in its place. Not found stops at once;
+  nonzero allows one identical re-run (the fingerprint is command + exit code +
+  decisive stderr line; an unchanged re-run is not a correction, so no further
+  attempts). Then stop `blocked` with the exact command, exit code, and stderr line,
+  and resume action `/rite-doctor`.
 
 ## Final GO and durable stop
 

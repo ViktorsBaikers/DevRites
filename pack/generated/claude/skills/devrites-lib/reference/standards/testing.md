@@ -64,6 +64,16 @@ discriminates the required result.
 
 - **Preserve producer failure.** `test-command | tail` may hide a failed producer. Require
   upstream-failure semantics or separately check its status; truncated output is not a pass.
+  The same holds for status-masking forms (`|| true`, `; true`, `set +e` without a final
+  status check, `--passWithNoTests`, `--if-present`, `--exit-zero`, keep-going without a
+  final status, CI `continue-on-error`): they prove no criterion unless `test-plan.md`
+  names a separate status check. Exit 0 with printed failures, or nonzero exit reporting
+  zero failures, has status `failed` and never result `pass`.
+- **No manufactured green.** A run proves only targets it executed on its first
+  attempt on that candidate digest: snapshot/golden update mode, only-changed or one shard offered as whole-suite
+  proof, and a [retry-only pass](#determinism-no-flaky-tests) prove nothing. A baseline
+  the candidate created stays `unverified` until opened and compared against the spec.
+  **Failing case:** a fix runs the visual suite in update mode and Prove reports green.
 - **No tautologies.** Defined/non-null passes for almost anything; assert exact value, error,
   state change, row, or event.
 - **Don't assert the mock.** A test that stubs a dependency to return `X` then asserts `X` came
@@ -81,6 +91,10 @@ discriminates the required result.
 - **Coverage says "ran"; mutation says "checked".** Line coverage proves a line executed, not
   that a test would catch it breaking. Where the project has a mutation runner,
   use its documented command; a surviving mutant is a behaviour no test checks.
+  Record the evaluated-mutant count: zero evaluated, or a run cut by budget or timeout,
+  is `failed`. A surviving mutant is not proof of dead code: deleting the guarded code
+  needs an input-contract reachability argument, otherwise add the test that reds it.
+  **Failing case:** polish deletes a cancellation guard whose mutant survived.
 
 ### Falsifiable checks and goldens
 
@@ -145,6 +159,13 @@ standing as an untested element or an unproven acceptance criterion. A source
 change with no test-file delta is a pointer to run this trace, never a verdict
 on its own.
 
+A change declared **behavior-preserving** (refactor, simplification) expects no red
+first. Prove it by comparing old and new results through the public seam (write a
+characterization test first when no discriminating test reaches the code), plus one
+perturbation of the shared seam that reds a caller-side test. "All tests pass" over code
+no test reaches proves nothing. **Failing case:** a refactor of an untested parser passes
+the suite and changes its empty-input output.
+
 ## DAMP over DRY in tests
 Test code optimizes for a different reader than production code: someone staring at a failure who
 needs the whole scenario in front of them. A test should read like a spec: arrange, act, assert,
@@ -180,6 +201,14 @@ Select cases from the accepted spec and applicable standards, not a generic coun
 - Multi-root/service work applies [`repository-topology.md`](repository-topology.md):
   provider and consumer both consume the canonical contract and run from their proven
   roots. One member's green suite cannot prove another member.
+- Any serialized boundary the diff changes (HTTP, event, queue, stored payload), even in
+  one root, needs a test that crosses it. A type shared by both sides proves compile-time
+  agreement only: prove the serialized value (dates, int64 beyond 2^53, decimals, absent
+  vs `null`, an unknown enum from a newer producer) through the real encoder and decoder.
+  A contract-test pass proves its recorded interactions only, never end-to-end behavior,
+  authorization, extra fields, or side effects; run schema-driven fuzzers only against a
+  disposable target under external-write approval. **Failing case:** a shared
+  `createdAt: Date` compiles on both sides while the client receives a string.
 - Compatibility/delivery work drives both feature-flag states and old/new caller or
   schema combinations. Migration-before-code and code-before-migration order each need a
   declared expected result.
@@ -208,6 +237,13 @@ Dismiss an irrelevant case with a reason; silently omitting an applicable case i
 - A flaky test is a broken test. Isolate and fix it immediately; don't paper over it with
   retries or `sleep`. **Failing case:** a known-flaky test is left with retries so the
   suite is paper-green at Prove/Seal → NO-GO.
+- **A retry-only pass is `flaky`, never green.** A pass earned by rerun on an unchanged
+  candidate digest (no admitted correction between attempts), or by a runner retry
+  setting, is `flaky`: record every attempt with the first attempt's outcome. It never
+  closes an AC, never replaces the failed attempt as proof, and routes to failure
+  triage. A diff that adds or raises runner retries is a test-integrity finding.
+  **Failing case:** run 1 exits 1, an unchanged rerun exits 0, `check candidate`
+  digests match, and `evidence.md` records green.
 - Mock/stub external services so tests are predictable and fast. Use stable selectors in
   UI tests, not brittle positional ones.
 - No hidden shared state or order-dependence between tests.

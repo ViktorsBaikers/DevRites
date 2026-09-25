@@ -93,6 +93,8 @@ def main():
                 f"claude/skills/{name}/SKILL.md",
                 f"codex/skills/{name}/SKILL.md",
                 f"pi/skills/{name}/SKILL.md",
+                f"omp/skills/{name}/SKILL.md",
+                f"omp/commands/{name}.md",
                 f"pi/prompts/{name}.md",
                 f"devin/skills/{name}/SKILL.md",
             ]:

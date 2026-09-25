@@ -4,7 +4,7 @@ Contract WHAT users get, WHY, success, and scope. HOW belongs in `plan.md`,
 topology in `architecture.md`/`flows.md`, coverage in `traceability.md`.
 
 Use `[NEEDS CLARIFICATION: <question>]` (blocking stops `/rite-clarify`); before readiness
-every surviving marker converts to a gated `Q-###` open question ([`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md) §
+every surviving marker converts to a gated `q-YYYY-MM-DD-NNN` open question (released `Q-###` kept) ([`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md) §
 Unresolved-question markers — fail closed). Stable `REQ-001`/`AC-001` IDs; link, never
 duplicate, source artifacts; over-budget requires `Budget override: <reason>`.
 
@@ -135,10 +135,12 @@ status routes Define/Vet/Build/Prove to the named standard without copying it he
 ## Open questions
 | Question ID | Gate | Question | Impact |
 | --- | --- | --- | --- |
-| Q-001 | blocking | [NEEDS CLARIFICATION: <question>] | AC-001 |
+| q-YYYY-MM-DD-NNN | blocking | <question text, no marker> | AC-001 |
 
 ## Readiness gate
 - [ ] No blocking clarification or open `blocking`/`escalating` question; REQ/AC IDs are valid and ACs independently provable.
+- [ ] `marker sweep:` recorded with zero kept hits (spec-grammar § Unresolved-question markers).
+- [ ] Every verbatim ask in `brief.md` `## Asks` maps to REQ/AC, a reasoned Non-goal, or a blocking question.
 - [ ] Stakeholder conflicts/priority rules, constraints, and invariants are explicit;
       implementation preferences are not disguised as requirements.
 - [ ] Existing affected behavior maps to preserving REQ/AC + current evidence, or uses the exact justified greenfield `none`.

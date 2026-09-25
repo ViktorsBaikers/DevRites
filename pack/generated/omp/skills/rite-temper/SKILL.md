@@ -90,7 +90,7 @@ the spec applicability map triggers that risk family.
    **Completion:** all nine dimensions have cited evidence, a band, and one explicit floor verdict.
 5. **Review human-owned findings with the human; do not batch them.** `strategy.md`
    records the interactive review but does not replace it. Present each material scope decision through
-   `AskUserQuestion`, one at a time, best-guess + **why**. Each material scope call ends as a
+   `ask`, one at a time, best-guess + **why**. Each material scope call ends as a
    **recorded decision**: a resolved `questions.md` qid (HITL) or a `decisions.md` ADR (AFK):
    so the review leaves an auditable record outside chat. (AFK gate policy —
    [`reference/significance.md`](reference/significance.md) — autocomplete applies

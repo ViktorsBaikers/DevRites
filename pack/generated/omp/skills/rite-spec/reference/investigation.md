@@ -58,7 +58,7 @@ delta are gaps. Resolve them before `/rite-define`. Mark each gap inline with
 For each material gap or issue that changes scope, placement, data model, UX, security,
 migration risk, or acceptance, **ask the human** one gap at a time with a ranked
 option set with the recommended option **first and marked `(Recommended)`** plus an escape
-hatch (via `AskUserQuestion` in HITL):
+hatch (via `ask` in HITL):
 ```
 <gap/issue stated in one line>. Why it matters: <...>
 1. <recommended option> (Recommended) — <implication / where it places the work; cite any web/docs finding>

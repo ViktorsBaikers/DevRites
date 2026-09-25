@@ -28,7 +28,7 @@
    and the [`review roster`](../../devrites-lib/reference/parallel-dispatch.md) on
    the candidate. Admit each result through
    [`result admission`](../../devrites-lib/reference/standards/agents.md#result-admission).
-   `## Reviewer Accounts` preserves all seven; gap/missing/malformed blocks;
+   `## Reviewer Accounts` preserves all seven roles, each engineering lane as its own account; gap/missing/malformed blocks;
    conditional `Not-applicable` names why.
 7. **Route corrections.** Reconcile cited findings/disagreements, but do not
    edit the candidate or manifest in Seal. Route an accepted correction through

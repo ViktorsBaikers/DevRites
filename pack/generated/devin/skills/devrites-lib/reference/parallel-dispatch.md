@@ -57,15 +57,21 @@ If the candidate diff has no matching surfaces, record
 4. Ask for each exact named agent in fresh context; omit native syntax and
    `agent_type`/`task_name`/`fork_turns` from the instruction.
 5. Every dispatch reaches a terminal classification before reconciliation:
-   `Outcome: findings`, `Outcome: no-findings`, `Outcome: gap`, or
-   `unavailable: <reason>` when the step could not run at all. Reconciling over a
-   partial roster is forbidden; an unavailable conditional step is recorded with its
-   marker in `review.md`/`seal.md` — an omitted sub-step reads as a clean run.
+   `Outcome: findings`, `Outcome: no-findings`, `Outcome: gap`, or — for a
+   conditional step that could not run at all — its NOT-RUN marker recorded in
+   `review.md`/`seal.md` per [core.md § Gate contract](standards/core.md#gate-contract);
+   an unavailable required role stops for HITL. Reconciling over a partial roster
+   is forbidden. Admit one account per role label per candidate: only the return
+   bound to the sealed wave's handle counts; a double delivery or a return from an
+   abandoned or re-issued wave is recorded `duplicate`/`stale`, never as a second
+   account or corroboration. **Failing case:** abandoned-wave and re-dispatched
+   code-reviewers both return, and "two reviewers agree" dismisses a spec finding.
    Findings later withdrawn at reconciliation stay visible: the account records
    `withdrawn: <n> (<reason>)` rather than silently dropping them.
 6. Apply [[`agents.md`](standards/agents.md) § Result admission](standards/agents.md#result-admission)
    and dedupe by evidence/root cause. Account for all seven in
-   `review.md`/`seal.md`: `Outcome:` plus admitted account, or
+   `review.md`/`seal.md`, each [engineering lane](#engineering-lanes) separately:
+   `Outcome:` plus admitted account, or
    `Not-applicable: <inspected-scope reason>`. Spec/Code may cite valid unchanged
    `review.md` under [evidence validity](candidate-integrity.md#evidence-validity); persist no dispatch telemetry.
 7. Missing profile, null/failure, or malformed output is a `gap`; never
@@ -75,6 +81,41 @@ On exhaustion/contention: stop spawning; collect running results; batch/serializ
 Never restart/orphan the cohort or infer approval. Reviewers are read-only;
 accounts store evidence, never telemetry. Same-file writers stay serial.
 Capacity rejection is backpressure: retry batches; never shrink a roster.
+
+## Engineering lanes
+
+Classify each changed path by the runtime it executes in — from entry points, build
+targets, and the import graph, never filename or language: `frontend`
+(client-rendered, browser, or native UI runtime), `backend` (server, worker, CLI, or
+data runtime), `boundary` (a serialized contract between them), or `other` (build
+tooling, libraries, game engines: own profile, no forced split; native app UI is
+`frontend`). Record the lane map
+in `review.md`/`seal.md`.
+
+- **Frontend and backend both changed:** dispatch `devrites-code-reviewer` twice in
+  the same wave (`dispatch open ... --role code-reviewer.frontend --role
+  code-reviewer.backend`; distinct handles — the sealed wave's handles and start
+  stamps are the concurrency receipt). Build each bundle with `devrites-engine
+  context <slug> --phase <p> --role code-reviewer --trigger <set> --out
+  ctx/<p>-code-reviewer.<lane>.bundle.md`; the default name collides. Each packet
+  names its lane, the lane's path set (the whole diff stays readable for context),
+  the triggered profile ([`review/README.md`](standards/review/README.md)), and the
+  contracts crossing the lane. Otherwise one code-reviewer, lane recorded.
+- **Reconcile per contract:** each lane returns `Contract:` rows; root pairs both
+  sides of each contract. A contract assessed from one side only is a `gap`; a
+  missing crossing test is Important.
+- **Accounting:** each lane is its own account; a combined verdict never hides a
+  failed or unassessed lane, and a blocked question on one lane does not stop the
+  other. A mixed file may be reviewed by both lanes; writes stay with one wright.
+  `devrites-frontend-reviewer` (craft/a11y) supplements, never substitutes, the
+  frontend lane.
+- **Capacity:** temporary backpressure keeps the batch rule above. If the host
+  cannot launch concurrent children at all, record `lane-concurrency: unavailable
+  <reason>` and ask the user once before dispatching lanes serially; record the
+  answer in `decisions.md`.
+
+**Failing case:** one code-reviewer covers a full-stack diff from the handler side;
+the client renames a field its mocked test still passes, and the verdict reads clean.
 
 ## Cancellation and terminal reconciliation
 
@@ -87,11 +128,22 @@ reuse its resources while it may still run. If terminal state cannot be
 established, record a gap and retain ownership. A result classification alone
 does not prove host termination.
 
+On resume (compaction or a new session), run `devrites-engine dispatch <slug>
+status`, `parallel status`, and `claim list --all` before any dispatch. A read-only
+wave whose handles this session cannot query: `abandon` it, record each unreturned
+role `gap`, and re-dispatch fresh on the current digest; its late returns are
+`stale`. A writer keeps its claim and lease — no relaunch on those paths until the
+claim is released or its holder is proven terminal. A wright that never returned an
+admitted result leaves unadmitted bytes: task-path changes since its pre-dispatch
+`git diff --name-only` baseline are never cited as built nor discarded, and are
+named in the re-dispatch contract; changes outside task paths stop for the human
+(Converge side: [`rite-converge`](../../rite-converge/SKILL.md)).
+
 ## Scale limits
 
-The role table bounds rosters. Use roughly four concurrent read-only reviewers;
-eight only with disjoint paths/resources. Refuse unbounded swarms and role
-substitution: sharpen scope or use a bounded second pass when coverage is missing.
+The role table bounds rosters. Use roughly four concurrent read-only reviewers,
+counting children any leaf spawned; eight only with disjoint paths/resources.
+Refuse unbounded swarms and role substitution: sharpen scope or use a bounded second pass when coverage is missing.
 Overlapping reviewers increase duplicate findings and reconciliation work.
 
 ## Children are tools, not peers

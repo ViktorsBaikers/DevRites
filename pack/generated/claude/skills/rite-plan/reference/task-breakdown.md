@@ -38,6 +38,12 @@ This reference owns decomposition; the shared schema owns field names and meanin
   called `clearLayers()` in slice 3 and `clearFullLayers()` in slice 7 is a planning bug:
   name shared symbols once, here.
 - Don't pre-write code in the task: describe the outcome, not the implementation.
+- **Read the fields, not the title.** A slice fails Vet (`kind: contract`, Important, field
+  quoted) when its `Goal` or `Done condition` names an activity instead of an observable end
+  state ("implement backend", "add tests", "handle errors", "wire up UI"); when a no-op or
+  wrong diff could meet the `Done condition` ("tests pass", "works correctly"); or when
+  `Tests/proof` names no specific test or assertion ("run the suite"). **Failing case:**
+  `Goal: Implement export backend · Done condition: tests pass · Tests/proof: go test ./...`.
 - Don't bundle "while we're here" work into a slice. That's scope creep; log it as a
   follow-up instead.
 - Don't slice to a target number: the count comes from the capabilities + the sizing

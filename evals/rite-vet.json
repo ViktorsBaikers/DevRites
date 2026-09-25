@@ -111,6 +111,12 @@
       "rationale": "A trivial edit, not a plan review.",
       "owner": null,
       "owner_rationale": "A trivial edit, not a plan review."
+    },
+    {
+      "text": "Is this spec over-building? Pre-mortem the scope before we plan anything.",
+      "expected": "should_not_trigger",
+      "owner": "rite-temper",
+      "rationale": "The subject is spec premise/scope with no plan yet; never vet."
     }
   ]
 }

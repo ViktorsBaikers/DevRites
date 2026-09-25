@@ -55,7 +55,8 @@ might miss.
 - **Screen reader:** every control has a name; live regions for async
   feedback; reading order matches visual order.
 - **Reduced motion:** `prefers-reduced-motion` removes non-essential motion
-  (no auto-carousel, no spring entrances).
+  (no auto-carousel, no spring entrances); auto-moving content over 5 s pauses under any
+  preference ([`quality-standards.md`](../../devrites-frontend-craft/reference/quality-standards.md) § Motion).
 - **High zoom:** 200% text zoom; layout doesn't break, nothing overflows.
 
 ## 4. Localisation / i18n

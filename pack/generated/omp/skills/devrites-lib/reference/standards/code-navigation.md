@@ -11,7 +11,7 @@ Review.
 | Question | First tool | Fallback |
 | --- | --- | --- |
 | Explore unfamiliar area, architecture, blast radius | `codegraph_explore` or codebase-memory `search_graph` / `get_architecture` | code-review-graph `detect_changes_tool` / `get_impact_radius_tool` |
-| Callers, callees, data flow across files | codebase-memory `trace_path` | code-review-graph `query_graph_tool` |
+| Callers, callees, call paths across files (value/taint flow: [`tooling.md`](tooling.md) route table) | codebase-memory `trace_path` | code-review-graph `query_graph_tool` |
 | PR/review context for a diff | code-review-graph `get_review_context_tool` | `detect_changes_tool` |
 | Exact symbol body before edit | `read_symbol` / `module_report` (pi-lens) | `get_code_snippet` then targeted `Read` |
 | Rename, references, diagnostics | LSP (`lsp` rename/references) when available | graph trace + grep |
@@ -29,7 +29,13 @@ Review.
 3. After edits: LSP diagnostics + project tests. Compiler errors are the oracle
    for callers the graph listed — fix them in dependency order, direct
    dependents first. Errors absent from the list mean the list was incomplete
-   (see blind spots below); record the gap.
+   (see blind spots below); record the gap. Diagnostics count only when bound to the
+   current bytes: the server received the post-edit sync or save, the project is loaded
+   and ready, and the file is within its size limits. A `0` from a cold, not-ready, or
+   oversized server, a pre-edit result, or a timed-out probe is `stale` (or `unavailable:
+   <reason>` when none ran), never clean; fall back to the project typecheck/compile command. **Failing case:**
+   the language server returns 0 diagnostics before the project finishes compiling and
+   the slice records "diagnostics clean".
 
 Skipping step 1 on a multi-file slice is a Build orient gap unless recorded
 `cannot_verify`.

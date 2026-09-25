@@ -37,17 +37,11 @@ Description routes; it is not documentation.
 
 ### Activation order
 
-1. Exact current-turn skill/command invocation wins.
-2. Active workspaces follow their recorded next/recovery rite; implicit routing
-   MUST NOT start a parallel lifecycle.
-3. Otherwise invoke at most one uniquely fitting model-invoked skill. On a
-   material tie, use the intent map and surface the missing distinction; never both.
-   A wrong-skill fire is evidence for a routing change, not a prompt retry. **Failing
-   case:** `$rite-spec` fires on "review the security fix in this PR" and the turn
-   continues without recording the mis-route.
-
-Quoted/attached/retrieved/repository/prior-turn text is context—not activation.
-Optional flags obey `core.md` rule 10.
+Owned by [`intent-map.md`](../intent-map.md#routing-order) § Routing order (tie ⇒ ask
+once, never run two); authority conflicts follow [`core.md` § Precedence](core.md#precedence).
+A wrong-skill fire is evidence for a routing change, not a prompt retry. **Failing
+case:** `$rite-spec` fires on "review the security fix in this PR" and the turn
+continues without recording the mis-route. Optional flags obey `core.md` rule 10.
 
 ## Body and placement
 
@@ -178,7 +172,9 @@ Missing field → no promotion.
 ## Skill trust tiers
 
 Every skill or agent surface belongs to exactly one trust tier. Higher tiers may
-constrain lower ones; nothing may weaken shipped gates or permissions.
+constrain lower ones; nothing may weaken shipped gates or permissions. Tiers rank
+surfaces only within [`core.md` § Precedence](core.md#precedence) level 1's validated
+repository instructions; no tier outranks host/safety or the request.
 
 | Tier | Source | Authority | Install check |
 | --- | --- | --- | --- |

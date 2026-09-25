@@ -55,9 +55,10 @@ before coding. **Ask before coding if the visual direction or UX flow is still a
 ## 5. Verify & record (meet the bar)
 - Hit the [2026 quality bar](reference/quality-standards.md): Core Web Vitals
   (LCP ≤2.5s / INP ≤200ms / CLS ≤0.1), WCAG 2.2 AA (keyboard, visible focus, contrast,
-  ≥24px targets / 44px touch, no drag-only), responsive at 320/768/1024/1440, Browser
-  chrome (themed selection/caret/scrollbar/focus — not UA defaults), and run
-  its verification gate (no console errors, no axe violations, all states).
+  ≥24px targets / 44px touch, no drag-only), responsive at 320/768/1024/1440, visible
+  focus meeting SC 2.4.7/1.4.11 (browser-chrome theming is an optional design-system
+  choice), and run its verification gate (no console errors, no axe violations;
+  `incomplete` rows resolved as manual rows; every role-applicable state).
 - Run the **visual convergence loop** in the browser (using `devrites-browser-proof`; deltas land in its Visual Verdict scorecard): render the
   slice's named states/viewports/input modes, open the screenshots, compare them with the
   brief + target R-ids, record material deltas, fix, and re-render until none remain. A

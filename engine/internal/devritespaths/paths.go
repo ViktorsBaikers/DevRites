@@ -21,6 +21,7 @@ const (
 	ClaudeAgentsTarget    = ".claude/agents"
 	CodexAgentsTarget     = ".codex/agents"
 	OmpAgentsTarget       = ".omp/agents"
+	OmpCommandsTarget     = ".omp/commands"
 	PiAgentsTarget        = ".pi/agents"
 	DevinAgentsTarget     = ".devin/agents"
 	PiPromptsTarget       = ".pi/prompts"

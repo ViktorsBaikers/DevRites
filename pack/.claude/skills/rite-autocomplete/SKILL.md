@@ -116,7 +116,8 @@ executable controller/harness/bundle bytes or a missing writer, read
    recommended option, remaining NO-GO, or the exact fingerprint's proven
    exhaustion. An open blocking question that already names a ranked recommended
    option (`proposed` or option 1 labelled Recommended) auto-resolves through
-   `devrites-engine state resolve` and continues; do not emit `/rite-resolve` as
+   `devrites-engine state resolve` and continues (a missing or failing resolver is
+   the bounded resolver-failure stop); do not emit `/rite-resolve` as
    a user handoff. Technical exhaustion records terminal
    `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
 6. **Seal boundary.** Without a ship flag, stop at Seal GO with `/rite-ship` —

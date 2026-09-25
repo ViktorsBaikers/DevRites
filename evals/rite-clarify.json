@@ -203,6 +203,12 @@
       "expected": "should_not_trigger",
       "owner": "rite-explain",
       "rationale": "Workflow explanation belongs to rite-explain."
+    },
+    {
+      "text": "I have no spec yet and am unsure what I want; ask me questions one at a time.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-interview",
+      "rationale": "No completed spec.md exists, so interview owns it."
     }
   ]
 }

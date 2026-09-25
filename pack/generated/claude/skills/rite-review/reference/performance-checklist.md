@@ -37,6 +37,11 @@ Identify the framework first; apply only its idioms.
   handlers, but preserve sensitive-data cache policy: `Cache-Control: no-store`
   eligibility varies by browser and conditions. Never remove a security control
   for a performance score; test account-switch and restored-page behavior.
+- **CLS attribution:** name the initiator (content inserted above, late
+  validation message, font swap), not only the shifted element, and exercise the
+  post-load state; a navigation-only run misses it. A CLS change is layout stability,
+  never reported as speed or latency. **Failing case:** space reserved on the shifted
+  card while the banner inserted above still causes the shift.
 
 ## Backend (every feature, UI or not)
 
@@ -62,7 +67,10 @@ Identify the framework first; apply only its idioms.
 ## AI-codegen perf smells (fold into the area above, not a separate finding category)
 
 - State duplicated instead of lifted; effects with over-broad deps that re-run needlessly.
-- Sequential `await`s where `Promise.all` / parallel fetch fits.
+- Sequential `await`s where `Promise.all` / parallel fetch fits, only after
+  authorization: a reorder never starts a private fetch before the auth check.
+  **Failing case:** after a "waterfall fix" an unauthenticated request reaches the
+  private fetch → Critical.
 - Over-fetching "just in case"; redundant calls a dedup would collapse.
 - Defensive memoization wrapping cheap components: cost with no benefit.
 

@@ -113,6 +113,12 @@
       "rationale": "Off-topic.",
       "owner": null,
       "owner_rationale": "Off-topic."
+    },
+    {
+      "text": "Plan.md and tasks.md are defined; review the implementation plan before we code.",
+      "expected": "should_not_trigger",
+      "owner": "rite-vet",
+      "rationale": "The subject is a defined plan, so vet owns it."
     }
   ]
 }

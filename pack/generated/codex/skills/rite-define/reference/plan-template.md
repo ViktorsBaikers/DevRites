@@ -92,6 +92,9 @@ Shared contract impact: none — <specific justification>
 List slice prerequisites, non-code prerequisites, and deployable order:
 contract/schema/config → old/new app/worker → migration/backfill → exposure → removal.
 Name shared mutable resources that force serialization.
+Each temporary flag, shim/adapter, dual read/write, retained old column/endpoint, or deprecated
+alias the plan adds names its removal `SLICE-###` here, or a Non-goal continuation
+(`$rite-spec <slug>-N`) with measurable trigger + owner; otherwise Vet returns NEEDS REPLAN.
 
 ## Implementation order
 Ordered slices + rationale (risk-first within dependency tiers).
@@ -143,6 +146,7 @@ Framework/library sources (triggers source-driven).
 - [ ] `Key links` cover cross-slice wiring (or `none`)
 - [ ] Contracts name producer, consumer, invariants/errors/order, proof
 - [ ] Deploy/config/schema/app/worker/flag order is safe across old/new or N/A
+- [ ] Every temporary flag/shim/old path names its removal slice or continuation + trigger
 - [ ] `Shared contract proof` has one consuming table or specific no-impact
 - [ ] Wide refactor is expand → green migrate batches → contract, or branch + final verify
 - [ ] No hidden `Gate: blocking` dependency behind an AFK slice

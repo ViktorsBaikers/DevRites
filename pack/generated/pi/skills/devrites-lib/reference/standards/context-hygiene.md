@@ -55,7 +55,12 @@ the `gates.md` reduction with unmet/stale ids, `decisions.md` dead ends, and the
 canonical read-next order). Open the artifacts `read_next` names; resume from
 the record, not from transcript memory. Then `devrites-engine check
 regression <slug>`: `BLOCKED` names a durable fact lost since the last
-checkpoint; `unproven` does not block.
+checkpoint; `unproven` does not block. Before any re-dispatch, run
+`devrites-engine dispatch <slug> status`, `devrites-engine parallel status --root <repo>
+--slug <slug>`, and `devrites-engine claim list --all`, and reconcile open waves, leases, and
+claims per [`parallel-dispatch.md`](../parallel-dispatch.md#cancellation-and-terminal-reconciliation) § Cancellation.
+**Failing case:** after compaction the root re-dispatches a review cohort whose original
+children still run, and duplicate accounts arrive.
 
 ## Authority and trust
 
@@ -81,15 +86,21 @@ Apply [`core.md` § Precedence](core.md#precedence); authority and evidence diff
 **Default to `/clear`.** First persist missing decisions, assumptions, or questions
 to their owners (`/rite-handoff`); `/compact` preserves unrecorded continuity.
 
-## The "Session hygiene" footer (every rite-* output)
+## The hygiene footer
 
-Every `rite-*` skill ends its output with a one-line **Session hygiene** advisory, plus
-the **single command** that resumes work next session:
+Every `rite-*` reply names the **single command** that resumes work on its action line
+(`Next:`, or `Resume:`/`Fix:` in a stop shape; [`reply-contract.md`](../reply-contract.md))
+and ends with one advisory line after `Record:`:
 
 ```
-Session hygiene: /clear (recommended)   — <one-line why, anchored to what just got persisted>
-Resume next session with: <single command, e.g. /rite-build slice 2>
+↻ Hygiene: </clear | /compact | /rite-handoff> — <why, anchored to what just got persisted>
 ```
+
+A footer may name two of those moves under stated conditions ("/clear between slices;
+/rite-handoff if away").
+
+Besides `/clear`, `/compact`, or `/rite-handoff`, the footer names no command except the
+action-line command unchanged; a different resume command is a competing next action.
 
 This is advice, not a gate. The user can ignore it. It reports a trade-off the model
 cannot inspect directly because no API reports context fullness.

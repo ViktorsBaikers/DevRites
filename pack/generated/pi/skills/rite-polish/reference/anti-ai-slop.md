@@ -10,50 +10,72 @@ Tells of generic LLM-generated work — in **UI** and in **code**. Applies at tw
 Avoid these unless the project's existing system explicitly uses them. When in doubt,
 match the neighbors.
 
+## UI admission rule (tells are leads, not findings)
+Build avoids every UI entry; review and polish admit a hit only by this rule. Classes:
+**ENG** (engineering/realism), **A11Y** (WCAG 2.2 SC or platform requirement), **DS**
+(binding only where project tokens, components or `design-brief.md` declare it), **AES**
+(optional aesthetic). A hit is a finding only with cited mismatch evidence: it contradicts
+a declared token, brief line or nearest neighbour (cite both locations), or it has a
+measured user consequence (contrast ratio, overflow, CLS, lost or hidden focus). Otherwise
+it is an AES proposal under "Proposals (non-blocking)": never a Visual Verdict FAIL, never
+scored, capped at Suggestion/Minor, never blocking unless `design-brief.md` adopts it (then
+DS). Act on clusters per [`prose-style.md`](../../devrites-lib/reference/standards/prose-style.md).
+A broken task, data loss or misleading state is reported and fixed before any AES item.
+**Failing case:** `tokens.css` declares Inter and a 20 px card radius, yet review files
+"reflex font" and "balloon radius" as Important; or three eyebrows on six sections become
+a FAIL row with no brief conflict.
+
+**UI-copy boundary.** Craft owns functional copy: action-named controls, errors with cause
+and recovery, next-step empty states, product vocabulary, fit under expansion, and an
+accessible name containing the visible label (SC 2.5.3, A11Y). Long-form product text
+routes to `devrites-prose-craft`; translation catalogs stay untouched without their owner.
+
 ## UI anti-slop (banned defaults)
-- Default **purple/blue gradients** as the brand look. Special case: any
+- [AES] Default **purple/blue gradients** as the brand look. Special case: any
   hero hex in the `#6366f1 → #a855f7 → #ec4899` family applied as a default.
-- **Gradient text** (`background-clip: text`) used decoratively on headings.
-- **Glassmorphism** (`backdrop-filter: blur(...)` on translucent panels) as
+- [AES] **Gradient text** (`background-clip: text`) used decoratively on headings.
+- [AES] **Glassmorphism** (`backdrop-filter: blur(...)` on translucent panels) as
   a default surface.
-- **Side-stripe colored borders** on cards/sections — the
+- [AES] **Side-stripe colored borders** on cards/sections — the
   "tiny-bar-of-meaningful-accent-color-on-the-left" pattern. Distinctive
   templating tell.
-- **Pure `#000` / `#fff`** as raw text or background — too clinical; use
+- [AES] **Pure `#000` / `#fff`** as raw text or background — too clinical; use
   near-black/near-white tokens (`oklch(0.18 0 0)` / `oklch(0.98 0 0)` or
   the project's surface tokens).
-- **All-CAPS body text** for paragraphs/labels. Reserve uppercase for short
+- [AES] **All-CAPS body text** for paragraphs/labels. Reserve uppercase for short
   micro-copy (badges, eyebrows); never for sentences.
-- **Em-dashes in UI copy — zero.** Soft limits ("use sparingly") get ignored; the rule
-  is binary and greppable: no `—` in any visible string. Use a comma, period, or colon.
-- **Cards inside cards** — nested bordered/elevated containers.
-- **Identical card grids** for everything, regardless of content.
-- A **generic rounded-square icon tile** above every heading/section.
-- **Gray text on colored backgrounds** (fails contrast, looks templated).
-- The **hero-metric cliché** — three big numbers in a row with no real meaning.
-- **Decorative bounce / elastic easing** on everything; motion without purpose.
-- **Reflex fonts** picked because they're the default in a tutorial:
+- [AES] **Em dashes in UI copy** are a lead, not a ban: DS only where the project's
+  style guide bans them; otherwise no rule applies to product copy, because
+  [`prose-style.md`](../../devrites-lib/reference/standards/prose-style.md) governs DevRites
+  prose, not product UI.
+- [AES] **Cards inside cards** — nested bordered/elevated containers.
+- [AES] **Identical card grids** for everything, regardless of content.
+- [AES] A **generic rounded-square icon tile** above every heading/section.
+- [A11Y] **Gray text on colored backgrounds** — a finding with the measured ratio (SC 1.4.3).
+- [AES] The **hero-metric cliché** — three big numbers in a row with no real meaning.
+- [AES] **Decorative bounce / elastic easing** on everything; motion without purpose.
+- [AES] **Reflex fonts** picked because they're the default in a tutorial:
   - Inter for every product when the project has its own choice.
   - **DM Sans**, **Plus Jakarta Sans**, **Fraunces**, **Newsreader** when
     they're not the project's actual type system.
   Match the project; don't reach for the "tasteful default" of 2024.
-- **Modal-first thinking** — reaching for a modal as the answer to every interaction.
-- **Ghost-card** — a `1px` border *and* a soft (blur ≥16px) shadow on the same element.
+- [AES] **Modal-first thinking** — reaching for a modal as the answer to every interaction.
+- [AES] **Ghost-card** — a `1px` border *and* a soft (blur ≥16px) shadow on the same element.
   Borders separate; shadows lift — pick one
   ([`quality-standards.md`](../../devrites-frontend-craft/reference/quality-standards.md) — Materiality).
-- **Balloon radius** — `border-radius` above ~16px on cards, inputs, panels. Cards top
+- [AES] **Balloon radius** — `border-radius` above ~16px on cards, inputs, panels. Cards top
   out around 12–16px; full pills are for tags and buttons only.
-- **Uppercase tracked eyebrow above every section** — one named kicker is voice; one per
+- [AES] **Uppercase tracked eyebrow above every section** — one named kicker is voice; one per
   section is template grammar (countable cap below).
-- **Numbered-section scaffolding** (`01 / 02 / 03`) when the sections aren't a sequence.
-- **Fake UI-in-a-div** — a "product screenshot" assembled from nested divs, or hand-drawn/
+- [AES] **Numbered-section scaffolding** (`01 / 02 / 03`) when the sections aren't a sequence.
+- [ENG] **Fake UI-in-a-div** — a "product screenshot" assembled from nested divs, or hand-drawn/
   sketchy SVG scenery. Ship a real capture/asset or nothing (quality-standards — Materiality).
-- **Hero prop badges** — version labels (`V0.6`, `BETA`) and decorative pulsing status
+- [AES] **Hero prop badges** — version labels (`V0.6`, `BETA`) and decorative pulsing status
   dots as set dressing.
-- **Unstyled UA chrome** — shipping the browser's default blue selection, caret,
-  scrollbar, or focus outline as the look (quality-standards § Browser chrome).
-- **Invented metrics** — precise-looking numbers with no source (`+247% faster`,
-  `99.99% uptime`). **Off-token color** — a hex used inline that the token set doesn't
+- [AES] **UA chrome** — default selection, caret or scrollbar; the UA focus ring is a
+  finding only when SC 2.4.7/1.4.11 fails (quality-standards § Browser chrome).
+- [ENG] **Invented metrics** — precise-looking numbers with no source (`+247% faster`,
+  `99.99% uptime`). [DS] **Off-token color** — a hex used inline that the token set doesn't
   define. Both are realism failures, not styling choices.
 
 ### Required remediations (fix the hit, don't just flag it)
@@ -65,11 +87,11 @@ an incomplete finding.
 | Default purple/blue gradient; gradient text; glassmorphism default | Re-derive from the scene sentence and colour commitment, then re-run both category-reflex tests |
 | Invented metric | Replace with the state lattice's missing-data placeholder (quality-standards § Focus & states) plus a "metric to confirm" question, or delete the proof slot |
 | Off-token color | Lift into the token set as a named color; replace every inline use |
-| Wrapping CTA / nav overflow | Shorter label, `white-space: nowrap`, or a collapsed nav — never a shrunken tap target |
-| Horizontal scroll in 320–1920 | `minmax(0, 1fr)` on content tracks + `overflow-x: clip` on `html`/`body` (quality-standards § Responsive) |
+| Wrapping CTA / nav overflow | Shorter label or a collapsed nav, verified at 200% text zoom — never `white-space: nowrap` or a shrunken tap target |
+| Horizontal scroll in 320–1920 | Fix intrinsic sizing (`minmax(0, 1fr)`, wrapping, media constraints) with the bounded exception of quality-standards § Responsive — never `overflow-x: clip` on `html`/`body` |
 | Fake UI-in-a-div screenshot | Ship a real capture/asset or remove the block |
 | Sticky sub-nav hidden by a banner | Offset by the banner's token height; split z-index roles instead of one raised value |
-| Unstyled UA selection / focus ring / caret / scrollbar | Theme from tokens per quality-standards § Browser chrome, or decline in `design-brief.md` |
+| UA focus ring failing SC 2.4.7/1.4.11 | Apply the DS focus-ring token per quality-standards § Browser chrome |
 
 ### Copy & data realism
 Placeholder content is a tell even when the layout is clean: fake-perfect numbers
@@ -101,14 +123,15 @@ second one catches what the first one misses.
 Both pass = the surface looks like *this product*, not "an app in this category".
 
 ### Mechanical pre-flight (countable — run, don't vibe)
-Each is pass/fail by counting or grep, not judgment:
-- **Em-dashes** in visible UI strings: exactly **0**.
-- **Eyebrows** (uppercase-tracked kickers): ≤ `ceil(sections / 3)`.
-- **Layout families** (hero, image+text split, card grid, bento, table…): no family more
+Each is counted or grepped, not judged. ENG and DS rows pass or fail; an AES count past
+its cap is a lead for the admission rule, not a failure:
+- [AES] **Em dashes** in visible UI strings: counted; DS only where the style guide bans them.
+- [AES] **Eyebrows** (uppercase-tracked kickers): ≤ `ceil(sections / 3)`.
+- [AES] **Layout families** (hero, image+text split, card grid, bento, table…): no family more
   than twice per page; never 3 consecutive image+text zigzags.
-- **Icons**: 0 emoji-as-icon; exactly one icon set imported.
-- **State presence in code**: default+hover+focus-visible+active+disabled for every interactive element; loading/error/empty where data delays or fails — an unreachable state's screenshot proves nothing.
-- **Form inputs**: no border-width shifts between states; focus ring from outline/ring (not border swap); consistent control height; reserved helper slot; disabled beyond opacity alone.
+- [DS] **Icons**: 0 emoji-as-icon; exactly one icon set imported.
+- [ENG] **State presence in code**: every state the role lattice requires (quality-standards § Focus & states) — an unreachable state's screenshot proves nothing.
+- [ENG] **Form inputs**: no border-width shifts between states; focus ring from outline/ring (not border swap); consistent control height; reserved helper slot; disabled beyond opacity alone.
 
 ## Code anti-slop (UI **and** backend)
 - **Over-defensive checks** — `if (x && x.length > 0)` repeated, layered null guards,

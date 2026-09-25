@@ -60,6 +60,7 @@ Return exactly:
 ```yaml
 Upgrade assessment: <slug>
 Outcome: <current | repairable | unsupported | gap>
+Counts: <n findings per kind>
 cursor: <legacy-bullets | current-table | unknown>
 workspace_phase: <phase | unknown>
 contract_matrix:

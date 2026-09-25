@@ -214,7 +214,11 @@ gen_pi_prompt_stub() {
   {
     printf '%s\n' "---"
     printf 'description: "%s"\n' "$(pi_yaml_escape "$_desc")"
-    [ -n "$_hint" ] && printf 'argument-hint: "%s"\n' "$(pi_yaml_escape "$_hint")"
+    # An already double-quoted YAML scalar passes through verbatim.
+    case "$_hint" in
+    \"*\") printf 'argument-hint: %s\n' "$_hint" ;;
+    ?*) printf 'argument-hint: "%s"\n' "$(pi_yaml_escape "$_hint")" ;;
+    esac
     printf '%s\n' "---"
     printf 'Read and follow the DevRites skill at `.pi/skills/%s/SKILL.md`, applying it to: ${ARGUMENTS:-the current request}.\n' "$_name"
   } >"$_out"

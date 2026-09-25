@@ -63,7 +63,8 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
    dependency's current API surface, consult context7 if available.
 2. **Pick the mode** (`$ARGUMENTS` or infer): Apply the marked action before writes and
    retain its decision/coverage evidence.
-   - **decompose:** first/again break the feature into vertical slices.
+   - **decompose:** break an already-sliced feature into vertical slices again. With no
+     `SLICE-###` in `tasks.md`, stop and route to `$rite-define`; first-pass decomposition is its.
    - **reslice:** a slice is too large; split into thinner end-to-end slices.
    - **repair:** a Spec Drift Guard event; fold the resolution into plan + tasks.
    - **reorder:** fix the dependency order.

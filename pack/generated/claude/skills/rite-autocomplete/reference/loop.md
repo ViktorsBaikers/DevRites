@@ -148,7 +148,9 @@ No user-facing reply is permitted while durable state contains agent-owned
 `NEEDS_REPLAN`, an intermediate Plan/Vet action, a distinct retained
 Critical/Important fingerprint below its cap, or an open blocking question that
 already names a ranked recommended option. Invoke the next internal repair or
-`devrites-engine state resolve` immediately. A narrow reviewer closing one finding and exposing another
+`devrites-engine state resolve` immediately, unless that writer already hit the
+[resolver-failure stop](stop-conditions.md#other-stop-classes). **Failing case:**
+`state resolve` exits 1 on every call and the loop re-invokes it without end. A narrow reviewer closing one finding and exposing another
 Critical/Important invariant is progress, not exhaustion.
 
 The number of completed repair/Vet cycles is not a stop condition. Context

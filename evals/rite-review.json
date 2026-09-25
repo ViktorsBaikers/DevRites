@@ -117,6 +117,12 @@
       "rationale": "Different skill (vanilla code-review).",
       "owner": null,
       "owner_rationale": "Different skill (vanilla code-review)."
+    },
+    {
+      "text": "Security only: audit this feature for injection and auth issues, findings only.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-audit",
+      "rationale": "Exactly one named axis with findings only belongs to audit."
     }
   ]
 }

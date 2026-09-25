@@ -16,7 +16,9 @@ parallel convention system.
 0. **Pre-flight (workspace anchor).** Resolve the repo root; take the target slug from
    the user (ask once if material); a missing/ambiguous slug, wrong repo root, or
    unwritable `.devrites/` blocks Adopt. **Failing case:** adopt infers the slug from
-   cwd alone → stop.
+   cwd alone → stop. If `.devrites/work/<slug>/` exists or `.devrites/ACTIVE` names another
+   live slug, never overwrite or silently re-point: ask once for extend (update in place,
+   preserving history and settled content), a new slug, or stop; AFK stops.
 
 1. Read core; resolve repository/sub-area and next objective. Ask once only if material.
 2. Follow [`reference/adoption.md`](reference/adoption.md): inspect current
@@ -29,7 +31,8 @@ parallel convention system.
    and design guidance.
 3. Create the workspace and write `spec.md`, `decisions.md`, `assumptions.md`,
    `questions.md`, and `state.md`. The spec separates the current baseline from
-   the measurable next objective.
+   the measurable next objective. Record each `contested` convention from
+   [`adoption.md`](reference/adoption.md) in `questions.md`; propose no guidance for it.
 4. For a structured baseline, follow the ledger's read workflow in
    [`ledger.md`](../rite-polish/reference/ledger.md) § Reading in Spec and Adopt:
    list ledger specs with the host filesystem and read only the touched capabilities;

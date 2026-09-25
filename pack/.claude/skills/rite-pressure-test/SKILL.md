@@ -4,7 +4,7 @@ description: "Pressure-test a rough/vague idea: ideate, explore 3-5 approaches, 
 argument-hint: "[rough idea or plan to stress-test]"
 user-invocable: true
 ---
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/intent-map.md"],"workspace":["decisions.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/intent-map.md"],"workspace":["decisions.md","questions.md"]} -->
 > Read-set manifest: `devrites-engine context [slug] --skill rite-pressure-test` bundles every file named below into one deduplicated read.
 
 # /rite-pressure-test: diverge then converge
@@ -37,7 +37,9 @@ If the hinge is an uncertain material fact, freeze at most three questions for
 `unavailable`, never support. Record claim, support, strongest contrary evidence, and
 `supported | assumption | refuted`. Refutation changes the recommendation; an assumption
 advances only when non-decisive with bounded downside. Weak/conflicting decisive evidence
-returns **Hold** with the resolving evidence, never `/rite-spec`. Tie-breaker:
+returns **Hold** with the resolving evidence, never `/rite-spec`. Persist a Hold as an open
+`questions.md` entry (`gate: blocking`, the premise and resolving evidence) in the active or
+provisional-slug workspace before stopping; a reply-only Hold is lost. Tie-breaker:
 see [`intent-map.md`](../devrites-lib/reference/intent-map.md) (`rite-pressure-test`
 vs `rite-spec`). Do not research preferences
 or reversible implementation choices.
@@ -64,6 +66,6 @@ Changed: workspace only
 Evidence: options compared <n>; recommendation <option>; hinge <condition>; premises <supported/assumption/refuted + sources>
 Open: <none | unresolved premise and resolving evidence>
 Next: <when supported: /rite-spec <feature>; when Hold: none — requires <resolving evidence>>
-Record: <investigation-map.md path | not applicable>
+Record: <investigation-map.md path | questions.md id (Hold) | not applicable>
 ↻ Hygiene: /clear before starting the lifecycle
 ```

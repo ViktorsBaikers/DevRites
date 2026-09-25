@@ -2,11 +2,19 @@
 
 > Applies when: always; every workspace rite reads it first.
 
-Each workspace rite reads core first; load phase files from `README.md` on demand.
+Each workspace rite reads core first. Its `loads:` manifest `always` set is its required
+read-set (`devrites-engine context <slug> --skill <name>` where a workspace exists, else
+read the listed files); a trigger's files load when its named condition holds. Load any
+other rule file from `README.md` on demand.
 
 Rules are cited as `core.md #N` (CORE-N). Numbering is stable: text may be
 reworded, an ID never changes meaning. Other files name the ID instead of
 repeating the rule.
+
+Uppercase MUST/MUST NOT/SHOULD/SHOULD NOT/MAY carry RFC 2119 meaning: MUST is a gate;
+a SHOULD deviation records its reason in `decisions.md` (the exception procedure); MAY
+permits. Lowercase "must"/"never" inside a rule, gate, or failing case binds exactly
+as MUST; case never creates a weaker tier. An exception never weakens a core gate.
 
 Repository conventions follow [Precedence](#precedence).
 
@@ -143,9 +151,11 @@ Before any `rite-*` skill stops:
   tried, why it failed, what it rules out). Compaction and the next agent must not repeat an
   invalidated approach.
 - Next-action ambiguous? → resolve to one command in `state.md`.
-- HITL pause? → write the `Awaiting human` block to `state.md` and set
-  `Status: awaiting_human` before stopping; resume via `$rite-resolve <qid> "<answer>"`.
-  See [`afk-hitl.md`](afk-hitl.md) for the full AFK / HITL contract.
+- HITL pause? → before stopping, set cursor `status` to `awaiting_human` and write the
+  `Awaiting human` table in `state.md` per its owner,
+  [`state-workspace.md`](../../../rite-spec/reference/state-workspace.md#statemd-template) § state.md template;
+  resume via `$rite-resolve <qid> "<answer>"`. See [`afk-hitl.md`](afk-hitl.md) for the
+  full AFK / HITL contract.
 
 A skill that stops without doing this leaves the workspace incomplete.
 
@@ -153,9 +163,8 @@ A skill that stops without doing this leaves the workspace incomplete.
 
 Long contexts degrade reasoning quality. Act on context at **50-70% used, not 95%**.
 
-Compact utilities end with a one-line `↻ Hygiene:` advisory naming the right move
-(`/clear` vs `/compact`) and the single resume command; other rites name the single
-resume command in their stop output. Full phase-by-phase guidance:
+Every rite names the single resume command on its action line; a `↻ Hygiene:` footer
+advises `/clear`, `/compact`, or `$rite-handoff` and never a competing command. Full phase-by-phase guidance:
 [`context-hygiene.md`](context-hygiene.md).
 
 ## Precedence

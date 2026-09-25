@@ -65,7 +65,8 @@ Pull these via `Read` when shaping the plan:
    and respect the IN/OUT line; map coverage against the **hardened** spec), and
    **`design-brief.md` if the feature touches UI** (the UX/UI contract `/rite-spec` shaped:
    its key states, interaction model, and proof targets drive how UI slices are cut). If a blocking
-   `[NEEDS CLARIFICATION]` remains, stop → `/rite-clarify`.
+   `[NEEDS CLARIFICATION]` remains, stop → `/rite-clarify`. Run the [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) marker
+   sweep; a kept hit stops the same way, and its `marker sweep:` line goes in the step-7 digest.
    Reconcile every `Applicability map` row against live repository evidence. Load each
    applicable standard; a false `not applicable` is a blocking spec gap, not a planning
    shortcut.
@@ -120,6 +121,10 @@ Pull these via `Read` when shaping the plan:
    ([`acceptance-criteria.md`](../rite-spec/reference/acceptance-criteria.md)); no orphaned criteria, no slice without a
    criterion. Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`
    rows into `traceability.md` and `test-plan.md`; unresolved rows get a gate/owner. Each
+   `Existing behavior to preserve` row becomes a regression row whose current evidence is
+   observed green on the unchanged baseline as a prerequisite of the first slice touching that
+   seam, and green again at Prove; a red baseline is recorded pre-existing, never relabelled.
+   Evidence that cannot run takes `characterize-before-modify` or blocks. Each
    cross-slice boundary names producer, consumer, invariant, integration step, and proof.
    Map each applicable topology/data/integration risk to a slice, failure/recovery path,
    and discriminating proof; a risk cannot live only in the architecture narrative.

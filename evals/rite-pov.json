@@ -34,6 +34,12 @@
       "expected": "should_not_trigger",
       "owner": "rite-seal",
       "rationale": "Release verdict belongs to rite-seal."
+    },
+    {
+      "text": "How does the zod version we already use handle unknown keys in strict mode? Check the installed source.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-source-driven",
+      "rationale": "A verified fact about an already-used library's behavior is source-driven, not an adoption verdict."
     }
   ]
 }

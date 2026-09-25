@@ -111,6 +111,12 @@
       "expected": "should_not_trigger",
       "rationale": "Full feature proof is the rite-prove phase.",
       "owner": "rite-prove"
+    },
+    {
+      "text": "Should we switch our queue from BullMQ to Temporal? Give a project-fit verdict.",
+      "expected": "should_not_trigger",
+      "owner": "rite-pov",
+      "rationale": "A project-fit verdict on a named external candidate belongs to rite-pov."
     }
   ]
 }

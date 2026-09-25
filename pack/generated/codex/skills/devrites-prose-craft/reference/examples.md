@@ -45,15 +45,19 @@ Named the decision, the reason (with evidence), and the trade-off. That's what a
 ## 4. `review.md` / `seal.md` finding
 
 **Before (slop):**
-> It's worth noting that the error handling here could potentially be more robust. This is a
-> critical area that fundamentally matters for production readiness.
+> Important: it's worth noting that the error handling at `export.ts:42` could potentially be
+> more robust, which fundamentally matters for production readiness. It catches every error and
+> returns `500 "something went wrong"`, even for a bad `format` param, where AC-003 expects a
+> `400` with the specific message. Catching the parse error narrowly and letting the rest
+> propagate would arguably be the way to go.
 
 **After:**
-> Critical — `export.ts:42` catches every error and returns `500 "something went wrong"`. A
+> Important — `export.ts:42` catches every error and returns `500 "something went wrong"`. A
 > bad `format` param should be a `400` with the specific message (AC-003). Catch the parse error
 > narrowly; let the rest propagate.
 
-Severity label, `file:line`, the specific problem, the fix. No hedging, no "fundamentally".
+Kept the stated severity, `file:line`, status codes, and AC id; added none. A Before without
+them stays hedged in the After, never upgraded to a severity or ID it did not state.
 
 ## 5. Chat reply
 
@@ -63,9 +67,10 @@ Severity label, `file:line`, the specific problem, the fix. No hedging, no "fund
 
 **After:**
 > Built slice 3 (CSV streaming). Tests pass (`npm test -- export` → 14 passing), peak memory
-> 38 MB on the 1M-row fixture. Next: slice 4 (pagination). Want me to continue?
+> 38 MB on the 1M-row fixture. Next: `$rite-build` slice 4 (pagination).
 
-Dropped the pleasantries and the "not just X" inflation. Led with what's done and the evidence.
+Dropped the pleasantries, the "not just X" inflation, and the closing offer. Led with what's
+done and the evidence; ended on one runnable next action, not a "Want me to continue?" stall.
 
 ## 6. Commit body
 

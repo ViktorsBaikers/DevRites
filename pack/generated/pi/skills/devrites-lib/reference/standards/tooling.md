@@ -2,7 +2,7 @@
 
 > Applies when: using or substituting optional tools (indexes, docs, memory).
 
-Every external tool here is optional; fall back to `Read` / `Grep` / `Glob`, always available. Never assume installation or block a phase on a missing tool. A step that needs an optional tool names its fallback chain up front and re-verifies availability after any environment change — a wrapper script or alias can satisfy a "missing" binary, and a skipped step over an absent-in-name tool is a finding, not a shortcut. An unreadable, quarantined, or permission-blocked target is recorded as a finding (`cannot_verify: unreadable <path>`), never silently skipped — a scan that reports clean while skipping files has not run.
+Every external tool here is optional; fall back to `Read` / `Grep` / `Glob`, always available. Never assume installation or block a phase on a missing tool. A step that needs an optional tool names its fallback chain up front and re-verifies availability after any environment change — a wrapper script or alias can satisfy a "missing" binary, and a skipped step over an absent-in-name tool is a finding, not a shortcut. An unreadable, quarantined, permission-blocked, or parse-failed target is recorded as a finding (`cannot_verify: unreadable <path>`), never silently skipped — a scan that reports clean while skipping files has not run.
 
 For the pack-canonical decision tree (graph vs LSP vs grep vs read), load
 [`code-navigation.md`](code-navigation.md) alongside this file.
@@ -13,7 +13,8 @@ For the pack-canonical decision tree (graph vs LSP vs grep vs read), load
 | --- | --- | --- | --- |
 | Relationship/impact (callers, blast radius) | Code-intelligence index below | LSP references + Grep | Bounded paths are compact; reading every hit inflates context |
 | Exact string/literal (error, config) | Grep | — | Matching lines are small; whole-file scans waste context |
-| Structural/AST shape | Installed AST search; else index + filter | Grep punctuation patterns | Exact nodes avoid noisy regex call-site false positives |
+| Structural/AST shape | Installed AST search; else index + filter | Grep punctuation patterns | Exact nodes avoid regex false positives and false negatives; a regex-fallback absence claim stays `uncertain` unless every hit and a known-positive control were checked |
+| Value/taint flow source→sink across files | Manual hop-by-hop read of each edge; an analyzer counts only at its declared depth | `cannot_verify` | A call path or single-function scan read as flow proof |
 | File name / location | Glob/fd-style listing | `ls` walks | Paths only are cheap; content-grepping filenames is waste |
 | Binary/archive/document content | Available dedicated extractor | `cannot_verify` | Extracted sections may be large; binary-as-text is invalid |
 | Size/scale survey (LOC, largest files) | Available line-count tool | `wc` over scoped listing | Aggregates are compact; manual counting loads needless content |
@@ -25,6 +26,23 @@ scope/tool before concluding absence; inspect ignore/filter/availability failure
 Failed control ⇒ `cannot_verify`, repair the query or use an authorized fallback.
 Permission boundaries and the authorized scope remain mandatory; do not repeat ordinary
 successful lookups for reassurance.
+
+A search offered as coverage or absence evidence (secret sweep, "no other callers", "all
+workflows") states its hidden/ignored-file policy and reconciles its file set against
+`git ls-files`, so tracked dotpaths (`.github/`, dotfiles) are in scope. A scanner that
+exits 0 while reporting per-file parse errors leaves those files `cannot_verify`, not
+clean. **Failing case:** a secret sweep returns hits from `src/`, so no suspect-zero check
+fires, but it skipped `.github/workflows/deploy.yml`, which holds an inline token.
+
+**Installed-edition gate.** Before counting any analyzer result, record its installed
+version, edition and engine depth (single-function or cross-file), extractor and build
+mode, license terms that permit running it on this code (private code included), and the
+processed file set; a missing item leaves the result a gap, never clean
+([tool coverage states](verification-methods.md#tool-coverage-states)). An analyzer that
+loads target-controlled config or plugins, runs the target's build, or reaches the network
+is target execution ([`audit-coverage.md`](audit-coverage.md#target-execution-is-sandboxed)).
+**Failing case:** a single-function scan is cited as proof of no cross-module injection,
+or an analyzer whose terms bar private code without a license reports "clean".
 
 Context-waste anti-patterns: re-running one query across indexes for reassurance, reading a whole file for a one-line answer, graph queries where a known-path read suffices, re-searching an answered question.
 
@@ -88,6 +106,7 @@ Per [`prose-style.md`](prose-style.md): say what you learned ("touches three cal
 ## Research provenance, staleness, and cost
 
 - **Hierarchy (strongest first):** live repo code > installed dependency source/types > versioned official docs > web results > memory. Weaker tiers answer only when stronger are unavailable; record the reason.
+- **The claim type picks the top tier.** Current behavior: live code or runtime observation. Intended behavior: the approved spec, decisions, or ADR; code is never evidence of intent, and a mismatch is drift for the Spec Drift route. Supported semantics or contract: version-matched official docs, types, or changelog. Installed source proves only that implementation; undocumented behavior a decision relies on is `implementation-detail` and stays `uncertain` for load-bearing use. **Failing case:** an undocumented option read in installed library source is marked `verified` and the next minor release removes it.
 - **Version identity:** compare installed source with the pinned and running artifact.
   A stale install or workspace override can disagree with the lockfile; resolve and cite
   the applicable identity before relying on behavior. Current upstream docs do not prove
@@ -102,3 +121,4 @@ Per [`prose-style.md`](prose-style.md): say what you learned ("touches three cal
   representation or fetch supporting content before refreshing its status.
 - **Human checkpoints:** ask only when the answer changes product, risk, scope, security posture, or spend; repository-answerable questions are never asked.
 - **Cost discipline:** depth scales with risk — trivial lookups take one authoritative read; parallel sweeps need a stated reason in the consuming artifact.
+- **Stop rule:** when two lookup routes add no new supporting or refuting fact, or one source fails twice, stop and return `cannot_verify` with the attempted routes (tool, query, outcome). Never widen searches or descend tiers to manufacture an answer. **Failing case:** ten rephrased web searches end in a blog-tier claim marked `verified`.

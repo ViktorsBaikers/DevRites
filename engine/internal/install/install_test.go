@@ -1294,6 +1294,7 @@ extends = ":workspace"
 `)
 	testutil.WriteFile(t, filepath.Join(root, "omp", "skills", "rite", "SKILL.md"), "omp rite\n")
 	testutil.WriteFile(t, filepath.Join(root, "omp", "agents", "devrites-code-reviewer.md"), "omp agent\n")
+	testutil.WriteFile(t, filepath.Join(root, "omp", "commands", "rite.md"), "omp command\n")
 	testutil.WriteFile(t, filepath.Join(root, "omp", ".omp-plugin", "plugin.json"), "{}\n")
 	testutil.WriteFile(t, filepath.Join(root, "pi", "skills", "rite", "SKILL.md"), "pi rite\n")
 	testutil.WriteFile(t, filepath.Join(root, "pi", "agents", "devrites-code-reviewer.md"), "pi agent\n")
