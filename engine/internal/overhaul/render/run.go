@@ -259,7 +259,7 @@ func load(path string) (map[string]any, error) {
 // objectKeys returns the keys of the top-level object field name in document
 // order: Python iterates rubric domains in JSON order, Go maps do not.
 func objectKeys(path, name string) []string {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 -- record file inside the operator-selected generation
 	if err != nil {
 		return nil
 	}

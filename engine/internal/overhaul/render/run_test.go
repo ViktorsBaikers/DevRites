@@ -39,6 +39,7 @@ type obj = map[string]any
 func fixture(t *testing.T, withPlan bool) (run, gen string) {
 	t.Helper()
 	t.Setenv("HOME", fakeHome)
+	t.Setenv("USERPROFILE", fakeHome) // os.UserHomeDir on Windows
 	run = t.TempDir()
 	gen = filepath.Join(run, "generations", "g0003.tmp")
 	writeJSON(t, filepath.Join(run, "revisions", "rubric-r1.json"), obj{

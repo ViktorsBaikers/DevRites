@@ -128,7 +128,7 @@ func exit(err error) (int, error) {
 }
 
 func git(root string, args ...string) ([]byte, error) {
-	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+	cmd := exec.Command("git", append([]string{"-C", root}, args...)...) // #nosec G204 -- fixed git binary; arguments passed as argv, no shell
 	cmd.Env = append(gitenv.Sanitize(os.Environ()), "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0")
 	out, err := cmd.Output()
 	if err != nil {
@@ -227,7 +227,7 @@ func holdsKey(p string) (bool, error) {
 	if err != nil || !fi.Mode().IsRegular() {
 		return false, nil
 	}
-	f, err := os.Open(p)
+	f, err := os.Open(p) // #nosec G304 -- file listed by git inside the target repository
 	if err != nil {
 		return false, err
 	}
@@ -426,7 +426,7 @@ func capture(root, out string, stdout io.Writer) error {
 // copyEntry copies like shutil.copy2(follow_symlinks=False): symlinks stay
 // symlinks; files keep their mode and modification time.
 func copyEntry(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o700); err != nil {
 		return err
 	}
 	fi, err := os.Lstat(src)
@@ -440,12 +440,12 @@ func copyEntry(src, dst string) error {
 		}
 		return os.Symlink(target, dst)
 	}
-	in, err := os.Open(src)
+	in, err := os.Open(src) // #nosec G304 -- file listed by git inside the target repository
 	if err != nil {
 		return err
 	}
 	defer in.Close()
-	w, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	w, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- destination inside the new owner-only snapshot directory
 	if err != nil {
 		return err
 	}
@@ -463,7 +463,7 @@ func copyEntry(src, dst string) error {
 }
 
 func verify(root, out string, agent map[string]bool, stdout io.Writer) (int, error) {
-	b, err := os.ReadFile(filepath.Join(out, "manifest.json"))
+	b, err := os.ReadFile(filepath.Join(out, "manifest.json")) // #nosec G304 -- manifest inside the operator-selected snapshot
 	if err != nil {
 		return 2, err
 	}
@@ -513,7 +513,7 @@ func verify(root, out string, agent map[string]bool, stdout io.Writer) (int, err
 	if err != nil {
 		return 2, err
 	}
-	stdout.Write(j)
+	_, _ = stdout.Write(j)
 	if report.IndexUnchanged && len(report.User) == 0 {
 		return 0, nil
 	}
@@ -521,7 +521,7 @@ func verify(root, out string, agent map[string]bool, stdout io.Writer) (int, err
 }
 
 func delta(beforePath, root string, stdout io.Writer) error {
-	b, err := os.ReadFile(beforePath)
+	b, err := os.ReadFile(beforePath) // #nosec G304 -- state file is an explicit operator argument
 	if err != nil {
 		return err
 	}

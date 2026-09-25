@@ -264,7 +264,7 @@ func receipt(run, path, observed string, hasObserved bool, stdout io.Writer) (in
 			if !hasObserved {
 				why = append(why, "writer receipt needs observed changed paths (--observed)")
 			} else {
-				b, err := os.ReadFile(observed)
+				b, err := os.ReadFile(observed) // #nosec G304 -- observed-paths file is an explicit operator argument
 				if err != nil {
 					return 0, err
 				}
@@ -378,7 +378,7 @@ func anchor(root, path string, stdout, stderr io.Writer) (int, error) {
 				why = append(why, fmt.Sprintf("%s: %s is not a file under the reviewed tree", id, rel))
 				continue
 			}
-			b, err := os.ReadFile(full)
+			b, err := os.ReadFile(full) // #nosec G304 -- anchor path checked to stay inside the reviewed tree
 			if err != nil {
 				return 0, err
 			}

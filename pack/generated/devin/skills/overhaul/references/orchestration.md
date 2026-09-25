@@ -31,11 +31,11 @@ directory names or file extensions. One package or file can serve several lanes.
 
 | Lane | Owns | Role file |
 | --- | --- | --- |
-| Frontend engineering | Client correctness, state/data flow, component architecture, framework idioms, client security, frontend performance and tests (web, native, desktop, game UI) | `roles/frontend-engineer.md` |
-| Backend engineering | Service, domain, API, job, data, concurrency, authorization and service performance, including server parts of full-stack frameworks | `roles/backend-engineer.md` |
-| Boundary / integration | Producer/consumer contracts, shared packages, serialization, trust transitions, deployment skew | `roles/boundary.md` |
-| Frontend craft | Design system fit, interaction states, keyboard/focus, accessibility, responsive and motion evidence | `roles/craft.md` |
-| Other | Build tooling, infrastructure, libraries, data/ML workloads — explicit extra profiles, never forced into frontend/backend | `roles/specialist.md` |
+| Frontend engineering | Client correctness, state/data flow, component architecture, framework idioms, client security, frontend performance and tests (web, native, desktop, game UI) | [`roles/frontend-engineer.md`](../roles/frontend-engineer.md) |
+| Backend engineering | Service, domain, API, job, data, concurrency, authorization and service performance, including server parts of full-stack frameworks | [`roles/backend-engineer.md`](../roles/backend-engineer.md) |
+| Boundary / integration | Producer/consumer contracts, shared packages, serialization, trust transitions, deployment skew | [`roles/boundary.md`](../roles/boundary.md) |
+| Frontend craft | Design system fit, interaction states, keyboard/focus, accessibility, responsive and motion evidence | [`roles/craft.md`](../roles/craft.md) |
+| Other | Build tooling, infrastructure, libraries, data/ML workloads — explicit extra profiles, never forced into frontend/backend | [`roles/specialist.md`](../roles/specialist.md) |
 
 Frontend and backend engineering are always different agent invocations with
 different active profiles, even in a same-language codebase. The boundary reviewer

@@ -252,7 +252,7 @@ their fingerprint; hypotheses and actions; actual agents and their overlap evide
 affected paths; proof and benchmark results; every score and gate delta; new risks;
 rejected approaches; expenditure, or `unknown` when the host does not report it
 (estimates are labeled); and the next action or stop reason. Show the iteration
-table in the terminal summary, `report.md` and `report.html` from the first low
+table in the terminal summary, `report.{md,html}` from the first low
 score onward, including unfavorable cycles.
 
 ## Stop, status and resume

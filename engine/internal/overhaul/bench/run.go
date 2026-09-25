@@ -44,7 +44,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "ERROR: %v\n", err)
 		return 2
 	}
-	stdout.Write(out)
+	_, _ = stdout.Write(out)
 	return 0
 }
 
@@ -131,7 +131,7 @@ func compare(d map[string]any) (any, error) {
 	if int(resamples) < 1 {
 		return nil, fmt.Errorf("resamples must be at least 1, got %v", resamples)
 	}
-	rng := rand.New(rand.NewPCG(uint64(seed), 0))
+	rng := rand.New(rand.NewPCG(uint64(seed), 0)) // #nosec G404 -- bootstrap resampling needs a seeded, reproducible PRNG, not secrecy
 	boots := make([]float64, int(resamples))
 	ra, rb := make([]float64, len(a)), make([]float64, len(b))
 	for i := range boots {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -169,12 +170,12 @@ func inside(base, rel string) bool {
 }
 
 func isFile(p string) bool {
-	fi, err := os.Stat(p)
+	fi, err := os.Stat(p) // #nosec G703 -- stat only; path is inside the operator-selected run area
 	return err == nil && fi.Mode().IsRegular()
 }
 
 func isDir(p string) bool {
-	fi, err := os.Stat(p)
+	fi, err := os.Stat(p) // #nosec G703 -- stat only; path is inside the operator-selected run area
 	return err == nil && fi.IsDir()
 }
 
@@ -187,10 +188,10 @@ func keyError(k string) error { return fmt.Errorf("'%s'", k) }
 // when it is one.
 func BadPath(p any, repo string) string {
 	s, ok := p.(string)
-	if !ok || s == "" || strings.HasSuffix(s, "/") || filepath.IsAbs(s) || strings.ContainsAny(s, "*?") {
+	if !ok || s == "" || strings.HasSuffix(s, "/") || path.IsAbs(s) || filepath.IsAbs(s) || strings.ContainsAny(s, "*?") {
 		return "not an exact relative file path"
 	}
-	if filepath.Clean(s) != s || strings.Split(s, "/")[0] == ".." {
+	if path.Clean(s) != s || strings.Split(s, "/")[0] == ".." {
 		return "not normalized or escapes the repository"
 	}
 	for _, part := range strings.Split(s, "/") {
@@ -333,7 +334,7 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 			add("missing %s", name)
 			continue
 		}
-		b, err := os.ReadFile(p)
+		b, err := os.ReadFile(p) // #nosec G304 G703 -- fixed record name inside the generation directory
 		if err != nil {
 			return nil, err
 		}
@@ -446,7 +447,7 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 			lp := PyStr(loc["path"])
 			var bad bool
 			if ovio.Truthy(loc["external"]) {
-				bad = filepath.IsAbs(lp) || strings.HasPrefix(lp, "~")
+				bad = path.IsAbs(lp) || filepath.IsAbs(lp) || strings.HasPrefix(lp, "~")
 			} else {
 				bad = BadPath(lp, repo) != ""
 			}
@@ -810,7 +811,7 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 			return nil, err
 		}
 		for _, v := range entries {
-			b, err := os.ReadFile(join(vdir, v.Name()))
+			b, err := os.ReadFile(join(vdir, v.Name())) // #nosec G703 -- view file listed from the generation's own views directory
 			if err != nil {
 				return nil, err
 			}

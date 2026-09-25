@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -202,7 +203,7 @@ func TestCaptureDirtyRepo(t *testing.T) {
 	}
 
 	fi, err := os.Stat(out)
-	if err != nil || fi.Mode().Perm() != 0o700 {
+	if err != nil || (runtime.GOOS != "windows" && fi.Mode().Perm() != 0o700) {
 		t.Errorf("snapshot dir mode: %v %v", fi.Mode(), err)
 	}
 }

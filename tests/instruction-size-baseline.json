@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1342244,
+  "total_bytes": 1342358,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-result.md": 109,
@@ -132,11 +132,11 @@
     "pack/.claude/skills/devrites-ux-shape/reference/visual-direction-probe.md": 2996,
     "pack/.claude/skills/devrites-ux-shape/SKILL.md": 8788,
     "pack/.claude/skills/overhaul/references/audit-domains.md": 16286,
-    "pack/.claude/skills/overhaul/references/lifecycle.md": 19803,
-    "pack/.claude/skills/overhaul/references/orchestration.md": 16924,
+    "pack/.claude/skills/overhaul/references/lifecycle.md": 19792,
+    "pack/.claude/skills/overhaul/references/orchestration.md": 17060,
     "pack/.claude/skills/overhaul/references/records.md": 8972,
     "pack/.claude/skills/overhaul/references/repair-and-measurement.md": 12563,
-    "pack/.claude/skills/overhaul/references/review-and-report.md": 8591,
+    "pack/.claude/skills/overhaul/references/review-and-report.md": 8580,
     "pack/.claude/skills/overhaul/references/scope-and-safety.md": 11391,
     "pack/.claude/skills/overhaul/references/scoring.md": 12846,
     "pack/.claude/skills/overhaul/references/stack-profiles.md": 17770,

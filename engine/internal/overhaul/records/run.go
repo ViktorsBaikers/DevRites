@@ -69,7 +69,7 @@ func current(run string) (string, bool, error) {
 	if !isFile(p) {
 		return "", false, nil
 	}
-	b, err := os.ReadFile(p)
+	b, err := os.ReadFile(p) // #nosec G304 -- path is an explicit operator argument
 	return strings.TrimSpace(string(b)), err == nil, err
 }
 
@@ -156,8 +156,10 @@ func copyTree(src, dst string) error {
 		if st.IsDir() {
 			err = copyTree(s, d)
 		} else {
-			var b []byte
-			if b, err = os.ReadFile(s); err == nil {
+			// #nosec G304 G703 -- copies a record between directories inside the operator-selected run area
+			b, rerr := os.ReadFile(s)
+			if err = rerr; err == nil {
+				// #nosec G703 -- destination is the staged generation inside the run area
 				err = os.WriteFile(d, b, st.Mode().Perm())
 			}
 		}
@@ -169,7 +171,7 @@ func copyTree(src, dst string) error {
 }
 
 func stage(run string, stdout, stderr io.Writer) (int, error) {
-	if err := os.MkdirAll(join(run, "revisions"), 0o777); err != nil {
+	if err := os.MkdirAll(join(run, "revisions"), 0o700); err != nil {
 		return 0, err
 	}
 	cur, has, err := current(run)
@@ -202,12 +204,12 @@ func stage(run string, stdout, stderr io.Writer) (int, error) {
 		base = cur
 		err = copyTree(join(run, cur), tmp)
 	} else {
-		err = os.MkdirAll(tmp, 0o777)
+		err = os.MkdirAll(tmp, 0o700)
 	}
 	if err != nil {
 		return 0, err
 	}
-	if err := os.WriteFile(join(tmp, ".base"), []byte(base), 0o666); err != nil {
+	if err := os.WriteFile(join(tmp, ".base"), []byte(base), 0o600); err != nil {
 		return 0, err
 	}
 	fmt.Fprintln(stdout, tmp)
@@ -335,7 +337,7 @@ func publish(run string, stdout, stderr io.Writer) (int, error) {
 	if err := os.Rename(tmp, join(run, gen)); err != nil {
 		return 0, err
 	}
-	if err := os.WriteFile(join(run, "CURRENT.tmp"), []byte(gen+"\n"), 0o666); err != nil {
+	if err := os.WriteFile(join(run, "CURRENT.tmp"), []byte(gen+"\n"), 0o600); err != nil {
 		return 0, err
 	}
 	if err := os.Rename(join(run, "CURRENT.tmp"), join(run, "CURRENT")); err != nil {

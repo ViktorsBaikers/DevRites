@@ -22,7 +22,7 @@ func SHA256Bytes(b []byte) string {
 
 // SHA256File returns the lowercase hex SHA-256 of the file's exact bytes.
 func SHA256File(path string) (string, error) {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 -- callers pass operator-selected run-area paths
 	if err != nil {
 		return "", err
 	}
@@ -32,7 +32,7 @@ func SHA256File(path string) (string, error) {
 // LoadJSON decodes a UTF-8 JSON document. Numbers stay json.Number so digests,
 // weights and ratios are never rounded through float64 by accident.
 func LoadJSON(path string) (any, error) {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 -- callers pass operator-selected run-area paths
 	if err != nil {
 		return nil, err
 	}

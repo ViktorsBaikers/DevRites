@@ -87,7 +87,7 @@ re-hashes the plan revision and matches the digest before recording it
 
 ## The end-of-run report
 
-Produce `report.md` and `report.html` from the same generation for every ending —
+Produce `report.{md,html}` from the same generation for every ending —
 interim, blocked, stopped, audit-only or final. Use real measurements only; a missing
 value renders as "not recorded", never as a sample number. Zero findings is a valid
 result; report counts always equal record counts.
