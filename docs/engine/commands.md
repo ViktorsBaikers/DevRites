@@ -46,6 +46,7 @@ workflow strategy.
 | `secret-scan [--staged] [--stdin] [slug]` | Scan exact staged blobs, stdin, or touched regular files for credential material. |
 | `open-visual <path-or-name> [--slug <slug>] [--no-open]` | Resolve a local visual HTML file, optionally open it in the OS browser, warn if the sibling outline is missing or inventory ids are absent from HTML, and print agent path tips. No network. |
 | `detect commands [--root <dir>] [--json]` | Resolve the repository's own test/lint/vet/build commands: explicit Makefile targets first, then `package.json` scripts, then language-manifest fallbacks, plus the lockfile-derived package manager. Read-only, no installs, no execution. |
+| `overhaul <records\|admit\|snapshot\|score\|bench\|render> ...` | Deterministic tools behind the standalone `/overhaul` skill: run-record generations and cross-record validation, worker-receipt admission and quote anchoring, index-safe baseline snapshots and per-attempt deltas, exact-rational readiness scoring, benchmark ratio intervals, and escaped offline review/report views. Operates only on explicit run-area and repository paths. See [Overhaul tools](#overhaul-tools). |
 | `version` | Print the engine version. |
 
 `help`, `-h`, and `--help` print this operational inventory. Each operational
@@ -135,6 +136,26 @@ the engine starts the OS opener (`open`, `xdg-open`, or Windows `start`) for
 the local file only — never a network fetch. Stdout prints the absolute HTML
 path, outline path tip, playbook index hint, and an `ids=ok` / `ids=mismatch`
 summary when an inventory is present.
+
+## Overhaul tools
+
+`overhaul` serves the explicit-only `/overhaul` skill. Each tool takes explicit
+paths and never resolves a `.devrites` workspace, calls a model or uses the
+network. The skill documents the record schemas and when to call each tool.
+
+| Tool | Forms | Exit codes |
+| --- | --- | --- |
+| `records` | `digest <file>`, `stage <run>`, `publish <run>`, `validate <run>` | 0 ok; 1 violations (listed as `VIOLATION:` lines); 2 usage or I/O |
+| `admit` | `receipt <run> <receipt.json> [--observed <file>]`, `anchor <tree> <proposals.json>` | 0 admissible; 1 rejected; 2 usage or I/O; 3 duplicate or late receipt |
+| `snapshot` | `capture <repo> <out>`, `fingerprint <repo>`, `verify <repo> <out> [--agent-paths <file>]`, `state <repo> <out.json>`, `delta <before.json> <repo>` | 0 ok; 1 index changed or changes outside agent paths; 2 refusal, usage or I/O |
+| `score` | `--rubric <r> --results <s> --gates <g> [--out <file>]`, `compare --rubric <r> --baseline <a> --candidate <b>` | 0 computed; 2 invalid input (nothing counts as scored) |
+| `bench` | `<result.json>` | 0 computed; 2 invalid input |
+| `render` | `<run> <staged-generation> <review\|report>` | 0 written; 2 usage, invalid records or I/O |
+
+`snapshot` runs git read-only with `GIT_OPTIONAL_LOCKS=0`,
+`diff.autoRefreshIndex=false` and no external diff drivers, so `.git/index`
+stays byte-identical. Secret-pattern files and files holding private key material
+are hashed only: never copied into the snapshot tree and never included in its patches.
 
 ## Output and exit contracts
 

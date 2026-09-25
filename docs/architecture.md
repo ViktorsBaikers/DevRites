@@ -389,8 +389,8 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 32 public `rite-*` skills (44 total), plus the thin `/rite`
-  menu: 33 public and 11 internal. The lifecycle
+- **Surface**: 32 public `rite-*` skills (45 total), plus the thin `/rite`
+  menu and the standalone `overhaul` skill: 34 public and 11 internal. The lifecycle
   includes mandatory adaptive Clarify, optional Temper, mandatory Vet, and
   Converge recovery; Seal **decides** and Ship **executes + closes**. Ten
   `devrites-*` specialist skills are model-invoked; `devrites-lib` is the

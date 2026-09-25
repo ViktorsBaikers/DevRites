@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/devrites/devrites/internal/overhaul"
 	"github.com/devrites/devrites/internal/parallel"
 )
 
@@ -136,7 +137,7 @@ func shouldPrintHelp(args []string) bool {
 		return true
 	}
 	switch args[0] {
-	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate":
+	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate", "overhaul":
 		return len(args) >= 2 && args[1] == "help"
 	default:
 		return false
@@ -194,6 +195,8 @@ func commandHelp(args []string) (string, bool) {
 		return gatesFamilyUsage, true
 	case "note":
 		return noteFamilyUsage, true
+	case "overhaul":
+		return overhaul.Usage, true
 	case "migrate":
 		return migrateUsage, true
 	case "secret-scan":

@@ -47,6 +47,8 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"migrate", "--help"}, want: "migrate <slug>"},
 		{args: []string{"secret-scan", "--help"}, want: "secret-scan [--staged] [--stdin]"},
 		{args: []string{"open-visual", "--help"}, want: "open-visual <path-or-name>"},
+		{args: []string{"overhaul", "--help"}, want: "overhaul records validate <run>"},
+		{args: []string{"overhaul", "help"}, want: "overhaul snapshot capture <repo> <out>"},
 		{args: []string{"version", "--help"}, want: "devrites-engine version"},
 		{args: []string{"install", "--help"}, want: "usage: devrites-engine install"},
 		{args: []string{"update", "--help"}, want: "usage: devrites-engine update"},
