@@ -2,6 +2,22 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.14.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.13.1...v5.14.0) (2026-09-25)
+
+### Added
+
+* **no-release:** cap read-only agent returns to verbatim rows ([#84](https://github.com/ViktorsBaikers/DevRites/issues/84)) ([ef9293b](https://github.com/ViktorsBaikers/DevRites/commit/ef9293bc79b8c86eaddba892accd8110e6812fce))
+* **no-release:** overhaul in .devrites, gap-first views and agents ([#83](https://github.com/ViktorsBaikers/DevRites/issues/83)) ([8d1a5dc](https://github.com/ViktorsBaikers/DevRites/commit/8d1a5dcb99f81c68f0bb33b4bb9742c1b7dc76cf))
+* **skills:** strengthen knowledge layer and omp command generation ([#86](https://github.com/ViktorsBaikers/DevRites/issues/86)) ([b030258](https://github.com/ViktorsBaikers/DevRites/commit/b030258be9a40be8aed86c160c1c27db44656417))
+
+### Changed
+
+* **no-release:** update deps, CI pipeline, README, and banner ([#85](https://github.com/ViktorsBaikers/DevRites/issues/85)) ([8850395](https://github.com/ViktorsBaikers/DevRites/commit/88503957a20b6f9bc9deb66a2f63f9d2a510d298))
+
+### Fixed
+
+* **ci:** align release notes generator with preset ([#87](https://github.com/ViktorsBaikers/DevRites/issues/87)) ([273936f](https://github.com/ViktorsBaikers/DevRites/commit/273936f628bb4aabaf16535290427f356a4d0cf7))
+
 ## [5.13.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.13.0...v5.13.1) (2026-09-25)
 
 ### Fixed
