@@ -4661,12 +4661,12 @@ def check_actual_engine_separation(root: Path) -> None:
             engine = Path(engine_override).resolve()
             require(engine.is_file(), "configured engine CLI")
         else:
-            # The module pins `toolchain go1.26.7`; a newer local Go satisfies it and
+            # The module pins `toolchain go1.27.1`; a newer local Go satisfies it and
             # would report its own version, so select the pin explicitly and build the
             # private engine with it. Deterministic on any machine, unchanged on CI.
-            pinned = {**os.environ, "GOTOOLCHAIN": "go1.26.7"}
+            pinned = {**os.environ, "GOTOOLCHAIN": "go1.27.1"}
             version = command_output(["go", "-C", str(project / "engine"), "env", "GOVERSION"], env=pinned)
-            require(version.returncode == 0 and "go1.26.7" in version.stdout, "module-selected Go 1.26.7")
+            require(version.returncode == 0 and "go1.27.1" in version.stdout, "module-selected Go 1.27.1")
             engine = private / "bin/devrites-engine"
             engine.parent.mkdir()
             build = command_output(["go", "-C", str(project / "engine"), "build", "-o", str(engine), "."], env=pinned)
@@ -7430,7 +7430,7 @@ DELIVERY_STATE_PATTERN = re.compile(
     r"|INSTALLING\([1-9][0-9]*\)|ROLLING_BACK\([1-9][0-9]*\))"
 )
 DELIVERY_GATES = [
-    (["bash", "-c", "bash --version && python3 --version && node --version && GOTOOLCHAIN=go1.26.7 go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.7"),
+    (["bash", "-c", "bash --version && python3 --version && node --version && GOTOOLCHAIN=go1.27.1 go -C engine env GOVERSION GOTOOLCHAIN"], "go1.27.1"),
     (["python3", "scripts/validate-workspace-schema.py", ".devrites/work/workflow-artifact-identity"], "workspace-schema: OK: 1 workspace(s) validated"),
     (["bash", "tests/workflow-artifact-identity-test.sh"], "workflow-artifact-identity: PASS"),
     (["bash", "tests/workflow-artifact-identity-test.sh", "--prove-walkthrough"], "WORKFLOW_ARTIFACT_WALKTHROUGH PASS"),
@@ -7451,7 +7451,7 @@ DELIVERY_GATES = [
 
 def check_delivery_gate_signals() -> None:
     expected = [
-        (["bash", "-c", "bash --version && python3 --version && node --version && GOTOOLCHAIN=go1.26.7 go -C engine env GOVERSION GOTOOLCHAIN"], "go1.26.7"),
+        (["bash", "-c", "bash --version && python3 --version && node --version && GOTOOLCHAIN=go1.27.1 go -C engine env GOVERSION GOTOOLCHAIN"], "go1.27.1"),
         (["python3", "scripts/validate-workspace-schema.py", ".devrites/work/workflow-artifact-identity"], "workspace-schema: OK: 1 workspace(s) validated"),
         (["bash", "tests/workflow-artifact-identity-test.sh"], "workflow-artifact-identity: PASS"),
         (["bash", "tests/workflow-artifact-identity-test.sh", "--prove-walkthrough"], "WORKFLOW_ARTIFACT_WALKTHROUGH PASS"),

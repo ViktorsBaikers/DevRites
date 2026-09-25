@@ -64,6 +64,7 @@ func WorkspaceOverrideChecked(root, slug string) (string, error) {
 		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: resolve DevRites root %q: %w", root, err)
 	}
 	sameRoot := path == resolvedRoot
+	// #nosec G703 -- read-only Stat of a path resolved and proven inside root above
 	if pathInfo, pathErr := os.Stat(path); pathErr == nil {
 		if rootInfo, rootErr := os.Stat(resolvedRoot); rootErr == nil {
 			sameRoot = os.SameFile(pathInfo, rootInfo)

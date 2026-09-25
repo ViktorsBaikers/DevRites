@@ -19,16 +19,16 @@
       "preset": "conventionalcommits",
       "presetConfig": {
         "types": [
-          { "type": "feat", "section": "Added" },
-          { "type": "perf", "section": "Changed" },
-          { "type": "refactor", "section": "Changed" },
-          { "type": "build", "section": "Changed" },
-          { "type": "remove", "section": "Removed" },
-          { "type": "fix", "section": "Fixed" },
-          { "type": "docs", "section": "Documentation" },
-          { "type": "ci", "section": "CI", "hidden": true },
-          { "type": "chore", "section": "Chores", "hidden": true },
-          { "type": "test", "section": "Tests", "hidden": true }
+          { "type": "feat", "section": "Added", "effect": "bump" },
+          { "type": "perf", "section": "Changed", "effect": "bump" },
+          { "type": "refactor", "section": "Changed", "effect": "bump" },
+          { "type": "build", "section": "Changed", "effect": "bump" },
+          { "type": "remove", "section": "Removed", "effect": "bump" },
+          { "type": "fix", "section": "Fixed", "effect": "bump" },
+          { "type": "docs", "section": "Documentation", "effect": "changelog" },
+          { "type": "ci", "section": "CI", "effect": "hidden" },
+          { "type": "chore", "section": "Chores", "effect": "hidden" },
+          { "type": "test", "section": "Tests", "effect": "hidden" }
         ]
       }
     }],

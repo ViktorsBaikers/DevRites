@@ -6,11 +6,11 @@ PLATFORMS := darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64
 
 .PHONY: build fmt-check test test-race vet quality staticcheck govulncheck gosec lint cover crosscompile clean
 
-STATICCHECK_VERSION := 2026.1
-GOVULNCHECK_VERSION := v1.6.0
-GOSEC_VERSION := v2.28.0
-GOLANGCI_VERSION := v2.13.2
-OSV_SCANNER_VERSION := v2.5.1
+STATICCHECK_VERSION := 2026.2.1
+GOVULNCHECK_VERSION := v1.8.0
+GOSEC_VERSION := v2.29.0
+GOLANGCI_VERSION := v2.14.0
+OSV_SCANNER_VERSION := v2.6.0
 STATICCHECK := go run honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION)
 GOVULNCHECK := go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 GOSEC := go run github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
