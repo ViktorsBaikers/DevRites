@@ -41,7 +41,7 @@ Placement rules: [`scope-and-safety.md`](scope-and-safety.md#run-area-and-checkp
 | `approval.json` | append-only `events[]` ([fields](lifecycle.md#the-approval-gate)) |
 | `results-baseline.json`, `results-candidate.json`, `gates.json`, `scorecard*.json` | scoring inputs and calculator output ([`scoring.md`](scoring.md)) |
 | `cycles.json` | append-only `cycles[]` ([`lifecycle.md`](lifecycle.md#cycle-records)) |
-| `views/` | `review.*`, `report.*`, `plan.md`, each carrying the generation stamp. `publish` requires `report.html` and `report.md` once `execution_outcome` leaves `RUNNING`, and `review.html`, `review.md` and (with a plan) `plan.md` while `phase` is `AWAITING_APPROVAL` |
+| `views/` | `review.*`, `report.*`, `plan.md`, each carrying the generation stamp. `publish` requires `report.{md,html}` once `execution_outcome` leaves `RUNNING`, and `review.{md,html}` plus (with a plan) `plan.md` while `phase` is `AWAITING_APPROVAL` |
 
 `null` means "not applicable by design"; a missing value means "not recorded" —
 never "passed". Worker receipts become canonical only after admission
