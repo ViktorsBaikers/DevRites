@@ -109,7 +109,9 @@ is a native, preservation-first workflow edit. See
   above its parent), so the root's source/test non-writing boundary is
   instruction-enforced there. Both hosts make only the exact slice-wright
   writable among specialists; the task states its exact paths and the root
-  rejects an out-of-scope diff. Leaves never own human questions, phase
+  rejects an out-of-scope diff. The explicit `/overhaul` skill's eight `overhaul-*`
+  agents are outside this lifecycle roster and keep every tool (ADR-0031).
+  Leaves never own human questions, phase
   changes, or canonical
   `.devrites/` writes
   ([ADR-0010](docs/adr/0010-agent-first-fresh-context-orchestration.md),

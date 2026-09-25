@@ -412,7 +412,8 @@ contract.
 - **Design**: `devrites-frontend-craft` + a four-phase `/rite-polish` orchestrator (code + backend always; UI normalize + polish when UI is in scope).
 - **Agents**: 17 fresh-context roles at flat depth one: 16 read-only leaves and
   one wright. Dispatch uses the exact named project role; if it cannot spawn,
-  the workflow stops for HITL.
+  the workflow stops for HITL. `/overhaul` adds eight `overhaul-*` agents
+  that only it dispatches and that keep every tool (ADR-0031).
 - **Review**: **feature-scoped** multi-axis review with severity labels and
   fresh-context agents at the seal.
 - **Scope**: clarify → seal (decide) → ship (read-only preflight → type-GO →

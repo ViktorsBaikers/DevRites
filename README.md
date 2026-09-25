@@ -433,7 +433,9 @@ shared contracts and engineering standards.
 Seventeen fresh-context agent profiles ship with the pack. Claude has sixteen
 read-only roles plus the sole source/test writer role,
 `devrites-slice-wright`; Codex, omp, pi, and Devin generate the same
-one-writer/sixteen-reader split.
+one-writer/sixteen-reader split. The explicit `/overhaul` skill adds eight
+more agents, `overhaul-*`, which only it dispatches; they keep every tool
+([ADR-0031](docs/adr/0031-overhaul-agents-keep-every-tool.md)).
 
 The authoritative [skills catalogue](docs/skills.md) lists every skill and
 agent. The [flow diagrams](docs/flow.md) show routing, reviewer fan-out, and

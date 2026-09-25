@@ -194,7 +194,7 @@ Review real source semantics under the active client profiles:
 
 ## Frontend craft, interaction and accessibility
 
-The craft role ([`roles/craft.md`](../roles/craft.md)) examines the existing brief and
+The craft role ([`overhaul-craft`](../../../agents/overhaul-craft.md)) examines the existing brief and
 design system, hierarchy, typography, spacing, density, tokens, theming, semantics,
 focus, keyboard operation, touch and pointer, zoom and reflow, responsive or native
 layout, localization and long or RTL content; every UI state (loading, empty, error,
@@ -236,7 +236,7 @@ major restructuring.
 
 ## Cross-layer contracts
 
-The boundary role ([`roles/boundary.md`](../roles/boundary.md)) owns the live graph of
+The boundary role ([`overhaul-boundary`](../../../agents/overhaul-boundary.md)) owns the live graph of
 API operations, events and messages, server actions, IPC/FFI, shared models,
 generated clients and the critical journeys consuming them, and checks both
 producer and consumer: schema, version, enum and nullability; numeric, ID and date

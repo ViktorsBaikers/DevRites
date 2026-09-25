@@ -14,7 +14,7 @@ REQUIRED={
   'composition block':[r'## Composition', r'Do not invoke another agent', r'Invoke directly when']
 }
 COMPOSITION_LINE=re.compile(
-    r'^Do not invoke another agent\. You are called by (?:a `rite-\*` skill|`/rite-build`) '
+    r'^Do not invoke another agent\. You are called by (?:a `rite-\*` skill|`/rite-build`|`/overhaul`) '
     r'and return (?:findings|your result) to that orchestrator\.$', re.M
 )
 UNTRUSTED_LINE=re.compile(
@@ -53,6 +53,11 @@ def validate(agents_dir:Path):
         if name=='devrites-slice-wright':
             if not re.search(r'write-capable|Writes code|write code', text, re.I):
                 errors.append(f'{f}: devrites-slice-wright must state write-capable mode')
+        elif name.startswith('overhaul-'):
+            # /overhaul's own agents (ADR-0031) keep every tool; that skill's approval gate and
+            # path contracts govern writes. Each must still state its read or write mode.
+            if not re.search(r'read-only|write-capable|Writes code', text, re.I):
+                errors.append(f'{f}: overhaul agents must state their read-only or write-capable mode')
         else:
             if says_write or not READONLY_TERMS.search(text):
                 errors.append(f'{f}: only devrites-slice-wright may be write-capable; reviewers must state read-only/findings-only mode')

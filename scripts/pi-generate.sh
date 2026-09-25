@@ -76,7 +76,7 @@ _pi_map_tools() {
   local _raw="$1" _name="$2"
   local _tok _mapped _out="" _sep=""
   if [ -z "$_raw" ]; then
-    if [ "$_name" = "devrites-slice-wright" ]; then
+    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* ]]; then
       printf '%s' "read, edit, write, bash, grep, find, ls"
     else
       printf '%s' "read, grep, find, ls, bash"
@@ -102,7 +102,7 @@ _pi_map_tools() {
     _sep=", "
   done < <(printf '%s\n' "$_raw" | tr ',' '\n')
   if [ -z "$_out" ]; then
-    if [ "$_name" = "devrites-slice-wright" ]; then
+    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* ]]; then
       _out="read, edit, write, bash, grep, find, ls"
     else
       _out="read, grep, find, ls, bash"
@@ -165,7 +165,7 @@ _pi_append_extension_tools() {
 # Generate a pi-subagents Markdown agent from a Claude Code markdown agent.
 # pi-subagents loads project agents from .pi/agents/**/*.md (YAML frontmatter +
 # body). The tools allowlist carries the Claude permission boundary: only
-# devrites-slice-wright gets write/edit; reviewers stay read-only.
+# devrites-slice-wright and the /overhaul agents (overhaul-*) get write/edit; reviewers stay read-only.
 # inheritProjectContext keeps AGENTS.md/CLAUDE.md visible, matching Claude
 # Code subagent semantics. A canonical `skills:` block list passes through.
 gen_pi_agent() {
@@ -235,6 +235,7 @@ This project has DevRites installed for pi.
 - DevRites specialist agents live in `.pi/agents` and are provided by the `pi-subagents` extension. Before dispatch, run `subagent({ action: "list" })`; if a required `devrites-<role>` is absent or not executable, stop for HITL — never skip it, substitute a generic child, or run the specialist role in the root context.
 - In DevRites guidance, **invoke** means run a skill inline in the current context; **dispatch** means start a fresh agent with `subagent({ agent, task })` (or `runs.run`/`runs.all` in a `workflowScript`), wait for it, and reconcile its result.
 - Only `devrites-slice-wright` may edit source or tests; every other specialist is read-only by tool allowlist. Exact paths are instruction-enforced: put the project-relative paths in the task, wait for the wright, compare its file list and `git diff --name-only` with that contract, and reject any extra path.
+- The explicit `/overhaul` skill ships its own `overhaul-*` agents outside the DevRites lifecycle. They carry the full write tool set, are dispatched only by that skill, and follow its own approval gate and path contracts instead of the lifecycle writer rules above.
 - DevRites runtime helpers run through the installed `devrites-engine` binary.
 - Installed `.pi/` content loads only after the project is trusted. If pi has not trusted this project, the skills, agents, and prompts above are not active.
 - A seal GO, AFK mode, or autocomplete flag never authorizes an irreversible action. Disclose the exact commit/push/tag/PR plan and obtain fresh explicit user approval for that attempt; any changed or retried plan needs fresh approval.

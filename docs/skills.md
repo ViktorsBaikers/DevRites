@@ -259,7 +259,10 @@ and `Shipped`. Utility commands keep the same compact labels and one-next-action
 ## Fresh-context agents
 
 DevRites ships 17 role profiles at depth one. Both hosts have 16 read-only
-leaves and one source/test writer role. Four read-only work roles handle
+leaves and one source/test writer role. The explicit `/overhaul` skill ships eight
+more agents, `overhaul-*`, that only it dispatches and that keep every tool
+([ADR-0031](adr/0031-overhaul-agents-keep-every-tool.md)); the counts here cover the
+lifecycle roles. Four read-only work roles handle
 bounded evidence, planning, proof, and compatibility while the root keeps
 authority:
 
