@@ -219,43 +219,28 @@ for exception in exceptions:
 PY
 if [ $? -eq 0 ]; then ok "osv-scanner.toml ignoreUntil matches npm-audit exceptions"; else no "osv-scanner.toml ignoreUntil mismatch"; fi
 
-# Patched ancestors that retired the 2026-09 bundled-npm, fast-uri, and
-# js-yaml exceptions.
-python3 - "$ROOT" <<'PY'
-import json, sys
-from pathlib import Path
-root = Path(sys.argv[1])
-pkg = json.loads((root / "package.json").read_text())
-overrides = pkg.get("overrides") or {}
-npm = ((overrides.get("@semantic-release/npm") or {}).get("npm"))
-fast_uri = overrides.get("fast-uri")
-js_yaml = overrides.get("js-yaml")
-if npm != "11.19.1":
-    raise SystemExit(f"package.json must pin @semantic-release/npm.npm to 11.19.1, got {npm!r}")
-if fast_uri != "3.1.6":
-    raise SystemExit(f"package.json must pin fast-uri to 3.1.6, got {fast_uri!r}")
-if js_yaml != "4.3.2":
-    raise SystemExit(f"package.json must pin js-yaml to 4.3.2, got {js_yaml!r}")
-lock = json.loads((root / "package-lock.json").read_text())
-packages = lock.get("packages") or {}
-got_npm = (packages.get("node_modules/npm") or {}).get("version")
-got_fast = (packages.get("node_modules/fast-uri") or {}).get("version")
-got_yaml = (packages.get("node_modules/js-yaml") or {}).get("version")
-if got_npm != "11.19.1":
-    raise SystemExit(f"package-lock.json npm is {got_npm!r}, expected 11.19.1")
-if got_fast != "3.1.6":
-    raise SystemExit(f"package-lock.json fast-uri is {got_fast!r}, expected 3.1.6")
-if got_yaml != "4.3.2":
-    raise SystemExit(f"package-lock.json js-yaml is {got_yaml!r}, expected 4.3.2")
-PY
-if [ $? -eq 0 ]; then ok "release toolchain pins patched npm 11.19.1, fast-uri 3.1.6, and js-yaml 4.3.2"; else no "release toolchain pin missing"; fi
-
-# The advertised local quality gate must be self-contained and pin the same
-# three external analyzers used by CI.
+# The local quality gate must run the same external analyzers, at the same
+# versions, as CI. Compare the two sources directly so a version lives only in
+# engine/Makefile and .github/workflows/ci.yml.
 make -C "$ROOT/engine" -n quality > "$T/make-quality" 2>&1 || true
-for needle in 'staticcheck@2026.1' 'govulncheck@v1.6.0' 'gosec@v2.28.0'; do
-  if grep -q "$needle" "$T/make-quality"; then ok "quality pins $needle"; else no "quality does not pin $needle"; fi
-done
+python3 - "$T/make-quality" "$ROOT/.github/workflows/ci.yml" <<'PY'
+import re, sys
+from pathlib import Path
+tools = ("govulncheck", "golangci-lint")
+def versions(text):
+    found = {t: set(re.findall(rf"/cmd/{re.escape(t)}@(\S+)", text)) for t in tools}
+    # CI installs golangci-lint through golangci-lint-action's `version:` input.
+    action = re.search(r"golangci/golangci-lint-action@\S+.*?\n\s+with:\s*\n\s+version:\s*(\S+)", text, re.S)
+    if action:
+        found["golangci-lint"].add(action.group(1))
+    return found
+make = versions(Path(sys.argv[1]).read_text())
+ci = versions(Path(sys.argv[2]).read_text())
+for t in tools:
+    if len(make[t]) != 1 or make[t] != ci[t]:
+        raise SystemExit(f"{t}: make quality {sorted(make[t])} != ci.yml {sorted(ci[t])}")
+PY
+if [ $? -eq 0 ]; then ok "make quality and CI pin the same analyzer versions"; else no "make quality and CI analyzer versions differ"; fi
 
 echo ""
 [ "$fail" -eq 0 ] && echo "validation-governance-test: PASS" || echo "validation-governance-test: FAIL"

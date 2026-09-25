@@ -1,16 +1,54 @@
-# golangci-lint v2 — curated complement to the existing strict gates
-# (staticcheck, govulncheck, gosec). Enables only checkers that add findings
-# staticcheck does not produce; see the engine job in ci.yml and `make lint`.
+# golangci-lint v2: the engine's single static-analysis gate. One run loads
+# and type-checks the packages once and shares that work across every linter,
+# instead of separate gofmt/go vet/staticcheck/gosec passes. CI (engine job) and
+# `make lint` both run this file. govulncheck stays separate: it is a
+# vulnerability database lookup, not a linter.
 version: "2"
+
+run:
+  # Never rewrite go.mod/go.sum during analysis.
+  modules-download-mode: readonly
 
 linters:
   default: none
   enable:
+    # go vet analyzers (the default vet set).
+    - govet
+    # staticcheck (gosimple and stylecheck are merged into it in v2).
+    - staticcheck
+    # Security analysis. No rule-class exclusions: every G204/G304/G702/G703
+    # site carries a per-call `// #nosec GXXX -- <justification>` instead, so a
+    # genuinely new injection or traversal sink fails the gate.
+    - gosec
     # Unchecked error returns: staticcheck does not flag ignored errors.
     - errcheck
     # Assignments never read: distinct from staticcheck's unused analysis.
     - ineffassign
   settings:
+    staticcheck:
+      # Standalone staticcheck's default set. Quickfix (QF) suggestions are
+      # editor refactors, not defects, so they stay out of the gate.
+      checks:
+        - all
+        - -ST1000
+        - -ST1003
+        - -ST1016
+        - -ST1020
+        - -ST1021
+        - -ST1022
+        - -ST1023
+        - -QF*
+    gosec:
+      # G602 (slice bounds) misfires on length-guarded indexes under
+      # golangci-lint's shared SSA build, and Go bounds-checks at runtime.
+      excludes:
+        - G602
+      # Permission expectations for what the engine writes: 0644 files,
+      # 0755 dirs and binaries.
+      config:
+        G301: "0755"
+        G302: "0755"
+        G306: "0644"
     errcheck:
       # The engine's CLI boundary reports via exit paths, not error returns;
       # writes to the operator's stdout/stderr streams fail only on closed
@@ -22,6 +60,20 @@ linters:
         - (*bytes.Buffer).WriteByte
         - (*strings.Builder).WriteByte
         - (*strings.Builder).WriteString
+  exclusions:
+    rules:
+      # Tests read fixtures and spawn the engine by design; gosec gates
+      # shipped code only (standalone gosec's default).
+      - path: _test\.go
+        linters: [gosec]
 
+issues:
+  # Report every finding; the defaults (50 per linter, 3 identical) can hide
+  # real issues behind a truncated list.
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+# Formatting is part of the same run: an unformatted file fails the gate.
 formatters:
-  default: none
+  enable:
+    - gofmt

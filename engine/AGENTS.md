@@ -17,8 +17,8 @@ completeness.
   coverage quality. They may require that a canonical `AC-###` ID declared in
   `spec.md` also appears as a literal substring in `tasks.md` and
   `test-plan.md` when those artifacts are required.
-- Local full gate: `make quality` (`gofmt`, `go vet`, `staticcheck`,
-  `govulncheck`, `gosec`, `golangci-lint`, `osv-scanner`,
-  `go test -race -shuffle=on -count=1`).
+- Local full gate: `make quality` (`golangci-lint` with gofmt, go vet,
+  staticcheck, gosec, errcheck, ineffassign; then `govulncheck`,
+  `osv-scanner`, `go test -race -shuffle=on -count=1`).
 
 See [`../CONTEXT.md`](../CONTEXT.md) and [`../docs/adr/README.md`](../docs/adr/README.md).

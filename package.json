@@ -73,21 +73,23 @@
     "release:dry": "semantic-release --dry-run --no-ci"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.0.2",
-    "@commitlint/config-conventional": "^21.0.2",
-    "@semantic-release/changelog": "^6.0.3",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@semantic-release/changelog": "^7.0.0",
+    "@semantic-release/commit-analyzer": "14.0.0-beta.4",
     "@semantic-release/exec": "^7.1.0",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/npm": "^13.1.5",
-    "conventional-changelog-conventionalcommits": "^9.3.1",
+    "@semantic-release/git": "^11.0.1",
+    "@semantic-release/npm": "^13.2.0",
+    "@semantic-release/release-notes-generator": "15.0.0-beta.3",
+    "conventional-changelog-conventionalcommits": "^10.4.0",
     "husky": "^9.1.7",
-    "semantic-release": "^25.0.5"
+    "semantic-release": "^25.0.9"
   },
   "overrides": {
     "@semantic-release/npm": {
-      "npm": "11.19.1"
+      "npm": "11.20.0"
     },
-    "fast-uri": "3.1.6",
+    "fast-uri": "3.1.8",
     "js-yaml": "4.3.2"
   }
 }
