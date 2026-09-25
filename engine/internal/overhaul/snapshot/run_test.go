@@ -190,12 +190,14 @@ func TestCaptureDirtyRepo(t *testing.T) {
 		t.Errorf("summary %q: %v", stdout, err)
 	}
 	leaks := stdout + stderr
-	filepath.WalkDir(out, func(p string, d os.DirEntry, err error) error {
+	if err := filepath.WalkDir(out, func(p string, d os.DirEntry, err error) error {
 		if err == nil && d.Type().IsRegular() {
 			leaks += read(t, p)
 		}
 		return nil
-	})
+	}); err != nil {
+		t.Fatal(err)
+	}
 	for _, s := range []string{envSecret, keySecret} {
 		if strings.Contains(leaks, s) {
 			t.Errorf("secret %q leaked into output or snapshot", s)

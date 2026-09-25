@@ -231,7 +231,7 @@ func holdsKey(p string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	head, err := io.ReadAll(io.LimitReader(f, 65536))
 	return bytes.Contains(head, keyMarker), err
 }
@@ -444,7 +444,7 @@ func copyEntry(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 	w, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- destination inside the new owner-only snapshot directory
 	if err != nil {
 		return err

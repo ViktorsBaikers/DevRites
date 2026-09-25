@@ -447,7 +447,7 @@ func TestStageCopiesWithoutViewsOrManifest(t *testing.T) {
 		t.Fatal(errs)
 	}
 	tmp := strings.TrimSpace(out)
-	if tmp != filepath.Join(f.run, "g0002.tmp") {
+	if filepath.Clean(tmp) != filepath.Join(f.run, "g0002.tmp") {
 		t.Fatalf("stage path %q", tmp)
 	}
 	base, _ := os.ReadFile(filepath.Join(tmp, ".base"))
