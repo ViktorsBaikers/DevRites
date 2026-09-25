@@ -140,11 +140,8 @@ const integrationTests = new Set([
 // Weights from CI wall times (seconds, rounded) for balanced shard assignment.
 // Refreshed 2026-09-01 from per-test PASS durations on the 8-shard CI run.
 const testWeights = new Map([
-  ['workflow-artifact-identity-test.sh#core', 28],
-  ['workflow-artifact-identity-test.sh#core-1/4', 34],
-  ['workflow-artifact-identity-test.sh#core-2/4', 7],
-  ['workflow-artifact-identity-test.sh#core-3/4', 49],
-  ['workflow-artifact-identity-test.sh#core-4/4', 27],
+  // Core checks split round-robin into 8 pieces (~117s of checks in total).
+  ['workflow-artifact-identity-test.sh#core', 15],
   ['workflow-artifact-identity-test.sh#matrix', 8],
   ['workflow-artifact-identity-test.sh#boundary', 27],
   ['workflow-artifact-identity-test.sh#boundary-1/6', 28],

@@ -51,7 +51,7 @@ architecture; per-feature `decisions.md` files stay scoped to that feature.
 | [0003](0003-gate-model-hitl-pause.md) | Gates block as HITL pause, never crash | Accepted | `engine/tests/adr_0003_gate_exit_code_test.go` |
 | [0004](0004-state-schema-phases-sections.md) | Phase-relative section completeness | Accepted | `engine/tests/adr_0004_required_by_phase_test.go`, `engine/internal/state/state_test.go` |
 | [0005](0005-hooks-as-engine-subcommands.md) | Hooks are engine subcommands, not shell scripts | Accepted; active hook clause superseded by 0018 | historical |
-| [0006](0006-clock-seam-and-engine-ci-gates.md) | Clock seam + Go static-analysis CI gates | Accepted in part; next-qid seam/guard superseded by 0024, CI clauses retained | historical |
+| [0006](0006-clock-seam-and-engine-ci-gates.md) | Clock seam + Go static-analysis CI gates | Accepted in part; next-qid seam/guard superseded by 0024, CI analyzer wiring superseded by 0032 | historical |
 | [0007](0007-canonical-live-workspace-filenames.md) | Canonical live workspace filenames | Accepted; unsupported alias/migration clauses superseded by 0022 | `engine/internal/state/state_test.go`, `engine/internal/lib/cursor_compat_test.go` |
 | [0008](0008-sanctioned-engine-network-boundary.md) | Sanctioned engine network boundary | Accepted in part; engine network allowance superseded by 0024 | `engine/tests/meta_test.go` |
 | [0009](0009-prebuild-decision-coverage-and-readiness.md) | Pre-build decision coverage and implementation readiness | Accepted; semantic engine-gate implementation superseded by 0022 | historical |
@@ -76,3 +76,4 @@ architecture; per-feature `decisions.md` files stay scoped to that feature.
 | [0028](0028-self-contained-engine-update.md) | Self-contained engine update | Accepted | `engine/internal/install/install_test.go`, `engine/internal/release/release_test.go`, `engine/tests/meta_test.go` |
 | [0029](0029-v5-workspace-schema-and-native-migration.md) | v5 workspace schema and native migration | Accepted | `engine/internal/state/workspaceschema_test.go`, `engine/tests/parity_resolve_test.go`, `engine/tests/parity_closeout_test.go` |
 | [0031](0031-overhaul-agents-keep-every-tool.md) | `/overhaul` ships its own agents that keep every tool | Accepted; scopes the one-writer clauses of 0010/0015/0017/0018/0019 to `devrites-*` specialists | `scripts/validate-agent-composition.py`, `tests/codex-agent-generation-test.sh` |
+| [0032](0032-single-lint-gate-and-cached-pr-tests.md) | One engine lint gate, and PR tests that reuse main's results | Accepted | `tests/validation-governance-test.sh` |

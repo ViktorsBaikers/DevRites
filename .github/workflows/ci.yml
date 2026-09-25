@@ -142,10 +142,8 @@ jobs:
   # run-tests.mjs auto-discovers the suite, supports weighted CI sharding so
   # the slow integration tests (workflow-artifact-identity, binary-lifecycle,
   # install/uninstall smokes) run on separate runners in parallel, and
-  # self-provisions the host artifacts + engine CLI. The setup-go cache
-  # (keyed on engine/go.mod + ci.yml) keeps those builds warm across runs;
-  # the engine job primes the version-stamp patterns into the same snapshot.
-  # 14 shards keeps the long-pole shard under ~70s wall without dropping cases.
+  # self-provisions the host artifacts + engine CLI. The Go cache restored
+  # below keeps that engine build warm (see the caching notes on `engine`).
   tests:
     name: shell test suite (shard ${{ matrix.shard }}/14)
     needs: detect-changes
@@ -177,19 +175,18 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: engine/go.mod
-          # Restore-only (engine job owns the save); keeps this job's inline
-          # engine build and the stamp builds warm.
           cache: false
 
-      - name: Restore Go build cache
+      # Restore-only: the engine-test linux arm64 run on main saves this
+      # snapshot with the shard engine build primed (same OS/arch as here).
+      - name: Restore Go cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: engine-go-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          path: ~/.cache/go-build
+          key: go-${{ runner.os }}-${{ runner.arch }}-test-${{ hashFiles('engine/go.mod') }}-${{ github.run_id }}
           restore-keys: |
-            engine-go-${{ runner.os }}-${{ runner.arch }}-
+            go-${{ runner.os }}-${{ runner.arch }}-test-${{ hashFiles('engine/go.mod') }}-
+            go-${{ runner.os }}-${{ runner.arch }}-test-
 
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -198,19 +195,29 @@ jobs:
           cache: 'npm'
 
       - name: Run shell test shard (tests/*.sh)
+        # One test per vCPU (4 on this runner): more jobs than cores made
+        # every test on a shard slower, not the shard faster.
         env:
-          DEVRITES_TEST_JOBS: '8'
+          DEVRITES_TEST_JOBS: '4'
           DEVRITES_WAI_PARALLEL_WORKERS: '4'
           DEVRITES_WAI_BOUNDARY_SHARDS: '6'
-          DEVRITES_WAI_CORE_SHARDS: '4'
+          DEVRITES_WAI_CORE_SHARDS: '8'
         run: node scripts/run-tests.mjs --shard ${{ matrix.shard }}/14
 
+  # Go caching, for every engine job below and the shell shards:
+  # - One cache per OS/arch/job, keyed by run so each save is fresh (a fixed
+  #   key would freeze the first snapshot until go.mod changes).
+  # - Only pushes to main save; PRs restore the newest main snapshot. PR runs
+  #   never pay the upload, and a PR cannot seed the cache main builds from.
+  # - Before saving, entries this run did not use are trimmed (the go command
+  #   refreshes an entry's mtime when it reuses one), so the snapshot tracks
+  #   the current tree instead of growing forever.
   engine:
-    name: engine (go test + cross-compile)
+    name: engine (lint + cross-compile)
     needs: detect-changes
     if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_engine == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -220,78 +227,31 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: engine/go.mod
-          # This job owns the shared Go snapshot (see restore below): setup-go's
-          # auto-save would let a thin shard snapshot clobber it, so caching is
-          # handled explicitly.
           cache: false
 
-      # Fat snapshot (build cache + modules incl. analysis tools + stamps).
-      # Unique key per commit => re-saved every run; restore-keys fall back to
-      # the newest earlier snapshot.
-      - name: Restore Go build cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Restore Go cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: engine-go-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          key: go-${{ runner.os }}-${{ runner.arch }}-engine-${{ hashFiles('engine/go.mod') }}-${{ github.run_id }}
           restore-keys: |
-            engine-go-${{ runner.os }}-${{ runner.arch }}-
+            go-${{ runner.os }}-${{ runner.arch }}-engine-${{ hashFiles('engine/go.mod') }}-
+            go-${{ runner.os }}-${{ runner.arch }}-engine-
 
-      - name: gofmt (no diffs)
-        working-directory: engine
-        run: |
-          diff=$(gofmt -l . )
-          if [ -n "$diff" ]; then echo "gofmt needed:"; echo "$diff"; exit 1; fi
-
-      - name: go vet
-        working-directory: engine
-        run: go vet ./...
-
-      - name: Install analysis tools (staticcheck + govulncheck + gosec + golangci-lint)
-        run: |
-          go install honnef.co/go/tools/cmd/staticcheck@2026.2.1
-          go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
-          go install github.com/securego/gosec/v2/cmd/gosec@v2.29.0
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
-
-      - name: "staticcheck (static analysis: BLOCKING)"
-        working-directory: engine
-        run: staticcheck ./...
+      # One run: gofmt, go vet, staticcheck, gosec, errcheck, ineffassign
+      # (engine/.golangci.yml). Prebuilt release binary; no source compile.
+      - name: "golangci-lint (format + vet + staticcheck + gosec: BLOCKING)"
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.14.0
+          working-directory: engine
+          skip-save-cache: ${{ github.ref != 'refs/heads/main' }}
 
       - name: "govulncheck (known-CVE scan of the reachable call graph: BLOCKING)"
         working-directory: engine
-        run: govulncheck ./...
-
-      # No rule-class exclusions: every G204/G304/G702/G703 site carries a
-      # per-call `// #nosec GXXX -- <justification>` in the source instead, so a
-      # genuinely new injection or traversal sink fails this gate. Permission
-      # expectations for the files the engine writes (0644 files / 0755
-      # dirs+binaries) live in .gosec.json.
-      - name: "gosec (security static analysis: BLOCKING)"
-        working-directory: engine
-        run: gosec -conf .gosec.json ./...
-
-      # Curated complement to staticcheck (errcheck + ineffassign; .golangci.yml).
-      - name: "golangci-lint (unchecked errors + dead assignments: BLOCKING)"
-        working-directory: engine
-        run: golangci-lint run ./...
-
-      - name: go test -race -shuffle=on (control plane + parity oracle)
-        working-directory: engine
-        run: go test ./... -race -shuffle=on -count=1
-
-      # Prime the version-stamp builds the shard tests exercise (unstamped +
-      # pinned tags) into the shared Go build cache this job saves; keeps the
-      # shards from cold-building them every run.
-      - name: Prime shared stamp builds
-        run: |
-          CGO_ENABLED=0 go build -C engine -trimpath -o /tmp/devrites-engine-dev .
-          for tag in v9.9.9 v9.9.10 v9.9.11 v9.9.12 v9.9.13; do
-            CGO_ENABLED=0 go build -C engine -trimpath \
-              -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=${tag}" \
-              -o /tmp/devrites-engine-warm .
-          done
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
 
       - name: Cross-compile matrix smoke (all release targets build)
         run: bash scripts/build-binaries.sh 0.0.0-ci
@@ -316,81 +276,116 @@ jobs:
             exit 1
           }
 
-  # DevRites ships a Windows engine binary; run the Go tests where path
-  # separators, file locking, and %USERPROFILE% semantics differ.
-  # Ubuntu and macOS run the strict gate (staticcheck/govulncheck/gosec/-race
-  # on Ubuntu; -race on macOS); this job only proves the binary logic on
-  # Windows, where the race detector is historically flaky under load.
-  engine-windows:
-    name: engine (go test, windows)
+      - name: Trim Go cache to entries this run used
+        if: github.ref == 'refs/heads/main'
+        run: find ~/.cache/go-build -type f -mmin +90 -delete
+
+      - name: Save Go cache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ runner.arch }}-engine-${{ hashFiles('engine/go.mod') }}-${{ github.run_id }}
+
+  # The same suite on every OS/arch the release ships. Race detector on all
+  # but Windows, where it is historically flaky under load (the scheduled
+  # engine-windows-race workflow covers it).
+  #
+  # Pushes to main run every test (`go clean -testcache` first) and the saved
+  # cache carries those results. PRs reuse them for packages the change does
+  # not affect; the go command re-runs a test whenever its package, its
+  # dependencies, its testdata, or the env vars it reads change.
+  engine-test:
+    name: engine (go test, ${{ matrix.name }})
     needs: detect-changes
     if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_engine == 'true'
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux amd64, os: ubuntu-latest, race: '-race' }
+          - { name: linux arm64, os: ubuntu-24.04-arm, race: '-race' }
+          - { name: macos, os: macos-latest, race: '-race' }
+          - { name: windows, os: windows-latest, race: '' }
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      # ReFS Dev Drive for the build cache and test temp dirs: Windows NTFS is
+      # the slow part of this job (many small files per test).
+      - name: Set up Dev Drive (windows)
+        if: runner.os == 'Windows'
+        uses: samypr100/setup-dev-drive@562171fe8df7401fdf582d766cd3b6ab80d5b1a0 # v4.1.0
         with:
-          go-version-file: engine/go.mod
-          cache-dependency-path: |
-            engine/go.mod
-            .github/workflows/ci.yml
-
-      - name: go test (path / root / workspace / ledger behavior)
-        working-directory: engine
-        run: go test ./... -shuffle=on -count=1
-
-  engine-macos:
-    name: engine (go test, macos)
-    needs: detect-changes
-    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_engine == 'true'
-    runs-on: macos-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
+          drive-size: 8GB
+          trusted-dev-drive: true
+          env-mapping: |
+            GOCACHE,{{ DEV_DRIVE }}/go-build
+            GOTMPDIR,{{ DEV_DRIVE }}/go-tmp
+            TMP,{{ DEV_DRIVE }}/tmp
+            TEMP,{{ DEV_DRIVE }}/tmp
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: engine/go.mod
-          cache-dependency-path: |
-            engine/go.mod
-            .github/workflows/ci.yml
+          cache: false
 
-      - name: go test -race (darwin path semantics + race detector)
-        working-directory: engine
-        run: go test ./... -race -shuffle=on -count=1
+      - name: Locate Go cache
+        id: gocache
+        run: |
+          mkdir -p "${GOTMPDIR:-.}" "${TMP:-.}"
+          echo "dir=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
 
-  # The release matrix ships linux/arm64; run the suite natively on a free
-  # arm64 hosted runner instead of trusting the cross-compile smoke alone.
-  engine-linux-arm:
-    name: engine (go test, linux arm64)
-    needs: detect-changes
-    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_engine == 'true'
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Restore Go cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          persist-credentials: false
+          path: ${{ steps.gocache.outputs.dir }}
+          key: go-${{ runner.os }}-${{ runner.arch }}-test-${{ hashFiles('engine/go.mod') }}-${{ github.run_id }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ runner.arch }}-test-${{ hashFiles('engine/go.mod') }}-
+            go-${{ runner.os }}-${{ runner.arch }}-test-
 
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: engine/go.mod
-          cache-dependency-path: |
-            engine/go.mod
-            .github/workflows/ci.yml
-
-      - name: go test -race (arm64 path semantics + race detector)
+      - name: go test ${{ matrix.race }}
         working-directory: engine
-        run: go test ./... -race -shuffle=on -count=1
+        env:
+          RACE: ${{ matrix.race }}
+        run: |
+          if [ "$GITHUB_REF" = refs/heads/main ]; then go clean -testcache; fi
+          go test ${RACE:+"$RACE"} ./...
+
+      # Order-dependence check: shuffled, uncached, on the reference runner.
+      - name: go test -shuffle=on (linux amd64)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: engine
+        run: go test -shuffle=on -count=1 ./...
+
+      # The shell shards (linux arm64) build the engine with -trimpath and
+      # CGO_ENABLED=0; compile those packages into the snapshot they restore.
+      - name: Prime shell-shard engine build (linux arm64)
+        if: matrix.os == 'ubuntu-24.04-arm' && github.ref == 'refs/heads/main'
+        run: CGO_ENABLED=0 go build -C engine -trimpath -o "$RUNNER_TEMP/devrites-engine" .
+
+      - name: Trim Go cache to entries this run used
+        if: github.ref == 'refs/heads/main'
+        env:
+          GOCACHE_DIR: ${{ steps.gocache.outputs.dir }}
+        run: find "$GOCACHE_DIR" -type f -mmin +90 -delete
+
+      - name: Save Go cache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.gocache.outputs.dir }}
+          key: go-${{ runner.os }}-${{ runner.arch }}-test-${{ hashFiles('engine/go.mod') }}-${{ github.run_id }}
 
   # Release runs in the same workflow as a final gate, so it (a) shows up as a
   # commit check, and (b) runs on the exact commit CI validated, on the real
@@ -400,7 +395,7 @@ jobs:
   release:
     name: semantic-release
     runs-on: ubuntu-latest
-    needs: [detect-changes, validate, tests, engine, engine-windows, engine-macos, engine-linux-arm]
+    needs: [detect-changes, validate, tests, engine, engine-test]
     timeout-minutes: 60
     # Push to main (the chore(release) commit carries [skip ci] so it never
     # re-triggers) or a manual dispatch: never on a PR.

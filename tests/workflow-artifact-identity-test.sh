@@ -7378,18 +7378,21 @@ def default_tests(root: Path) -> None:
         index = int(match.group(1))
         total = int(match.group(2))
         require(1 <= index <= total, f"invalid DEVRITES_WAI_CORE_SHARD: {core_spec}")
-        start = ((index - 1) * len(checks)) // total
-        end = (index * len(checks)) // total
-        checks = checks[start:end]
+        # Round-robin, like the boundary shards: heavy checks sit next to each
+        # other in the list, so contiguous slices stacked them on one shard.
+        checks = checks[index - 1::total]
         require(len(checks) > 0, f"empty workflow-artifact core shard: {core_spec}")
 
     # Keep core checks on the main thread: several install signal handlers and
     # process-group helpers require signal.signal, which is main-thread only.
     for name, fn in checks:
+        started = time.monotonic()
         try:
             fn()
         except BaseException as error:
             raise AssertionError(f"workflow-artifact core check failed: {name}") from error
+        # Per-check timing, for rebalancing the CI shard weights.
+        print(f"wai-core-check {name} {time.monotonic() - started:.1f}s", flush=True)
 
 
 def writer_allowlist_digest() -> str:

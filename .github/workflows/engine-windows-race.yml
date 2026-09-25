@@ -1,7 +1,7 @@
 name: engine-windows-race
 
-# Non-required Windows race detector. PR `engine-windows` stays shuffle-only
-# because -race is historically flaky under load on windows-latest.
+# Non-required Windows race detector. The ci.yml `engine-test` Windows entry
+# runs without -race because it is historically flaky under load there.
 
 on:
   schedule:

@@ -130,6 +130,7 @@ is a native, preservation-first workflow edit. See
   (`DEVRITES_NOW`); operational timestamps (parallel leases, install manifests)
   read real time by design; see
   [ADR-0006](docs/adr/0006-clock-seam-and-engine-ci-gates.md).
-- Engine CI is the strictest gate: `gofmt`, `go vet`, `staticcheck`,
-  `govulncheck`, `go test -race -shuffle=on`. Local `make quality` also runs
-  `gosec`, `golangci-lint`, and `osv-scanner`.
+- Engine CI is the strictest gate: one `golangci-lint` run (gofmt, go vet,
+  staticcheck, gosec, errcheck, ineffassign), `govulncheck`, and `go test -race`
+  on linux amd64/arm64 and macOS plus Windows, with a shuffled pass. Local
+  `make quality` runs the same lint config plus `osv-scanner` (ADR-0032).

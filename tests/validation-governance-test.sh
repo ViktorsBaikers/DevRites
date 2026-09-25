@@ -226,9 +226,14 @@ make -C "$ROOT/engine" -n quality > "$T/make-quality" 2>&1 || true
 python3 - "$T/make-quality" "$ROOT/.github/workflows/ci.yml" <<'PY'
 import re, sys
 from pathlib import Path
-tools = ("staticcheck", "govulncheck", "gosec", "golangci-lint")
+tools = ("govulncheck", "golangci-lint")
 def versions(text):
-    return {t: set(re.findall(rf"/cmd/{re.escape(t)}@(\S+)", text)) for t in tools}
+    found = {t: set(re.findall(rf"/cmd/{re.escape(t)}@(\S+)", text)) for t in tools}
+    # CI installs golangci-lint through golangci-lint-action's `version:` input.
+    action = re.search(r"golangci/golangci-lint-action@\S+.*?\n\s+with:\s*\n\s+version:\s*(\S+)", text, re.S)
+    if action:
+        found["golangci-lint"].add(action.group(1))
+    return found
 make = versions(Path(sys.argv[1]).read_text())
 ci = versions(Path(sys.argv[2]).read_text())
 for t in tools:
