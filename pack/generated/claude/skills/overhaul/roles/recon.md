@@ -31,20 +31,28 @@ and proposals.
    denominator. Note submodules (boundary only), binaries and assets, candidate
    vendored or generated paths with the evidence for each (generator, header, config),
    and security-sensitive ignored inputs by path only.
-3. Discover components per
+3. Use a code graph when the host offers one, to map faster, never to decide scope:
+   `codebase-memory-mcp` (architecture, call paths) or `codegraph` for a full project,
+   `code-review-graph` (changed nodes, impact radius) for a PR or branch. Record which
+   graph you used, its index time and the commit it was built from. A graph is a hint:
+   it may be stale or miss dynamic calls, so it can add entry points, contract seeds
+   and cross-file edges but never remove a file, range or lane from the step 2
+   inventory. Verify every graph-derived fact you report against the source. Without a
+   graph, use `rg` and direct reads.
+4. Discover components per
    [`stack-profiles.md`](../references/stack-profiles.md#discover-components): manifests,
    lockfiles, toolchain versions, build targets, entry points, deployment files,
    schemas, generators and test configuration. Record the source of every version.
-4. Assign lanes by responsibility and runtime, not by folder name
+5. Assign lanes by responsibility and runtime, not by folder name
    ([`orchestration.md`](../references/orchestration.md#lanes-by-responsibility)); mark
    mixed files with their per-range lanes, including embedded languages.
-5. Propose deterministic partitions: sorted paths, whole small files, fixed-size ranges
+6. Propose deterministic partitions: sorted paths, whole small files, fixed-size ranges
    with overlap for large files; every eligible line belongs to at least one range.
-6. Seed the contract graph (APIs, events, server actions, IPC/FFI, shared models,
+7. Seed the contract graph (APIs, events, server actions, IPC/FFI, shared models,
    generated clients) and critical journeys with the files that implement them.
-7. List available tools with versions obtained safely (no network, no target-supplied
+8. List available tools with versions obtained safely (no network, no target-supplied
    configuration) and their likely coverage per language.
-8. Record `finished_at`; write the receipt.
+9. Record `finished_at`; write the receipt.
 
 ## Output
 

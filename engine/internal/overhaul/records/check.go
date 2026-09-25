@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/overhaul/ovio"
+	"github.com/devrites/devrites/internal/overhaul/snapshot"
 )
 
 func set(vals ...string) map[string]bool {
@@ -198,6 +199,9 @@ func BadPath(p any, repo string) string {
 		if part == ".git" {
 			return "names a directory or git metadata"
 		}
+	}
+	if strings.HasPrefix(s, snapshot.RunAreaDir) {
+		return "names the overhaul run area"
 	}
 	if isDir(join(repo, s)) {
 		return "names a directory or git metadata"
@@ -817,6 +821,26 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 			}
 			if !bytes.Contains(b, []byte(stamp)) {
 				add("view %s: stamp does not match this generation (%s)", v.Name(), stamp)
+			}
+		}
+	}
+	// Views are how the user reads a stop: every stop carries the report, and a
+	// pending approval carries the review page and the plan it approves.
+	if outcome := str(rj, "execution_outcome"); outcome != "" && outcome != "RUNNING" {
+		for _, v := range []string{"report.html", "report.md"} {
+			if !isFile(join(vdir, v)) {
+				add("views/%s is required once the run stops (execution_outcome %s)", v, outcome)
+			}
+		}
+	}
+	if str(rj, "phase") == "AWAITING_APPROVAL" {
+		need := []string{"review.html", "review.md"}
+		if hasPR {
+			need = append(need, "plan.md")
+		}
+		for _, v := range need {
+			if !isFile(join(vdir, v)) {
+				add("views/%s is required while awaiting approval", v)
 			}
 		}
 	}

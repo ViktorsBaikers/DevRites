@@ -1,6 +1,7 @@
 // Package records implements the /overhaul records tool: generation staging
 // and publishing plus cross-record validation of a run area.
 //
+//	init REPO ID    create REPO/.devrites/overhaul/ID (0700) and make git ignore it
 //	digest FILE     sha256 of exact bytes
 //	stage RUN       copy current generation to RUN/g<N+1>.tmp (prints path)
 //	publish RUN     validate staged generation, write manifest, swap CURRENT last
@@ -25,6 +26,7 @@ import (
 
 const usage = `usage: overhaul records <command> ...
 
+  init REPO ID    create REPO/.devrites/overhaul/ID (0700) and make git ignore it
   digest FILE     sha256 of exact bytes
   stage RUN       copy current generation to RUN/g<N+1>.tmp (prints path)
   publish RUN     validate staged generation, write manifest, swap CURRENT last
@@ -46,6 +48,12 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		if d, err = sha(args[1]); err == nil {
 			fmt.Fprintln(stdout, d)
 		}
+	case "init":
+		if len(args) != 3 {
+			fmt.Fprint(stderr, usage)
+			return 2
+		}
+		err = initRun(args[1], args[2], stdout)
 	case "stage":
 		code, err = stage(args[1], stdout, stderr)
 	case "publish":

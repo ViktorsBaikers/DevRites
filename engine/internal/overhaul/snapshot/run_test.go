@@ -59,7 +59,7 @@ func lines(first, last string) string {
 	return strings.Join(l, "\n") + "\n"
 }
 
-// newRepo commits src/a.py, src/b.py and gone.txt.
+// newRepo commits src/a.py, src/b.py, src/clean.py and gone.txt.
 func newRepo(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
@@ -67,6 +67,7 @@ func newRepo(t *testing.T) string {
 	write(t, root, "src/a.py", lines("one", "ten"))
 	write(t, root, "src/b.py", "b\n")
 	write(t, root, "gone.txt", "gone\n")
+	write(t, root, "src/clean.py", "clean\n")
 	gitT(t, root, "add", "-A")
 	gitT(t, root, "commit", "-q", "-m", "init")
 	return root
@@ -147,6 +148,7 @@ func TestCaptureDirtyRepo(t *testing.T) {
 		"src/a.py":        {Source: "tracked", Copied: true},
 		"src/b.py":        {Source: "tracked", Copied: true},
 		"gone.txt":        {Source: "tracked", SHA256: "deleted"},
+		"src/clean.py":    {Source: "tracked"}, // clean: git holds it, so only its hash is kept
 		"note.txt":        {Source: "untracked", Copied: true},
 		".env":            {Source: "untracked", Sensitive: true},
 		"id_material.txt": {Source: "untracked", Sensitive: true},
@@ -215,11 +217,22 @@ func TestCaptureRefusals(t *testing.T) {
 
 	inside := filepath.Join(root, "snap")
 	code, _, stderr := run("capture", root, inside)
-	if code != 2 || !strings.Contains(stderr, "snapshot must live outside the target repository") {
+	if code != 2 || !strings.Contains(stderr, "snapshot must live outside the target repository or inside its .devrites/overhaul/ run area") {
 		t.Errorf("inside target: exit %d %q", code, stderr)
 	}
 	if _, err := os.Lstat(inside); err == nil {
 		t.Error("snapshot created inside the target")
+	}
+
+	// The run area inside the target is the one allowed place, and never counts as repository content.
+	before := fingerprintOf(t, root)
+	runArea := filepath.Join(root, ".devrites", "overhaul", "r1")
+	if code, _, stderr := run("capture", root, filepath.Join(runArea, "baseline")); code != 0 {
+		t.Fatalf("capture into run area: exit %d %q", code, stderr)
+	}
+	write(t, runArea, "g0001/run.json", "{}\n")
+	if after := fingerprintOf(t, root); after != before {
+		t.Error("run area contents changed the repository fingerprint")
 	}
 
 	existing := t.TempDir()
@@ -357,4 +370,13 @@ func TestDeltaReportsOnlyAttemptChanges(t *testing.T) {
 	if code != 0 || stdout != "src/b.py\n" {
 		t.Fatalf("delta exit %d stdout %q stderr %q", code, stdout, stderr)
 	}
+}
+
+func fingerprintOf(t *testing.T, root string) string {
+	t.Helper()
+	code, stdout, stderr := run("fingerprint", root)
+	if code != 0 {
+		t.Fatalf("fingerprint exit %d: %s", code, stderr)
+	}
+	return strings.TrimSpace(stdout)
 }

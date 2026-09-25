@@ -101,6 +101,31 @@ func TestReceipt(t *testing.T) {
 	}
 }
 
+// A receipt is admitted against the open working generation (g<N+1>.tmp based on
+// CURRENT) when one exists, so dispatches need not be published one by one.
+func TestReceiptAgainstOpenStage(t *testing.T) {
+	dir := newRun(t)
+	stage := filepath.Join(dir, "g0002.tmp")
+	write(t, filepath.Join(stage, ".base"), "g0001")
+	write(t, filepath.Join(stage, "run.json"), J{"run_id": "run-1",
+		"revisions": J{"plan": J{"rev": 1, "file": "revisions/plan-r1.json"}}})
+	write(t, filepath.Join(stage, "dispatch.json"), J{"attempts": L{
+		J{"task_id": "R-2", "attempt_id": "A1", "role": "reviewer", "lane": "security", "snapshot": "s1", "status": "running"},
+	}})
+	rc := writerReceipt()
+	rc["task_id"], rc["role"], rc["lane"], rc["outcome"], rc["inspected"] = "R-2", "reviewer", "security", "no-findings", L{"src/a.py:1-9"}
+	delete(rc, "changed_paths")
+	p := write(t, filepath.Join(dir, "receipts/r2.json"), rc)
+	if code, out, errs := run("receipt", dir, p); code != 0 || !strings.Contains(out, "ADMISSIBLE") {
+		t.Fatalf("open stage: %d %s%s", code, out, errs)
+	}
+	// A stage based on an older generation is stale and never consulted.
+	write(t, filepath.Join(stage, ".base"), "g0000")
+	if code, out, _ := run("receipt", dir, p); code != 1 || !strings.Contains(out, "no such dispatched attempt") {
+		t.Fatalf("stale stage consulted: %d %s", code, out)
+	}
+}
+
 func TestReceiptIOError(t *testing.T) {
 	dir := newRun(t)
 	if code, _, errs := run("receipt", dir, filepath.Join(dir, "missing.json")); code != 2 || !strings.HasPrefix(errs, "ERROR: ") {

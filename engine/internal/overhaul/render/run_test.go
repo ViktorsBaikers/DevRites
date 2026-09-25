@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -90,7 +92,13 @@ func fixture(t *testing.T, withPlan bool) (run, gen string) {
 	writeJSON(t, filepath.Join(gen, "scorecard.json"), obj{
 		"readiness_verdict": "NOT_READY",
 		"status_by_control": obj{"C-1": "FAIL"},
-		"thresholds":        []any{obj{"scope": "global", "value": obj{"exact": "1/2", "decimal": "0.5"}}},
+		"global":            obj{"Q": obj{"exact": "1/2"}, "domains": obj{"correctness": obj{"exact": "5/2"}, "security": obj{"exact": "19/2"}}},
+		"lanes":             obj{"backend": obj{"Q": obj{"exact": "487/50"}, "domains": obj{"correctness": obj{"exact": "1"}, "security": obj{"exact": "10"}}}},
+		"thresholds": []any{
+			obj{"scope": "global", "value": obj{"exact": "1/2", "decimal": "0.5"}, "min": "97/10", "result": "FAIL"},
+			obj{"scope": "lane backend", "value": obj{"exact": "487/50", "decimal": "9.74"}, "min": "97/10", "result": "PASS"},
+		},
+		"gates": obj{"G-THRESHOLDS": "FAIL", "G-MANDATORY": "FAIL", "G-COVERAGE": "PASS", "G-ORACLES": "UNKNOWN"},
 	})
 	writeJSON(t, filepath.Join(gen, "scorecard-baseline.json"), obj{
 		"thresholds": []any{obj{"scope": "global", "value": obj{"exact": "1/4"}}},
@@ -192,11 +200,15 @@ func TestMarkdownEscapesAndHomeRedacted(t *testing.T) {
 func TestRowIDsDecisionAndStamp(t *testing.T) {
 	run, gen := fixture(t, true)
 	h, md := renderKind(t, run, gen, "review")
-	if !strings.Contains(h, `<tr id="F-1">`) {
-		t.Fatal("row id F-1 missing")
+	// Findings render as expandable rows: the row element carries the finding's anchor.
+	if !strings.Contains(sectionHTML(t, h, "findings"), `<details id="F-1" class="finding s-high">`) || strings.Count(h, `id="F-1"`) != 1 {
+		t.Fatal("finding anchor F-1 missing or not unique")
 	}
-	if strings.Contains(h, `<tr id="nil deref"`) || strings.Contains(h, `<tr id="run_id"`) {
-		t.Fatal("row id on a non-ID first cell")
+	if !strings.Contains(sectionHTML(t, h, "plan"), `<details id="T-1" class="task">`) || strings.Count(h, `id="T-1"`) != 1 {
+		t.Fatal("task anchor T-1 missing or not unique")
+	}
+	if strings.Contains(h, `id="nil deref"`) || strings.Contains(h, `id="run_id"`) {
+		t.Fatal("id on a non-ID first cell")
 	}
 	d, f := strings.Index(h, `<section id="decide">`), strings.Index(h, `<section id="findings">`)
 	if d < 0 || d > f {
@@ -206,7 +218,8 @@ func TestRowIDsDecisionAndStamp(t *testing.T) {
 		t.Fatal("approval textarea missing")
 	}
 	if !strings.HasPrefix(md, "<!-- overhaul-stamp run=R1 generation=g0003 plan=r1:") ||
-		!strings.Contains(h, "<!-- overhaul-stamp run=R1 generation=g0003 plan=r1:") {
+		!strings.Contains(h, "<!-- overhaul-stamp run=R1 generation=g0003 plan=r1:") ||
+		!strings.Contains(h, `<header class="top"><span class="brand">Overhaul review R1</span><code>overhaul-stamp run=R1 generation=g0003 plan=r1:`) {
 		t.Fatal("stamp missing")
 	}
 	if !strings.Contains(h, `<p role="status"><strong>Outcome AWAITING_APPROVAL · verdict NOT_READY · phase review</strong></p>`) {
@@ -240,7 +253,7 @@ func TestSectionContents(t *testing.T) {
 		t.Fatal("repairs join missing")
 	}
 	card := sectionHTML(t, h, "scorecard")
-	if !strings.Contains(card, "<td>global</td><td><span class=\"muted\">not recorded</span></td><td>3/10</td><td>1/4</td><td>1/2</td><td>C-2</td><td>C-1</td>") {
+	if !strings.Contains(card, `<td>global</td><td><span class="muted">not recorded</span></td><td class="n">3/10</td><td class="n">1/4</td><td class="n">1/2</td><td>C-2</td><td>C-1</td>`) {
 		t.Fatalf("transparent scorecard global row wrong: %s", card)
 	}
 	if !strings.Contains(sectionHTML(t, h, "approvals"), "QUOTE-approve r1") {
@@ -289,5 +302,161 @@ func TestUsage(t *testing.T) {
 		if Run(args, &out, &errb) != 2 {
 			t.Fatalf("%v: want exit 2", args)
 		}
+	}
+}
+
+func TestSummaryAnswersFirst(t *testing.T) {
+	run, gen := fixture(t, true)
+	h, _ := renderKind(t, run, gen, "review")
+	i := strings.Index(h, `<header id="summary" class="hero">`)
+	if i < 0 || i > strings.Index(h, `<section id="gaps">`) || strings.Index(h, `<section id="gaps">`) > strings.Index(h, `<section id="decide">`) {
+		t.Fatal("summary, then charts, then the decision")
+	}
+	hero := h[i : i+strings.Index(h[i:], "</header>")]
+	for _, want := range []string{
+		`<h1 class="verdict t-bad">Not ready</h1>`,
+		`<p class="hero-num">0.50<span> / 10</span></p>`,
+		`Target 9.70 · 9.20 to go`,
+		`aria-label="Global score 0.50 of 10, target 9.70"`,
+		`<span class="lbl">backend</span>`, `<span class="val">9.74</span>`,
+		// open gates in plain words with their id and status; passing gates counted
+		`Scores are below their minimums<br><code>G-THRESHOLDS · FAIL</code>`,
+		`<li class="t-warn"><span class="mark">?</span><span>Regression tests are not proven red then green<br><code>G-ORACLES · UNKNOWN</code>`,
+		`1 other gate passes.`,
+		// confirmed findings by severity (the opportunity F-2 is not a finding)
+		`<h2>1 confirmed finding</h2>`, `<a href="#findings">High</a> <strong>1</strong>`,
+		`<a href="#decide">Decide on the repair plan</a> <span class="muted">2 tasks proposed</span>`,
+	} {
+		if !strings.Contains(hero, want) {
+			t.Errorf("summary lacks %s", want)
+		}
+	}
+	if !strings.Contains(h, `<span class="pill t-bad">NOT_READY</span></header>`) {
+		t.Error("top bar verdict pill missing")
+	}
+	f := sectionHTML(t, h, "findings")
+	if !strings.Contains(f, `id="sev-all" checked>`) || !strings.Contains(f, `id="sev-high"`) || strings.Contains(f, `id="sev-critical"`) {
+		t.Error("severity filter should offer All plus only the severities present")
+	}
+	if strings.Contains(sectionHTML(t, h, "opportunities"), `class="filter"`) {
+		t.Error("opportunities carry no severity filter")
+	}
+	if !strings.Contains(h, `<details id="records" class="records">`) || strings.Index(h, `<details id="records"`) > strings.Index(h, `<section id="coverage">`) {
+		t.Error("record tables belong in the collapsed appendix")
+	}
+}
+
+// A run scored only at baseline must still show its scores (a real run did not).
+func TestSummaryFallsBackToBaselineScorecard(t *testing.T) {
+	run, gen := fixture(t, true)
+	if err := os.Remove(filepath.Join(gen, "scorecard.json")); err != nil {
+		t.Fatal(err)
+	}
+	h, _ := renderKind(t, run, gen, "review")
+	if !strings.Contains(h, `<p class="hero-num">0.25<span> / 10</span></p>`) {
+		t.Fatal("baseline scorecard not used when no candidate scorecard exists")
+	}
+}
+
+func TestGapCharts(t *testing.T) {
+	run, gen := fixture(t, true)
+	h, _ := renderKind(t, run, gen, "review")
+	gaps := sectionHTML(t, h, "gaps")
+	c, s := strings.Index(gaps, `#controls">correctness`), strings.Index(gaps, `#controls">security`)
+	if c < 0 || s < 0 || c > s {
+		t.Fatal("gap map lists the worst domain first")
+	}
+	for _, want := range []string{
+		`<td class="cell g2"><span class="val">2.50</span>`, // 6.5 below the 9.0 floor
+		`<td class="cell g0"><span class="val">9.50</span>`, // meets the floor
+		`<td class="cell g2"><span class="val">1.00</span>`, // backend correctness: exactly 8 below
+		`<th scope="col">backend</th>`,
+	} {
+		if !strings.Contains(gaps, want) {
+			t.Errorf("gap map lacks %s", want)
+		}
+	}
+	loss := sectionHTML(t, h, "losses")
+	if !strings.Contains(loss, `1 of 1 failing</span>`) || !strings.Contains(loss, `0 of 1 failing · 1 without evidence</span>`) {
+		t.Errorf("control split wrong: %s", loss)
+	}
+	if !strings.Contains(sectionHTML(t, h, "hotspots"), `<code>(no location)</code>`) {
+		t.Error("finding without a location missing from hotspots")
+	}
+	if !strings.Contains(sectionHTML(t, h, "plan"), `1 of 1</span>`) {
+		t.Error("plan coverage of the high finding missing")
+	}
+	if !strings.Contains(sectionHTML(t, h, "reach"), `all reviewed`) {
+		t.Error("backend lane coverage missing")
+	}
+	// Every chart is an image with a text alternative, and its values are printed too.
+	if n, m := strings.Count(h, `<svg class="bar"`), strings.Count(h, `role="img" aria-label="`); n == 0 || n != m {
+		t.Fatalf("charts %d, labelled %d", n, m)
+	}
+}
+
+func TestGapClassBoundaries(t *testing.T) {
+	floor := big.NewRat(9, 1)
+	for val, want := range map[string]string{"9": "g0", "10": "g0", "8.99": "g4", "7": "g4", "6.99": "g3", "4": "g3", "3.99": "g2", "1": "g2", "0.99": "g1", "0": "g1"} {
+		r, _ := new(big.Rat).SetString(val)
+		if got := gapClass(r, floor); got != want {
+			t.Errorf("gapClass(%s) = %s, want %s", val, got, want)
+		}
+	}
+	if gapClass(nil, floor) != "gx" {
+		t.Error("missing score must not look like a result")
+	}
+}
+
+func TestArea(t *testing.T) {
+	for p, want := range map[string]string{"crates/central/src/x.rs": "crates/central", "frontend/x.ts": "frontend",
+		"README.md": "(repository root)", "/a/b/c": "a/b"} {
+		if got := area(p); got != want {
+			t.Errorf("area(%q) = %q, want %q", p, got, want)
+		}
+	}
+}
+
+func TestFloor2NeverOverstates(t *testing.T) {
+	for r, want := range map[*big.Rat]string{big.NewRat(9699, 1000): "9.69", big.NewRat(97, 10): "9.70",
+		big.NewRat(10, 1): "10.00", big.NewRat(0, 1): "0.00", big.NewRat(1, 3): "0.33"} {
+		if got := floor2(r); got != want {
+			t.Errorf("floor2(%s) = %s, want %s", r, got, want)
+		}
+	}
+}
+
+// Light is the base (and print) theme; dark applies on screens that prefer it
+// and must redefine every colour token.
+func TestThemeTokens(t *testing.T) {
+	tok := regexp.MustCompile(`--[a-z0-9-]+:`)
+	block := func(start string) string {
+		i := strings.Index(css, start)
+		if i < 0 {
+			t.Fatalf("%q missing", start)
+		}
+		s := css[i+len(start):]
+		return s[:strings.IndexByte(s, '}')]
+	}
+	light, dark := block(":root{"), block("@media screen and (prefers-color-scheme:dark){:root{")
+	if !strings.Contains(light, "color-scheme:light") || !strings.Contains(dark, "color-scheme:dark") {
+		t.Fatal("color-scheme not declared per theme")
+	}
+	darkTok := map[string]bool{}
+	for _, k := range tok.FindAllString(dark, -1) {
+		darkTok[k] = true
+	}
+	for _, k := range tok.FindAllString(light, -1) {
+		if k != "--serif:" && k != "--sans:" && k != "--mono:" && !darkTok[k] {
+			t.Errorf("dark theme does not redefine %s", k)
+		}
+	}
+	for _, k := range []string{"--bg:", "--fg:", "--accent:", "--s-critical:", "--s-high:", "--s-medium:", "--s-low:", "--s-informational:"} {
+		if !strings.Contains(light, k) || !darkTok[k] {
+			t.Errorf("token %s missing from a theme", k)
+		}
+	}
+	if strings.Contains(css, "url(") || strings.Contains(css, "@import") || strings.Contains(css, "@font-face") {
+		t.Error("stylesheet references an external resource")
 	}
 }

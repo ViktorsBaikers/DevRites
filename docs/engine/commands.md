@@ -145,7 +145,7 @@ network. The skill documents the record schemas and when to call each tool.
 
 | Tool | Forms | Exit codes |
 | --- | --- | --- |
-| `records` | `digest <file>`, `stage <run>`, `publish <run>`, `validate <run>` | 0 ok; 1 violations (listed as `VIOLATION:` lines); 2 usage or I/O |
+| `records` | `init <repo> <run-id>`, `digest <file>`, `stage <run>`, `publish <run>`, `validate <run>` | 0 ok; 1 violations (listed as `VIOLATION:` lines); 2 usage or I/O |
 | `admit` | `receipt <run> <receipt.json> [--observed <file>]`, `anchor <tree> <proposals.json>` | 0 admissible; 1 rejected; 2 usage or I/O; 3 duplicate or late receipt |
 | `snapshot` | `capture <repo> <out>`, `fingerprint <repo>`, `verify <repo> <out> [--agent-paths <file>]`, `state <repo> <out.json>`, `delta <before.json> <repo>` | 0 ok; 1 index changed or changes outside agent paths; 2 refusal, usage or I/O |
 | `score` | `--rubric <r> --results <s> --gates <g> [--out <file>]`, `compare --rubric <r> --baseline <a> --candidate <b>` | 0 computed; 2 invalid input (nothing counts as scored) |
@@ -156,6 +156,16 @@ network. The skill documents the record schemas and when to call each tool.
 `diff.autoRefreshIndex=false` and no external diff drivers, so `.git/index`
 stays byte-identical. Secret-pattern files and files holding private key material
 are hashed only: never copied into the snapshot tree and never included in its patches.
+Clean tracked files are hashed but not copied, because git already holds them;
+only dirty and untracked files are copied. A snapshot may live outside the
+repository or inside its `.devrites/overhaul/` run area, which every snapshot
+command leaves out of the repository state. `records init` creates
+`<repo>/.devrites/overhaul/<run-id>/` (mode 0700) and, when git does not already
+ignore it, adds `/.devrites/overhaul/` to the local `.git/info/exclude`, never to
+the shared `.gitignore`.
+`admit receipt` checks the attempt in the open staged generation (`g<N>.tmp` whose
+`.base` is `CURRENT`) when one exists, otherwise in `CURRENT`, so a phase can record
+many dispatches and admissions before one publish.
 
 ## Output and exit contracts
 

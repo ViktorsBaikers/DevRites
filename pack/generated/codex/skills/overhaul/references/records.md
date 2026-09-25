@@ -15,14 +15,14 @@ JSON is canonical for every machine decision; Markdown and HTML are projections
 rendered from it. The coordinator is the only writer of canonical records.
 
 ```text
-<run>/                       # default ~/code-overhaul-runs/<repo-id>/<run-id>/, mode 0700
+<run>/                       # <repo>/.devrites/overhaul/<run-id>/ from `records init`, mode 0700, git-ignored
   CURRENT                    # name of the active generation, replaced last and atomically
   g0007/                     # one coherent generation of mutable records + manifest.json + views/
   revisions/                 # immutable plan-r<N>.json, rubric-r<N>.json, profile-<id>-r<N>.json, bench-<id>-r<N>.json
   packets/                   # dispatch packets, one per attempt
   receipts/  proposals/      # immutable worker outputs, named <run>__<task>__<attempt>__<role>.json
   evidence/                  # sanitized logs, samples, traces, screenshots, red/green output
-  baseline/                  # snapshot from `devrites-engine overhaul snapshot capture` (outside the target tree)
+  baseline/                  # snapshot from `devrites-engine overhaul snapshot capture`
 ```
 
 Placement rules: [`scope-and-safety.md`](scope-and-safety.md#run-area-and-checkpoints).
@@ -41,7 +41,7 @@ Placement rules: [`scope-and-safety.md`](scope-and-safety.md#run-area-and-checkp
 | `approval.json` | append-only `events[]` ([fields](lifecycle.md#the-approval-gate)) |
 | `results-baseline.json`, `results-candidate.json`, `gates.json`, `scorecard*.json` | scoring inputs and calculator output ([`scoring.md`](scoring.md)) |
 | `cycles.json` | append-only `cycles[]` ([`lifecycle.md`](lifecycle.md#cycle-records)) |
-| `views/` | `review.*`, `report.*`, `plan.md`, each carrying the generation stamp |
+| `views/` | `review.*`, `report.*`, `plan.md`, each carrying the generation stamp. `publish` requires `report.html` and `report.md` once `execution_outcome` leaves `RUNNING`, and `review.html`, `review.md` and (with a plan) `plan.md` while `phase` is `AWAITING_APPROVAL` |
 
 `null` means "not applicable by design"; a missing value means "not recorded" —
 never "passed". Worker receipts become canonical only after admission
@@ -49,6 +49,19 @@ never "passed". Worker receipts become canonical only after admission
 blocks the run; it never reads as zero findings.
 
 ## Publishing a generation
+
+Keep one staged generation open as the working generation of a phase and publish
+it at the phase boundary, not after every shard: after preflight, after the audit
+waves are admitted (coverage and findings), after verification and reconciliation,
+at the approval gate, after each completed repair cycle, and at every stop. Record
+dispatches and admissions in the working generation as they happen; `admit receipt`
+checks attempts there when a staged generation based on `CURRENT` exists. Receipts,
+proposals, packets, evidence and the staged generation are durable files, so a
+resume loses no worker output: it continues an open stage based on `CURRENT`, or
+re-admits the receipts into a new one. A writer attempt is still published as
+`dispatched` before it launches, so an interruption always shows the live writer,
+and every admission and settlement is recorded before the run leaves `RUNNING`
+([`orchestration.md`](orchestration.md#receipts)).
 
 1. `devrites-engine overhaul records stage <run>` copies the current generation to
    `g<N+1>.tmp` (views and manifest excluded).

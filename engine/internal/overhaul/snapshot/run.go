@@ -151,6 +151,10 @@ func split0(b []byte) []string {
 	return out
 }
 
+// RunAreaDir is the repository-relative home of /overhaul run areas. It is never
+// repository content: files() leaves it out, so records never look like user changes.
+const RunAreaDir = ".devrites/overhaul/"
+
 // files lists tracked paths and non-ignored untracked paths, each sorted and deduplicated.
 func files(root string) (tracked, untracked []string, err error) {
 	t, err := git(root, "ls-files", "-z", "--cached")
@@ -161,14 +165,14 @@ func files(root string) (tracked, untracked []string, err error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	tracked = split0(t)
+	tracked = withoutRunArea(split0(t))
 	sort.Strings(tracked)
 	tracked = compact(tracked)
 	seen := map[string]bool{}
 	for _, p := range tracked {
 		seen[p] = true
 	}
-	for _, p := range split0(u) {
+	for _, p := range withoutRunArea(split0(u)) {
 		if !seen[p] {
 			seen[p] = true
 			untracked = append(untracked, p)
@@ -176,6 +180,37 @@ func files(root string) (tracked, untracked []string, err error) {
 	}
 	sort.Strings(untracked)
 	return tracked, untracked, nil
+}
+
+func withoutRunArea(paths []string) []string {
+	out := paths[:0]
+	for _, p := range paths {
+		if !strings.HasPrefix(p, RunAreaDir) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// dirty lists paths whose working-tree content differs from HEAD (all tracked
+// paths when there is no HEAD). Clean files stay recoverable from git itself.
+func dirty(root string, tracked []string) (map[string]bool, error) {
+	set := map[string]bool{}
+	if _, err := git(root, "rev-parse", "--verify", "-q", "HEAD"); err != nil {
+		for _, p := range tracked {
+			set[p] = true
+		}
+		return set, nil
+	}
+	b, err := git(root, "-c", "diff.autoRefreshIndex=false", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
+		"--name-only", "-z", "HEAD")
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range split0(b) {
+		set[p] = true
+	}
+	return set, nil
 }
 
 func compact(s []string) []string {
@@ -309,8 +344,10 @@ func capture(root, out string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if strings.HasPrefix(ovio.Resolve(absOut), root+string(os.PathSeparator)) {
-		return errors.New("snapshot must live outside the target repository")
+	resolvedOut := ovio.Resolve(absOut)
+	runArea := filepath.Join(root, filepath.FromSlash(RunAreaDir)) + string(os.PathSeparator)
+	if strings.HasPrefix(resolvedOut, root+string(os.PathSeparator)) && !strings.HasPrefix(resolvedOut, runArea) {
+		return errors.New("snapshot must live outside the target repository or inside its " + RunAreaDir + " run area")
 	}
 	idx, err := git(root, "ls-files", "-s", "-z")
 	if err != nil {
@@ -349,8 +386,18 @@ func capture(root, out string, stdout io.Writer) error {
 	if err := os.Chmod(out, 0o700); err != nil {
 		return err
 	}
+	var trackedPaths []string
 	for p, v := range st {
-		v.Copied = !v.Sensitive && v.SHA256 != "deleted" && v.SHA256 != "directory"
+		if v.Source == "tracked" {
+			trackedPaths = append(trackedPaths, p)
+		}
+	}
+	changed, err := dirty(root, trackedPaths)
+	if err != nil {
+		return err
+	}
+	for p, v := range st {
+		v.Copied = (v.Source == "untracked" || changed[p]) && !v.Sensitive && v.SHA256 != "deleted" && v.SHA256 != "directory"
 		if v.Copied {
 			if err := copyEntry(filepath.Join(root, filepath.FromSlash(p)), filepath.Join(out, "tree", filepath.FromSlash(p))); err != nil {
 				return err

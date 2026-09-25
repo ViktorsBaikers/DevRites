@@ -47,6 +47,11 @@ confirmation: confirm only on positive evidence.
 
 ## Output
 
+For a `finding-verify` batch (up to 8 candidates), check each candidate on its own and
+return one verdict per candidate ID in `findings[]`: `id`, `verdict`, evidence and
+limitations. A candidate you could not check before the budget ended is `gap`, never
+confirmed or rejected, and one weak candidate never colours the verdict on another.
+
 `overhaul.receipt/1` with `outcome` `verdict` and one of: `confirmed`, `rejected`
 (with the disproving evidence), `needs-validation` (with the one missing fact),
 `reclassified-hardening`, `holds`, `fails` (with the counterexample), `adequate`,

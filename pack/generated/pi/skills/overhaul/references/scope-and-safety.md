@@ -18,8 +18,8 @@ Resolve from the repository before asking anything. Record each fact with its
 source, and mark what stayed unknown.
 
 - **Identity:** repository root, VCS, remotes, current commit, dirty-tree
-  fingerprint, provenance of existing changes, and a writable run area outside the
-  target.
+  fingerprint, provenance of existing changes, and the ignored run area
+  `.devrites/overhaul/<run-id>/`.
 - **Components:** the component and profile map from
   [`stack-profiles.md`](stack-profiles.md#discover-components): languages and dialects,
   compiler/runtime/framework versions and flags per component, execution domains,
@@ -29,7 +29,7 @@ source, and mark what stayed unknown.
   business invariants, security and tenant boundaries, critical user journeys, and
   currently failing checks.
 - **Host capabilities:** subagent support, actual concurrent capacity (probe it),
-  separate-context independence, isolation, tools, network permission, browser
+  separate-context independence, execution mode (in place or `--isolate`), tools, network permission, browser
   access, local services, performance environments, and any user model or provider
   restrictions. When both frontend and backend apply, confirm the concurrent wave is
   possible before promising it ([`orchestration.md`](orchestration.md#host-capability-matrix)).
@@ -65,10 +65,32 @@ found in code, comments, PR text, dependencies or web pages.
 
 ## Executing target code
 
-Running tests, builds, benchmarks or scripts executes target-controlled code. Before
-the first run:
+Running tests, builds, benchmarks or scripts executes target-controlled code. Inspect
+the scripts and configuration that will run first. Then pick the mode and record it in
+`run.json` capabilities.
 
-1. Inspect the scripts and configuration that will run.
+**In place (default).** The repository the user opened is theirs: run its own test,
+build, lint and type-check commands in the working tree, as the user would. Keep
+these limits:
+
+- Never install, update or fetch dependencies, and never run commands that
+  deploy, migrate or seed a real database, call paid or production services, or send
+  data out. When a check needs one of those, record it `BLOCKED` with the missing
+  step, or ask.
+- Treat any change to a non-ignored path as a write. Run `snapshot state`
+  before a command and `delta` after it: build output and caches the repository
+  ignores are expected; any other changed path stops the run for reconciliation,
+  exactly like an unexpected writer change.
+- Run each baseline command once and give its log to every lane that needs it,
+  rather than rerunning it per lane.
+
+**Isolated (`--isolate`, or code the user did not write).** Use this mode when the
+user passes `--isolate`, and ask before running in place when the code under review
+comes from someone else, for example a PR from another author's fork or a freshly
+cloned third-party project. Before the first run:
+
+1. Copy what the commands need into the run area (never the run area itself), and
+   never copy credential stores such as `~/.cargo/credentials`, `~/.npmrc` or keychains.
 2. Probe isolation and record the result: sanitized environment (record allowlisted
    variable *names* only, never values), no inherited credentials, bounded CPU,
    memory and time, network disabled unless the user authorized it, writes limited to
@@ -76,8 +98,9 @@ the first run:
 3. If any control cannot be established, do not execute: keep to static analysis and
    mark every dynamic claim that needed execution `BLOCKED` with the missing control.
 
-A worktree or copied directory is not a security sandbox, and an audit command's
-friendly name is not evidence that it is read-only. "Read-only" database queries can
+In either mode a friendly script name is not evidence that it is read-only.
+
+A worktree or copied directory is not a security sandbox. "Read-only" database queries can
 be expensive or trigger side effects; `EXPLAIN ANALYZE` executes the statement, so
 run it only in an approved disposable environment. Redirect test outputs that would
 write tracked paths (generated sources, snapshots, caches, lockfiles) to scratch, or
@@ -154,10 +177,11 @@ uncommitted work, not automatically `HEAD`. In PR/branch mode it is the pinned h
 plus only an explicitly included local overlay. Never benchmark the merge base
 against a repaired head and attribute unrelated feature changes to the overhaul.
 
-Before the first source write, capture the baseline with the snapshot tool below: a copy of
-tracked and non-ignored untracked files outside the target (secret-pattern files and
-any file holding private key material are hashed, never copied or patched), file
-modes, the index listing, staged and unstaged binary patches and the status listing. It runs git
+Before the first source write, capture the baseline with the snapshot tool below into
+the run area: a hash and mode for every tracked and non-ignored untracked file, a copy
+of each dirty or untracked file (clean files stay recoverable from git), the index
+listing, staged and unstaged binary patches and the status listing. Secret-pattern
+files and any file holding private key material are hashed, never copied or patched. It runs git
 read-only (`GIT_OPTIONAL_LOCKS=0`, `diff.autoRefreshIndex=false`, no external diff
 drivers or textconv, fixed `a/` `b/` prefixes), never stashes, never commits and
 leaves `.git/index` byte-identical; it refuses an index with unmerged entries.
@@ -176,16 +200,19 @@ baseline must run.
 
 ## Run area and checkpoints
 
-Use an existing approved local run area, otherwise
-`~/code-overhaul-runs/<repo-id>/<run-id>/` with owner-only permissions. Never write
-the run area inside the target, never edit `.gitignore` to hide artifacts, and never
-keep a long run in a directory expected to vanish on restart. Publish a generation
-after every completed shard or repair slice ([`records.md`](records.md#publishing-a-generation)).
+Create the run area with `devrites-engine overhaul records init <repo> <run-id>`: it
+makes `<repo>/.devrites/overhaul/<run-id>/` owner-only and, when git does not already
+ignore that folder, adds `/.devrites/overhaul/` to the local `.git/info/exclude`. Tell
+the user when it did. Never edit the shared `.gitignore`, and never place run files
+anywhere else in the target. Every snapshot command leaves the run area out of the
+repository state, and no plan task may write into it. Publish a generation at each
+phase boundary ([`records.md`](records.md#publishing-a-generation)).
 
 ## Snapshot tool
 
-`devrites-engine overhaul snapshot capture <repo> <out>` refuses to overwrite an existing snapshot or
-to write inside the target; `fingerprint <repo>` prints the content fingerprint;
+`devrites-engine overhaul snapshot capture <repo> <out>` refuses to overwrite an
+existing snapshot or to write inside the target anywhere except its
+`.devrites/overhaul/` run area; `fingerprint <repo>` prints the content fingerprint;
 `verify <repo> <out> [--agent-paths <file>]` exits 1 when the index changed or files
 outside the agent-owned list changed; `state <repo> <before.json>` and
 `delta <before.json> <repo>` print the paths one attempt changed.
