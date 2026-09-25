@@ -12,6 +12,7 @@ import (
 	"github.com/devrites/devrites/internal/install"
 	"github.com/devrites/devrites/internal/lib"
 	"github.com/devrites/devrites/internal/notes"
+	"github.com/devrites/devrites/internal/overhaul"
 	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/version"
 )
@@ -65,6 +66,7 @@ Usage:
   devrites-engine secret-scan [--staged] [--stdin] [slug]  Scan exact staged blobs, stdin, or touched files; HIGH blocks
   devrites-engine open-visual <path-or-name> [--slug <slug>] [--no-open]
                                          Resolve a visual HTML file, optionally open it locally, print agent paths
+  devrites-engine overhaul <tool> ...      Run-record, admission, snapshot, scoring, benchmark and view tools for /overhaul
   devrites-engine version                  Print the engine binary's version
 Exit codes:
   0  ok / gate passed
@@ -135,6 +137,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.RunClaim(root, args[1:], stdout, stderr)
 	case "note":
 		return notes.Run(root, args[1:], stdout, stderr)
+	case "overhaul":
+		return overhaul.Run(args[1:], stdout, stderr)
 	case "state":
 		return cmdState(root, args[1:], stdout, stderr)
 	case "migrate":

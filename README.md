@@ -423,8 +423,10 @@ through Claude Code or Codex plugin stores.
 
 ## Skills and agents
 
-The pack ships 44 skills: 33 public and 11 internal. The public surface contains
-the `rite` menu and 32 `rite-*` workflows and utilities. Ten `devrites-*`
+The pack ships 45 skills: 34 public and 11 internal. The public surface contains
+the `rite` menu, 32 `rite-*` workflows and utilities, and the standalone,
+explicit-only `/overhaul` (approval-gated project, PR or branch audit with verified
+repairs; it runs without a DevRites workspace). Ten `devrites-*`
 specialists load when a matching task needs them; `devrites-lib` carries the
 shared contracts and engineering standards.
 

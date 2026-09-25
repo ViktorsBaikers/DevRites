@@ -40,6 +40,7 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "unknown state command", command: "state", args: []string{"unknown"}, want: rootUnused},
 		{name: "secret scan", command: "secret-scan", want: rootLenient},
 		{name: "open visual", command: "open-visual", want: rootLenient},
+		{name: "overhaul tools take explicit paths", command: "overhaul", args: []string{"records"}, want: rootUnused},
 	}
 
 	for _, test := range tests {
@@ -141,7 +142,7 @@ func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
 			}
 		})
 	}
-	for _, want := range []string{"devrites-engine orient", "devrites-engine check indexes"} {
+	for _, want := range []string{"devrites-engine orient", "devrites-engine check indexes", "devrites-engine overhaul"} {
 		if !strings.Contains(usage, want) {
 			t.Fatalf("usage does not advertise %q", want)
 		}

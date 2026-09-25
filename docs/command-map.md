@@ -22,7 +22,8 @@ visibility. Public utilities use the `rite-*` prefix: `rite-quick`,
 `rite-autocomplete`, `rite-explain`, `rite-pov`, `rite-dogfood`,
 `rite-pr-feedback`, and `rite-watch-pr`, plus the evidence-gated workspace compatibility command
 `rite-upgrade`. The host may invoke `devrites-*` specialists through the model.
-`devrites-lib` is the non-workflow library exception.
+`devrites-lib` is the non-workflow library exception. `overhaul` is a standalone,
+explicit-only skill outside both prefixes; it runs without any DevRites workspace.
 
 ## Surface lifecycle
 
@@ -121,6 +122,7 @@ See [`cli.md`](cli.md).
 | [`/rite-watch-pr`](../pack/.claude/skills/rite-watch-pr/SKILL.md) | utility | `[PR number\|PR URL\|blank for current branch]` | Observe one GitHub PR/CI/review snapshot, classify one next action, and stop. Safe for capability-admitted native schedules/events; never mutates code, Git, checks, threads, or PR state. | PR/check/review metadata + bounded failed-log excerpts | none |
 | [`/rite-pressure-test`](../pack/.claude/skills/rite-pressure-test/SKILL.md) | utility | `[idea]` | Pressure-test a rough idea: 3 to 5 genuinely different options → converge on one with trade-off + hinge. | spec / surrounding code | `decisions.md` (optional) |
 | [`/rite-doctor`](../pack/.claude/skills/rite-doctor/SKILL.md) | diagnostic | none | Diagnose the DevRites binary, pack, schema, and native host permission/profile configuration. | install + host config | none |
+| [`/overhaul`](../pack/.claude/skills/overhaul/SKILL.md) | standalone | `[full \| pr <n\|url> \| branch <head> --base <base> \| audit <scope> \| apply <run-id> --plan <rev> \| status <run-id> \| resume <run-id>]` | Explicit-only, outside the lifecycle. Concurrent frontend and backend engineering review plus boundary, craft and specialist roles (skill-local role files dispatched as fresh contexts); one verified plan; stops for the user's approval of the exact plan revision; then test-first repairs, independent verification, measurement and evidence-backed scoring, cycling inside the approved envelope. `audit` never repairs. Never commits, pushes, stashes or touches the index. | target repository (read-only until approval) | run area outside the repository (JSON records, HTML/Markdown views, evidence); approved target paths only after approval |
 
 `/rite use <slug>` and `/rite guide` are inline router operations owned by
 `/rite`, not separate skills. There is no `/rite-use` or `/rite-guide` shortcut.

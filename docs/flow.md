@@ -381,7 +381,7 @@ separately by `disable-model-invocation`.
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true): 33 skills"]
+    subgraph Public["Public (user-invocable: true): 34 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
@@ -416,6 +416,7 @@ flowchart TB
         D1[/rite-zoom-out/]
         D2[/rite-prototype/]
         D3[/rite-handoff/]
+        OVH[/overhaul<br/>standalone, outside the lifecycle/]
     end
     subgraph Internal["Internal (user-invocable: false): 11 skills (10 specialists + devrites-lib library)"]
         direction TB
