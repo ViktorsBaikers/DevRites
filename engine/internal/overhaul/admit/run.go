@@ -175,12 +175,24 @@ func sortedVals(s map[string]any) []any {
 	return out
 }
 
+// workingGeneration is the open staged generation when one exists and is based on
+// CURRENT (the coordinator records dispatches there during a phase), else CURRENT.
+func workingGeneration(run, cur string) string {
+	stages, _ := filepath.Glob(join(run, "g*.tmp"))
+	if len(stages) == 1 {
+		if base, err := os.ReadFile(join(stages[0], ".base")); err == nil && strings.TrimSpace(string(base)) == cur { // #nosec G304 -- stage marker inside the operator-selected run area
+			return stages[0]
+		}
+	}
+	return join(run, cur)
+}
+
 func receipt(run, path, observed string, hasObserved bool, stdout io.Writer) (int, error) {
 	cur, err := os.ReadFile(join(run, "CURRENT"))
 	if err != nil {
 		return 0, err
 	}
-	gen := join(run, strings.TrimSpace(string(cur)))
+	gen := workingGeneration(run, strings.TrimSpace(string(cur)))
 	rj, err := ovio.LoadObject(join(gen, "run.json"))
 	if err != nil {
 		return 0, err

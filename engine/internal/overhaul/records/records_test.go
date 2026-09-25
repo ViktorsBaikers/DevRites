@@ -119,6 +119,27 @@ func (f *fixture) publish(recs map[string]J, extra map[string]string) (int, stri
 	return code, out + errs
 }
 
+// publishRendered stages recs, renders review and report views into the stage, then publishes.
+func (f *fixture) publishRendered(recs map[string]J) (int, string) {
+	f.t.Helper()
+	code, out, errs := f.cmd("stage", f.run)
+	if code != 0 {
+		f.t.Fatalf("stage: %d %s", code, errs)
+	}
+	tmp := strings.TrimSpace(out)
+	for name, doc := range recs {
+		write(f.t, filepath.Join(tmp, name), doc)
+	}
+	for _, kind := range []string{"review", "report"} {
+		var o, e bytes.Buffer
+		if c := render.Run([]string{f.run, tmp, kind}, &o, &e); c != 0 {
+			f.t.Fatalf("render %s: %d %s", kind, c, e.String())
+		}
+	}
+	code, out, errs = f.cmd("publish", f.run)
+	return code, out + errs
+}
+
 func (f *fixture) mustPublish(recs map[string]J) {
 	f.t.Helper()
 	if code, out := f.publish(recs, nil); code != 0 {
@@ -338,6 +359,14 @@ func TestSingleGenerationRules(t *testing.T) {
 			r["cycles.json"]["schema"] = "overhaul.cycle/1"
 			r["run.json"]["mode"] = "yolo"
 		}, "run.json: mode='yolo' not in ['branch', 'full', 'pr']"},
+		{"stopped run without report views", func(f *fixture, r map[string]J) {
+			r["run.json"]["execution_outcome"] = "READY_FOR_USER_REVIEW"
+			r["run.json"]["task_outcomes"] = J{"T-1": "completed"}
+		}, "views/report.html is required once the run stops"},
+		{"awaiting approval without review views", func(f *fixture, r map[string]J) {
+			r["run.json"]["execution_outcome"] = "AWAITING_APPROVAL"
+			r["run.json"]["phase"] = "AWAITING_APPROVAL"
+		}, "views/review.html is required while awaiting approval"},
 		{"ineligible coverage without reason", func(f *fixture, r map[string]J) {
 			r["coverage.json"]["files"] = L{J{"path": "src/a.py", "eligible": false}}
 		}, "coverage src/a.py: ineligible without an exclusion reason"},
@@ -347,7 +376,11 @@ func TestSingleGenerationRules(t *testing.T) {
 			f := newFixture(t)
 			r := f.records()
 			c.mutate(f, r)
-			code, out := f.publish(r, nil)
+			publish := func() (int, string) { return f.publish(r, nil) }
+			if c.want == "" {
+				publish = func() (int, string) { return f.publishRendered(r) }
+			}
+			code, out := publish()
 			if c.want == "" {
 				if code != 0 {
 					t.Fatalf("want publish ok, got %d:\n%s", code, out)
@@ -554,6 +587,7 @@ func TestBadPath(t *testing.T) {
 		{"./src/a.py", "not normalized or escapes the repository"},
 		{"src", "names a directory or git metadata"},
 		{".git/config", "names a directory or git metadata"},
+		{".devrites/overhaul/r1/g0001/run.json", "names the overhaul run area"},
 		{"src/.git/HEAD", "names a directory or git metadata"},
 		{"src/out.py", "resolves outside the repository (symlink or traversal)"},
 	}

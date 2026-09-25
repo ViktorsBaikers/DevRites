@@ -54,8 +54,9 @@ complete audit with a low score is still a complete assessment.
 ## The approval gate
 
 Before approval, target source, tests, configuration, migrations, manifests and
-lockfiles stay unchanged. Allowed: read-only inspection, approved isolated baseline
-execution, report creation outside the target, and disposable reproductions. Never
+lockfiles stay unchanged. Allowed: read-only inspection, baseline execution under
+the execution rules in [`scope-and-safety.md`](scope-and-safety.md#executing-target-code),
+records and reports in the ignored run area, and disposable reproductions. Never
 run fix-on-save, autoformat or autofix modes in this phase.
 
 After rendering the review, set `AWAITING_APPROVAL`, show the path to
@@ -277,6 +278,9 @@ On interruption, checkpoint before losing context when possible. `/overhaul resu
    means nothing happened, and never replay a write whose effect is uncertain.
 4. Re-fingerprints the source; unrelated drift is noted, affected evidence
    revalidated.
+   An open staged generation based on `CURRENT` is the interrupted working
+   generation: continue it; one based on an older generation is stale, so move it
+   aside and re-admit its receipts into a fresh stage.
 5. Resumes the affected phase. It does not re-audit unchanged, fresh proof.
 
 Never run hidden background work, scheduled polling, or promise a future automatic

@@ -19,6 +19,7 @@ import (
 // Usage is the command-family help text.
 const Usage = `usage: devrites-engine overhaul <tool> ...
 
+  overhaul records init <repo> <run-id>
   overhaul records digest <file>
   overhaul records stage <run>
   overhaul records publish <run>

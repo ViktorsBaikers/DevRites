@@ -49,7 +49,9 @@ Claude project settings use `permissions.defaultMode: plan`; its slice-wright
 profile uses `permissionMode: acceptEdits`. Codex uses a workspace-capable root
 because children cannot elevate above the parent permission ceiling. Its exact
 slice-wright uses `default_permissions = ":workspace"` and the other 16
-specialists use `default_permissions = ":read-only"`.
+specialists use `default_permissions = ":read-only"`. The eight `overhaul-*` agents of the
+explicit `/overhaul` skill sit outside this split: Claude gives them every tool and
+Codex gives them `:workspace` ([ADR-0031](adr/0031-overhaul-agents-keep-every-tool.md)).
 
 If the exact role is unavailable, the root stops instead of substituting a
 generic agent or doing specialist/writer work inline.

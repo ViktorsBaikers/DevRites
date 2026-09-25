@@ -134,4 +134,6 @@ estimates presented as measurements.
 ## Renderer tool
 
 `devrites-engine overhaul render <run> <staged-generation> review|report` writes the views into
-`<staged-generation>/views/`, before `publish`.
+`<staged-generation>/views/`, before `publish`. After publishing at a stop, open the
+main view with `devrites-engine open-visual <run>/<generation>/views/<review|report>.html`,
+using the published generation named in `CURRENT`, not the `.tmp` stage.
