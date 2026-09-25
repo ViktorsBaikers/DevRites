@@ -327,11 +327,12 @@ jobs:
         with:
           drive-size: 8GB
           trusted-dev-drive: true
+          # Temp dirs point at the drive root: it exists before setup-go's
+          # first `go env`, and Go and the tests create everything below it.
           env-mapping: |
             GOCACHE,{{ DEV_DRIVE }}/go-build
-            GOTMPDIR,{{ DEV_DRIVE }}/go-tmp
-            TMP,{{ DEV_DRIVE }}/tmp
-            TEMP,{{ DEV_DRIVE }}/tmp
+            TMP,{{ DEV_DRIVE }}
+            TEMP,{{ DEV_DRIVE }}
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -341,9 +342,7 @@ jobs:
 
       - name: Locate Go cache
         id: gocache
-        run: |
-          mkdir -p "${GOTMPDIR:-.}" "${TMP:-.}"
-          echo "dir=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+        run: echo "dir=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
 
       - name: Restore Go cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
