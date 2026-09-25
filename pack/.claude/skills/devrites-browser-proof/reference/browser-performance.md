@@ -3,10 +3,13 @@
 Use this branch when `spec.md` states a performance budget or a frontend regression
 risk is visible. Detect existing tooling; do not install any.
 
-1. Chrome DevTools MCP: capture Lighthouse LCP/INP/CLS as `Lab (Lighthouse)` and
-   performance-trace attribution as `Trace (DevTools)`.
-2. Playwright MCP: read LCP/INP/CLS from the live page and label it `Trace
-   (DevTools)`. Pair with Lighthouse when both are available.
+1. Chrome DevTools MCP: capture Lighthouse LCP/CLS as `Lab (Lighthouse)` and
+   performance-trace attribution as `Trace (DevTools)`. A navigation-only run has no
+   INP: record `not measured (no interaction)` unless a timespan or trace drives a
+   named interaction ([`performance.md`](../../devrites-lib/reference/standards/performance.md)
+   § Frontend).
+2. Playwright MCP: read LCP/CLS from the live page, and INP only after a scripted
+   interaction; label it `Trace (DevTools)`. Pair with Lighthouse when both are available.
 3. CrUX/PageSpeed Insights: only with a user-supplied key; label p75 data `Field
    (CrUX)`.
 4. No measurement surface: record `pending (manual)` and the exact Lighthouse command.

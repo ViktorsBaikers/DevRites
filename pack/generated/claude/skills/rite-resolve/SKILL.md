@@ -80,7 +80,13 @@ Pull these via `Read` when shaping the resolve:
      that block and sets `Status: running`;
    - appends a `Log` line to `state.md`.
 
-   On resume, also clear or update the unblocked slice's `Slice mode` in `state.md`: if
+   **Writer failure:** command not found or nonzero exit → STOP. Do not hand-edit
+   `Slice mode`, `questions.md`, or `state.md`; report the exact command, its exit code,
+   and the decisive stderr line, and recommend `/rite-doctor`. Both files stay as the
+   writer left them.
+   **Completion:** zero exit, or the failure reported with no hand edit.
+
+   On resume, and only after a zero exit, also clear or update the unblocked slice's `Slice mode` in `state.md`: if
    the answer lets the slice proceed, drop the pause-time `Slice mode` so `/rite-build`
    re-derives it on the next selection; if the answer re-shapes how the slice should be
    built, set `Slice mode` to match.

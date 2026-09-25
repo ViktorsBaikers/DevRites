@@ -36,7 +36,11 @@ If `state.md` is unreadable/malformed: report a gap with the defect and stop —
    a human; list `gate: escalating` entries separately under **Escalating:**
    with their `route:` specialist tag (do not mix with synchronous blockers);
 7. unresolved drift and material risks;
-8. handoff readiness.
+8. handoff readiness;
+9. tree state: `HEAD`, the `git status --short` path count, and dirty paths absent from
+   `touched-files.md` (unrecorded); when `handoff.md` records `Tree at write`, whether HEAD
+   and count still match it. Unrecorded paths or a mismatch go under `Open:` as
+   reconcile-before-any-writer-command; status never records them itself.
 
 A workspace is handoff-ready when it records one next action, all unresolved
 questions, non-obvious decisions, load-bearing assumptions, current drift
@@ -45,7 +49,10 @@ recommend `$rite-handoff` before the lifecycle command.
 `devrites-engine handoff [slug]` emits the deterministic resume record (cursor,
 `awaiting_human`, blocking question gates, ledger reduction, dead ends,
 read-next order) — cite it for items 3–6 and the handoff-readiness verdict
-rather than re-deriving them. When `metrics.jsonl` exists,
+rather than re-deriving them. If that command is not found or exits nonzero,
+report items 3–6 and `Handoff:` as `unavailable: <command> <not found | exit N>` —
+never re-derive them from other files, never leave them blank — and set `Next:`
+to `$rite-doctor`. When `metrics.jsonl` exists,
 `devrites-engine metrics summary <slug>` rolls up dispatch/return counts and
 bundle bytes per phase — cite it for dispatch accounting rather than
 re-counting the ledger.
@@ -61,6 +68,7 @@ Phase: <phase>; slice: <slice|n/a>; mode: <HITL|AFK>; status: <status>
 Evidence: <fresh/proven summary | gaps>
 Open: <questions/drift/blockers | none>
 Escalating: <qid route:tag … | none>
-Handoff: <ready | missing durable context>
+Handoff: <ready | missing durable context | unavailable: <reason>>
+Tree: HEAD <sha>; dirty <n>; unrecorded <paths | none>; record <matches | differs | none>
 Next: <single persisted command>
 ```

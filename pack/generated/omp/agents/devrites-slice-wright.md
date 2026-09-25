@@ -88,15 +88,15 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
    - **For a UI slice, invoke `devrites-frontend-craft` first.** Build from
      `design-brief.md` under the full skill rules. Cover empty, loading, error, and
      success states; use project tokens and existing components; meet WCAG 2.2 AA;
-     and avoid UI tells. Do not redesign the brief. Invoke it with Claude's `Skill` tool or Codex's
-     `$devrites-frontend-craft`. Do not work from memory of "good frontend".
+     and avoid UI tells. Do not redesign the brief. Invoke it with
+     `read skill://devrites-frontend-craft`. Do not work from memory of "good frontend".
    - **For an API or interface slice, invoke `devrites-api-interface` before
-     shaping the contract.** Use the `Skill` tool on Claude Code or
-     `$devrites-api-interface` on Codex. Follow its rules for boundary validation,
+     shaping the contract.** Load it with
+     `read skill://devrites-api-interface`. Follow its rules for boundary validation,
      additive changes, and stable error semantics.
    - **For an uncertain framework or library fact, invoke
-     `devrites-source-driven`.** Use the `Skill` tool on Claude Code or
-     `$devrites-source-driven` on Codex. Verify the fact in installed source,
+     `devrites-source-driven`.** Load it with
+     `read skill://devrites-source-driven`. Verify the fact in installed source,
      official documentation, or context7 for current upstream behavior, then include
      that source in the result. Never invent an API.
    - **No process residue.** Do not put `SLICE-###`, slice numbers, or "this slice"

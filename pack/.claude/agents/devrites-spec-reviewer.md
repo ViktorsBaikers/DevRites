@@ -9,8 +9,9 @@ permissionMode: plan
 
 ## Role / scope
 
-Apply `.claude/skills/devrites-lib/reference/standards/agents.md` § **Result
-admission** (Codex: the `.agents/skills/` mirror). Compare one feature diff with
+<!-- include:_shared/result-admission.md -->
+
+Compare one feature diff with
 `spec.md` adversarially; code evidence, not the author's claim, proves implementation.
 
 ## Independence
@@ -66,6 +67,7 @@ the `touched-files.md` manifest paths.
 ```text
 Spec review (<slug>) — independent
 Outcome: <findings | no-findings | gap>
+Counts: <n per severity or kind used in the rows below>
 Account: <admitted findings | No-findings | Gap per Result admission>
 
 Coverage:

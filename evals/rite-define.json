@@ -116,6 +116,12 @@
       "rationale": "Off-topic Q.",
       "owner": null,
       "owner_rationale": "Off-topic Q."
+    },
+    {
+      "text": "The slices in tasks.md are too big since the API changed; reslice SLICE-003.",
+      "expected": "should_not_trigger",
+      "owner": "rite-plan",
+      "rationale": "tasks.md already holds slices and the plan no longer fits: re-plan, not first definition."
     }
   ]
 }

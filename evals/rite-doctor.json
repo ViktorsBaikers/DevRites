@@ -116,6 +116,12 @@
       "rationale": "Off-topic.",
       "owner": null,
       "owner_rationale": "Off-topic."
+    },
+    {
+      "text": "Our checkout page returns 500 after the last deploy; find the root cause.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-debug-recovery",
+      "rationale": "The failed artifact is the product runtime, not DevRites."
     }
   ]
 }

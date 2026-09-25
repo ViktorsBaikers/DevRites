@@ -114,6 +114,12 @@
       "rationale": "Off-topic; nothing DevRites should fire.",
       "owner": null,
       "owner_rationale": "Off-topic; nothing DevRites should fire."
+    },
+    {
+      "text": "I don't know what I want to build yet; help me figure it out.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-interview",
+      "rationale": "No feature can be named yet: extract intent first."
     }
   ]
 }

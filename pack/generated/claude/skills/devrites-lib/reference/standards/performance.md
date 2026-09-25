@@ -29,6 +29,17 @@ by source (`Field (CrUX)`, `Lab (Lighthouse)`, `Trace (DevTools)`): field and la
 interchangeable, and static source cannot measure a CWV. The reviewer captures these via the
 browser-proof ladder when a budget exists, then judges them in Measured mode (a
 source-labeled scorecard); with no artifact it runs in Source mode and names the command.
+
+- **Field status is never a pre-release pass.** Missing field data is `unavailable`;
+  origin-level data is not proof for a route; the field window lags a new deploy. The
+  pre-release gate is a lab/trace budget under stated conditions, and the field row
+  reads `pending (field)` until route-level data covers the release. **Failing case:**
+  seal cites origin "good" field data for a route shipped yesterday, or a localhost
+  audit records "field: pass".
+- **INP needs an interaction:** a named scripted interaction (timespan or trace) or
+  field data. A navigation-only lab run records INP `not measured (no interaction)`;
+  TBT may appear only as a labeled proxy.
+
 Baseline checks + measurement commands:
 [`rite-review/reference/performance-checklist.md`](../../../rite-review/reference/performance-checklist.md).
 

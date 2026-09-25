@@ -1,7 +1,7 @@
 # Review: TypeScript / JavaScript
 
-> Applies when: reviewing `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.mjs`, `*.cjs`.
-> Load with [`default.md`](default.md).
+> Applies when: reviewing `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.mjs`, `*.cjs`, or the
+> script blocks of `*.vue`, `*.svelte`, `*.astro`. Load with [`default.md`](default.md).
 
 ## Defect probes
 
@@ -27,6 +27,26 @@
   a reason.
 - **Event/listener leak.** `addEventListener`, subscription, `setInterval`,
   socket, or observer without a matching cleanup on unmount/teardown.
+- **Stale response.** A fetch keyed on changing input (query text, route param,
+  selected id) in an effect, watcher, or store needs an ignore flag, request id, or
+  sequence guard so a late response for old input cannot overwrite newer state.
+  Abort alone is insufficient: a response already resolving, or a non-abortable
+  source, still lands. Proof: resolve request B before A with deferred promises; the
+  UI shows B. A render-only test is inadmissible.
+- **Client async lifecycle.** Probe each, with the proof it needs:
+  - work for an old parameter or an unmounted component is cancelled or ignored —
+    change the param mid-flight and unmount; no state update or request follows;
+  - double submit — two rapid activations produce one side effect (or the server
+    dedupes by idempotency key);
+  - optimistic update — on a failed request the UI returns to server state and
+    surfaces the error; a silent rollback or none at all is a defect;
+  - impossible states — independent booleans (`loading`, `error`, `data`) that can
+    be true together; a test drives failure-after-success and asserts one state renders;
+  - index keys on a list that inserts, removes, or reorders — insert at the top
+    with a filled row input; the value stays with its item (static lists: do not flag);
+  - SSR non-determinism — time, random, or locale/timezone output in server-rendered
+    markup; render with a different clock or timezone on the client and the markup
+    matches, or the value is client-only.
 - **Prototype/key injection.** `obj[key] = v` or deep-merge with `key` from
   untrusted input — `__proto__`/`constructor` keys pollute. Check for
   `Object.create(null)`, `Map`, or a key allowlist.

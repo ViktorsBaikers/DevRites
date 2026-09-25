@@ -11,7 +11,7 @@ re-judge from this table alone.
 | Required | Owner | Failing case |
 | --- | --- | --- |
 | Each AC names a stored evidence path (command or artifact) | [`testing.md`](testing.md), `rite-prove` | An AC is checked off with no path in `evidence.md` |
-| Every explicit request maps to an artifact, test, or observed command | `rite-prove`, `rite-seal` | Numbered asks counted done by proxy — green suite, manifest presence, effort spent — with no per-requirement evidence map |
+| Every explicit request (each `brief.md` `## Asks` row) maps to an artifact, test, or observed command | `rite-prove`, `rite-seal` | Numbered asks counted done by proxy — green suite, manifest presence, effort spent — with no per-requirement evidence map |
 | Runnable required checks ran to a recorded outcome | [`test-proof-checklist.md`](test-proof-checklist.md), [`debug-recovery.md`](debug-recovery.md) | A failed, timed-out, or unstartable check reported as "unrelated"/omitted instead of a named blocker |
 | Discriminating tests for changed behavior | [`testing.md`](testing.md) | Suite green; revert of the change would still be green |
 | Fresh runtime/build/test/browser records | `rite-prove`, [`browser-proof-checklist.md`](browser-proof-checklist.md) | Proof claimed from stale or unrun commands |

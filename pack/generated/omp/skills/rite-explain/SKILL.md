@@ -47,7 +47,7 @@ composition. Getting the shape wrong wastes the whole artifact.
 mechanics per shape. Do not improvise classification from this file; the detail lives there so this
 one stays legible, and skipping it means guessing the shape.
 
-**Bare invocation** (no input): ask **one** blocking question (`AskUserQuestion` when the harness
+**Bare invocation** (no input): ask **one** blocking question (`ask` when the harness
 has it, else the harness's blocking-question tool: `request_user_input` on Codex; no interactive
 question tool → render the ranked options as a plain numbered list and end the turn
 (afk-hitl.md)). "What should I
@@ -116,7 +116,7 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
 ### 4. Offer the check-in (optional, active recall)
 
 Retention comes from *retrieving*, not re-reading. After the explainer, offer one check-in via the
-harness's blocking-question tool (`AskUserQuestion`, or `request_user_input` on Codex; no
+harness's blocking-question tool (`ask`, or `request_user_input` on Codex; no
 interactive question tool → render the ranked options as a plain numbered list and end the turn
 (afk-hitl.md)): the user
 answers **first**, then you confirm or correct. The shape sets the

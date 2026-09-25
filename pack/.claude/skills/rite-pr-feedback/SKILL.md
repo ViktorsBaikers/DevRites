@@ -22,7 +22,11 @@ Step 0: Read [`core.md`](../devrites-lib/reference/standards/core.md), plus [`gi
 - Never resolve a thread without a reply that names what happened.
 
 ## Workflow
-1. **Locate PR/thread.** Argument URL = targeted thread; PR number = all unresolved threads on that PR; blank = current branch PR via `gh pr view`. Stop if `gh` is unavailable.
+1. **Locate PR/thread.** Argument URL = targeted thread; PR number = all unresolved threads on that PR; blank = current branch PR via `gh pr view`. Stop if `gh` is unavailable. Each stop below quotes the failing command's output and names one recovery command; never substitute another branch's or the most recent PR:
+   - `gh auth status` fails → unauthenticated; recovery `gh auth login`.
+   - `git symbolic-ref -q HEAD` fails → detached HEAD (step 5 cannot push); recovery `gh pr checkout <number>` or `git switch <branch>`.
+   - blank argument and `gh pr view` finds no PR for the branch → recovery `/rite-pr-feedback <number>` for an existing PR, or `gh pr create`.
+   **Completion:** exactly one PR (and thread, for a URL) located, or one named stop reported.
 2. **Fetch.** Use GitHub GraphQL/CLI to collect unresolved review threads with file, line, author, body, and thread id. Completion: every unresolved thread is represented once, or the fetch error is reported.
 3. **Legitimacy gate.** For each item, read the surrounding code and classify: `fix`, `not-addressing`, `declined`, `reply-only`, or `needs-human`. Deduplicate overlapping items.
 4. **Fix approved items.** Apply contained fixes, add/update tests when behavior changes, and run targeted checks. Larger product/API/security calls become `needs-human`.

@@ -81,10 +81,9 @@ If it does not, do not merge it.
   never approval or silent demotion.
 - **Skipped checks are recorded.** A check you couldn't run gets a
   `Skipped: <check> — <why>` line.
-- **Unreviewed is not clean.** A report that never names an area does not prove that area
-  was inspected; the consolidated account names what was not covered or marks `gap`.
-  **Failing case:** a findings list silent on, say, migration safety is not a clean
-  migration review — name the inspection or the gap.
+- **Unreviewed is not clean** ([core.md § Gate contract](core.md#gate-contract)): an area
+  the report never names counts as uninspected — name the inspection or mark `gap`
+  (silence on migration safety is not a clean migration review).
 - **Separate the verdict from its context.** A verdict flips only on evidence
   scoped to the change under review — its diffs, its acceptance criteria, its
   blast radius. Whole-repo signals gathered along the way (a global health
@@ -123,6 +122,14 @@ grounds, each citing evidence:
 2. **Out of scope** — the file is not in the review set or the finding describes
    pre-existing code the diff did not touch. Route it as a follow-up, never
    delete the record.
+
+A dispute that turns on runtime, configuration, ordering, or environment (race,
+retry, config default, framework behavior) is decided only by a discriminating
+reproduction naming trigger and result: an approved command, or a wright-authored
+regression test. A green general suite, an assumed framework guarantee, or how many
+reviewers agree never decides it; without the reproduction the conflict stays an
+open blocker. **Failing case:** one reviewer flags a race, another calls it fine,
+and root dismisses it after reading the handler.
 
 "Cannot verify", "suspicious", "would not have raised it", and "inconvenient to
 fix now" are not grounds for removal — the finding stays open.

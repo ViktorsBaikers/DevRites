@@ -95,7 +95,7 @@ Evidence: Decision coverage: CLEAR; human packets <n>; agent-owned facts <n>
 Open: none blocking; deferred-nonblocking <n>
 Next: /rite-temper (or /rite-define for a low-stakes spec temper skips)
 Record: .devrites/work/<slug>/decision-coverage.md
-↻ Hygiene: /clear before /rite-temper (or /rite-define)
+↻ Hygiene: /clear — decision coverage is persisted in decision-coverage.md
 ```
 
 If not clear, name the exact rows and next genuine decision packet. An objective spec defect

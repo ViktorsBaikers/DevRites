@@ -50,7 +50,12 @@ load a routed standard to discover required behavior, not to prescribe implement
    else echo "greenfield or already onboarded → continue spec"; fi
    ```
 1. **Understand the request** (`$ARGUMENTS`). State outcome and underlying
-   problem in one sentence. **Completion:** it includes both.
+   problem in one sentence. List each distinct explicit ask under `brief.md` `## Asks`,
+   quoted from the user's own words or a cited issue/PRD, never the invocation (`spec this`).
+   Readiness maps every ask to REQ/AC, a reasoned Non-goal, or a blocking question; an ask
+   with two readings that change acceptance is a question, never a silent pick.
+   **Completion:** it includes both, and every ask is listed. **Failing case:** "CSV export
+   and an email digest" yields a CSV-only spec; the digest is neither Non-goal nor question.
 1a. **Dedupe.** Search local issues/PRDs, work, and archive. On a close match ask
    extend/adopt/new, then record the choice; otherwise continue silently.
    A recorded [feature-sequence continuation](../rite-plan/reference/slicing.md#continuation-workspaces)
@@ -137,15 +142,18 @@ load a routed standard to discover required behavior, not to prescribe implement
    complete-block preservation rule.
    `tasks.md` deliberately does not exist yet; cross-artifact traceability starts in
    `/rite-define`. Any grammar or delta failure blocks. The interruption forecast must be resolved, owned, or a justified
-   action-time gate. Then write `Spec gate: passed <iso>`.
+   action-time gate. Run the [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) marker sweep; a kept hit blocks. Then write
+   `Spec gate: passed <iso>` with its `marker sweep:` line.
 6a. **Existing-spec delta.** For a pre-existing slug/workspace, compare old/new
    spec and questions, then show `Acceptance delta` (added/removed/reworded IDs)
    and `Open-question delta` (opened/resolved/reworded IDs), using `none` for
    empty categories. Show before proceeding; new workspaces skip.
 6b. **Review-before-code digest.** Before planning, render the compact human review:
    `Intent` (one sentence), `Done means` (top acceptance/scenario IDs), `Scope/risk` (what is in/out
-   plus the hard gates), and `Build exactly this?` (yes → next phase; no → revise now). The digest
-   is a view over `spec.md`, not a new artifact. **Stop** after the digest.
+   plus the hard gates), `Assumed:` (each `assumptions.md` id, one line, or `none`), and
+   `Build exactly this?` (yes → next phase; no → revise now). A "no" on one `Assumed:` line
+   reopens only that line as a human decision under step 4. The digest
+   is a view over `spec.md` and `assumptions.md`, not a new artifact. **Stop** after the digest.
 
 > **Mid-flight discipline.** Do not skip investigation, gap resolution, or placement
 > decisions. See [`anti-patterns`](reference/anti-patterns.md).

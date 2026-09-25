@@ -113,6 +113,12 @@
       "rationale": "handoff owns conversation compaction.",
       "owner": null,
       "owner_rationale": "handoff owns conversation compaction."
+    },
+    {
+      "text": "Prove every acceptance criterion of this feature for seal with the full suite and evidence.",
+      "expected": "should_not_trigger",
+      "owner": "rite-prove",
+      "rationale": "The full acceptance set for seal belongs to rite-prove, which invokes browser-proof for UI ACs."
     }
   ]
 }

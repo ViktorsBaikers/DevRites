@@ -62,7 +62,13 @@ references, and only current phase contracts needed for the observed gap.
    `bulk_files`), and
    hashes of completed-slice fields, candidate gate artifacts, existing answers/decisions,
    and protected history. Inventory every path that could change; absence is evidence,
-   never permission to synthesize history. For a post-Build workspace, also retain the
+   never permission to synthesize history. **Rerun after a mid-run stop:** frozen hashes die
+   with the stopped run, so never re-baseline over bytes its owners may have changed. The
+   durable baseline is `HEAD`: a workspace path that differs from it is recorded
+   `pre-changed` with its diff, not frozen as clean, and step 5 accepts it only as an
+   admitted path of this run's assessment, else `gap`. An untracked workspace has no durable
+   baseline: if its `state.md` cursor shows an owner's HITL/blocked stop, stop for the human
+   to confirm the current bytes as baseline before step 2. For a post-Build workspace, also retain the
    exact result of `devrites-engine check candidate <slug>`; at or after Seal retain the
    exact result of `devrites-engine check seal <slug>`.
 2. **Assess from fresh context.** Dispatch exact `devrites-upgrade-planner` with the named

@@ -7,9 +7,7 @@ permissionMode: plan
 
 <!-- include:_shared/untrusted-input.md -->
 
-Apply
-`.claude/skills/devrites-lib/reference/standards/agents.md` § **Result admission**
-(use the `.agents/skills/` mirror on Codex).
+<!-- include:_shared/result-admission.md -->
 
 ## Independence
 
@@ -47,25 +45,11 @@ denial evidence (`.claude/skills/devrites-lib/reference/standards/security.md`
 
 ## AI / LLM surface (only when the feature calls a model / builds an agent / does RAG / exposes tool-use)
 
-Apply the OWASP LLM Top 10 (`.claude/skills/devrites-lib/reference/standards/security.md` § AI / LLM features):
-
-- **Prompt injection (LLM01):** fence untrusted text as data instead of adding it to
-  a privileged prompt. It must not widen authority.
-- **Improper output handling (LLM05):** treat model output as untrusted. Escape,
-  parameterize, or validate it before HTML, SQL, shell, or tool use. Never pass raw
-  output to `eval`, rendering, or execution.
-- **Excessive agency (LLM06):** grant the fewest tools, scopes, and autonomy.
-  Gate or allowlist destructive and outbound actions rather than taking them on a
-  model decision alone.
-- **Disclosure / prompt leakage (LLM02 / LLM07):** keep secrets out of system
-  prompts and context. Enforce authorization server-side rather than in a prompt,
-  and never transmit or log PII or secrets.
-- **Supply chain & poisoning (LLM03 / LLM04 / LLM08):** pin and vet models,
-  weights, datasets, and RAG or embedding sources. Treat them as untrusted; check
-  provenance, tenant/ACL retrieval filters, poisoning, freshness, and deletion.
-- **Overreliance (LLM09)** / **unbounded consumption (LLM10):** ground
-  consequential calls, cite only supporting retrieved sources, define insufficient-context
-  behavior, and keep a human in the loop. Limit request rate, tokens, cost, and time.
+Apply every `LLMxx:2025` bullet in
+`.claude/skills/devrites-lib/reference/standards/security.md` § AI / LLM features
+(`.agents/skills/` mirror on Codex), plus its ASI and AST lists when agentic or skill
+surfaces change, adversarially against the diff. Ids keep their edition; `LLM surface:`
+names each applicable id as audited or n/a.
 
 When the diff changes a DevRites agent, hook, or tool grant, apply the same checks
 to the pack. Confirm least agency, including read-only tools where required, no
@@ -92,10 +76,22 @@ forgery control, unsafe deserialization, and fail-closed environment defaults wh
   exact unknown (no severity claim); a disproved candidate stays visible as rejected
   with the disproof, per [`agents.md`](../skills/devrites-lib/reference/standards/agents.md) § Result admission.
 - **Severity is capped at demonstrated impact in this codebase.** A candidate that
-  names principal, input, boundary, and observed crossing earns Critical; one that
-  weakens but does not defeat an explicit control caps at Important; a pattern
-  match with no shown crossing is Suggestion/FYI at most. "Best practice says so"
-  without a demonstrated boundary crossing is not a finding.
+  names principal, input, boundary, and observed crossing earns Critical only when it
+  states the concrete damage, for example auth bypass, cross-principal or cross-tenant
+  read/write, attacker-controlled execution, secret disclosure, SSRF into internal
+  services, unauthenticated availability loss, or tampering with consequential state. A crossing whose damage cannot be
+  stated drops one level; one that discloses only non-secret internals is Suggestion/FYI.
+  **Failing case:** a proven unauthenticated route leaks a framework version string and
+  is labeled Critical. A candidate that weakens but does not defeat an explicit
+  control caps at Important; a pattern match with no shown crossing is
+  Suggestion/FYI at most. "Best practice says so"
+  without a demonstrated boundary crossing is not a finding. A missing defense layer
+  that another control already blocks is a `Hardening:` row, never a finding and never
+  Important.
+- An analyzer result counts only after the installed-edition gate in
+  `.claude/skills/devrites-lib/reference/standards/tooling.md` § Route by question type
+  (`.agents/skills/` mirror on Codex); `Boundary check:` names each analyzer and its
+  depth, or reports the gap. A scanner is never the only basis for `clean`.
 - When scope is a surface larger than this diff — a subsystem, protocol surface, or
   repo sweep — apply `.claude/skills/devrites-lib/reference/standards/audit-coverage.md`
   (`.agents/skills/` mirror on Codex): coverage ledger, finder≠verifier, three-verdict
@@ -117,12 +113,22 @@ Return the report in this shape:
 ```
 Security audit (<slug>) — independent
 Outcome: <findings | no-findings | gap>
+Counts: <n per severity or kind used in the rows below>
 Account: <admitted findings | No-findings | Gap per Result admission>
+Coverage: <audited>/<total> units; unchecked: <unit — reason | none>
+Rejected: <candidate — disproof file:line | none>
+Unresolved: <n> needs_validation (<exact unknown fact> each)
+Hardening: <missing layer — control that already blocks it | none>
 Boundary check: <skips? | clean>
 Dependencies: <audited; issues?>
 LLM surface: <n/a | audited; issues?>
 Verdict: <GO-able / NO-GO — blockers>
 ```
+
+A nonzero `Unresolved` count on a boundary the diff changes makes `Verdict: NO-GO`: it is
+a blocking gap (`.claude/skills/devrites-lib/reference/standards/security.md`
+§ Reachability sets severity), never an Important risk accepted through the seal y/N
+prompt.
 
 ## Tools / read-write mode
 

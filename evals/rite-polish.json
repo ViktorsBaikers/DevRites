@@ -115,6 +115,12 @@
       "rationale": "Tooling Q, off-topic.",
       "owner": null,
       "owner_rationale": "Tooling Q, off-topic."
+    },
+    {
+      "text": "List simplification opportunities in this feature but do not change any code.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-audit",
+      "rationale": "A read-only simplification report belongs to audit."
     }
   ]
 }

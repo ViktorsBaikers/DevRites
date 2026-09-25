@@ -34,6 +34,12 @@
       "expected": "should_not_trigger",
       "owner": "rite-build",
       "rationale": "Implementation belongs to rite-build."
+    },
+    {
+      "text": "The feature is READY and nothing drifted. What's left?",
+      "expected": "should_not_trigger",
+      "owner": "rite-status",
+      "rationale": "A question with no drift evidence gets a read-only answer; it never fires a writer or appends slices."
     }
   ]
 }

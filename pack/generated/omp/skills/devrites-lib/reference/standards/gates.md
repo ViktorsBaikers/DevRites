@@ -52,6 +52,14 @@ Execution contract: the command runs through the platform shell in the named
 directory with a bounded timeout; pass requires exit 0 **and** output matching
 EXPECT. Output is captured but never persisted — only its digest.
 
+After Vet READY the runnable set is fixed: converting a runnable gate to manual,
+loosening EXPECT, changing CHECK or CWD, or removing a row is Plan repair plus
+re-Vet, never a Prove or Seal edit. A runnable gate that cannot execute stays unmet
+with `unavailable: <reason>`. Prove attests only gates that were manual at Vet,
+checked by diffing `gates.md` against the Vet record. **Failing case:** AC-003's
+runnable gate fails at Prove, the root deletes CHECK/EXPECT and attests "verified
+manually", and `gates status` reads `all-met`.
+
 ## Evidence binding
 
 A successful run writes `EVIDENCE: automatic-evidence=v1; def=<sha256>; …`
@@ -62,7 +70,14 @@ only automatic evidence bound to the current definition counts.
 
 Manual gates are met when checked with non-empty human evidence (anything
 except `pending`); honesty of that evidence stays with the Prove/Seal
-reviewers.
+reviewers. The engine cannot see who attests, so the note must cite the human's
+own words or source (a `q-…` id the human resolved, or their message in this
+session) and name what was observed and where. An agent's own inspection, or a
+question resolved by AFK or autocomplete auto-pick, is not human evidence: an AFK
+run leaves the gate unmet behind an open `gate: validating` question and never
+self-attests. Placeholder or tautological notes (`n/a`, `tbd`, `-`, `ok`, `done`,
+`yes`, the restated gate title) are unmet at Prove and Seal. **Failing case:**
+`gates attest <slug> AC-004 "done"` passes the engine and Seal reaches GO.
 
 ## Commands
 

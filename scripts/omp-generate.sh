@@ -5,7 +5,8 @@
 # TMP_GEN_DIR and then invoke the gen_* helpers below.
 
 # Rewrite canonical Claude (and leftover Codex) paths to installed omp paths.
-# Slash /rite invocations stay slash-form: omp discovers skills as /name.
+# Slash /rite invocations stay slash-form: omp exposes skills as /skill:<name>,
+# and gen_omp_command_stub keeps /rite* working through .omp/commands.
 # After paths are `.omp/skills/...`, drop Codex-only mirror asides.
 # Dispatch wording uses the `task` tool / `tasks[]` batch, not a fictional `agent` tool.
 gen_omp_markdown_file() {
@@ -44,7 +45,13 @@ gen_omp_markdown_file() {
     -e '/On Codex, use the/{N;s# On Codex, use the mirrors under\n`[^`]+`\.##;s# On Codex, use the\nmirrors under `[^`]+`\.##;s# On Codex, use the\nmirror under `[^`]+`\.##;}' \
     -e 's#Host mapping: Claude Code uses `Agent` \(`Task` is its legacy alias\); Codex uses#Host mapping: omp fresh-context dispatch uses the `task` tool (`tasks[]` batch); hosts use#g' \
     -e 's#`Agent` call#`task` call#g' \
-    -e 's#Claude: N concurrent Task wrights#omp: N concurrent `task` tool / `tasks[]` batch wrights#g' \
+    -e 's#Claude: N concurrent Task wrights \(`acceptEdits`, cwd=worktree\)\.#omp: one `tasks[]` batch of N wrights; `task` has no `cwd` or `acceptEdits`, so each task names its absolute worktree path and the wright works only there.#g' \
+    -e 's#^Claude grants only the exact wright `acceptEdits`;#omp has no permission modes: only the wright'"'"'s `tools` allowlist has `edit`/`write`, and the root stays source-read-only by instruction. Claude grants only the exact wright `acceptEdits`;#' \
+    -e 's#^Claude grants only wright `acceptEdits`;#omp: only the wright'"'"'s `tools` allowlist has `edit`/`write`; the root stays source-read-only by instruction. Claude grants only wright `acceptEdits`;#' \
+    -e 's#`AskUserQuestion`#`ask`#g' \
+    -e 's#Invoke it with Claude'"'"'s `Skill` tool or Codex'"'"'s$#Invoke it with#' \
+    -e 's#Use the `Skill` tool on Claude Code or$#Load it with#' \
+    -e 's#^([[:space:]]*)`\$(devrites-[a-z-]+)`( on Codex)?\.#\1`read skill://\2`.#' \
     -e 's#Task breakdown#Work-item breakdown#g' \
     -e 's#dispatch `devrites-source-driven`#invoke `devrites-source-driven`#g' \
     -e 's#Dispatch `devrites-source-driven`#Invoke `devrites-source-driven`#g' \
@@ -86,6 +93,7 @@ _omp_map_tools() {
       Write|write) _mapped="write" ;;
       Bash|bash) _mapped="bash" ;;
       Glob|glob) _mapped="glob" ;;
+      WebSearch|web_search) _mapped="web_search" ;;
       Grep|grep) _mapped="grep" ;;
       Skill|skill) continue ;;
       *) continue ;;
@@ -160,10 +168,12 @@ _omp_append_extension_tools() {
 # devrites-slice-wright and the /overhaul agents (overhaul-*) get write/edit; reviewers stay read-only.
 gen_omp_agent() {
   local _src="$1" _out="$2"
-  local _name _desc _tools_raw _tools _desc_tmp _desc_omp _body_tmp _body_omp
+  local _name _desc _tools_raw _tools _skills _desc_tmp _desc_omp _body_tmp _body_omp
   _name="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^name:[[:space:]]*/{sub(/^name:[[:space:]]*/, ""); print; exit}' "$_src")"
   _desc="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^description:[[:space:]]*/{sub(/^description:[[:space:]]*/, ""); print; exit}' "$_src")"
   _tools_raw="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^tools:[[:space:]]*/{sub(/^tools:[[:space:]]*/, ""); print; exit}' "$_src")"
+  # Claude `skills:` preloads map to omp `autoloadSkills` (list or inline CSV).
+  _skills="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^skills:/{sk=1; sub(/^skills:[[:space:]]*/, ""); if ($0 != "") print; next} sk && /^[[:space:]]*-[[:space:]]*/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print; next} {sk=0}' "$_src" | paste -sd, - | sed 's/,/, /g')"
   [ -n "$_name" ] || _name="$(basename "$_src" .md)"
   [ -n "$_desc" ] || _desc="DevRites custom agent."
   _tools="$(_omp_append_extension_tools "$(_omp_map_tools "$_tools_raw" "$_name")")"
@@ -179,6 +189,7 @@ gen_omp_agent() {
     printf 'name: %s\n' "$_name"
     printf 'description: "%s"\n' "$(omp_yaml_escape "$_desc")"
     printf 'tools: %s\n' "$_tools"
+    [ -n "$_skills" ] && printf 'autoloadSkills: %s\n' "$_skills"
     printf '%s\n' "---"
     _body_tmp="$TMP_GEN_DIR/omp-agent-body-$(basename "$_src").md"
     _body_omp="$TMP_GEN_DIR/omp-agent-body-$(basename "$_src").omp.md"
@@ -202,4 +213,26 @@ gen_omp_plugin_json() {
   "agents": "./agents"
 }
 EOF
+}
+
+# omp exposes skills only as /skill:<name>; a .omp/commands stub keeps the
+# public /rite* form. omp substitutes $ARGUMENTS in command bodies.
+gen_omp_command_stub() {
+  local _skill_md="$1" _name="$2" _out="$3"
+  local _desc _hint
+  _desc="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^description:[[:space:]]*/{sub(/^description:[[:space:]]*/, ""); print; exit}' "$_skill_md")"
+  _hint="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^argument-hint:[[:space:]]*/{sub(/^argument-hint:[[:space:]]*/, ""); print; exit}' "$_skill_md")"
+  [ -n "$_desc" ] || _desc="DevRites $_name."
+  mkdir -p "$(dirname "$_out")"
+  {
+    printf '%s\n' "---"
+    printf 'description: "%s"\n' "$(omp_yaml_escape "$_desc")"
+    # An already double-quoted YAML scalar passes through verbatim.
+    case "$_hint" in
+    \"*\") printf 'argument-hint: %s\n' "$_hint" ;;
+    ?*) printf 'argument-hint: "%s"\n' "$(omp_yaml_escape "$_hint")" ;;
+    esac
+    printf '%s\n' "---"
+    printf 'Read and follow the DevRites skill `skill://%s` (`.omp/skills/%s/SKILL.md`). Apply it to these arguments, or to the current request when they are empty: $ARGUMENTS\n' "$_name" "$_name"
+  } >"$_out"
 }

@@ -67,6 +67,11 @@ terminal path after `add` — success, gap, stop, or launch failure — run
 `devrites-engine claim release --session <id> --id <claim-id>`. Claims expire
 by TTL only as crash recovery; `claim list` shows who holds what. Claims are
 advisory coordination, never a substitute for the one-writer-per-worktree rule.
+Expiry is not proof the holder stopped: size `claim add --ttl <minutes>` to the
+expected write (engine max 240) and re-add before it lapses; before writing, also
+read `claim list --all` — a foreign `expired` claim on overlapping paths whose
+session is not proven terminal counts as held (stop and report). **Failing case:**
+session B's `claim check` passes at minute 35 over session A's still-running wright.
 
 ## Independence
 
@@ -85,21 +90,29 @@ Each required reviewer/analyst/auditor starts with exactly one:
 
 ```text
 Outcome: <findings | no-findings | gap>
-Counts: <n> Critical · <n> Important · <n> Minor
-Finding: <severity> | <file:line or artifact section> | <observed quote/result> | <impact> | <minimum fix>
+Counts: <n per severity or kind used in the rows below>
+Finding: <severity> conf <n> | <file:line or artifact section> | <observed quote/result> | when <input/state/sequence> → <effect> | <minimum fix>
 Basis: <files read · commands run to reach this finding>
 ```
 
 - **`findings`:** each row uses the shape above; confidence 1–10 on Critical/Important.
   Critical/Important requires 7+, exact evidence, concrete impact, and a non-empty
   `Basis` — a correct verdict reached by an unrecorded inspection path is unproven.
+  A Critical/Important row carries `conf <n>` in its severity cell and writes impact
+  as `when <input/state/sequence> → <effect>`; missing either, root admits it as
+  `Unverified: <claim> — missing trigger` (stays `gap`).
 - **`no-findings`:** `No-findings:` names checks and inspected evidence. Bare
   pass, empty list, or “looks good” is malformed.
 - **`gap`:** names missing/unreadable/stale input; skipped/failed required check;
   tool/reviewer failure; or another limit. Required gaps block.
 
 Root treats results as claims; verifies proposed Critical/Important blockers
-against candidate. Missing fields become
+against candidate, first anchoring each row's quote at its cited `file:line` on the
+frozen digest: exact → admit; found at exactly one other location → relocate,
+keeping both locations; not found or found at several → `Unverified: <claim> —
+anchor lost|ambiguous`, a gap that is never a finding or a dismissal. A leaf result
+produced by spawning a nested agent is `gap`, and each hidden child counts toward
+the concurrent pool and `max_agents`. Missing fields become
 `Unverified: <claim> — missing <proof>` and stay `gap` until verified/rejected
 with evidence—never silently dropped/demoted. Null/timeout/failure/malformed
 output is `gap`, never `no-findings`. Conditional `Not-applicable` must name the

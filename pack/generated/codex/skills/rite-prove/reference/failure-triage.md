@@ -14,7 +14,14 @@ loop to `devrites-debug-recovery`.
    - environment/setup (missing dep, wrong node/ruby) → fix it when agent-owned;
      record a blocker only for human/access ownership, scope overflow, or exhausted
      fingerprint recovery.
-   - flaky (passes on re-run, timing/order) → note it; don't paper over with retries.
+   - pre-existing (fails without this candidate) → only with baseline evidence: the
+     same command/cwd/environment run on the baseline candidate (an earlier
+     `EVID-###`, or a base-ref run in a separate worktree), recorded. It is a named
+     blocker citing that baseline, never green; without the baseline it is unresolved.
+   - flaky (at least one fail and one pass on the unchanged candidate digest;
+     timing/order) → record every attempt and apply
+     [the Determinism standard](../../devrites-lib/reference/standards/testing.md#determinism-no-flaky-tests):
+     the green attempt proves nothing; fix it or record a blocker. Don't paper over with retries.
    - external dependency down → record blocker; don't fake the result.
 3. **Isolate:** minimize to the smallest failing case; bisect the diff if needed.
    If consumptive evidence maps to multiple causal seams, this is a
@@ -23,8 +30,10 @@ loop to `devrites-debug-recovery`.
    the cleaned-away past state terminal.
 4. **Fix within scope:** the current slice/feature only. If the fix reaches outside
    scope, stop and record a blocker in `state.md` (then `$rite-plan unblock`).
-5. **Re-run** the same command when it is repeatable; confirm green and record both
-   attempts in `evidence.md`. A consumptive action needs re-vetted evidence
+5. **Re-run** the same command when it is repeatable, after an admitted
+   correction; confirm green and record both attempts in `evidence.md`. A green
+   rerun with no correction on an unchanged digest is `flaky` (step 2), never a
+   close. A consumptive action needs re-vetted evidence
    completeness and any fresh authorization before a new attempt. Its spent
    action authorization does not stop offline recovery: a retained new fingerprint
    enters caller-owned diagnosis, correction, fixtures, and narrow Vet immediately.

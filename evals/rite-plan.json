@@ -116,6 +116,12 @@
       "rationale": "Off-topic.",
       "owner": null,
       "owner_rationale": "Off-topic."
+    },
+    {
+      "text": "Decompose this freshly approved spec into its first build slices.",
+      "expected": "should_not_trigger",
+      "owner": "rite-define",
+      "rationale": "No slices exist in tasks.md yet: first-pass decomposition belongs to rite-define, whatever verb is used."
     }
   ]
 }

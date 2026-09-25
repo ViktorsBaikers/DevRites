@@ -50,6 +50,13 @@ Goal: this feature looks and behaves like it belongs in *this* product.
    components, align flow shape with neighbors, consolidate duplication, remove
    obsolete styles created by this feature. Ask the user when a design-system
    principle is genuinely ambiguous: don't guess the system's intent.
+4. **Protected contracts:** normalization never changes URL slugs or anchors, form
+   field `name`/`autocomplete`/order, analytics or test IDs, or legal/consent copy
+   unless `spec.md` or `decisions.md` names the change. The wright contract lists
+   these identifiers, the returned diff is checked against them, and visible-label
+   renames are recorded in `polish-report.md`. **Failing case:** polish renames
+   `name="email"` to `emailAddress`; autofill and analytics break while role-query
+   tests pass.
 
 ## Phase 4: UI polish
 
@@ -74,7 +81,7 @@ path isn't polish.
 - [ ] **Alignment** perfect at every breakpoint
 - [ ] **Typography** hierarchy consistent; line length sane (65-75ch prose)
 - [ ] **Color & contrast**: semantic roles; text ≥ 4.5:1 (≥ 3:1 large/UI), WCAG 2.2 AA
-- [ ] **All interaction states**: hover, active, focus, disabled, selected
+- [ ] **All states** the role lattice requires (quality-standards § Focus & states)
 - [ ] **Focus states visible** and **keyboard navigation** works
 - [ ] **Loading** states clear; **empty** states welcoming with a next action
 - [ ] **Error** states helpful (what happened + how to recover); **success** states clear
@@ -82,7 +89,7 @@ path isn't polish.
 - [ ] **Copy & terminology** consistent with the product's vocabulary
 - [ ] **Icons** consistent set, properly sized and aligned
 - [ ] **Responsive** behavior correct across target viewports
-- [ ] **Target size** ≥ 24×24px (WCAG 2.2 AA); ≥ 44×44px for primary touch; **no drag-only** actions
+- [ ] **Target size** ≥ 24×24px (WCAG 2.2 AA); 44×44px for primary touch is a DS preference; **no drag-only** actions
 - [ ] **Motion** smooth (~60fps), purposeful; **reduced-motion** respected
 - [ ] **Performance basics:** no obvious jank, oversized images, or blocking work
 - [ ] **No console errors or warnings**
@@ -105,7 +112,9 @@ Cite the evidence in `browser-evidence.md`.
 ### Triage
 
 If it ships in 30 minutes, fix what users will notice (hierarchy,
-states, broken layout, bad copy) before micro-spacing. Don't introduce bugs
+states, broken layout, bad copy) before micro-spacing. A broken task, data loss or
+misleading state outranks every AES proposal
+([anti-ai-slop.md](anti-ai-slop.md) admission rule); AES work waits while one is open. Don't introduce bugs
 while polishing: re-prove after changes.
 
 ### Refinement modes (optional dials within Phase 4)

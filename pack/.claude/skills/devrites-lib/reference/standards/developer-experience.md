@@ -72,7 +72,9 @@ touches:
   silent exit, or "an error occurred" is a defect on a developer-facing path.
 - **Ergonomics & consistency:** does the surface match the project's existing conventions
   (naming, argument order, pagination, error shape)? An inconsistent new endpoint taxes everyone
-  who learned the old ones. Sensible defaults; the common case is one call.
+  who learned the old ones. Sensible defaults; the common case is one call. CLI output
+  honours `NO_COLOR` and non-TTY destinations (no ANSI or spinners in a pipe) and never
+  carries meaning by colour alone; a status only colour conveys is a finding.
 - **Docs accuracy:** examples are copy-pasteable and correct, the signature in the docs matches
   the code, and changed behavior updated its docs in the same change ([`documentation.md`](documentation.md)).
 

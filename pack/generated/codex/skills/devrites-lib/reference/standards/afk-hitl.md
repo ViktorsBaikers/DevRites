@@ -279,22 +279,15 @@ boundary owns any such request and requires explicit user approval.
 
 ## `state.md` `Awaiting human` block
 
-When a HITL gate fires, `$rite-build` writes:
+When a HITL gate fires, `$rite-build` sets cursor `status` to `awaiting_human` and
+`next_action` to `$rite-resolve <qid> "<answer>"`, then writes the `Awaiting human` table
+(`question_id`, `gate`, `blocking_slices`) owned by
+[`state-workspace.md`](../../../rite-spec/reference/state-workspace.md#statemd-template) § state.md template.
+The question text, `proposed` answer, and `raised_at` live in the `questions.md` entry.
+Legacy `- Status:`/`- Next step:`/`- qid:` bullet keys are engine-accepted aliases, not
+the authoring format.
 
-```markdown
-- Status: awaiting_human
-- Next step: $rite-resolve <qid> "<answer>"
-
-## Awaiting human
-- qid: <q-...>
-- gate: <gate>
-- question: <crisp text>
-- proposed: <agent's tentative answer>
-- raised_at: <iso>
-- blocking_slices: [<slice ids that cannot advance>]
-```
-
-`$rite-resolve` removes the block on success and flips `Status: running`.
+`$rite-resolve` removes the block on success and sets cursor `status` to `running`.
 
 ## The resume verb: `$rite-resolve`
 

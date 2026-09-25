@@ -69,3 +69,8 @@ Record: not applicable (paths printed only)
 ```
 
 Print the path of any decisions/ADR files referenced so the user can open them.
+
+**Empty or not found.** When the argument resolves to no symbol, file, or area, or maps zero
+modules, never print `Done: mapped` or `modules 0`: print `Done: not mapped — <argument> not
+found` with the searches run (index and file search), `Open:` the nearest candidates or
+`none`, and `Next:` a corrected argument.

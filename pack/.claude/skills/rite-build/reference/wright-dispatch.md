@@ -95,7 +95,11 @@ not normal cleanup.
 1. Compare the returned file list and `git diff --name-only` with task paths.
    `devrites-engine check diff-scope <slug> --allow <task-paths>` is the
    mechanical subset gate — run it before any reviewer dispatch; a violation
-   restores through the bounded wright without spending review.
+   restores through the bounded wright without spending review, but only for a
+   path the wright's `files_changed` or diff trace attributes to it. An
+   unattributed extra path that was clean at the step-3 baseline is preserved
+   (never restored), recorded as drift, and stops for the human. **Failing case:**
+   a user edits `README.md` during a same-tree dispatch and the wright reverts it.
    Reject a result that omits any required key — the bookkeeping arrays count
    whether empty or filled — or adds a path. Root never widens scope or edits
    source.

@@ -13,7 +13,7 @@ see [standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-pat
 |---|---|
 | "Tests passed during build; that's enough." | Build = per-slice sanity check. Prove = whole-feature suite + build/typecheck/lint + browser. |
 | "Browser proof is overkill for this UI change." | If it's UI and a browser can run, the ladder applies. If you can't, document which rung and why. |
-| "Failure is in pre-existing code, not in this feature." | Still surfaces as a blocker. Feature scope = fix in scope or record + halt. |
+| "Failure is in pre-existing code, not in this feature." | Still surfaces as a blocker, never green. `pre-existing` needs recorded same-command baseline evidence ([failure triage](failure-triage.md)); without it the result is unresolved. Feature scope = fix in scope or record + halt. |
 | "Some slices are still pending but the rest can be proved." | No: `$rite-prove` runs once, when every slice is built. Otherwise you're proving a partial system. |
 
 ## Red Flags

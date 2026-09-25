@@ -22,6 +22,7 @@ const (
 	ClaudeAgentsTarget    = devritespaths.ClaudeAgentsTarget
 	CodexAgentsTarget     = devritespaths.CodexAgentsTarget
 	OmpAgentsTarget       = devritespaths.OmpAgentsTarget
+	OmpCommandsTarget     = devritespaths.OmpCommandsTarget
 	PiAgentsTarget        = devritespaths.PiAgentsTarget
 	DevinAgentsTarget     = devritespaths.DevinAgentsTarget
 	PiPromptsTarget       = devritespaths.PiPromptsTarget
@@ -181,6 +182,7 @@ func RequiredPayload(withCodex, withOmp, withPi, withDevin bool) []string {
 		required = append(required,
 			"omp/skills",
 			"omp/agents",
+			"omp/commands",
 			"omp/.omp-plugin/plugin.json",
 		)
 	}
@@ -219,7 +221,10 @@ func InstallTrees(withSkills, withAgents, withCodex, withOmp, withPi, withDevin 
 			trees = append(trees, Tree{PayloadPrefix: "codex/skills", TargetPrefix: CodexSkillsTarget})
 		}
 		if withOmp {
-			trees = append(trees, Tree{PayloadPrefix: "omp/skills", TargetPrefix: OmpSkillsTarget})
+			trees = append(trees,
+				Tree{PayloadPrefix: "omp/skills", TargetPrefix: OmpSkillsTarget},
+				Tree{PayloadPrefix: "omp/commands", TargetPrefix: OmpCommandsTarget},
+			)
 		}
 		if withPi {
 			trees = append(trees,

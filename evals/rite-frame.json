@@ -34,6 +34,12 @@
       "expected": "should_not_trigger",
       "owner": "rite-review",
       "rationale": "Full review belongs to rite-review."
+    },
+    {
+      "text": "I'm not sure what I want from this product; interview me.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-interview",
+      "rationale": "Open-ended intent with no task belongs to interview."
     }
   ]
 }

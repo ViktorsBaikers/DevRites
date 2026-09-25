@@ -52,7 +52,11 @@ After each hunting wave, a **coverage critic** — a fresh agent comparing the l
 with targeted source and entry-point evidence — looks for holes: unseeded surfaces,
 boundaries with no check class,
 units stuck `assigned`, `rejected` patterns suggesting a hunter fires blanks.
-Accepted discoveries become `planned` units. Reserve critic and verifier capacity
+Accepted discoveries become `planned` units. Coverage is `complete` only after a
+critic returns no accepted missing or reassigned unit and no unit is `planned`;
+otherwise the run is partial, and a wave or agent cap is never evidence of
+completeness. A reassigned unit gets a fresh owner; the old attempt's evidence stays
+attributed to it and is never merged into the new attempt. Reserve critic and verifier capacity
 **before** spending on hunters; a wave launched with no verification reserve hunts
 for findings nobody may claim.
 

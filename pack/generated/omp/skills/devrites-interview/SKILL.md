@@ -33,7 +33,7 @@ spec, plan, or code.
   **option set** ([[`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) → "Option set"](../devrites-lib/reference/standards/afk-hitl.md#option-set-how-every-gap-is-presented)): recommended **first**, labelled
   `(Recommended)`, each with a dimension-tagged rationale (`logic · infra · business ·
   architecture`, + `security`/`UX`/`risk` when in scope), plus the escape hatch. Render via
-  `AskUserQuestion` when the harness has it:
+  `ask` when the harness has it:
   ```
   1. <recommended> (Recommended) — logic: … · infra: … · business: … · architecture: …
   2. <alternative> — <rationale + the trade-off it accepts>

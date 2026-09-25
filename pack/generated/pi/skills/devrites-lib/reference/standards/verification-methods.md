@@ -73,6 +73,33 @@ original observation and records the new applicability check separately —
 see [`candidate-integrity.md`](../candidate-integrity.md#evidence-validity).
 When change impact cannot be bounded, recheck the full affected scope.
 
+A tool-cache replay (`(cached)`, replayed output, last-failed-only selection) is
+`reused` under the tool's own key, never `fresh`. Fresh proof needs the approved
+cache-bypass form in `test-plan.md`, or a recorded applicability check covering inputs
+the tool key omits (external files, environment, services). **Failing case:** a test
+reads a fixture outside its module, the fixture changes, and a cached `ok` is recorded
+as fresh.
+
+### Tool coverage states
+
+Map a tool's own state onto status × result; there is no separate enum:
+
+| Tool state | status × result |
+| --- | --- |
+| completed with no findings | `fresh` × `pass`, only for units in the tool's own processed set reconciled to the inventory; other units stay `missing` |
+| completed with findings | `fresh` × `fail` for the affected units |
+| supported | `missing` until a completed run is recorded |
+| partially supported, unsupported | result `unverified` for the affected units |
+| not configured, unavailable | `missing` or `blocked` × `unverified` |
+| failed | `failed` × `unverified` |
+| stale | not `fresh`: rerun, or `reused` after an applicability check |
+
+A findings-only report has no processed set and covers nothing beyond its findings. An
+empty processed set covers and retires nothing; a prior finding closes only when a
+completed run's processed set includes its file. Read exit codes against the installed
+version's exit table, not memory. **Failing case:** a scan with default ignores returns
+`[]`, the diff's files were never processed, and review records the scan clean.
+
 ## Judge evidence before counting a method
 
 Before any check counts, answer five questions:
@@ -82,6 +109,12 @@ Before any check counts, answer five questions:
 3. What independent observation separates pass from fail?
 4. Where is the observation recorded, and which candidate does it bind?
 5. What does this method not establish?
+
+For question 2, a static, lint, type, scan, or duplicate check whose inspected set
+excludes the changed paths (glob matched nothing, empty include) reached nothing: its
+row cites the target count and records `failed` × `unverified`, never `pass`.
+**Failing case:** a lint glob covers only `.ts` files, the diff touches only `.tsx`, and
+the run exits 0.
 
 Duplicate answers mean one method, not two. A property no available tool can
 verify is `unverified` — name the fallback, never manufacture a pass.

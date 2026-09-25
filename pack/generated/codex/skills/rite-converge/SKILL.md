@@ -1,6 +1,6 @@
 ---
 name: rite-converge
-description: Converge intent and live code. Use when resuming a half-built feature, after `$rite-adopt` drift, or the user asks "what's left to build". Not for initial planning.
+description: Converge intent and live code. Use when resuming a half-built feature, after `$rite-adopt` drift, or live code may have diverged from the plan. Not for initial planning.
 argument-hint: "[feature-slug]"
 user-invocable: true
 ---
@@ -59,6 +59,13 @@ Pull on demand:
 - **Principles are non-negotiable.** A live violation of a declared invariant with no recorded
   exception is the top-severity gap, walked first. Absent/empty principles file → none declared
   → skip the check gracefully, never block for its absence.
+- **Unadmitted bytes from a lost wright.** When a stalled slice's wright never returned an
+  admitted result, act only after its terminal state is proven
+  ([`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md) § Cancellation);
+  unproven stays a gap. Then inspect task-path bytes changed since the recorded pre-dispatch
+  `git diff --name-only` baseline (none recorded → every changed task path counts). They are
+  never cited `built`, never discarded (user work): classify the slice `partial (unadmitted
+  bytes)` and name those paths in the appended slice. A change outside task paths stops for the human.
 - **Scout observes; root classifies and writes.** Use
   [`agents.md`](../devrites-lib/reference/standards/agents.md). The evidence scout returns
   live-code citations only; the controlling chat owns built/partial/absent calls and append-only
@@ -115,7 +122,7 @@ Pull on demand:
    `decisions.md` for any material call. When slices were appended, run
    `devrites-engine check task-graph <slug>` before invoking Vet; failure stays in
    Converge for correction and never spends a Vet reviewer context.
-7. **STOP.** Report units assessed, built / partial / absent counts, slices appended, and any
+7. **STOP.** Report units assessed, built / partial / absent / unrequested counts, slices appended, and any
    principle violation found. A direct invocation that appended slices becomes
    the caller for the mandated next step: save a return cursor
    (`return_phase`/`return_next_action`) naming this Converge pass as the

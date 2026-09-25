@@ -62,6 +62,15 @@ overlap → sibling **gap** (a shared path is a contract defect). **Failing
 case:** two parallel wrights share a path and fan-out proceeds without that
 check.
 
+Before `parallel select`, add each slice's hidden write surfaces (list owner:
+[repository-topology.md § Ownership rules](../../devrites-lib/reference/standards/repository-topology.md#ownership-rules))
+— lockfile/manifest, the generated target of an edited source, migration chain,
+snapshot directory, formatter sweep — and compare paths case-folded
+(`src/Api.ts` = `src/api.ts`). Slices colliding on either run serially; the rest
+stay eligible. Record `serial: <ids> — <surface>` in `evidence.md`. **Failing
+case:** two slices each add a dependency, run in parallel, and integrate fails or
+lands a broken lockfile.
+
 ## Control vs workers
 
 Control owns `.devrites/work/<slug>/` (lease + bookkeeping).
@@ -218,6 +227,6 @@ isolation cannot be established.
 
 ## Host
 
-omp: N concurrent `task` tool / `tasks[]` batch wrights (`acceptEdits`, cwd=worktree). Codex: require
+omp: one `tasks[]` batch of N wrights; `task` has no `cwd` or `acceptEdits`, so each task names its absolute worktree path and the wright works only there. Codex: require
 host-explicit concurrent worktree writers + native reconcile; else force serial.
 Never two writers in one worktree; never root-emulated concurrency.

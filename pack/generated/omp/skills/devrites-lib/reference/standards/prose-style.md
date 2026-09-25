@@ -31,7 +31,8 @@ A rewrite succeeds only when the source still supports every sentence and the re
 the same decisions from it.
 
 - Preserve every fact, constraint, uncertainty, identifier, count, criterion, evidence link,
-  decision, and voice-bearing detail. Restructure freely; keep the information.
+  decision, ranking, order or causality claim, and voice-bearing detail. Restructure freely;
+  keep the information.
 - Keep quotations, titles, proper names, code spans/fences, CLI output, error strings, and text
   discussed as an example exact unless the user asks to edit that material.
 - Keep YAML frontmatter, markdown tables, URLs, and file paths exact unless the user asked to
@@ -65,8 +66,8 @@ the same decisions from it.
 - **Be specific.** Replace "every / always / never / a lot" with the actual number, file, or
   case when you know it.
 - **Vary rhythm.** Don't stack three staccato fragments or three same-length sentences in a row.
-- **Skip em and en dashes** — a repeated AI tell (matches
-  [`rite-polish/reference/anti-ai-slop.md`](../../../rite-polish/reference/anti-ai-slop.md));
+- **Skip em and en dashes** — a repeated AI tell in DevRites prose (product UI copy is
+  only a lead, per [`rite-polish/reference/anti-ai-slop.md`](../../../rite-polish/reference/anti-ai-slop.md));
   use a comma, period, colon, or parentheses instead.
 - **Trust the reader.** Skip the softening preamble and the recap of what you just said.
 

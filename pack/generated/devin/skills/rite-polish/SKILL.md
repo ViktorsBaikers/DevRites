@@ -62,12 +62,18 @@ Incomplete comparison is **not** agreement. Record axis deltas in `polish-report
    Then read the explicit or active workspace's `state.md` directly.
 1. **Read** `state.md`, `touched-files.md`, the current candidate digest, and the
    `git diff` for the active workspace (or `$ARGUMENTS` if a target was given).
-2. **Detect UI scope:** UI is touched if the diff or `touched-files.md`
-   contains any of: `.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, `.css`,
+2. **Detect UI scope:** UI is touched when the diff changes rendered output:
+   markup, template, style, design token, client component, or a visible string
+   (including an API error message shown in the UI). These paths are leads to
+   inspect, not the predicate: `.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, `.css`,
    `.scss`, `.sass`, `.less`, `.styl`, component dirs (`components/`,
    `pages/`, `routes/`, `app/`, `views/`, `screens/`), Storybook stories,
-   or design-token files. When in doubt, look for visual changes that need
-   verification.
+   or design-token files; when in doubt whether output changes, treat it as UI
+   scope. A diff with no rendered-output change records
+   `UI scope: none (no rendered output)` and skips Phases 3–4; non-visual client
+   code still gets frontend engineering review (`devrites-code-reviewer` frontend lane).
+   **Failing case:** an `app/services/billing.rb` diff opens Phase 4 and demands
+   captures.
 3. **Always** read [`reference/code.md`](reference/code.md) and assess **Phase 1
    (code polish)**; if backend was touched, assess **Phase 2 (backend polish)** from
    the same file. Reconcile the findings, then send accepted corrections as one bounded

@@ -12,7 +12,7 @@ see [standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-pat
 | Excuse | Rebuttal |
 |---|---|
 | "All Important findings are minor; just GO." | `Important > 0` triggers an interactive y/N: do not bypass the prompt, present it. |
-| "User clearly wants this to ship." | Ship is evidence-driven, not consent-driven. A Critical finding outranks "the user said go". |
+| "User clearly wants this to ship." | Ship is evidence-driven, not consent-driven. With a Critical open the verdict stays NO-GO and `seal.md` records the user's override request; the user may accept named Important risks at the y/N prompt, but no request turns an open Critical or failed gate into GO. |
 | "Drift is small; resolve it inline and seal." | Unresolved drift = NO-GO, no exceptions. Route through `/rite-plan` to repair, then seal. |
 | "Reviewer findings overlap; average them away." | Surface disagreements explicitly. Averaging hides where the reviewers disagree. |
 | "Carry the old reviewer verdicts though the diff changed." | If the diff changed since `/rite-review`, re-run the Spec + Code axes: don't carry stale verdicts forward. |

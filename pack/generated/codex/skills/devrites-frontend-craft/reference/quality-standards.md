@@ -19,10 +19,11 @@ these are the floor, not the ceiling.
   visible** with ≥ **3:1** contrast against its background (never remove the outline
   without an equal replacement).
 - **Contrast**: text ≥ **4.5:1** (≥ 3:1 for large text and UI/graphics).
-- **Target size**: ≥ **24×24** CSS px (WCAG 2.2 AA, SC 2.5.8); prefer **44×44** for primary
-  touch targets.
+- **Target size**: ≥ **24×24** CSS px (WCAG 2.2 AA, SC 2.5.8, including its spacing exception) is the conformance floor; **44×44** for primary touch targets is a DS preference, so a spaced 28 px secondary icon button is not an a11y defect.
 - **No drag-only** interactions: provide a single-pointer alternative (SC 2.5.7).
-- Labels/names on all controls; errors announced; respects `prefers-reduced-motion`.
+- Labels/names on all controls; errors identified in text (SC 3.3.1) and status messages announced without moving focus (SC 4.1.3); respects `prefers-reduced-motion` (a platform requirement: SC 2.3.3 is AAA; § Motion below).
+- **Also observe:** a text-spacing override loses no content (SC 1.4.12); hover/focus content is dismissible, hoverable and persistent (SC 1.4.13); a focused element is never fully hidden by sticky or fixed UI (SC 2.4.11).
+- An A11Y finding names the SC, the observed failure and its evidence kind (`static`, `automated`, `manual`, `AT`); without an SC it is a heuristic lead, not a conformance failure. **Failing case:** "improve form accessibility" filed Important with no SC, or a sticky cookie bar hides the focused link and review passes.
 - **Test** with keyboard, a screen reader, and an automated checker (e.g. axe): early.
 
 ## Motion
@@ -57,8 +58,7 @@ website by section 7") is a tell: **one declared color strategy and role budget*
 
 ## Numerical bar (enforceable specifics)
 
-These are the hard numbers that move "good UI" from opinion to checkable.
-Project tokens win when stricter; these are the floor.
+These are the hard numbers that move "good UI" from opinion to checkable. Project tokens win when stricter. Contrast, target size, focus and reflow numbers are A11Y floors; the rest are DS build defaults. A review finding against a DS default needs the mismatch evidence of the [admission rule](../../rite-polish/reference/anti-ai-slop.md).
 
 ### Color
 - **OKLCH-only** for new tokens: perceptually uniform, predictable lightness
@@ -165,15 +165,14 @@ Corollaries (same shape as colour commitment):
 - **Exit at ~75 % of enter.** A 300 ms enter pairs with a 225 ms exit.
 - **Bounce / elastic easing banned** unless the project's design system
   explicitly uses it.
-- Honor `prefers-reduced-motion`: reduce or remove non-essential motion
-  entirely. Reduced means fewer and gentler, never zero feedback.
+- Honor `prefers-reduced-motion`: reduce or remove non-essential motion entirely. Reduced means fewer and gentler, never zero feedback: under emulated `reduce`, content reaches its final visible state and loading, progress and focus stay perceivable. Escalate a missing reduced path to Important only for vestibular-scale motion (parallax, zoom, large translation).
+- **Regardless of preference:** auto-moving or auto-updating content lasting over 5 s can be paused, stopped or hidden (SC 2.2.2); nothing flashes more than 3 times per second (SC 2.3.1); motion never gates input (focus moves and the first key or click lands during an enter animation); re-triggered motion retargets from its current state instead of restarting; zoom is never disabled (`user-scalable=no`, `maximum-scale=1`; SC 1.4.4). **Failing case:** an `opacity: 0` entrance with no reduced branch stays invisible under `reduce`, or a 7 s autoplay banner without pause passes because no preference was set.
 - **Loading feedback appears by ~200 ms**: skeletons/spinners replace stillness
   after that threshold; below it, feedback flicker reads as jank. Hover intents
   may delay 150–300 ms; focus indication never fades in — the ring is instant.
 
 ### Forms
-- Inputs match button height (44 px floor); visual targets under 24 px expand
-  their hit area with a pseudo-element to the 44 px minimum.
+- Inputs match button height (DS: 44 px for primary touch); a visual target under 24×24 CSS px expands its hit area (pseudo-element) to 24 px or meets SC 2.5.8's spacing exception (§ Accessibility).
 - Helper/error text reserves **`min-height: 1lh`** so messages never shift layout.
 - Border width is pinned across states (state changes recolor, never resize).
 - Disabled is visible through **three channels**: muted color, `not-allowed`
@@ -192,25 +191,16 @@ three axes from light:
 If the project has dark tokens already, follow them. If not and dark is in
 scope, propose the compensation rather than ship a flat invert.
 
-### Focus & states (8 required, 3 conditional)
-Every interactive element ships **8 visual/interaction states**:
-`default`, `hover`, `active`, `focus-visible`, `disabled`, `loading`,
-`selected`, and an error/invalid surface (required wherever the element can be invalid). Data surfaces add the
-conditional three whenever the data can produce them: **partial** (a missing field
-renders an explicit em-dash/placeholder — never `null` or `0`), **conflict** (a
-concurrent-edit/version-mismatch surface), and **offline/unreachable** (stale-data
-banner with retry, not a silently cached render). **Failing case:** a row with a
-missing value renders `0` or blank and the review reads it as real data.
+### Focus & states (role lattice)
+Every state a role makes applicable is required; applicability comes from the role, not a fixed count.
+- **Control states:** `default`, `active`, `focus-visible`; `hover` for hover-capable pointers; `disabled` where the control can be disabled; `loading` for async actions; `selected` for selectable controls; `invalid` wherever input can be invalid.
+- **Surface states** (a view that loads, lists or edits data): loading (initial vs subsequent), empty (first-run with a next action vs filtered with a way back), error with recovery, **partial** (a missing value renders the project placeholder with an accessible "not available" name, never `null`, `0` or blank), **stale/offline** (banner with retry, not a silently cached render), permission-denied (401 asks to sign in; 403 explains access and never renders as empty), pending/submitting (no double submit), success, and **conflict** (concurrent edit / version mismatch).
+- Mark each state per surface `present`, `partial`, `missing`, `not-needed (<reason>)` or `unknown` (not observed); never a bare count. `not-needed` without a reason is `missing`. **Failing cases:** a row with a missing value renders `0` or blank and the review reads it as real data; a 403 list shows "No invoices yet" and review says states covered; a static nav link is charged a missing `loading` state.
 - `:focus-visible` ring: **2 - 3 px**, **≥ 3:1** contrast against the
   background, **offset 2 px** so the focus is unambiguous on dense layouts.
 
 ### Browser chrome
-User-agent defaults are unfinished craft. Per UI slice, theme or explicitly
-decline (briefed) each of: `::selection` (token colors, not UA blue),
-`caret-color` on editable fields, scrollbar styling or a recorded
-`scrollbar-width` decision, and the project focus-ring token in place of the
-unstyled UA outline. **Failing case:** layout, type, and the 8+3 states pass
-while the UA blue focus ring and default selection remain.
+UA chrome is AES unless the DS defines it. Focus is judged by SC 2.4.7 and 1.4.11 on the actual background and by the DS focus-ring token where one is declared: a UA ring that passes both is not a finding. `::selection`, `caret-color` and scrollbars follow the DS when it defines them; task surfaces get no custom scrollbar the DS lacks. **Failing case:** a settings page with compliant UA focus rings is filed "unstyled UA chrome" Important.
 
 ### Container queries vs viewport queries
 - **Component breakpoints:** use **container queries** (`@container`). The
@@ -254,7 +244,7 @@ rung that carries the structure.
   ([`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md)).
 
 ### NEVER (UI numerical bar)
-- Never reintroduce anything [`rite-polish` anti-ai-slop](../../rite-polish/reference/anti-ai-slop.md) bans.
+- Never reintroduce anything [`rite-polish` anti-ai-slop](../../rite-polish/reference/anti-ai-slop.md) bans (review findings follow its admission rule).
 - Never hard-code a spacing value the 4 pt scale or project tokens cover.
 - Never animate an exit at 100 % of enter duration (feels uncontrolled).
 - Never use raw `z-index` numbers outside the semantic scale.
@@ -269,25 +259,25 @@ rung that carries the structure.
 - [ ] Renders with **no console errors/warnings**
 - [ ] **Keyboard**: tab through reaches everything; focus visible; Esc/Enter behave
 - [ ] **Screen reader** conveys content + structure
-- [ ] **All states**: the canonical 8 + 3 lattice above (§ Focus & states), not a
-      shorter local list
+- [ ] **All states**: every applicable control and surface state of the role lattice (§ Focus & states) marked, none `missing`, `unknown` recorded `cannot_verify`; not a shorter local list
 - [ ] **Responsive** at the canonical viewport set (§ Responsive); no lost content or
       controls, no page overflow; bounded exceptions tested; zoom-safe
-- [ ] **No accessibility violations** (axe or equivalent)
-- [ ] Meets the **CWV budget** above (measure, don't assume)
+- [ ] **No accessibility violations** (axe or equivalent, WCAG 2.2 tags enabled for a 2.2 AA claim); every `incomplete` result resolved as a manual row, `inapplicable` read as not exercised: zero violations alone never ticks this
+- [ ] Meets the **CWV budget** above (measure, don't assume; lab vs field status per [`performance.md`](../../devrites-lib/reference/standards/performance.md) § Frontend)
 - [ ] Aligned to the **design system** (tokens, components, type, spacing)
-- [ ] **Browser chrome** themed or declined in the brief (§ Browser chrome)
+- [ ] **Focus indicator** passes SC 2.4.7/1.4.11 (DS focus token where declared); no custom scrollbar the DS lacks (§ Browser chrome)
 - [ ] Clickables show `cursor: pointer` + a hover state; icons are SVG from the one set
       (no emoji); nothing trapped under fixed/sticky bars
 - [ ] **Consistency locks hold** (declared color strategy/roles / one radius scale / one theme) and the
-      mechanical pre-flight passes ([`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md))
+      mechanical pre-flight's ENG/DS rows pass ([`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md))
 
 ## Craft convergence bar
 
 Craft work terminates; it does not loop. Findings classify as **Critical /
 Major / Minor**: done means zero Critical, zero Major, and every remaining Minor
 accepted **in writing** (owner + reason) in `polish-report.md` — an unwritten
-minor is an ignored finding, not an accepted one. Re-running the full bar after a
+minor is an ignored finding, not an accepted one. AES proposals are capped at Minor
+and never block convergence. Re-running the full bar after a
 fix pass happens only on an explicit opt-in ("re-run the full bar"); "keep going"
 is not opt-in. Each pass captures every supported viewport, not only the one that
 failed. **Failing case:** the 375 px overflow is fixed, 320 px still overflows,

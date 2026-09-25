@@ -118,6 +118,12 @@
       "rationale": "Off-topic.",
       "owner": null,
       "owner_rationale": "Off-topic."
+    },
+    {
+      "text": "Check that the pricing page's LCP and the modal interaction work in a real browser.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-browser-proof",
+      "rationale": "One page/interaction/CWV observation is browser-proof, not the feature's full acceptance proof."
     }
   ]
 }

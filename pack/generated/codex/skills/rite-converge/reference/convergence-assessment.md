@@ -52,6 +52,11 @@ Before appending a slice, separate the two failure directions:
   ([`spec-drift-guard.md`](../../rite-build/reference/spec-drift-guard.md)) + a recorded decision, and let `$rite-plan
   repair` reshape intent. Convergence enqueues work; it never launders a spec bug into a code
   task.
+- **Unrequested:** within `touched-files.md` paths and plan touch-points, observable behavior
+  no REQ/AC/decision explains. It never enqueues a build slice: keep it through the Spec Drift
+  Guard plus a recorded decision, or record a `drift.md` removal item for `$rite-review`. Report
+  its count; an unrouted one blocks a clean result. **Failing case:** adopted code serves an admin export
+  endpoint no REQ names, Converge says "nothing unmet", and later slices build on it.
 
 ## Numbering + ordering the appended batch
 

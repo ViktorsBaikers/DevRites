@@ -82,6 +82,13 @@ Ranking boosts distant matches across directories or far apart within one file.
 Distance is a triage hint, not proof that two contracts are interchangeable.
 Check whether fixes to one copy should also apply to the other.
 
+A `merge` verdict (cluster or reimplemented-elsewhere twin) states the compared contract
+(inputs, outputs, errors, side effects, ordering), each unit's callers, and the tests
+protecting each copy. Any contract difference is `keep` or `watch`, not merge. When the
+survivor's tests miss the removed copy's callers, the finding adds a characterize-first
+step. A merge without the comparison is admitted only as an FYI lead. **Failing case:** two
+parsers score 0.9; one errors on empty input, the other returns a default; "merge" is wrong.
+
 ## Ignore ledger
 
 `.devrites/dup-ignore` (project-root default; `--ignore-file` overrides) holds
@@ -100,6 +107,10 @@ blind the scan.
 Rules:
 
 - Never add a hash without reading both units — an unread dismissal is a gap.
+- Judge member pairs, not the cluster: a hash is ignored only when every pair is `keep` and
+  one line explains it. A mixed or uncertain cluster gets a finding or `watch`, never an
+  ignore line, whatever the report volume. **Failing case:** A~B is a real copy, B~C is
+  coincidental, and the A~B~C hash lands in the ledger.
 - Write the reason on the same line after `#`; a bare hash is an unexplained
   dismissal and counts as a skipped check.
 - Do not commit-ignore clusters introduced by the *current* diff — a `*` unit

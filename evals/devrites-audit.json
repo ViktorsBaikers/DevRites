@@ -113,6 +113,18 @@
       "expected": "should_not_trigger",
       "rationale": "Polishing and applying changes belongs to rite-polish, not a read-only audit.",
       "owner": "rite-polish"
+    },
+    {
+      "text": "Run the full pre-seal review of the polished candidate across correctness, tests and architecture.",
+      "expected": "should_not_trigger",
+      "owner": "rite-review",
+      "rationale": "An unscoped multi-axis pass on the polished candidate is review."
+    },
+    {
+      "text": "Simplify the feature's code now and apply the cleanups.",
+      "expected": "should_not_trigger",
+      "owner": "rite-polish",
+      "rationale": "The ask wants code changed now; polish applies feature-scoped edits while audit only reports."
     }
   ]
 }

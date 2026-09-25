@@ -13,7 +13,7 @@ disable-model-invocation: true
 `/rite-resolve` resumes an **async** human gate: a checkpoint that already paused and
 **stopped the session** (an AFK blocking/escalating/irreversible queue, or a HITL pause
 left unanswered), plus `--batch`. When `/rite-build` asks a question **inline**
-via `AskUserQuestion` and the human is present, that pick resolves the gate **in place** through
+via `ask` and the human is present, that pick resolves the gate **in place** through
 the `devrites-engine state resolve` writer. You don't type `/rite-resolve` for it. For the async case this
 skill takes the human's answer (or `--drop` / `--batch`), writes it to `questions.md`, updates
 `state.md` (clears `Awaiting human`, sets `Status: running`), and recommends the next command.
@@ -80,7 +80,13 @@ Pull these via `Read` when shaping the resolve:
      that block and sets `Status: running`;
    - appends a `Log` line to `state.md`.
 
-   On resume, also clear or update the unblocked slice's `Slice mode` in `state.md`: if
+   **Writer failure:** command not found or nonzero exit → STOP. Do not hand-edit
+   `Slice mode`, `questions.md`, or `state.md`; report the exact command, its exit code,
+   and the decisive stderr line, and recommend `/rite-doctor`. Both files stay as the
+   writer left them.
+   **Completion:** zero exit, or the failure reported with no hand edit.
+
+   On resume, and only after a zero exit, also clear or update the unblocked slice's `Slice mode` in `state.md`: if
    the answer lets the slice proceed, drop the pause-time `Slice mode` so `/rite-build`
    re-derives it on the next selection; if the answer re-shapes how the slice should be
    built, set `Slice mode` to match.

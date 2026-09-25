@@ -125,6 +125,12 @@
       "rationale": "/rite-explain.",
       "owner": null,
       "owner_rationale": "/rite-explain. The functional owner is explicit-only, so natural language has no implicit owner."
+    },
+    {
+      "text": "Live code diverged from tasks.md after adoption; reconcile it and append the missing slices.",
+      "expected": "should_not_trigger",
+      "owner": "rite-converge",
+      "rationale": "Drift evidence plus an explicit reconcile/append ask belongs to rite-converge."
     }
   ]
 }

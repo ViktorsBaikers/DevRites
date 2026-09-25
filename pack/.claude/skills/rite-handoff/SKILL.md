@@ -28,7 +28,11 @@ cannot hold; the engine supplies what the workspace already knows.
 ## Where to write
 
 - **Active feature exists** → `.devrites/work/<slug>/handoff.md` (overwrites the previous
-  handoff; the workspace is the canonical home for this slug).
+  handoff; the workspace is the canonical home for this slug). Before overwriting, read the
+  previous file: its "External references" and "Live assumptions" exist nowhere else. Carry
+  each still-valid entry into the new file or list it under "Retired from the previous
+  handoff" with a reason; an entry in neither place is a silent drop — fix the draft before
+  writing.
 - **No active feature** → OS temp dir (`$TMPDIR` / `/tmp` / `%TEMP%`) as
   `rite-handoff-<ISO-timestamp>.md`. Print the absolute path after writing.
 
@@ -64,7 +68,15 @@ themselves. The workspace is the canonical store; the handoff is the chat-only d
 4. **Live assumptions the agent is acting on** that the workspace doesn't reflect yet
    (after the sync above, this section should be near-empty: flag anything that
    remains).
-5. **How to resume:** fixed boilerplate (see template below).
+5. **Tree record.** `HEAD <sha>` (`git rev-parse HEAD`) and the `git status --short` path
+   count at write time, so the next session can see edits made after the handoff.
+6. **In-flight work.** Every dispatch wave opened or sealed without a return (`devrites-engine
+   dispatch <slug> status`), running writer handle, held claim id plus paths (`devrites-engine
+   claim list --all`), and consumptive action started, each `terminal: yes|unknown` (`yes` only with
+   an admitted return, release, or proof of stop). The live handle exists only in chat. Any
+   `unknown` row makes item 1 a reconcile step (`dispatch <slug> status`, `parallel status`,
+   `claim list --all`), never a writer command: otherwise the next session dispatches a second writer.
+7. **How to resume:** fixed boilerplate (see template below).
 
 ## What NOT to include
 
