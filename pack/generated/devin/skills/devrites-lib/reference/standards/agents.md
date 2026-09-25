@@ -85,6 +85,7 @@ Each required reviewer/analyst/auditor starts with exactly one:
 
 ```text
 Outcome: <findings | no-findings | gap>
+Counts: <n> Critical · <n> Important · <n> Minor
 Finding: <severity> | <file:line or artifact section> | <observed quote/result> | <impact> | <minimum fix>
 Basis: <files read · commands run to reach this finding>
 ```
@@ -104,6 +105,24 @@ with evidence—never silently dropped/demoted. Null/timeout/failure/malformed
 output is `gap`, never `no-findings`. Conditional `Not-applicable` must name the
 inspected scope and why its trigger did not fire. **Failing case:** parent admits a
 wright "done" with no `git diff --name-only` ⊆ path-contract (allowlist) observation.
+
+### Return budget
+
+Every read-only leaf returns rows, not prose, so the root keeps its context for
+decisions and nothing is lost in a retelling. Exempt: `devrites-plan-drafter` (its
+return is the bundle the root writes) and the wright's change evidence.
+
+- Lead with the result line (`Outcome:` for reviewers, the role's own status line
+  otherwise), then `Counts:` with the number of rows per severity or kind.
+- No restated task, preamble, approach narrative or closing summary. An optional
+  `Notes:` block carries at most five lines that no row can hold.
+- Point, don't paste: cite `file:line` with at most one quoted line (160
+  characters); for a command, give the exact command, its exit code and the one
+  decisive output line. Never paste whole files, diffs, logs or test output.
+- Each row stands alone: a reader of that row alone can re-check it from its pointer.
+- The root records admitted rows verbatim, adds its own verification beside them, and
+  never rewrites, merges or summarizes a row; deduplication references rows by
+  position or ID instead of rewording them.
 
 ## Reconciliation
 

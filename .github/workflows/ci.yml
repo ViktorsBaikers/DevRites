@@ -484,10 +484,13 @@ jobs:
       # CycloneDX SBOMs for the npm package and the shipped linux/amd64
       # engine binary. Attached to the GitHub Release when semantic-release
       # published one for this exact HEAD (git describe --exact-match).
+      # Skipped, like the attestation, when this push produced no release (no dist/).
       - name: Generate npm SBOM (CycloneDX)
+        if: hashFiles('dist/bin/*') != ''
         run: npm sbom --sbom-format cyclonedx > dist/devrites-npm.cdx.json
 
       - name: Generate engine binary SBOM (CycloneDX)
+        if: hashFiles('dist/bin/*') != ''
         uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           format: cyclonedx-json
@@ -496,6 +499,7 @@ jobs:
           upload-artifact: false
 
       - name: Attach SBOMs to the release
+        if: hashFiles('dist/bin/*') != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

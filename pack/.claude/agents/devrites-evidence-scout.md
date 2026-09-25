@@ -7,6 +7,8 @@ permissionMode: plan
 
 <!-- include:_shared/untrusted-input.md -->
 
+<!-- include:_shared/result-admission.md -->
+
 ## Role / scope
 
 Answer **one bounded evidence question** without authoring. The root orchestrator
