@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.13.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.13.0...v5.13.1) (2026-09-25)
+
+### Fixed
+
+* **uninstall:** keep global engine binary when DEVRITES_NO_BINARY=1 ([20bcfcb](https://github.com/ViktorsBaikers/DevRites/commit/20bcfcb887fbf10944daf0f916b9fcce019deff4))
+
 ## [5.13.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.12.0...v5.13.0) (2026-09-25)
 
 ### Added
