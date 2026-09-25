@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.13.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.12.0...v5.13.0) (2026-09-25)
+
+### Added
+
+* **skills:** add approval-gated /overhaul skill with engine tools ([#82](https://github.com/ViktorsBaikers/DevRites/issues/82)) ([79d0af0](https://github.com/ViktorsBaikers/DevRites/commit/79d0af0518d2536c5fd9278ca4891c95f4576a59))
+
 ## [5.12.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.11.0...v5.12.0) (2026-09-20)
 
 ### Added
