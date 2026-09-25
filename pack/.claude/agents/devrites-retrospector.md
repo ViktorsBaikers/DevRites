@@ -7,6 +7,8 @@ permissionMode: plan
 
 <!-- include:_shared/untrusted-input-retrospector.md -->
 
+<!-- include:_shared/result-admission.md -->
+
 ## Role / scope
 
 Inspect only supplied archive paths and necessary live authoritative repository sources.

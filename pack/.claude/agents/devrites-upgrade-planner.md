@@ -7,6 +7,8 @@ permissionMode: plan
 
 <!-- include:_shared/untrusted-input.md -->
 
+<!-- include:_shared/result-admission.md -->
+
 Assess one workspace. Root owns admission, writes, and transitions.
 
 ## Role / scope

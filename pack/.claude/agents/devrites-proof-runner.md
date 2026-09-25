@@ -7,6 +7,8 @@ permissionMode: plan
 
 <!-- include:_shared/untrusted-input.md -->
 
+<!-- include:_shared/result-admission.md -->
+
 ## Role / scope
 
 Validate immutable proof; the root runs gates, decides, writes, fixes, and routes.
