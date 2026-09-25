@@ -1231,6 +1231,28 @@ func runInstall(t *testing.T, target, payload string, mutate func(*Options)) {
 	}
 }
 
+func TestUninstallNoBinaryEnvKeepsGlobalBinary(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("DEVRITES_BIN_DIR", t.TempDir())
+	bin := filepath.Join(home, ".local", "bin", engineBinaryName())
+	testutil.WriteFile(t, bin, "engine\n")
+	target := t.TempDir()
+	runInstall(t, target, testPayload(t), func(*Options) {})
+
+	opts := DefaultOptions(ModeUninstall)
+	opts.Target = target
+	opts.Stdout = &bytes.Buffer{}
+	opts.Stderr = &bytes.Buffer{}
+	if err := Apply(opts); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(bin); err != nil {
+		t.Fatalf("uninstall with DEVRITES_NO_BINARY=1 removed global binary: %v", err)
+	}
+}
+
 func runUninstall(t *testing.T, target string) {
 	t.Helper()
 	opts := DefaultOptions(ModeUninstall)
