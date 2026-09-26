@@ -8,6 +8,7 @@
 - [Concurrency, caching, retries and distributed reliability](#concurrency-caching-retries-and-distributed-reliability)
 - [Security, privacy and trust boundaries](#security-privacy-and-trust-boundaries)
 - [Architecture, maintainability and anti-slop](#architecture-maintainability-and-anti-slop)
+- [Over-engineering and dead weight](#over-engineering-and-dead-weight)
 - [Tests and verification quality](#tests-and-verification-quality)
 - [Dependencies and supply chain](#dependencies-and-supply-chain)
 - [Backend performance](#backend-performance)
@@ -15,17 +16,23 @@
 - [Frontend craft, interaction and accessibility](#frontend-craft-interaction-and-accessibility)
 - [Classifying frontend guidance](#classifying-frontend-guidance)
 - [Cross-layer contracts](#cross-layer-contracts)
+- [Public API and developer experience](#public-api-and-developer-experience)
+- [Documentation](#documentation)
 - [Operations and project-specific extensions](#operations-and-project-specific-extensions)
 
 ## Applicability matrix
 
 Before a review shard starts, build the matrix domain × component × lane × active
-profile. Each cell is `applicable` (reviewed under the correct semantics),
-`not applicable` (with evidence), or `blocked` (with the missing capability). Missing
-expertise, tools or browser access is `blocked`, never `not applicable`. Extend the
-matrix for discovered stacks, risks and requirements. Every item below is a question
-to answer with evidence, not a finding to assume; a clean domain has checks and
-inspected ranges recorded.
+profile and record it in `coverage.json` `applicability[]` (`domain` as one of the
+eight [score keys](scoring.md#audit-sections-and-score-domains), `component`, `lane`,
+`state`, `reason`, `receipts[]`). Each cell is `applicable` (reviewed under the
+correct semantics), `not-applicable` (with a reason and evidence), or `blocked` (with
+the missing capability). Missing expertise, tools or browser access is `blocked`,
+never `not-applicable`. Extend the matrix for discovered stacks, risks and
+requirements. Every item below is a question to answer with evidence, not a finding
+to assume. A cell is closed only by an admitted receipt that lists its domain in
+`domains_checked`; a cell with no such receipt is not checked, never clean, and
+`G-COVERAGE` cannot pass over it.
 
 ## Correctness and data integrity
 
@@ -107,7 +114,8 @@ globals; duplicated sources of truth; over-centralized modules; abstraction leak
 expensive coupling; error semantics; resource ownership; unsafe casts and type
 escapes; broad catches; shotgun changes; superficial wrappers; cargo-cult patterns;
 speculative infrastructure; copy-paste divergence; placeholder code;
-performance-obscuring indirection.
+performance-obscuring indirection. Complexity without a current need has its own
+floor in [Over-engineering and dead weight](#over-engineering-and-dead-weight).
 
 A refactor needs a concrete defect, inconsistency, maintenance cost or measurable
 risk. Never rewrite working idiomatic code toward a personal style. Similar-looking
@@ -119,13 +127,77 @@ Prose clean-up applies only to approved docs, comments or report text and must k
 facts, terminology, identifiers and meaning. No UI or copy change rides on a backend
 approval.
 
+## Over-engineering and dead weight
+
+Code that serves no current requirement still costs reading, testing, securing and
+migrating. Agent-written code shows these patterns more often — larger patches, more
+duplicated blocks, fewer reuses of existing helpers — but authorship is never
+evidence: check every codebase the same way. Tag each candidate with its cheapest cut:
+
+- `delete`: unreferenced code, exports, routes, flags, config keys and environment
+  variables; scratch and debug files, commented-out blocks, leftover debug output;
+  parameters and options every caller leaves at the default; compatibility shims,
+  aliases and "legacy" branches for forms that never shipped; features and edge-case
+  paths no requirement, caller or test needs.
+- `yagni`: an interface, abstract base or protocol with one implementation (fakes
+  count); a factory, builder, registry or plugin system with one product; a type
+  parameter used with one type; a strategy, hook or options bag nobody varies; a
+  layer that only passes data along; configuration or a flag whose value never
+  differs across real deployments.
+- `reuse`: a near-duplicate of a helper, type or pattern that already exists under
+  another name. Search by what the code does, not by its name.
+- `stdlib` / `native`: hand-written code that the standard library, the platform
+  (HTML, CSS, database constraints, the runtime) or an installed dependency already
+  provides. Name the replacement and the version that has it.
+- `dependency`: a package used for a few lines, a manifest entry nothing imports, two
+  packages doing one job, or a name that does not resolve on its registry
+  (hallucinated or typosquat risk: route to security).
+- `shrink`: wrappers that only delegate; single-use helpers whose name says no more
+  than their body; checks for states the types or an internal caller already exclude;
+  the same validation repeated across internal layers; broad catches and
+  success-shaped fallbacks that hide failure; retries, timeouts or circuit breakers
+  around local work, or nested retry layers; caching without a measurement; one error
+  logged at every layer; comments and docstrings that restate the code.
+
+Evidence for each candidate: the population count (implementations, callers,
+non-default arguments, importers, values across deploy configuration) with tool,
+scope and file count reconciled with `git ls-files`, covering tests, reflection and
+string dispatch, dependency injection, generated code, entry points (CLI, handlers,
+plugins, serverless), public exports and external consumers; history (`git log -S`)
+showing whether the form shipped or the value ever varied; the lines and dependencies
+removable; and the concrete cost. Dead-code, unused-dependency and clone tools yield
+candidates, not findings; token clone detectors miss renamed copies, so a low
+duplication figure proves nothing.
+
+Never flag: validation at trust boundaries (user input, network, files,
+deserialization, environment, IPC) — generated code misses these more often than it
+repeats them; exported, published or persisted contracts and their documented
+migration windows; test seams that tests use; real plural implementations, including
+fakes and plugins; audit, security and compliance logging; caching, retries or
+low-level code backed by a linked measurement, incident or SLO; decisions recorded in
+an ADR (report a mismatch with the ADR instead); refactoring and tests that make
+change easier; a single smoke test or assertion self-check. When nobody can say why
+code exists, check its history and owners before proposing removal.
+
+Severity follows consequence: most cuts are low or medium `maintainability`.
+Duplicated logic that can diverge on money, authorization, tenancy or time is a
+correctness finding; a swallowed error is correctness or reliability; an unresolvable
+dependency is security.
+
 ## Tests and verification quality
 
 Check assertion strength, observable behavior, unhappy paths, boundaries, state
 transitions, retries, races, idempotency, time dependence, migrations, rollback,
 compatibility, tenant and security isolation, service contracts, flakiness and test
 isolation. Mocks must not remove the database, network or concurrency behavior the
-defect lives in. Confirm tests are discovered and actually run.
+defect lives in. Confirm tests are discovered and actually run. Detect flakiness by rerunning, in
+random order with a recorded seed (`go test -shuffle=on -count=N`, `pytest -p
+randomly`, Jest `--randomize`): a test that fails then passes on unchanged code is
+flaky and cannot serve as an oracle; order dependence is its most common cause.
+Flag tautological
+tests (asserting what a mock returns, or only "not null"), mocks of internal
+collaborators or of the unit under test, near-duplicate tests that differ by one
+literal, and production code special-cased to pass a test.
 
 Line and branch coverage locate gaps; they never prove correctness. Use focused
 mutation testing, property-based tests, fuzzing, differential checks or fault
@@ -137,7 +209,8 @@ that merely restate the implementation.
 
 Inventory direct and transitive **resolved** versions, their runtime/build/test
 roles, origins, licenses, support and end-of-life status, advisories, deprecated
-APIs, provenance, integrity and install scripts. Verify the latest compatible and
+APIs, provenance, integrity and install scripts, plus the unused, redundant or
+unresolvable entries named under [Over-engineering and dead weight](#over-engineering-and-dead-weight). Verify the latest compatible and
 the latest upstream versions separately against official registries, releases and
 advisories at run time; "newer" alone justifies nothing.
 
@@ -251,11 +324,65 @@ documented or observed contract evidence from unverifiable internals. A coordina
 interface change needs one reconciled contract revision, explicit write owners,
 ordered tasks and approval.
 
+## Public API and developer experience
+
+For libraries, SDKs, CLIs, plugins and configuration consumed outside the repository:
+
+- **Compatibility:** diff the exported surface against the last release with the
+  ecosystem's checker (`gorelease` or `apidiff`, `cargo-semver-checks`, `griffe
+  check`, api-extractor with publint and `attw`, japicmp); a breaking change needs a
+  major version or a documented migration. `gorelease` does not fail on `v0`
+  modules; report their breaking changes anyway.
+- **CLI:** data on stdout and diagnostics on stderr; exit 0 only on success, with
+  distinct non-zero codes for usage and runtime errors; `--help` and `--version`;
+  machine-readable output where scripts consume it; no color when not a TTY or when
+  `NO_COLOR` is set; never prompt without a TTY, and a flag for every prompt.
+- **Errors:** name the cause and the offending value, the constraint, and how to fix
+  it; no stack trace as the only message; never rely on color alone.
+- **Configuration:** documented precedence (flags, environment, project, user,
+  system); unknown keys rejected with a suggestion; a validate command or dry run.
+
+Each claim gets an executed check: the compatibility diff, `cmd --json` parsing,
+`NO_COLOR=1 cmd` containing no escape codes, a bad argument giving a non-zero exit
+with empty stdout, golden tests on error text.
+
+## Documentation
+
+Inventoried docs are reviewed, not skipped. Check that install, setup and quick-start
+commands run on a clean checkout; examples compile or run (Go `Example` tests,
+doctests, `cargo test --doc`); generated references (CLI help, OpenAPI, config
+schemas) match a fresh regeneration with no diff (`cog --check`, `mdox fmt --check`,
+`git diff --exit-code`); documented flags, endpoints and settings exist in code and
+the reverse; local links and anchors resolve (`lychee --offline`). Wrong docs that
+send a user down a broken path are findings with the same severity rules as code.
+
 ## Operations and project-specific extensions
 
-Check observability, missing or unsafe logs, metric cardinality, tracing boundaries,
-health and readiness, feature flags, deployment order, graceful shutdown, rollback,
-backup and restore, version skew, configuration drift, resilience and diagnosability.
+For every long-running service, check with a fault test where possible:
+
+- **Signals:** structured logs carrying the trace or correlation ID from the inbound
+  `traceparent` to outbound calls and jobs; RED metrics per endpoint and USE metrics
+  per resource under stable OpenTelemetry semantic-convention names; no secrets,
+  tokens or personal data in logs, spans or metrics; bounded metric cardinality.
+- **Health:** liveness checks only the process, never a dependency; readiness checks
+  what serving needs; a startup probe covers slow boot. Stop the database: readiness
+  fails, liveness stays up.
+- **Shutdown:** on SIGTERM readiness fails first, in-flight work drains and consumers
+  stop fetching, all within the platform's grace period.
+- **Timeouts and retries:** every outbound call has connect and total timeouts from
+  the caller's deadline; retries are bounded, jittered, at one layer, only for
+  idempotent work; queues and concurrency are bounded.
+- **Configuration:** from environment or mounted files, never secrets in the
+  repository or image; a missing required setting fails startup and names it.
+- **Change safety:** rollback or roll-forward path, staged rollout, feature-flag
+  kill switches with owners and removal dates, expand-and-contract migrations with
+  lock and statement timeouts (squawk, `atlas migrate lint`), version skew between
+  old and new instances.
+- **Recovery:** backups proven by a restore that queries data against RTO and RPO;
+  alerts on symptoms and SLO burn, each with a runbook; SLOs on user-visible
+  behavior; CPU and memory requests and a memory limit.
+
+Also check deployment order, configuration drift, resilience and diagnosability.
 Add language- or domain-specific extensions when applicable: memory ownership and
 FFI, native sanitizers, embedded constraints, GPU and frame budgets, numerical, data
 and ML reproducibility, regulated or safety requirements. An unfamiliar domain is

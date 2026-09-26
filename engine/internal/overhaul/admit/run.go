@@ -240,6 +240,15 @@ func receipt(run, path, observed string, hasObserved bool, stdout io.Writer) (in
 		if ovio.Str(rc["outcome"]) == "no-findings" && !ovio.Truthy(rc["inspected"]) {
 			why = append(why, "no-findings without inspected ranges is malformed")
 		}
+		checked := ovio.List(rc["domains_checked"])
+		if ovio.Str(rc["outcome"]) == "no-findings" && len(checked) == 0 {
+			why = append(why, "no-findings must name its domains_checked")
+		}
+		for _, d := range checked {
+			if !slices.Contains(ovio.Domains, ovio.Str(d)) {
+				why = append(why, "domains_checked has unknown domain "+records.Repr(d))
+			}
+		}
 		if writers[ovio.Str(x["role"])] {
 			v, err := keyed(rj, "revisions")
 			if err == nil {

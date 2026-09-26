@@ -73,7 +73,8 @@ func fixture(t *testing.T, withPlan bool) (run, gen string) {
 		obj{"path": fakeHome + "/proj/a.go", "eligible": true, "lanes": []any{"backend"},
 			"ranges": []any{obj{"start": 1, "end": 9, "state": "verified"}}},
 		obj{"path": "vendor/x.js", "eligible": false, "exclusion": obj{"reason": hostile}},
-	}})
+	}, "applicability": []any{obj{"domain": "operations", "component": "api", "lane": "backend", "state": "blocked",
+		"reason": "no container runtime"}}})
 	writeJSON(t, filepath.Join(gen, "findings.json"), obj{"findings": []any{
 		obj{"id": "F-1", "title": hostile, "kind": "defect", "severity": "high", "status": "confirmed",
 			"failing_scenario": "nil deref"},
@@ -258,6 +259,9 @@ func TestSectionContents(t *testing.T) {
 	}
 	if !strings.Contains(sectionHTML(t, h, "approvals"), "QUOTE-approve r1") {
 		t.Fatal("approval quote missing")
+	}
+	if !strings.Contains(sectionHTML(t, h, "applicability"), "no container runtime") {
+		t.Fatal("blocked applicability cell missing from the report")
 	}
 }
 

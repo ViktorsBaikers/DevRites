@@ -17,9 +17,9 @@ specialization:
 
 | Specialization | Question to answer |
 | --- | --- |
-| `finding-verify` | Is this candidate real? Look for existing defenses, counterexamples, unreachable prerequisites, wrong locations, duplicate root causes |
-| `repair-verify` | Does the fix hold, including neighboring failure modes, and does the new test still fail against the old implementation in a disposable baseline copy? |
-| `coverage-critic` | Which surfaces, ranges, boundaries or check classes did the last wave miss or leave stuck? |
+| `finding-verify` | Is this candidate real? Look for existing defenses, counterexamples, unreachable prerequisites, wrong locations, duplicate root causes. For an absence claim (unused, one implementation, never varies), rerun the population search yourself, including dynamic, reflective, generated, entry-point and external-consumer paths, and check each "never flag" case in `.agents/skills/overhaul/references/audit-domains.md` § Over-engineering and dead weight |
+| `repair-verify` | Does the fix hold, including neighboring failure modes, does the new test still fail against the old implementation in a disposable baseline copy (for other repair kinds, the red that `.agents/skills/overhaul/references/repair-and-measurement.md` § Oracles by finding kind names), and does every added comment meet `.agents/skills/overhaul/references/repair-and-measurement.md` § Comments in repairs (a violation is a finding, not a pass)? |
+| `coverage-critic` | Which surfaces, ranges, boundaries, check classes or applicability cells did the last wave miss, leave stuck or close without a receipt that lists the domain? |
 | `final-clean-critic` | Is there any remaining coverage work? Only a clean answer lets coverage count as complete |
 | `catalog-adequacy` | Does the rubric cover the inventory, profile risk families, journeys and trust boundaries, without duplicate or diluting controls? |
 | `profile-challenge` | Do a provisional profile's rules fit the installed versions, fail on a known-bad fixture and stay quiet on a known-good one? |

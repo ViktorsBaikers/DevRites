@@ -32,11 +32,11 @@ Placement rules: [`scope-and-safety.md`](scope-and-safety.md#run-area-and-checkp
 | File (in a generation) | Role and key fields |
 | --- | --- |
 | `run.json` | `run_id`, `repo_root`, `mode` (`full`/`pr`/`branch`), `assessment_only`, `phase`, `readiness_verdict`, `execution_outcome`, `identities` (comparison, baseline, candidate), `capabilities` (tools + digests, concurrency, isolation, browser), `budget`, `revisions.plan`/`revisions.rubric` (`rev`, `file`), `degradation`, `questions[]`, `stop`, `task_outcomes` |
-| `coverage.json` | `files[]`: `path`, `sha256`, `lines`, `component`, `lanes`, `eligible`, `exclusion.reason`, `binary`, `ranges[]` (`start`, `end`, `lanes`, `profiles`, `receipts{lane: [...]}`, `tools[]`, `state`) |
+| `coverage.json` | `files[]`: `path`, `sha256`, `lines`, `component`, `lanes`, `eligible`, `exclusion.reason`, `binary`, `ranges[]` (`start`, `end`, `lanes`, `profiles`, `receipts{lane: [...]}`, `tools[]`, `state`); `applicability[]`: `domain`, `component`, `lane`, `state` (`applicable`/`not-applicable`/`blocked`), `reason`, `receipts[]` ([matrix](audit-domains.md#applicability-matrix)) |
 | `stack-profiles.json` | `components[]` (B6 component record), `profiles[]` (`id`, `rev`, `file`, `sha256`, `status`), `dependencies[]` (dependency decisions) |
 | `dispatch.json` | `attempts[]`: `task_id`, `attempt_id`, `wave`, `role`, `lane`, `profiles`, `snapshot`, `write_paths`, `authorized_by`, `status`, `dispatched_at`, `started_at`, `finished_at`, `receipt`, `changed_paths` |
 | `contracts.json` | `contracts[]`: producer/consumer graph, schema/version, journeys, both-side evidence, open compatibility questions |
-| `findings.json` | `findings[]` with the fields in [`orchestration.md`](orchestration.md#finding-proposals) plus `status`, `severity`, `verified_by`, `history[]` |
+| `findings.json` | `findings[]` with the fields in [`orchestration.md`](orchestration.md#finding-proposals) (including `domain` and `controls`) plus `status`, `severity`, `verified_by`, `history[]` |
 | `evidence.json` | `items[]`: `id`, `kind`, `path`, `sha256`, `command`, `exit`, `fingerprint`, `inputs`, `limitations`, `by`; benchmarks add `measurement` |
 | `approval.json` | append-only `events[]` ([fields](lifecycle.md#the-approval-gate)) |
 | `results-baseline.json`, `results-candidate.json`, `gates.json`, `scorecard*.json` | scoring inputs and calculator output ([`scoring.md`](scoring.md)) |
@@ -132,7 +132,16 @@ per path (case-folded, symlink-resolved); no `dispatched`, `running` or `returne
 attempt once the outcome leaves `RUNNING`; one outcome per approved task at the end;
 a coverage denominator that never shrinks; append-only cycles, findings history and
 approval events; immutable revisions; view stamps; manifest integrity; stale stages
-and interrupted publishes.
+and interrupted publishes. Across records: every finding's `domain` is a score key;
+once a rubric is frozen every confirmed finding names known `controls`, and none of
+an open finding's controls is PASS in the current results; applicability cells use a
+score key, a known state, a reason unless `applicable`, unique keys and receipts
+inside the run; coverage ranges use the seven coverage states; a scorecard's
+`G-NO-CRITICAL-HIGH` PASS needs no open critical or high finding,
+`G-NO-OPEN-SERIOUS-LEAD` PASS no open lead with critical or high potential impact,
+and `G-COVERAGE` PASS a non-empty matrix with no blocked cell, every applicable cell
+closed by an admitted, non-gap receipt whose `domains_checked` lists its domain, and every range of
+every eligible file reviewed or excluded.
 
 Receipt admission and quote anchoring live in `devrites-engine overhaul admit`
 ([`orchestration.md`](orchestration.md#admission-tool)).

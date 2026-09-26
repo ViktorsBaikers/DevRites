@@ -31,11 +31,16 @@ var (
 	repairGates = []string{"G-APPROVAL", "G-TASKS-COMPLETE", "G-ORACLES", "G-NO-REGRESSION", "G-PERF-TARGETS",
 		"G-PRESERVATION", "G-FINGERPRINTS", "G-OWNERSHIP", "G-FINAL-CHALLENGE"}
 	mayBeNA = set("G-PERF-TARGETS", "G-LANE-RECEIPTS", "G-CONCURRENCY")
-	// domainOrder is the fixed domain set in its documented order, which also
-	// orders the per-domain threshold rows.
-	domainOrder   = []string{"correctness", "security", "reliability", "performance", "tests", "architecture", "ux", "operations"}
-	defaultPolicy = [][2]string{{"global_min", "9.7"}, {"lane_min", "9.7"}, {"domain_min", "9.0"}, {"lane_domain_min", "9.0"}}
-	transitions   = map[[2]string]string{
+	// domainOrder also orders the per-domain threshold rows.
+	domainOrder = ovio.Domains
+	// defaultDomainWeights is the documented default weight table; a rubric
+	// that deviates records the reason and the approval in weight_deviations.
+	defaultDomainWeights = map[string]int64{"correctness": 20, "security": 20, "reliability": 15, "performance": 15,
+		"tests": 10, "architecture": 10, "ux": 5, "operations": 5}
+	controlWeights = set("1", "3", "5")
+	evaluations    = set("executed", "static", "source-proof", "human")
+	defaultPolicy  = [][2]string{{"global_min", "9.7"}, {"lane_min", "9.7"}, {"domain_min", "9.0"}, {"lane_domain_min", "9.0"}}
+	transitions    = map[[2]string]string{
 		{"FAIL", "PASS"}:    "fixed-or-newly-proven",
 		{"UNKNOWN", "PASS"}: "evidence-only",
 		{"PASS", "FAIL"}:    "regression-or-new-failure",
@@ -69,9 +74,14 @@ func run(args []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		docs, _, err := load(o["--rubric"], o["--baseline"], o["--candidate"])
+		docs, digs, err := load(o["--rubric"], o["--baseline"], o["--candidate"])
 		if err != nil {
 			return "", err
+		}
+		for i, arm := range []string{"baseline", "candidate"} {
+			if err := sameRubric(docs[i+1], digs[0], arm); err != nil {
+				return "", err
+			}
 		}
 		res, err := compare(docs[0], docs[1], docs[2])
 		if err != nil {
@@ -88,8 +98,8 @@ func run(args []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if d := docs[1]["rubric_digest"]; d != nil && d != any(digs[0]) {
-		return "", fmt.Errorf("results were produced for a different rubric digest")
+	if err := sameRubric(docs[1], digs[0], "results"); err != nil {
+		return "", err
 	}
 	out, err := score(docs[0], docs[1], docs[2])
 	if err != nil {
@@ -108,6 +118,18 @@ func run(args []string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%s -> %s\n", out["readiness_verdict"], path), nil
+}
+
+// sameRubric requires results to name the digest of the rubric they were
+// produced for, so two scorecards are only comparable on one rubric revision.
+func sameRubric(results map[string]any, digest, what string) error {
+	switch d := results["rubric_digest"]; {
+	case d == nil:
+		return fmt.Errorf("%s: rubric_digest is required", what)
+	case d != any(digest):
+		return fmt.Errorf("%s were produced for a different rubric digest", what)
+	}
+	return nil
 }
 
 // flags parses "--name value" pairs; every required flag must be present and
@@ -181,6 +203,7 @@ func needReason(v any, what string) error {
 
 type control struct {
 	id, domain      string
+	evaluation      string
 	lanes           []string
 	weight          *big.Rat
 	na, hard, indep bool
@@ -224,11 +247,26 @@ func checkRubric(r map[string]any) (*rubricSpec, error) {
 			return nil, errPolicy
 		}
 	}
+	deviations := map[string]bool{}
+	for _, e := range ovio.List(r["weight_deviations"]) {
+		m := ovio.Obj(e)
+		d, _ := m["domain"].(string)
+		if d == "" || !ovio.Truthy(m["reason"]) || !ovio.Truthy(m["approval"]) {
+			return nil, fmt.Errorf("weight deviation %q needs a domain, a reason and an approval reference", d)
+		}
+		if _, known := defaultDomainWeights[d]; !known || deviations[d] {
+			return nil, fmt.Errorf("weight deviation %q names an unknown or repeated domain", d)
+		}
+		deviations[d] = true
+	}
 	doms := ovio.Obj(r["domains"])
 	for _, d := range slices.Sorted(maps.Keys(doms)) {
 		w, err := num(doms[d], "domain weight "+d)
 		if err != nil {
 			return nil, err
+		}
+		if def, ok := defaultDomainWeights[d]; ok && w.Cmp(big.NewRat(def, 1)) != 0 && !deviations[d] {
+			return nil, fmt.Errorf("domain weight %s is %s, not the default %d, without a weight_deviations entry", d, w.RatString(), def)
 		}
 		sp.dw[d] = w
 	}
@@ -310,8 +348,15 @@ func checkRubric(r map[string]any) (*rubricSpec, error) {
 		if err != nil {
 			return nil, err
 		}
+		if !controlWeights[w.RatString()] {
+			return nil, fmt.Errorf("%s: weight must be 1, 3 or 5, got %s", id, w.RatString())
+		}
+		ev, _ := c["evaluation"].(string)
+		if !evaluations[ev] {
+			return nil, fmt.Errorf("%s: evaluation must be executed, static, source-proof or human, got %v", id, c["evaluation"])
+		}
 		sp.controls = append(sp.controls, control{id: id, domain: dom, lanes: lanes, weight: w, na: na != nil,
-			hard: ovio.Truthy(c["hard_gate"]), indep: ovio.Truthy(c["independent_verification"])})
+			hard: ovio.Truthy(c["hard_gate"]), indep: ovio.Truthy(c["independent_verification"]), evaluation: ev})
 	}
 	return sp, nil
 }
@@ -329,6 +374,10 @@ func credit(c control, res map[string]any, notes *[]any) (string, error) {
 	}
 	if st == "PASS" && !ovio.Truthy(res["evidence"]) {
 		*notes = append(*notes, map[string]any{"control": c.id, "from": "PASS", "to": "UNKNOWN", "reason": "no evidence"})
+		st = "UNKNOWN"
+	}
+	if st == "PASS" && c.domain == "performance" && c.evaluation == "static" {
+		*notes = append(*notes, map[string]any{"control": c.id, "from": "PASS", "to": "UNKNOWN", "reason": "static inspection establishes no performance metric"})
 		st = "UNKNOWN"
 	}
 	if st == "PASS" && c.indep && !ovio.Truthy(res["verified_by"]) {

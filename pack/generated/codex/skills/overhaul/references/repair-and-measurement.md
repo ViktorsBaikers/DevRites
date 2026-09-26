@@ -3,6 +3,9 @@
 ## Contents
 
 - [One approved repair slice](#one-approved-repair-slice)
+- [Simplification repairs](#simplification-repairs)
+- [Oracles by finding kind](#oracles-by-finding-kind)
+- [Comments in repairs](#comments-in-repairs)
 - [Oracles by lane](#oracles-by-lane)
 - [Never do this to get green](#never-do-this-to-get-green)
 - [False-green defenses](#false-green-defenses)
@@ -24,10 +27,12 @@ and only after the coordinator recorded the approval.
    failing line), **broken test** (setup, import or compile error — not a valid red
    for a logic defect), **false pass** (passes on the unfixed code — the oracle does
    not reach the defect), or **not run** (not discovered, filtered or skipped). Only a
-   good red continues.
+   good red continues; a repair other than a defect fix gets its red from
+   [Oracles by finding kind](#oracles-by-finding-kind).
 3. Implement the smallest coherent fix. Keep supported contracts and UX unchanged
    except for the exact approved change. No formatting sweep, no speculative
-   abstraction.
+   abstraction. Add comments only as [Comments in repairs](#comments-in-repairs)
+   allows.
 4. Run the same oracle to green, then the relevant unit, integration, contract,
    end-to-end, static and security checks plus the impact cascade on dependents.
    Capture commands, exit codes and output as evidence.
@@ -47,12 +52,79 @@ never leave unaccounted changes; the coordinator compares observed changed paths
 the contract before admitting a patch.
 
 A pure refactor starts with characterization or contract tests and strengthens weak
-oracles; never damage correct code just to see red. Performance work starts with a
+oracles; never damage correct code just to see red. A simplification follows
+[Simplification repairs](#simplification-repairs). Performance work starts with a
 reproducible benchmark or query-budget oracle; ordinary unit tests do not assert
 flaky wall-clock times — use controlled benchmarks plus deterministic query counts or
 complexity bounds. When a bug cannot be reproduced safely, record the exact missing
 fact, propose a safe alternative and obtain a documented exception where needed; a
 waived verification stays a visible gap and may block readiness.
+
+## Simplification repairs
+
+A confirmed [over-engineering](audit-domains.md#over-engineering-and-dead-weight)
+finding — delete, inline, reuse, replace with standard library, platform or installed
+dependency, remove a dependency, shrink — preserves behavior, so its oracle proves
+preservation instead of a defect:
+
+1. **Population evidence**, rerun on the current fingerprint: the search that shows
+   the removed element is unused, single-implementation or never varied, with the
+   same scope rules as the finding.
+2. **Reach:** characterization or contract tests over the behavior that stays. Show
+   they reach it: a seeded mutant in the affected code turns them red on a disposable
+   baseline copy (this is the good red; quote it). Code with zero references has no
+   behavior to reach; the population evidence stands in for the red.
+3. **Green on the candidate:** the same tests, the full relevant suite, build,
+   typecheck and lint, with discovered and executed counts; for a dependency removal
+   also a clean install from the lockfile.
+4. **Result:** lines, files and dependencies removed, recorded as evidence. A
+   simplification that changes a public, persisted or wire contract is not a
+   simplification: it needs its own approved contract task.
+
+## Oracles by finding kind
+
+Every approved task needs a check that fails before the repair and passes after
+it. When correct code has no natural red, seed a known fault on a disposable
+baseline copy and show the new artifact catches it; when neither exists, the
+finding stays audit-only. A zero-mutant, zero-test or zero-link run is never a
+pass.
+
+| Repair | Red on the baseline | Green on the candidate |
+| --- | --- | --- |
+| Defect | Regression test fails at the named assertion | Same test passes |
+| Missing or weak test | A seeded mutant (or reverted behavior) in the covered lines survives the old suite; name the mutation tool and version | The new test kills it; diff-scoped mutation score recorded |
+| Simplification | [Simplification repairs](#simplification-repairs) | |
+| Documentation | The documented command, example, generated reference or link check fails, or `git diff --exit-code` shows drift after regeneration | It runs, compiles or regenerates without a diff |
+| Observability | A test with an in-memory log, metric or trace sink finds no record with the required keys (trace ID, stable semantic-convention names) | The record is present; deleting the new line turns it red again |
+| CI, build, IaC or container config | The linter or policy tool reports the named rule ID (actionlint, zizmor, hadolint, Checkov, conftest) | That ID is gone and nothing new appears |
+| Dependency | The advisory scanner reports the advisory against a pinned database snapshot | Same scanner and snapshot report nothing new; lockfile diff limited to the approved package and its required closure |
+| Contract or public API | The compatibility or schema diff (oasdiff, buf breaking, cargo-semver-checks, gorelease, griffe, api-extractor) or a consumer contract test fails | Zero breaking findings, or the approved version bump |
+| Operations | A fault test fails: a hanging dependency, SIGTERM during a request, a stopped database, a missing required setting | The call fails within its timeout, the request drains, readiness goes unready while liveness stays up, startup names the setting |
+| Flaky test | At least one failure in N ≥ 10 shuffled runs of the unchanged code | Zero failures in the same N runs |
+| Performance | [Benchmark tool](#benchmark-tool) verdict or a deterministic budget | |
+
+## Comments in repairs
+
+Default to no new comments: names, types and the regression test carry the meaning.
+Add one only when the code cannot show why it is written this way: an invariant, an
+ordering, locking or security trap, a workaround for a named external bug (link it),
+a measured performance trade-off, or a compatibility constraint. Doc comments on a
+public API are the exception when the project's convention requires them (for
+example Go exported identifiers); match the neighboring style.
+
+Never write in target code:
+
+- finding, task, run or plan IDs, or the word "overhaul": they belong in the receipt;
+- comments that restate the code, or test comments that restate the test name or
+  label Arrange/Act/Assert;
+- edit narration ("Fixed", "Added to handle", "Now correctly") or what the code did
+  before the change; history belongs in the commit, not the source;
+- chat residue, guesses stated as fact, stacked hedges, or sales words ("robust",
+  "seamless", "comprehensive").
+
+Put the constraint first, in literal words, in one sentence where possible. Keep a
+hedge only when it names a real, specific uncertainty ("unverified on Windows").
+Leave existing comments alone unless the change makes one false; then correct it.
 
 ## Oracles by lane
 
@@ -203,5 +275,36 @@ controlled window; a contaminated ratio never passes a gate.
 raw per-invocation `baseline` and `candidate` samples, the recorded run `order`, the
 `target` ratio, `materiality`, optional `resolution`, `resamples` and `seed`.
 Verdicts: `SUPPORTS_TARGET`, `IMPROVEMENT_BELOW_TARGET`, `IMPROVEMENT`,
-`INCONCLUSIVE`, `REGRESSION`, `NO_RATIO`. Fewer than 10 samples per arm or arms not
-recorded as interleaved cap any improvement at `INCONCLUSIVE`.
+`INCONCLUSIVE`, `REGRESSION`, `NO_RATIO`. Fewer than 10 samples per arm, arms not
+recorded as interleaved, or a missing interval cap any improvement at
+`INCONCLUSIVE`.
+
+The ratio carries two 95% intervals: the seeded bootstrap of the median ratio
+(`ci95`) and the distribution-free Hodges–Lehmann ratio bounds (`hodges_lehmann`),
+exact from the Mann–Whitney distribution and needing no seed. A claim uses the
+smaller lower bound; either upper bound below 1 is `REGRESSION`. A zero or negative
+sample, or more than four million baseline × candidate pairs, leaves no
+Hodges–Lehmann bounds and caps the verdict. Optional inputs:
+
+- `quantile` (for example `0.99`) compares a tail. Give each invocation as its raw
+  request latencies (the tool takes their quantile) or as its own quantile with
+  `requests_per_invocation`, never both in one arm. Fewer than `10 / (1 − quantile)`
+  requests per invocation (1000 for p99) caps the verdict and any budget PASS. Never pool requests across invocations: the
+  invocation stays the resampling unit.
+- `tolerance` (for example `0.05`) adds a `guardrail` for metrics that must not get
+  worse: `NON_INFERIOR` when the lower bound is at least `1 / (1 + tolerance)`,
+  `REGRESSION` when the upper bound is below it, otherwise `INCONCLUSIVE`. "Not
+  significant" is never "no regression".
+- `budget` (`value`, `quantile` default `0.5`, `deterministic`) tests the candidate
+  against an absolute target with one-sided 95% order-statistic bounds: `PASS` only
+  when the bound clears the target, `FAIL` when the opposite bound misses it,
+  `INSUFFICIENT_DATA` when there are too few invocations for that quantile (p75 needs
+  11, p95 59, p99 299). `deterministic: true` (bytes, query or request counts) needs
+  every invocation to agree, else `NONDETERMINISTIC`.
+- `error_rates` (`baseline`, `candidate` per-invocation rates, absolute `tolerance`,
+  optional `requests` totals) guards failures: the candidate-minus-baseline interval
+  is the wider of an invocation bootstrap and the Newcombe score interval; `PASS`
+  only when its upper bound is within tolerance. Pair every latency claim under load
+  with it: fast failures flatter latency.
+- `load` (`offered` and `completed` per arm) marks a run where either arm completed
+  under 98% of offered load as saturated and caps every verdict.

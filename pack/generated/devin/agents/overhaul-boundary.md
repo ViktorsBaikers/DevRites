@@ -44,7 +44,7 @@ receipt path.
 2. For each contract, locate the producer's definition and every consumer's use; record
    the version, schema source and generation path.
 3. Check both sides per
-   `.devin/skills/overhaul/references/audit-domains.md` § Cross layer contracts: schema,
+   `.devin/skills/overhaul/references/audit-domains.md` § Cross-layer contracts: schema,
    version, enum and nullability; numeric, ID and date precision; pagination, order
    and filters; auth and error shapes; retries and idempotency; cache freshness; tenant
    scoping; timeouts and cancellation; mixed-version deployment.
@@ -59,7 +59,7 @@ receipt path.
 
 ## Output
 
-`overhaul.receipt/1` plus proposals for `contracts.json` entries (producer, consumers,
+`overhaul.receipt/1` with `domains_checked`, plus proposals for `contracts.json` entries (producer, consumers,
 version, evidence per side, open questions) and findings per
 `.devin/skills/overhaul/references/orchestration.md` § Finding proposals. A shared control
 passes only when every required side has evidence.

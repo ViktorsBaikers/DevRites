@@ -103,7 +103,8 @@ deployment, or anything the user did not start with this command.
 
 1. Dispatch `recon` ([`overhaul-recon`](../../agents/overhaul-recon.md)); admit its inventory,
    components, lanes, partitions, contract seeds and journeys into `coverage.json`,
-   `stack-profiles.json` and `contracts.json`.
+   `stack-profiles.json` and `contracts.json`, and record the applicability matrix
+   in `coverage.json` ([`references/audit-domains.md`](references/audit-domains.md#applicability-matrix)).
 2. Compose profiles per component ([`references/stack-profiles.md`](references/stack-profiles.md));
    research unknown stacks through the unknown-stack procedure.
 3. Launch the concurrent engineering wave: when both lanes apply,

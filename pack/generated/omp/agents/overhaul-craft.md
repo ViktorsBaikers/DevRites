@@ -72,7 +72,7 @@ fixtures and data; baseline or candidate identity; budgets; receipt path.
 
 ## Output
 
-`overhaul.receipt/1` with the state matrix, evidence files, accessibility coverage
+`overhaul.receipt/1` with `domains_checked`, the state matrix, evidence files, accessibility coverage
 statement, and findings per
 `.omp/skills/overhaul/references/orchestration.md` § Finding proposals. Aesthetic
 proposals are listed separately, earn no score, and never block. Material design

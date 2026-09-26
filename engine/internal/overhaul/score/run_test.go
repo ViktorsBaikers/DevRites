@@ -20,7 +20,7 @@ func ctl(i int, d string, w any, lanes ...string) map[string]any {
 	if len(lanes) == 0 {
 		lanes = []string{"backend"}
 	}
-	return map[string]any{"id": fmt.Sprintf("C-%03d", i), "domain": d, "lanes": lanes, "weight": w, "hard_gate": false}
+	return map[string]any{"id": fmt.Sprintf("C-%03d", i), "domain": d, "lanes": lanes, "weight": w, "hard_gate": false, "evaluation": "executed"}
 }
 
 func rubricOf(controls []map[string]any) map[string]any {
@@ -258,15 +258,22 @@ func TestMonotonicity(t *testing.T) {
 	}
 }
 
-// 8. Duplicate control ids and zero weights are invalid input.
+// 8. Duplicate control ids, weights off the 1/3/5 scale and unknown evaluations are invalid input.
 func TestInvalidCatalog(t *testing.T) {
 	zero := base()
 	zero[0] = maps.Clone(zero[0])
 	zero[0]["weight"] = 0
+	two := base()
+	two[0] = maps.Clone(two[0])
+	two[0]["weight"] = 2
+	noEval := base()
+	noEval[0] = maps.Clone(noEval[0])
+	delete(noEval[0], "evaluation")
 	for _, tc := range []struct {
 		cs   []map[string]any
 		want string
-	}{{append(base(), base()[0]), "duplicate control id"}, {zero, "must be > 0"}} {
+	}{{append(base(), base()[0]), "duplicate control id"}, {zero, "must be > 0"}, {two, "weight must be 1, 3 or 5"},
+		{noEval, "evaluation must be"}} {
 		if _, err := tryScore(t, rubricOf(tc.cs), resOf(nil), passing()); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Fatalf("want %q, got %v", tc.want, err)
 		}
@@ -330,6 +337,17 @@ func writeJSON(t *testing.T, dir, name string, v any) string {
 	return p
 }
 
+// pinned sets the results' rubric_digest to the digest of the rubric file.
+func pinned(t *testing.T, rubricPath string, results map[string]any) map[string]any {
+	t.Helper()
+	d, err := ovio.SHA256File(rubricPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	results["rubric_digest"] = d
+	return results
+}
+
 func runCLI(args ...string) (int, string, string) {
 	var o, e bytes.Buffer
 	code := Run(args, &o, &e)
@@ -343,11 +361,15 @@ func TestCompare(t *testing.T) {
 	}
 	r := map[string]any{"schema": "overhaul.rubric/1", "rev": 1, "lanes": []string{"backend"},
 		"domains": map[string]any{"correctness": 50, "security": 50}, "domain_exclusions": excl,
+		"weight_deviations": []any{
+			map[string]any{"domain": "correctness", "reason": "two-domain library", "approval": "AP-1"},
+			map[string]any{"domain": "security", "reason": "two-domain library", "approval": "AP-1"}},
 		"controls": []map[string]any{ctl(1, "correctness", 5), ctl(2, "correctness", 5), ctl(3, "security", 5)}}
 	dir := t.TempDir()
-	code, stdout, stderr := runCLI("compare", "--rubric", writeJSON(t, dir, "r.json", r),
-		"--baseline", writeJSON(t, dir, "a.json", resOf(map[string]string{"C-001": "PASS", "C-002": "UNKNOWN", "C-003": "PASS"})),
-		"--candidate", writeJSON(t, dir, "b.json", resOf(map[string]string{"C-001": "FAIL", "C-002": "PASS", "C-003": "PASS"})))
+	rp := writeJSON(t, dir, "r.json", r)
+	code, stdout, stderr := runCLI("compare", "--rubric", rp,
+		"--baseline", writeJSON(t, dir, "a.json", pinned(t, rp, resOf(map[string]string{"C-001": "PASS", "C-002": "UNKNOWN", "C-003": "PASS"}))),
+		"--candidate", writeJSON(t, dir, "b.json", pinned(t, rp, resOf(map[string]string{"C-001": "FAIL", "C-002": "PASS", "C-003": "PASS"}))))
 	if code != 0 {
 		t.Fatalf("exit %d: %s", code, stderr)
 	}
@@ -367,8 +389,9 @@ func TestCLIOutWritesScorecard(t *testing.T) {
 	dir := t.TempDir()
 	b := base()
 	outPath := filepath.Join(dir, "scorecard.json")
-	code, stdout, stderr := runCLI("--rubric", writeJSON(t, dir, "r.json", rubricOf(b)),
-		"--results", writeJSON(t, dir, "s.json", resOf(allPass(b))),
+	rp := writeJSON(t, dir, "r.json", rubricOf(b))
+	code, stdout, stderr := runCLI("--rubric", rp,
+		"--results", writeJSON(t, dir, "s.json", pinned(t, rp, resOf(allPass(b)))),
 		"--gates", writeJSON(t, dir, "g.json", passing()), "--out", outPath)
 	if code != 0 || stdout != "MEETS_TARGETS -> "+outPath+"\n" {
 		t.Fatalf("exit %d stdout %q stderr %q", code, stdout, stderr)
@@ -400,6 +423,59 @@ func TestCLIInvalidInputExits2(t *testing.T) {
 		code, stdout, stderr := runCLI(args...)
 		if code != 2 || stdout != "" || !strings.HasPrefix(stderr, "ERROR: ") {
 			t.Fatalf("%s: exit %d stdout %q stderr %q", name, code, stdout, stderr)
+		}
+	}
+}
+
+// A domain weight off the default table needs a recorded deviation with an approval.
+func TestDomainWeightDeviation(t *testing.T) {
+	b := base()
+	r := rubricOf(b)
+	r["domains"].(map[string]any)["security"] = 30
+	if _, err := tryScore(t, r, resOf(allPass(b)), passing()); err == nil || !strings.Contains(err.Error(), "weight_deviations") {
+		t.Fatalf("undeclared deviation accepted: %v", err)
+	}
+	r["weight_deviations"] = []any{map[string]any{"domain": "security", "reason": "payments service"}}
+	if _, err := tryScore(t, r, resOf(allPass(b)), passing()); err == nil || !strings.Contains(err.Error(), "approval reference") {
+		t.Fatalf("deviation without approval accepted: %v", err)
+	}
+	dup := map[string]any{"domain": "security", "reason": "payments service", "approval": "AP-1"}
+	r["weight_deviations"] = []any{dup, dup}
+	if _, err := tryScore(t, r, resOf(allPass(b)), passing()); err == nil || !strings.Contains(err.Error(), "unknown or repeated") {
+		t.Fatalf("repeated deviation accepted: %v", err)
+	}
+	r["weight_deviations"] = []any{dup}
+	mustScore(t, r, resOf(allPass(b)), passing())
+}
+
+// A performance PASS from static inspection earns nothing.
+func TestStaticPerformancePassIsUnknown(t *testing.T) {
+	b := base()
+	b[3] = maps.Clone(b[3])
+	b[3]["evaluation"] = "static"
+	out := mustScore(t, rubricOf(b), resOf(allPass(b)), passing())
+	if get(out, "status_by_control."+b[3]["id"].(string)) != "UNKNOWN" || get(out, "readiness_verdict") != "NOT_READY" {
+		t.Fatalf("static performance PASS counted: %v", out["status_by_control"])
+	}
+}
+
+// Results without the rubric digest, or compared against another rubric, are invalid.
+func TestRubricDigestRequired(t *testing.T) {
+	dir := t.TempDir()
+	b := base()
+	rp := writeJSON(t, dir, "r.json", rubricOf(b))
+	other := rubricOf(b)
+	other["rev"] = 2
+	op := writeJSON(t, dir, "other.json", other)
+	g := writeJSON(t, dir, "g.json", passing())
+	for name, args := range map[string][]string{
+		"score without digest": {"--rubric", rp, "--results", writeJSON(t, dir, "s.json", resOf(allPass(b))), "--gates", g},
+		"compare other rubric": {"compare", "--rubric", rp,
+			"--baseline", writeJSON(t, dir, "a.json", pinned(t, rp, resOf(allPass(b)))),
+			"--candidate", writeJSON(t, dir, "c.json", pinned(t, op, resOf(allPass(b))))},
+	} {
+		if code, _, stderr := runCLI(args...); code != 2 || !strings.Contains(stderr, "rubric") {
+			t.Fatalf("%s: exit %d %q", name, code, stderr)
 		}
 	}
 }

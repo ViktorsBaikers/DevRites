@@ -80,6 +80,7 @@ func (f *fixture) records() map[string]J {
 		"coverage.json": {"schema": "overhaul.coverage/1", "files": L{J{"path": "src/a.py", "eligible": true}}},
 		"findings.json": {"schema": "overhaul.findings/1", "findings": L{J{"id": "F-1", "fingerprint": "fp-1",
 			"kind": "defect", "scope_origin": "pre-existing", "status": "confirmed", "severity": "high",
+			"domain": "correctness", "controls": L{"C-1"},
 			"evidence": L{"E-1"}, "locations": L{J{"path": "src/a.py", "start": 1, "end": 1},
 				J{"path": "mobile-app:src/api.ts", "external": true}},
 			"history": L{J{"status": "candidate"}, J{"status": "confirmed"}}}}},
@@ -184,6 +185,25 @@ func TestPublishThenValidate(t *testing.T) {
 	if code, _, _ := f.cmd("bogus"); code != 2 {
 		t.Fatalf("usage exit = %d", code)
 	}
+}
+
+func cell(r map[string]J) J { return r["coverage.json"]["applicability"].(L)[0].(J) }
+
+// scorecard records a scorecard with the given gates and points run.json at its rubric.
+func scorecard(r map[string]J, gates J) {
+	r["run.json"]["revisions"].(J)["rubric"] = J{"rev": 1, "file": "revisions/rubric-r1.json"}
+	r["scorecard.json"] = J{"schema": "overhaul.scorecard/1", "gates": gates}
+}
+
+// reviewed records one applicability cell in state st, backed by a receipt that
+// checked its domain, and a fully reviewed range for the fixture's file.
+func reviewed(f *fixture, r map[string]J, st string) {
+	write(f.t, filepath.Join(f.run, "receipts/R-dom.json"), J{"outcome": "no-findings", "domains_checked": L{"correctness"}})
+	addAttempt(r, J{"task_id": "W-1", "attempt_id": "A1", "role": "reviewer", "status": "admitted", "receipt": "receipts/R-dom.json"})
+	r["coverage.json"]["applicability"] = L{J{"domain": "correctness", "component": "api", "lane": "backend",
+		"state": st, "reason": "no GUI", "receipts": L{"receipts/R-dom.json"}}}
+	r["coverage.json"]["files"] = L{J{"path": "src/a.py", "eligible": true,
+		"ranges": L{J{"start": 1, "end": 1, "state": "semantically-reviewed"}}}}
 }
 
 func TestSingleGenerationRules(t *testing.T) {
@@ -370,6 +390,67 @@ func TestSingleGenerationRules(t *testing.T) {
 		{"ineligible coverage without reason", func(f *fixture, r map[string]J) {
 			r["coverage.json"]["files"] = L{J{"path": "src/a.py", "eligible": false}}
 		}, "coverage src/a.py: ineligible without an exclusion reason"},
+		{"finding without domain", func(f *fixture, r map[string]J) { delete(finding(r), "domain") }, "finding F-1: domain must be one of"},
+		{"confirmed finding without controls", func(f *fixture, r map[string]J) { delete(finding(r), "controls") },
+			"finding F-1: a confirmed finding names the rubric controls it fails"},
+		{"finding with unknown control", func(f *fixture, r map[string]J) { finding(r)["controls"] = L{"C-9"} }, "finding F-1: unknown control C-9"},
+		{"open finding with passing control", func(f *fixture, r map[string]J) {
+			r["results-candidate.json"] = J{"schema": "overhaul.results/1", "results": J{"C-1": J{"status": "PASS"}}}
+		}, "finding F-1: control C-1 is PASS in results-candidate.json while the finding is confirmed"},
+		{"critical-high gate against open finding", func(f *fixture, r map[string]J) {
+			scorecard(r, J{"G-NO-CRITICAL-HIGH": "PASS"})
+		}, "G-NO-CRITICAL-HIGH is PASS but finding F-1 is confirmed high"},
+		{"serious-lead gate against open lead", func(f *fixture, r map[string]J) {
+			r["findings.json"]["findings"] = append(r["findings.json"]["findings"].(L), J{"id": "F-2", "fingerprint": "fp-2",
+				"kind": "defect", "scope_origin": "pre-existing", "status": "candidate", "domain": "security",
+				"potential_impact": "critical", "history": L{J{"status": "candidate"}}})
+			scorecard(r, J{"G-NO-OPEN-SERIOUS-LEAD": "PASS"})
+		}, "G-NO-OPEN-SERIOUS-LEAD is PASS but lead F-2 is open with potential impact critical"},
+		{"coverage gate without matrix", func(f *fixture, r map[string]J) { scorecard(r, J{"G-COVERAGE": "PASS"}) },
+			"G-COVERAGE is PASS without an applicability matrix"},
+		{"coverage gate with blocked cell", func(f *fixture, r map[string]J) {
+			reviewed(f, r, "blocked")
+			scorecard(r, J{"G-COVERAGE": "PASS"})
+		}, "applicability ['correctness', 'api', 'backend'] is blocked"},
+		{"coverage gate with unchecked domain", func(f *fixture, r map[string]J) {
+			reviewed(f, r, "applicable")
+			cell(r)["receipts"] = L{"receipts/R-1.json"}
+			scorecard(r, J{"G-COVERAGE": "PASS"})
+		}, "no admitted, non-gap receipt of applicability ['correctness', 'api', 'backend'] lists correctness in domains_checked"},
+		{"coverage gate with unreviewed range", func(f *fixture, r map[string]J) {
+			reviewed(f, r, "applicable")
+			r["coverage.json"]["files"] = L{J{"path": "src/a.py", "eligible": true, "ranges": L{J{"start": 1, "end": 1, "state": "tool-scanned"}}}}
+			scorecard(r, J{"G-COVERAGE": "PASS"})
+		}, "eligible file src/a.py has unreviewed ranges"},
+		{"coverage gate with rejected receipt", func(f *fixture, r map[string]J) {
+			reviewed(f, r, "applicable")
+			attempts(r)[len(attempts(r))-1].(J)["status"] = "rejected"
+			scorecard(r, J{"G-COVERAGE": "PASS"})
+		}, "no admitted, non-gap receipt of applicability"},
+		{"coverage gate with gap receipt", func(f *fixture, r map[string]J) {
+			reviewed(f, r, "applicable")
+			write(f.t, filepath.Join(f.run, "receipts/R-dom.json"), J{"outcome": "gap", "domains_checked": L{"correctness"}})
+			scorecard(r, J{"G-COVERAGE": "PASS"})
+		}, "no admitted, non-gap receipt of applicability"},
+		{"coverage gate counts empty files", func(f *fixture, r map[string]J) {
+			reviewed(f, r, "applicable")
+			r["coverage.json"]["files"] = L{J{"path": "src/a.py", "eligible": true, "lines": 0}}
+			scorecard(r, J{"G-COVERAGE": "PASS"})
+		}, ""},
+		{"coverage gate backed by records", func(f *fixture, r map[string]J) {
+			reviewed(f, r, "applicable")
+			scorecard(r, J{"G-COVERAGE": "PASS"})
+		}, ""},
+		{"unknown applicability state", func(f *fixture, r map[string]J) {
+			reviewed(f, r, "maybe")
+		}, "state must be applicable, not-applicable or blocked"},
+		{"not-applicable cell without reason", func(f *fixture, r map[string]J) {
+			reviewed(f, r, "not-applicable")
+			delete(cell(r), "reason")
+		}, "not-applicable needs a reason"},
+		{"unknown range state", func(f *fixture, r map[string]J) {
+			r["coverage.json"]["files"] = L{J{"path": "src/a.py", "eligible": true, "ranges": L{J{"start": 1, "end": 1, "state": "done"}}}}
+		}, "range state 'done' is not a coverage state"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -80,8 +80,16 @@ func TestReceipt(t *testing.T) {
 			r["task_id"], r["role"], r["lane"], r["outcome"] = "R-1", "reviewer", "security", "no-findings"
 			delete(r, "changed_paths")
 		}, "-", 1, "no-findings without inspected ranges is malformed"},
+		{"reviewer no-findings without domains", func(r J) {
+			r["task_id"], r["role"], r["lane"], r["outcome"], r["inspected"] = "R-1", "reviewer", "security", "no-findings", L{"src/a.py:1-9"}
+		}, "-", 1, "no-findings must name its domains_checked"},
+		{"reviewer unknown domain", func(r J) {
+			r["task_id"], r["role"], r["lane"], r["outcome"], r["inspected"] = "R-1", "reviewer", "security", "no-findings", L{"src/a.py:1-9"}
+			r["domains_checked"] = L{"style"}
+		}, "-", 1, "domains_checked has unknown domain 'style'"},
 		{"reviewer admissible", func(r J) {
 			r["task_id"], r["role"], r["lane"], r["outcome"], r["inspected"] = "R-1", "reviewer", "security", "no-findings", L{"src/a.py:1-9"}
+			r["domains_checked"] = L{"security"}
 		}, "-", 0, "ADMISSIBLE"},
 	}
 	for _, c := range cases {
@@ -114,6 +122,7 @@ func TestReceiptAgainstOpenStage(t *testing.T) {
 	}})
 	rc := writerReceipt()
 	rc["task_id"], rc["role"], rc["lane"], rc["outcome"], rc["inspected"] = "R-2", "reviewer", "security", "no-findings", L{"src/a.py:1-9"}
+	rc["domains_checked"] = L{"security"}
 	delete(rc, "changed_paths")
 	p := write(t, filepath.Join(dir, "receipts/r2.json"), rc)
 	if code, out, errs := run("receipt", dir, p); code != 0 || !strings.Contains(out, "ADMISSIBLE") {

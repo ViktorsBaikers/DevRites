@@ -76,13 +76,28 @@ these limits:
 - Never install, update or fetch dependencies, and never run commands that
   deploy, migrate or seed a real database, call paid or production services, or send
   data out. When a check needs one of those, record it `BLOCKED` with the missing
-  step, or ask.
+  step, or ask. The one exception is an approved dependency task, described below.
 - Treat any change to a non-ignored path as a write. Run `snapshot state`
   before a command and `delta` after it: build output and caches the repository
   ignores are expected; any other changed path stops the run for reconciliation,
   exactly like an unexpected writer change.
 - Run each baseline command once and give its log to every lane that needs it,
-  rather than rerunning it per lane.
+  rather than rerunning it per lane. When a baseline test fails, or touches time,
+  concurrency, network or randomness, rerun that test at least 3 times (10 before it
+  serves as an oracle) in shuffled order with a recorded seed, and record each
+  outcome: a fail-then-pass is flaky, never evidence for or against a repair.
+
+**Approved dependency tasks.** When the approved plan changes a manifest or lockfile,
+the implementer changes only the task's exact manifest and lockfile paths, through
+the package manager's own lockfile-only command with install scripts disabled (for
+example `npm install --package-lock-only --ignore-scripts`, `pnpm install
+--lockfile-only`, `uv lock --upgrade-package`, `cargo update -p <name> --precise`,
+`go get <module>@<version>` then `go mod tidy`). Network is limited to the configured
+package registry or proxy, and the plan records that effect. Afterwards verify the
+lockfile (`npm ci`, `go mod verify`, `uv lock --check`, `cargo metadata --locked`):
+the diff holds only the approved package and its required closure, with no new
+install scripts or registry hosts. Do not adopt a release younger than the project's
+cooldown (or one day) unless it is the security fix itself.
 
 **Isolated (`--isolate`, or code the user did not write).** Use this mode when the
 user passes `--isolate`, and ask before running in place when the code under review
