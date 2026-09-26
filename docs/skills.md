@@ -1,6 +1,6 @@
-# All 45 skills
+# All 46 skills
 
-The pack contains 45 skills: the `rite` menu, 32 user-invocable `rite-*`
+The pack contains 46 skills: the `rite` menu, 33 user-invocable `rite-*`
 workflow and utility skills, the standalone `overhaul` skill,
 10 model-invoked `devrites-*` specialists, and the internal `devrites-lib` library. `devrites-lib` is not a command. It holds shared
 references and the few explicit script exceptions.
@@ -42,7 +42,7 @@ contract when a rite names parallel reviewers.
 ## Naming convention
 
 `rite-*` is the namespace for lifecycle and utility commands. Its utilities are
-`rite-quick`, `rite-frame`, `rite-adopt`, `rite-learn`, `rite-customize`,
+`rite-quick`, `rite-fast`, `rite-frame`, `rite-adopt`, `rite-learn`, `rite-customize`,
 `rite-explain`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`, `rite-watch-pr`, `rite-doctor`,
 `rite-upgrade`, `rite-prototype`, `rite-handoff`, `rite-zoom-out`, and
 `rite-pressure-test`.
@@ -145,6 +145,7 @@ and `Shipped`. Utility commands keep the same compact labels and one-next-action
 | Skill | What It Does | Use When |
 |---|---|---|
 | [`rite-quick`](../pack/.claude/skills/rite-quick/SKILL.md) | Express lane for a **small, reversible, unambiguous** change: one-line contract → TDD build → scoped prove → review-lite → ship, collapsing the full lifecycle into one pass. Significance gate first: auth / migration / public-API / destructive / multi-slice / ambiguous **escalates to `/rite-spec`**. | "quick fix", "small change", "tiny tweak", "just do X" on a low-risk change. |
+| [`rite-fast`](../pack/.claude/skills/rite-fast/SKILL.md) | Shortened lane: one spec-and-plan step with ranked clarifying questions (more when risk is flagged), up to ten vertical slices built by `fast-builder` without per-slice gates, one `fast-checker` completeness pass with gap fixes, one `fast-critic` review and polish pass, then proof on the final tree. Own `fast-*` agents; outside the engine lifecycle. | Explicit-only: `/rite-fast <task>` for mid-size work that does not need a gate after every slice. |
 | [`rite-frame`](../pack/.claude/skills/rite-frame/SKILL.md) | Pre-flight + self-audit lens for ad-hoc work the lifecycle gates never see: FRAME converts an imperative ask into a falsifiable success criterion + verify command before code; AUDIT checks a raw diff against the four LLM coding failure modes (silent assumption / overcomplication / out-of-scope edit / unverifiable goal). | Top of `/rite-quick`, before a plain "just do X" edit, or to self-review a raw diff. |
 | [`rite-adopt`](../pack/.claude/skills/rite-adopt/SKILL.md) | Bring an EXISTING codebase under DevRites: reverse-derive a baseline `spec.md` of current behavior, placement, and architecture; optionally propose one reviewed scoped-instruction update; then hand off to the lifecycle. | "adopt this project", "onboard this codebase", "we already have code", "reverse-engineer a spec from the existing app". |
 

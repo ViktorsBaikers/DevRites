@@ -381,7 +381,7 @@ separately by `disable-model-invocation`.
 
 ```mermaid
 flowchart TB
-    subgraph Public["Public (user-invocable: true): 34 skills"]
+    subgraph Public["Public (user-invocable: true): 35 skills"]
         direction TB
         R1[/rite/]
         R2[/rite-spec/]
@@ -401,6 +401,7 @@ flowchart TB
         R10[/rite-status/]
         R11[/rite-resolve/]
         RQ[/rite-quick/]
+        RFA[/rite-fast/]
         RF[/rite-frame/]
         RA[/rite-adopt/]
         RL[/rite-learn/]
@@ -435,7 +436,7 @@ flowchart TB
 
     classDef pub fill:#064e3b,stroke:#34d399,color:#ecfdf5
     classDef int fill:#1f2937,stroke:#9ca3af,color:#f9fafb
-    class R1,R2,RCL,RT,R3,RV,R4,R5,RC,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RF,RA,RL,RD,RU,RE,RCU,RDO,RPOV,RPF,IPT,D1,D2,D3 pub
+    class R1,R2,RCL,RT,R3,RV,R4,R5,RC,R6,R7,R8,R9,R12,R13,R10,R11,RQ,RFA,RF,RA,RL,RD,RU,RE,RCU,RDO,RPOV,RPF,IPT,D1,D2,D3 pub
     class I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11 int
 ```
 

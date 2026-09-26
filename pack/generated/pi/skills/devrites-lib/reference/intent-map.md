@@ -43,6 +43,7 @@ One binary test per pair; both true ⇒ ask once.
 | `devrites-frontend-craft` vs `rite-polish` | Building new UI vs finishing built UI; craft sets standards at build, polish runs the catch pass. |
 | `devrites-ux-shape` vs `rite-spec` | Interaction/state/flow design question vs behavior-contract gap; shaped UX feeds the spec. |
 | `devrites-prose-craft` vs `devrites-frontend-craft` | Long-form prose (docs/README/replies) vs visible product copy; boundary lives in [`browser-proof-checklist.md`](standards/browser-proof-checklist.md). |
+| `rite-quick` vs `rite-fast` vs `rite-spec` | One reversible change → `/rite-quick`; mid-size work the user explicitly runs as `/rite-fast` (≤10 slices, one check after build) → `/rite-fast`; work needing strategy review, a vetted plan, or per-slice gates → `/rite-spec`. |
 | `rite-frame` vs `rite-quick` | Ask underspecified/vague vs small, reversible, unambiguous; frame first when the ask cannot name its outcome. |
 | `devrites-interview` vs `rite-pressure-test` | No stated idea yet (extract intent) vs idea exists (stress-test it). |
 | `rite-handoff` vs `rite-status` | Syncing chat-only context into the workspace for a fresh agent vs read-only current-state report. |
@@ -73,6 +74,7 @@ Wrong-skill fire: stop, admit it, switch rites.
 | Reslice, reorder, or repair an existing plan | `/rite-plan` | Slices exist and evidence invalidates them. |
 | Review plan before code | `/rite-vet` | Every plan; depth scales to risk. |
 | Small safe fix | `/rite-quick` | Escalates auth, migration, public API, destructive, ambiguous, or multi-slice work. |
+| Mid-size work, fast lane (explicit only) | `/rite-fast` | Spec + plan + questions once, ≤10 slices, one completeness check, review, polish, proof; risk deepens questions. |
 | Prove UI/runtime | `/rite-prove` + `devrites-browser-proof` | Capture real evidence. |
 | Stuck/unfamiliar | `/rite-zoom-out` | Map before editing. |
 | Teach me | `/rite-explain` | Human learning loop. |

@@ -147,6 +147,7 @@ equivalent.
 | --- | --- |
 | [`/rite`](pack/.claude/skills/rite/SKILL.md) | Show the command menu, or route a verb. |
 | [`/rite-quick`](pack/.claude/skills/rite-quick/SKILL.md) | Ship a small, reversible change with a compact contract, focused proof, and scope review. Escalates to `/rite-spec` when the work stops being small. |
+| [`/rite-fast`](pack/.claude/skills/rite-fast/SKILL.md) | Take mid-size work through one spec-and-plan step with your answers, up to ten slices, one completeness check, review, polish, and proof. No gate after each slice; explicit invocation only. |
 | [`/rite-autocomplete`](pack/.claude/skills/rite-autocomplete/SKILL.md) | Run the reversible lifecycle unattended and stop at Seal `GO`. With `--ship`, continue through Ship preflight and wait for your literal `GO`. |
 | [`/rite-adopt`](pack/.claude/skills/rite-adopt/SKILL.md) | Reverse-engineer current behavior of an existing codebase into a baseline workspace. |
 | [`/rite-upgrade [slug]`](pack/.claude/skills/rite-upgrade/SKILL.md) | Reconcile an older active workspace with current contracts. Routes only evidence-backed defects to their phase owners. |
@@ -423,8 +424,8 @@ through Claude Code or Codex plugin stores.
 
 ## Skills and agents
 
-The pack ships 45 skills: 34 public and 11 internal. The public surface
-contains the `rite` menu, 32 `rite-*` workflows and utilities, and the
+The pack ships 46 skills: 35 public and 11 internal. The public surface
+contains the `rite` menu, 33 `rite-*` workflows and utilities, and the
 standalone, explicit-only `/overhaul`. Ten `devrites-*` specialists load when a
 matching task needs them; `devrites-lib` carries the shared contracts and
 engineering standards.
@@ -434,6 +435,8 @@ roles plus `devrites-slice-wright`, the sole source and test writer. Codex,
 omp, pi, and Devin generate the same one-writer, sixteen-reader split.
 `/overhaul` adds eight `overhaul-*` agents that only it dispatches; they keep
 every tool ([ADR-0031](docs/adr/0031-overhaul-agents-keep-every-tool.md)).
+`/rite-fast` adds four `fast-*` agents that only it dispatches: three read-only
+roles and `fast-builder`, its own writer ([ADR-0033](docs/adr/0033-rite-fast-own-agents.md)).
 
 The [skills catalogue](docs/skills.md) lists every skill and agent. The
 [flow diagrams](docs/flow.md) show routing, reviewer fan-out, and namespace

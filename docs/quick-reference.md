@@ -3,7 +3,8 @@
 Executive fast path: **Spec → Build → Prove**. `/rite-spec` writes the
 contract, `/rite-build` implements one slice, `/rite-prove` binds evidence.
 Adaptive Clarify/Vet still run; they ask nothing when the contract is already
-complete. Use `/rite-quick` for a small reversible change.
+complete. Use `/rite-quick` for a small reversible change and `/rite-fast` for
+mid-size work that does not need a gate after every slice.
 
 Install DevRites with `npx devrites ...`. Normal installs from package and
 release candidates consume pre-generated project-local Claude Code and Codex

@@ -30,7 +30,7 @@ cursor readers, traceability rules, and phase-relative completeness model, see
    irreversible git ladder and **closes** the task by archiving the workspace
    and clearing `ACTIVE`. Separate steps let users audit the release decision
    before any irreversible action.
-2. **Public utility and on-ramp skills**: `rite-adopt`, `rite-quick`,
+2. **Public utility and on-ramp skills**: `rite-adopt`, `rite-quick`, `rite-fast`,
    `rite-frame`, `rite-status`, `rite-doctor`, `rite-upgrade`, `rite-learn`, `rite-explain`,
    `rite-customize`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
    `rite-pressure-test`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`,
@@ -389,8 +389,8 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 32 public `rite-*` skills (45 total), plus the thin `/rite`
-  menu and the standalone `overhaul` skill: 34 public and 11 internal. The lifecycle
+- **Surface**: 33 public `rite-*` skills (46 total), plus the thin `/rite`
+  menu and the standalone `overhaul` skill: 35 public and 11 internal. The lifecycle
   includes mandatory adaptive Clarify, optional Temper, mandatory Vet, and
   Converge recovery; Seal **decides** and Ship **executes + closes**. Ten
   `devrites-*` specialist skills are model-invoked; `devrites-lib` is the

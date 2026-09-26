@@ -103,7 +103,7 @@ _devin_map_tools() {
   local _raw="$1" _name="$2"
   local _tok _mapped _out="" _sep=""
   if [ -z "$_raw" ]; then
-    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* ]]; then
+    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* || "$_name" == fast-builder ]]; then
       printf '%s' "read, edit, write, exec, grep, glob, skill"
     else
       printf '%s' "read, grep, glob, exec"
@@ -130,7 +130,7 @@ _devin_map_tools() {
     _sep=", "
   done < <(printf '%s\n' "$_raw" | tr ',' '\n')
   if [ -z "$_out" ]; then
-    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* ]]; then
+    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* || "$_name" == fast-builder ]]; then
       _out="read, edit, write, exec, grep, glob, skill"
     else
       _out="read, grep, glob, exec"
@@ -149,7 +149,7 @@ _devin_csv_has() {
 # Generate a Devin custom subagent profile from a Claude Code markdown agent.
 # Devin loads project profiles from .devin/agents/*.md (YAML frontmatter +
 # body). The allowed-tools allowlist carries the Claude permission boundary:
-# only devrites-slice-wright and the /overhaul agents (overhaul-*) get write/edit; reviewers stay read-only.
+# only devrites-slice-wright, the /overhaul agents (overhaul-*), and /rite-fast fast-builder get write/edit; reviewers stay read-only.
 # Claude's permissionMode has no Devin equivalent and is dropped. A canonical
 # `skills:` block grants the agent the `skill` tool so it can invoke that
 # skill inline (Devin has no agent-level skills preload field).
@@ -208,6 +208,7 @@ This project has DevRites installed for Devin CLI.
 - In DevRites guidance, **invoke** means run a skill inline in the current context; **dispatch** means start a fresh agent with `run_subagent` using the exact `profile` name, wait for it with `read_subagent`, and reconcile its result.
 - Only `devrites-slice-wright` may edit source or tests; every other specialist is read-only by `allowed-tools`. Exact paths are instruction-enforced: put the project-relative paths in the task, wait for the wright, compare its file list and `git diff --name-only` with that contract, and reject any extra path.
 - The explicit `/overhaul` skill ships its own `overhaul-*` agents outside the DevRites lifecycle. They carry the full write tool set, are dispatched only by that skill, and follow its own approval gate and path contracts instead of the lifecycle writer rules above.
+- The explicit `/rite-fast` skill ships its own `fast-*` agents. Only `fast-builder` carries write tools; `fast-planner`, `fast-checker`, and `fast-critic` stay read-only. `/rite-fast` dispatches them itself and applies its own exact-path contracts.
 - Custom profiles do not inherit interactive tool grants, and background subagents auto-deny unapproved tools. Dispatch the write-capable wright in the foreground, or make sure its `edit`, `write`, and `exec` tools are approved first. Specialists cannot use `ask_user_question`; the root relays user questions and answers through the task text and returned result.
 - DevRites runtime helpers run through the installed `devrites-engine` binary.
 - Skills and agent profiles are loaded when a session starts. If they were installed while this session was open, restart the session or reopen the project before relying on them.

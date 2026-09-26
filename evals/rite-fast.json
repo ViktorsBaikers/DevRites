@@ -1,0 +1,56 @@
+{
+  "skill": "rite-fast",
+  "description": "Explicit-only routing evals for the fast lane: one spec-and-plan step with clarifying questions, up to ten slices without per-slice gates, one completeness check, review, polish, and proof.",
+  "queries": [
+    {
+      "text": "/rite-fast add CSV export to the reports page",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$rite-fast add CSV export to the reports page",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite fast add pagination to the admin users list",
+      "expected": "should_trigger",
+      "rationale": "Menu-style invocation."
+    },
+    {
+      "text": "/rite-fast reports-csv-export",
+      "expected": "should_trigger",
+      "rationale": "Resume an existing fast-lane workspace by slug."
+    },
+    {
+      "text": "Fix the typo in the footer copyright line.",
+      "expected": "should_not_trigger",
+      "owner": "rite-quick",
+      "rationale": "A one-line reversible change belongs to rite-quick."
+    },
+    {
+      "text": "Write a spec for the new billing system.",
+      "expected": "should_not_trigger",
+      "owner": "rite-spec",
+      "rationale": "A full spec for a high-risk feature belongs to rite-spec."
+    },
+    {
+      "text": "Build the next slice.",
+      "expected": "should_not_trigger",
+      "owner": "rite-build",
+      "rationale": "Lifecycle slice implementation belongs to rite-build."
+    },
+    {
+      "text": "Run the whole lifecycle unattended for this idea.",
+      "expected": "should_not_trigger",
+      "owner": "rite-autocomplete",
+      "rationale": "The unattended full lifecycle belongs to rite-autocomplete."
+    },
+    {
+      "text": "Review the diff for this feature before seal.",
+      "expected": "should_not_trigger",
+      "owner": "rite-review",
+      "rationale": "Lifecycle review belongs to rite-review."
+    }
+  ]
+}

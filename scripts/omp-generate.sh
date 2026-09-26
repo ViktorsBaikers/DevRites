@@ -76,7 +76,7 @@ _omp_map_tools() {
   local _raw="$1" _name="$2"
   local _tok _mapped _out="" _sep=""
   if [ -z "$_raw" ]; then
-    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* ]]; then
+    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* || "$_name" == fast-builder ]]; then
       printf '%s' "write, edit, bash, read, grep, glob"
     else
       printf '%s' "read, grep, glob, bash"
@@ -102,7 +102,7 @@ _omp_map_tools() {
     _sep=", "
   done < <(printf '%s\n' "$_raw" | tr ',' '\n')
   if [ -z "$_out" ]; then
-    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* ]]; then
+    if [[ "$_name" == devrites-slice-wright || "$_name" == overhaul-* || "$_name" == fast-builder ]]; then
       _out="write, edit, bash, read, grep, glob"
     else
       _out="read, grep, glob, bash"
@@ -165,7 +165,7 @@ _omp_append_extension_tools() {
 # Generate an omp Markdown agent from a Claude Code markdown agent.
 # omp loads project/plugin agents from agents/*.md (YAML frontmatter + body).
 # The tools allowlist carries the Claude permission boundary: only
-# devrites-slice-wright and the /overhaul agents (overhaul-*) get write/edit; reviewers stay read-only.
+# devrites-slice-wright, the /overhaul agents (overhaul-*), and /rite-fast fast-builder get write/edit; reviewers stay read-only.
 gen_omp_agent() {
   local _src="$1" _out="$2"
   local _name _desc _tools_raw _tools _skills _desc_tmp _desc_omp _body_tmp _body_omp
