@@ -35,13 +35,15 @@ directory names or file extensions. One package or file can serve several lanes.
 | Backend engineering | Service, domain, API, job, data, concurrency, authorization and service performance, including server parts of full-stack frameworks | [`overhaul-backend-engineer`](.devin/agents/overhaul-backend-engineer.md) |
 | Boundary / integration | Producer/consumer contracts, shared packages, serialization, trust transitions, deployment skew | [`overhaul-boundary`](.devin/agents/overhaul-boundary.md) |
 | Frontend craft | Design system fit, interaction states, keyboard/focus, accessibility, responsive and motion evidence | [`overhaul-craft`](.devin/agents/overhaul-craft.md) |
-| Other | Build tooling, infrastructure, libraries, data/ML workloads — explicit extra profiles, never forced into frontend/backend | [`overhaul-specialist`](.devin/agents/overhaul-specialist.md) |
+| Other | Build tooling, CI, infrastructure, libraries, data/ML workloads, operations readiness, public API and CLI experience, documentation — explicit extra profiles, never forced into frontend/backend | [`overhaul-specialist`](.devin/agents/overhaul-specialist.md) |
 
 Frontend and backend engineering are always different agent invocations with
 different active profiles, even in a same-language codebase. The boundary reviewer
 supplements them; it never absorbs them into one generic "full-stack" review. The
 craft reviewer supports the frontend lane; it never approves code correctness or
-imposes a redesign.
+imposes a redesign. Dispatch the `operations`, `devex` and `docs` specializations
+whenever the matrix marks their cells applicable: a deployable service, a published
+library, CLI or SDK, and inventoried documentation.
 
 For every lane record `present`, `not present`, `not impacted within scope`, or
 `blocked/unavailable`. Only the first three are facts about the target; only
@@ -148,14 +150,17 @@ Each worker writes one immutable `overhaul.receipt/1` JSON file:
 ```json
 {"schema": "overhaul.receipt/1", "run_id": "", "task_id": "", "attempt_id": "", "role": "",
  "lane": "", "context_id": "", "started_at": "", "finished_at": "", "snapshot": "",
- "profiles": [], "inspected": [{"path": "", "ranges": [[1, 80]]}], "rules_applied": [],
+ "profiles": [], "inspected": [{"path": "", "ranges": [[1, 80]]}], "domains_checked": [], "rules_applied": [],
  "rules_unassessed": [], "commands": [{"cmd": "", "exit": 0, "log": "evidence/..."}],
  "outcome": "findings|no-findings|gap|patch|verdict", "findings": [], "questions": [],
  "changed_paths": [], "evidence": [], "limitations": [], "basis": ""}
 ```
 
 `no-findings` names the checks and ranges inspected; a bare "looks good" is
-malformed. `gap` names the missing input, failed check or capability limit.
+malformed. `domains_checked` lists the score domains (`correctness`, `security`,
+`reliability`, `performance`, `tests`, `architecture`, `ux`, `operations`) the
+reviewer applied to those ranges; admission rejects an unknown key and a
+`no-findings` without it, and only a listed domain can close an applicability cell. `gap` names the missing input, failed check or capability limit.
 Timeouts, null output and malformed receipts are `gap`, never `no-findings`. A
 generic full-stack receipt cannot close a missing lane, language or profile
 assignment. Admit receipts only through `devrites-engine overhaul admit receipt`; a duplicate or
@@ -170,7 +175,10 @@ finding cannot be confirmed.
 ## Finding proposals
 
 Workers propose; the coordinator assigns canonical `F-` IDs after admission. Fields:
-`title`; `domain`; `lanes`; `component_ids`; `profile_ids` with revisions;
+`title`; `domain` (one score domain key, per the
+[section map](scoring.md#audit-sections-and-score-domains)); `controls` (the rubric
+control IDs it fails, required once a rubric is frozen and the finding is
+confirmed); `lanes`; `component_ids`; `profile_ids` with revisions;
 `rule_ids`; `contract_or_journey_ids`; `kind` (`defect`, `hardening`,
 `maintainability`, `opportunity`); `scope_origin` (`introduced`, `exposed-existing`,
 `pre-existing`); `locations` (paths, line ranges, symbols, file hashes);

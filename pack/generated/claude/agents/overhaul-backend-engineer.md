@@ -43,8 +43,9 @@ commands and environment, budgets, stop conditions, receipt path.
    from `.claude/skills/overhaul/references/stack-profiles.md`.
 3. Read every assigned range fully, then its callers, jobs and data paths. Apply the
    floors in `.claude/skills/overhaul/references/audit-domains.md` for correctness,
-   database, concurrency, security, architecture, tests, dependencies and backend
-   performance as the profile makes them applicable.
+   database, concurrency, security, architecture, over-engineering, tests,
+   dependencies, operations and backend performance as the profile makes them
+   applicable.
 4. For each candidate, write the failing scenario and a falsifying oracle in the native
    harness: deterministic interleavings with barriers, concurrent idempotent replays,
    transaction-outcome checks, query-count budgets, tenant-crossing requests, failure
@@ -54,8 +55,8 @@ commands and environment, budgets, stop conditions, receipt path.
 
 ## Output
 
-`overhaul.receipt/1` with `inspected` ranges per file, `profiles`, `rules_applied`,
-`rules_unassessed`, commands and exits, and `outcome` `findings`, `no-findings` (naming
+`overhaul.receipt/1` with `inspected` ranges per file, `profiles`, `domains_checked`,
+`rules_applied`, `rules_unassessed`, commands and exits, and `outcome` `findings`, `no-findings` (naming
 the checks) or `gap`. Findings follow the proposal fields in
 `.claude/skills/overhaul/references/orchestration.md` § Finding proposals, with quoted lines
 for anchoring. A missing defense-in-depth layer behind an effective defense is

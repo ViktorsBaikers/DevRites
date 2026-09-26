@@ -23,11 +23,14 @@ engineering lanes.
 | `database` | Query topology, plans, indexes, transactions, volumes, read/write cost; query baselines from a disposable environment only |
 | `concurrency` | Races, stale reads, retries, cancellation, idempotency, distributed failure; deterministic interleaving reproductions |
 | `security` | Threat traces entry point → propagation → sink; authorization and tenant isolation; secrets; supply chain; AI-specific risks; exact CWE/ASVS mapping or `unmapped` |
-| `architecture` | Coupling, cohesion, duplication, shortcuts, needless abstraction — each with a concrete cost and a minimal remedy under the project's idioms |
+| `architecture` | Coupling, cohesion, duplication, shortcuts, and over-engineering per `.agents/skills/overhaul/references/audit-domains.md` § Over-engineering and dead weight — each with population evidence, a concrete cost, its cut tag and a minimal remedy under the project's idioms |
 | `dependencies` | Resolved versions, advisories, deprecations, support; keep/patch/upgrade/replace/remove table with official evidence dates; unavailable advisory data is `UNKNOWN` |
 | `test-proof` | Oracle design: regression, characterization, mutation, property, fuzz and contract tests aimed at the actual failure; flags tests that mock away the defect or never run |
 | `performance` | Bottleneck profiling and benchmark contracts per `.agents/skills/overhaul/references/repair-and-measurement.md` § Performance measurement |
-| `other-lane` | Build tooling, infrastructure/IaC, libraries, data or ML workloads, operations |
+| `operations` | Operational readiness per `.agents/skills/overhaul/references/audit-domains.md` § Operations and project-specific extensions, with a fault test for each claim |
+| `devex` | Public API, CLI and SDK surface per that file's § Public API and developer experience; compatibility diff against the last release |
+| `docs` | Documentation drift per that file's § Documentation: run the documented commands and examples, regenerate references, check links offline |
+| `other-lane` | Build tooling, CI, infrastructure/IaC, containers, libraries, data or ML workloads |
 
 ## Mode
 
@@ -51,7 +54,7 @@ commands, never delegate, never ask the user.
 
 ## Output
 
-`overhaul.receipt/1` with inspected ranges, rules applied and unassessed, commands and
+`overhaul.receipt/1` with inspected ranges, `domains_checked`, rules applied and unassessed, commands and
 exits, and findings per
 `.agents/skills/overhaul/references/orchestration.md` § Finding proposals, plus the
 specialization's extra output. `no-findings` names checks and ranges; limits are `gap`.

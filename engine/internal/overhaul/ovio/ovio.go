@@ -156,3 +156,7 @@ func Truthy(v any) bool {
 	}
 	return true
 }
+
+// Domains is the fixed set of score domains in their documented order. Findings,
+// receipts, the applicability matrix and the rubric all use these keys.
+var Domains = []string{"correctness", "security", "reliability", "performance", "tests", "architecture", "ux", "operations"}

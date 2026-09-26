@@ -731,6 +731,8 @@ func build(run, gen string) (*built, error) {
 	}
 	S = append(S,
 		section{"coverage", "Coverage ledger", []string{"path", "eligible", "lanes", "ranges (state)", "exclusion"}, covRows},
+		section{"applicability", "Applicability matrix (a cell without a receipt is not checked)", []string{"domain", "component", "lane", "state", "reason", "receipts"},
+			rowsOf(objs(R["coverage"]["applicability"]), "domain", "component", "lane", "state", "reason", "receipts")},
 		section{"profiles", "Stack profiles", []string{"id", "revision", "status", "file", "sha256"},
 			rowsOf(objs(R["stack-profiles"]["profiles"]), "id", "rev", "status", "file", "sha256")},
 		section{"contracts", "Contracts and boundaries", []string{"id", "producer", "consumers", "version", "evidence", "open questions"},

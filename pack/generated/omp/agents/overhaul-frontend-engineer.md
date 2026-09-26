@@ -45,7 +45,9 @@ commands and environment, budgets, stop conditions, receipt path.
 3. Read every assigned range fully, then its callers and consumers. Apply the
    frontend-engineering floor in
    `.omp/skills/overhaul/references/audit-domains.md` § Frontend engineering plus the
-   client-side parts of correctness, security, performance and tests.
+   client-side parts of correctness, security, architecture, over-engineering,
+   dependencies (including per-dependency bundle cost), operations (error
+   reporting, client logging), performance and tests.
 4. For each candidate, write the failing scenario (input → state transition →
    observable failure), the safeguards you checked, and a falsifying test: out-of-order
    responses via deferred promises, unmount/cleanup counts, rapid double submit,
@@ -57,8 +59,8 @@ commands and environment, budgets, stop conditions, receipt path.
 
 ## Output
 
-`overhaul.receipt/1` with `inspected` ranges per file, `profiles`, `rules_applied`,
-`rules_unassessed`, commands and exits, and `outcome` `findings`, `no-findings` (naming
+`overhaul.receipt/1` with `inspected` ranges per file, `profiles`, `domains_checked`,
+`rules_applied`, `rules_unassessed`, commands and exits, and `outcome` `findings`, `no-findings` (naming
 the checks) or `gap`. Findings follow the proposal fields in
 `.omp/skills/overhaul/references/orchestration.md` § Finding proposals, with quoted lines
 for anchoring. Proposed severity is advisory; unvalidated leads carry

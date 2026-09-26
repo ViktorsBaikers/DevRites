@@ -145,6 +145,8 @@ interface one write owner with explicit ordering; let a shared-contract change l
 only with evidence from both consumers. Independent frontend and backend tasks may
 run concurrently. A task like "improve architecture", "optimize queries" or "add
 tests" with no concrete failing case and acceptance evidence is not approvable.
+Each task names the oracle its kind requires
+([`repair-and-measurement.md`](repair-and-measurement.md#oracles-by-finding-kind)).
 Rejected and deferred findings stay visible and keep failing their controls.
 
 ## Revisions, evidence and freshness

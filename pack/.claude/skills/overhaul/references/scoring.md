@@ -4,6 +4,7 @@
 
 - [What the index is and is not](#what-the-index-is-and-is-not)
 - [Freeze the control catalog before repairs](#freeze-the-control-catalog-before-repairs)
+- [Audit sections and score domains](#audit-sections-and-score-domains)
 - [Credit and arithmetic](#credit-and-arithmetic)
 - [Lane scores](#lane-scores)
 - [Thresholds and hard gates](#thresholds-and-hard-gates)
@@ -35,13 +36,17 @@ immutable `rubric-r<N>.json` before any repair; the plan pins its digest.
 Each control definition carries: stable `id`; exactly one `domain`; `lanes` it
 belongs to; components, requirement, profile rule and contract IDs; `failure_case`;
 risk `rationale`; `weight` (1 modest, 3 material, 5 high-consequence);
-`hard_gate`; `evaluation` (`executed`, `static`, `source-proof`, `human`);
+`hard_gate`; `evaluation` (`executed`, `static`, `source-proof`, `human`; a
+`performance` control passes only on `executed`, `source-proof` or `human` evidence,
+because static inspection establishes no metric);
 `evidence_required`; `independent_verification`; and `na` (null, or an approved
 exclusion with reason and evidence). Candidate status, verifier receipts and
 evidence live in separate results files that reference the rubric digest.
 
-Default domain weights (tailor only with a stated project-risk reason and user
-approval before remediation):
+The calculator accepts control weights 1, 3 or 5 only. Default domain weights
+(tailor only with a stated project-risk reason and user approval before remediation;
+each changed domain needs a `weight_deviations` entry with `domain`, `reason` and the
+`approval` reference, or the calculator rejects the rubric):
 
 | Domain key | Meaning | Weight |
 | --- | --- | ---: |
@@ -65,6 +70,25 @@ an opportunity to add easy passing controls that dilute the denominator.
 
 Mark hard-gate controls for every mandatory safety, security, data-integrity,
 compatibility and critical-user-journey requirement.
+
+## Audit sections and score domains
+
+Every finding, receipt `domains_checked` entry and applicability cell uses one of the
+eight score keys. The [audit floor](audit-domains.md) sections map to them:
+
+| Audit section | Score domain |
+| --- | --- |
+| Correctness and data integrity; Database, queries, migrations and storage (integrity, migrations) | `correctness` |
+| Security, privacy and trust boundaries; Dependencies (advisories, provenance, unresolvable names) | `security` |
+| Concurrency, caching, retries and distributed reliability | `reliability` |
+| Backend performance; Database (query cost); Frontend performance | `performance` |
+| Tests and verification quality | `tests` |
+| Architecture, maintainability and anti-slop; Over-engineering and dead weight; Frontend engineering (structure) | `architecture` |
+| Frontend craft, interaction and accessibility; Public API and developer experience; Cross-layer contracts (compatibility) | `ux` |
+| Operations and project-specific extensions; Documentation; Dependencies (support, end of life, build integrity) | `operations` |
+
+A finding that spans two domains takes the domain of its consequence and names the
+other's control in `controls`.
 
 ## Credit and arithmetic
 
@@ -146,7 +170,7 @@ High numbers never compensate for a failed gate.
 | `G-REPORT-CONSISTENCY` | Records validate; views carry the current stamp | all |
 | `G-APPROVAL` | Authentic, current approval of the exact plan revision and tasks | repair |
 | `G-TASKS-COMPLETE` | Every approved task met its acceptance evidence | repair |
-| `G-ORACLES` | Regression oracles red on baseline, green on candidate, independently verified | repair |
+| `G-ORACLES` | Each task's oracle red on baseline and green on candidate as [its kind requires](repair-and-measurement.md#oracles-by-finding-kind), independently verified | repair |
 | `G-NO-REGRESSION` | No new regression, skipped required check, or unapproved behavior change | repair |
 | `G-PERF-TARGETS` | Approved targets and guardrails demonstrated (N/A only when none approved) | repair |
 | `G-PRESERVATION` | Behavior, UI/UX and public-contract preservation evidence | repair |
@@ -215,8 +239,13 @@ frontend `Q_l = 9.0` → `NOT_READY`.
 `devrites-engine overhaul score --rubric <rubric.json> --results <results.json> --gates <gates.json>
 [--out <scorecard.json>]` computes the scorecard; `devrites-engine overhaul score compare --rubric
 <rubric.json> --baseline <a.json> --candidate <b.json>` labels control transitions.
-Inputs: the immutable rubric, a results file (`overhaul.results/1`: `rubric_digest`,
-`subject`, `fingerprint`, `results{control_id: {status, evidence[], verified_by}}`)
+Inputs: the immutable rubric, a results file (`overhaul.results/1`: `rubric_digest`
+(required; the SHA-256 of the rubric file, checked by `score` and by both arms of
+`compare`), `subject`, `fingerprint`, `results{control_id: {status, evidence[],
+verified_by}}`)
 and a gates file (`overhaul.gates/1`: `mode` `audit|remediation`, `gates{id: {status,
 evidence[], reason, approval}}`). Exit 2 means invalid input: nothing may be treated
-as scored.
+as scored. `G-THRESHOLDS` and `G-MANDATORY` are computed; `validate` rejects a
+scorecard whose `G-NO-CRITICAL-HIGH`, `G-NO-OPEN-SERIOUS-LEAD` or `G-COVERAGE` PASS
+contradicts `findings.json` or `coverage.json`, and a control recorded PASS while a
+linked finding is still open ([`records.md`](records.md#enforced-versus-review-only)).

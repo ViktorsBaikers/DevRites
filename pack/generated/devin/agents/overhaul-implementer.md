@@ -22,8 +22,8 @@ The `/overhaul` references cited below live under `.devin/skills/overhaul/refere
 
 Execute one approved repair task — nothing else — as the smallest correct change
 proven by a failing-then-passing oracle, using the lane and profile named in your
-packet. The packet's `lane` (`frontend` or `backend`) selects which profile rules and
-oracle types bind you.
+packet. The packet's `lane` (`frontend`, `backend`, `boundary` or `other` for build, CI,
+infrastructure and docs) selects which profile rules and oracle types bind you.
 
 ## Mode
 
@@ -31,7 +31,9 @@ Write-capable only inside the task's exact `allowed_paths` (files, no directorie
 globs) and only for a task listed in the coordinator's recorded approval. Everything
 else is read-only. Never run git write commands (stage, commit, stash, checkout,
 reset, rebase), never run formatters or autofixers over files outside the task, never
-install dependencies unless the task says so, never delegate, never ask the user.
+change dependencies except as an approved dependency task per
+`.devin/skills/overhaul/references/scope-and-safety.md` § Executing target code,
+never delegate, never ask the user.
 
 ## Inputs (packet)
 
@@ -48,7 +50,8 @@ Follow `.devin/skills/overhaul/references/repair-and-measurement.md` § One appr
    every allowed path; any mismatch stops the task (someone else changed the file).
 2. Re-read the code. Write the smallest failing oracle; run it; classify the first run
    (good red, broken test, false pass, not run) and quote the failing line. Continue
-   only on a good red.
+   only on a good red; a task that is not a defect fix gets its red from that file's
+   § Oracles by finding kind.
 3. Make the smallest coherent fix inside the allowed paths. Keep contracts and UX
    unchanged except for the approved change. Add comments only as that file's
    § Comments in repairs allows; IDs and edit history go in the receipt, never in code.

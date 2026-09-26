@@ -580,6 +580,9 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 			add("run.json: readiness_verdict differs from scorecard.json")
 		}
 	}
+	if err := consistency(run, genDir, R, add); err != nil {
+		return nil, err
+	}
 	ap := ovio.List(R["approval.json"]["events"])
 	uniq(ap, idKey, "approval", add)
 	stopAt := -1
