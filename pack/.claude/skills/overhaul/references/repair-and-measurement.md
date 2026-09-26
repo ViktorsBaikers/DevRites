@@ -3,6 +3,7 @@
 ## Contents
 
 - [One approved repair slice](#one-approved-repair-slice)
+- [Comments in repairs](#comments-in-repairs)
 - [Oracles by lane](#oracles-by-lane)
 - [Never do this to get green](#never-do-this-to-get-green)
 - [False-green defenses](#false-green-defenses)
@@ -27,7 +28,8 @@ and only after the coordinator recorded the approval.
    good red continues.
 3. Implement the smallest coherent fix. Keep supported contracts and UX unchanged
    except for the exact approved change. No formatting sweep, no speculative
-   abstraction.
+   abstraction. Add comments only as [Comments in repairs](#comments-in-repairs)
+   allows.
 4. Run the same oracle to green, then the relevant unit, integration, contract,
    end-to-end, static and security checks plus the impact cascade on dependents.
    Capture commands, exit codes and output as evidence.
@@ -53,6 +55,29 @@ flaky wall-clock times — use controlled benchmarks plus deterministic query co
 complexity bounds. When a bug cannot be reproduced safely, record the exact missing
 fact, propose a safe alternative and obtain a documented exception where needed; a
 waived verification stays a visible gap and may block readiness.
+
+## Comments in repairs
+
+Default to no new comments: names, types and the regression test carry the meaning.
+Add one only when the code cannot show why it is written this way: an invariant, an
+ordering, locking or security trap, a workaround for a named external bug (link it),
+a measured performance trade-off, or a compatibility constraint. Doc comments on a
+public API are the exception when the project's convention requires them (for
+example Go exported identifiers); match the neighboring style.
+
+Never write in target code:
+
+- finding, task, run or plan IDs, or the word "overhaul": they belong in the receipt;
+- comments that restate the code, or test comments that restate the test name or
+  label Arrange/Act/Assert;
+- edit narration ("Fixed", "Added to handle", "Now correctly") or what the code did
+  before the change; history belongs in the commit, not the source;
+- chat residue, guesses stated as fact, stacked hedges, or sales words ("robust",
+  "seamless", "comprehensive").
+
+Put the constraint first, in literal words, in one sentence where possible. Keep a
+hedge only when it names a real, specific uncertainty ("unverified on Windows").
+Leave existing comments alone unless the change makes one false; then correct it.
 
 ## Oracles by lane
 

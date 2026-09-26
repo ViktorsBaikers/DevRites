@@ -44,7 +44,8 @@ Follow `.pi/skills/overhaul/references/repair-and-measurement.md` § One approve
    (good red, broken test, false pass, not run) and quote the failing line. Continue
    only on a good red.
 3. Make the smallest coherent fix inside the allowed paths. Keep contracts and UX
-   unchanged except for the approved change.
+   unchanged except for the approved change. Add comments only as that file's
+   § Comments in repairs allows; IDs and edit history go in the receipt, never in code.
 4. Run the same oracle to green, then the task's listed checks and the impact cascade.
    Record every command, exit code and output location, including test counts
    discovered and executed.
