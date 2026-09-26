@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1428432,
+  "total_bytes": 1446596,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 104,
@@ -26,6 +26,10 @@
     "pack/.claude/agents/devrites-strategy-reviewer.md": 5435,
     "pack/.claude/agents/devrites-test-analyst.md": 5866,
     "pack/.claude/agents/devrites-upgrade-planner.md": 4146,
+    "pack/.claude/agents/fast-builder.md": 4403,
+    "pack/.claude/agents/fast-checker.md": 2487,
+    "pack/.claude/agents/fast-critic.md": 3177,
+    "pack/.claude/agents/fast-planner.md": 4015,
     "pack/.claude/agents/overhaul-backend-engineer.md": 3562,
     "pack/.claude/agents/overhaul-boundary.md": 3075,
     "pack/.claude/agents/overhaul-craft.md": 4770,
@@ -59,7 +63,7 @@
     "pack/.claude/skills/devrites-lib/reference/_shared/reslice-plan.md": 316,
     "pack/.claude/skills/devrites-lib/reference/_shared/reslice-vet.md": 286,
     "pack/.claude/skills/devrites-lib/reference/candidate-integrity.md": 3496,
-    "pack/.claude/skills/devrites-lib/reference/intent-map.md": 8421,
+    "pack/.claude/skills/devrites-lib/reference/intent-map.md": 8881,
     "pack/.claude/skills/devrites-lib/reference/orchestration-profiles.md": 2832,
     "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md": 9823,
     "pack/.claude/skills/devrites-lib/reference/reply-contract.md": 5607,
@@ -187,6 +191,9 @@
     "pack/.claude/skills/rite-dogfood/SKILL.md": 4089,
     "pack/.claude/skills/rite-explain/reference/intake.md": 6198,
     "pack/.claude/skills/rite-explain/SKILL.md": 9806,
+    "pack/.claude/skills/rite-fast/reference/artifacts.md": 3227,
+    "pack/.claude/skills/rite-fast/reference/check-and-triage.md": 2456,
+    "pack/.claude/skills/rite-fast/SKILL.md": 11688,
     "pack/.claude/skills/rite-frame/reference/failure-modes.md": 5558,
     "pack/.claude/skills/rite-frame/SKILL.md": 7681,
     "pack/.claude/skills/rite-handoff/reference/handoff-template.md": 2360,
@@ -276,6 +283,6 @@
     "pack/.claude/skills/rite-watch-pr/SKILL.md": 4603,
     "pack/.claude/skills/rite-zoom-out/SKILL.md": 3646,
     "pack/.claude/skills/rite/reference/menu.md": 3820,
-    "pack/.claude/skills/rite/SKILL.md": 9420
+    "pack/.claude/skills/rite/SKILL.md": 9753
   }
 }

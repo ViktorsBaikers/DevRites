@@ -69,6 +69,7 @@ What each verb does lives once, in the Menu below; this table is the dispatch ma
 | `pressure-test` | `/rite-pressure-test` |
 | `autocomplete [idea] [--ship]` | `/rite-autocomplete` |
 | `quick [change]` | `/rite-quick` |
+| `fast <task \| slug>` | `/rite-fast` |
 | `frame [task]` | `/rite-frame` |
 
 Both forms call the same skill. The menu supports discovery; `/rite-<verb>` is the direct form.
@@ -136,13 +137,15 @@ GUIDE         /rite guide                                     first feature, gui
 RESUME        /rite resolve ...        ≡    /rite-resolve     answer a HITL checkpoint
 AUTO          /rite autocomplete ...   ≡    /rite-autocomplete  unattended lifecycle; `--ship` stops at Ship preflight
 QUICK         /rite quick <change>     ≡    /rite-quick       express lane — one small reversible change (escalates if it grows)
+FAST          /rite fast <task>        ≡    /rite-fast        short lane — spec + plan + questions, ≤10 slices, one check, review, prove
 UTILITY       /rite frame | prototype | handoff | zoom-out | pressure-test  (or direct shortcuts)
 ```
 
 > **Small one-off change?** A typo, copy tweak, config bump, or one-function fix → **`/rite-quick`**
 > (express lane: one contract → build → prove → ship, no full workspace). It escalates to
 > `/rite-spec` when the change is no longer small, reversible, and unambiguous. Use the
-> full lifecycle above for features.
+> full lifecycle above for features. Mid-size work that does not need a gate after every
+> slice → **`/rite-fast`** (one spec-and-plan step, up to ten slices, one completeness check).
 
 ## Core operating rules (every DevRites skill enforces)
 

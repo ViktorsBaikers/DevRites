@@ -55,7 +55,7 @@ gen_codex_agent() {
   [ -n "$_name" ] || _name="$(basename "$_src" .md)"
   [ -n "$_desc" ] || _desc="DevRites custom agent."
   _permissions=":read-only"
-  case "$_name" in devrites-slice-wright | overhaul-*) _permissions=":workspace" ;; esac
+  case "$_name" in devrites-slice-wright | overhaul-* | fast-builder) _permissions=":workspace" ;; esac
   _desc_tmp="$TMP_GEN_DIR/codex-agent-desc-$(basename "$_src").txt"
   _desc_codex="$TMP_GEN_DIR/codex-agent-desc-$(basename "$_src").codex.txt"
   printf '%s' "$_desc" > "$_desc_tmp"
@@ -106,6 +106,7 @@ This project has DevRites installed for both Claude Code and Codex.
 - The root uses the workspace-capable `devrites-orchestrator` profile because Codex children cannot elevate above the parent permission ceiling. This permission is for native writer dispatch and exact path-bounded executable workflow artifacts under the active `.devrites/work/<slug>/`; the root must never edit product source or tests itself.
 - Every generated specialist is hook-free. `devrites-slice-wright` alone uses `default_permissions = ":workspace"`; every other specialist uses `default_permissions = ":read-only"`. Exact paths are instruction-enforced: put the project-relative paths in the task, wait for the wright, compare its file list and `git diff --name-only` with that contract, and reject any extra path. Never bypass the wright, widen its contract, or edit source in the root; the root must never recreate an engine dispatch bridge.
 - The explicit `/overhaul` skill ships its own `overhaul-*` agents outside the DevRites lifecycle. They use `default_permissions = ":workspace"`, are dispatched only by that skill, and follow its own approval gate and path contracts instead of the lifecycle writer rules above.
+- The explicit `/rite-fast` skill ships its own `fast-*` agents. Only `fast-builder` uses `default_permissions = ":workspace"`; `fast-planner`, `fast-checker`, and `fast-critic` stay `:read-only`. `/rite-fast` dispatches them itself and applies its own exact-path contracts.
 - A seal GO, AFK mode, or autocomplete flag never authorizes an irreversible action. Disclose the exact commit/push/tag/PR plan and obtain fresh explicit user approval for that attempt; any changed or retried plan needs fresh approval. Native host permission and sandbox prompts remain authoritative and cannot be inferred or bypassed.
 
 ## Workflow contract

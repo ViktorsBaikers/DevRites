@@ -53,6 +53,10 @@ def validate(agents_dir:Path):
         if name=='devrites-slice-wright':
             if not re.search(r'write-capable|Writes code|write code', text, re.I):
                 errors.append(f'{f}: devrites-slice-wright must state write-capable mode')
+        elif name=='fast-builder':
+            # /rite-fast's own writer (ADR-0033); the skill's path contracts govern its writes.
+            if not re.search(r'write-capable', text, re.I):
+                errors.append(f'{f}: fast-builder must state write-capable mode')
         elif name.startswith('overhaul-'):
             # /overhaul's own agents (ADR-0031) keep every tool; that skill's approval gate and
             # path contracts govern writes. Each must still state its read or write mode.

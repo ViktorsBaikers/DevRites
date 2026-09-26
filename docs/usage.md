@@ -2,8 +2,8 @@
 
 These examples cover the common DevRites workflows. Start a new feature with
 `/rite-spec` and bring an existing codebase in with `/rite-adopt`.
-`/rite-quick` and `/rite-frame` handle bounded work outside the full feature
-lifecycle. Workspace phases first read the active workspace from
+`/rite-quick`, `/rite-fast`, and `/rite-frame` handle bounded work outside the full
+feature lifecycle. Workspace phases first read the active workspace from
 `.devrites/ACTIVE` and `.devrites/work/<slug>/`. If none exists, they report the
 command that can create or select one. `/rite-upgrade [slug]` is the
 compatibility audit for an older active workspace that cannot resume.

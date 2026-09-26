@@ -197,10 +197,10 @@ if command -v devin >/dev/null 2>&1; then
   cp -R "$ROOT/pack/generated/devin/skills/." "$proj/.devin/skills/" 2>/dev/null || true
   cp "$ROOT"/pack/generated/devin/agents/*.md "$proj/.devin/agents/" 2>/dev/null || true
   if [ -d "$proj/.devin/skills/rite" ] && [ -f "$proj/.devin/agents/devrites-slice-wright.md" ]; then
-    if (cd "$proj" && devin doctor 2>&1 | grep -q "25 profile(s) loaded"); then
-      ok "devin doctor loads all 25 generated profiles"
+    if (cd "$proj" && devin doctor 2>&1 | grep -q "29 profile(s) loaded"); then
+      ok "devin doctor loads all 29 generated profiles"
     else
-      no "devin doctor did not load all 25 generated profiles"
+      no "devin doctor did not load all 29 generated profiles"
     fi
     if (cd "$proj" && devin skills list --json 2>/dev/null | grep -q '"name": "rite-build"'); then
       ok "devin skills list discovers generated skills"
