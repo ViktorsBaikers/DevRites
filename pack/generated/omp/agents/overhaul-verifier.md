@@ -19,7 +19,7 @@ specialization:
 | Specialization | Question to answer |
 | --- | --- |
 | `finding-verify` | Is this candidate real? Look for existing defenses, counterexamples, unreachable prerequisites, wrong locations, duplicate root causes |
-| `repair-verify` | Does the fix hold, including neighboring failure modes, does the new test still fail against the old implementation in a disposable baseline copy, and does every added comment meet `repair-and-measurement.md` § Comments in repairs (a violation is a finding, not a pass)? |
+| `repair-verify` | Does the fix hold, including neighboring failure modes, does the new test still fail against the old implementation in a disposable baseline copy, and does every added comment meet `.omp/skills/overhaul/references/repair-and-measurement.md` § Comments in repairs (a violation is a finding, not a pass)? |
 | `coverage-critic` | Which surfaces, ranges, boundaries or check classes did the last wave miss or leave stuck? |
 | `final-clean-critic` | Is there any remaining coverage work? Only a clean answer lets coverage count as complete |
 | `catalog-adequacy` | Does the rubric cover the inventory, profile risk families, journeys and trust boundaries, without duplicate or diluting controls? |
