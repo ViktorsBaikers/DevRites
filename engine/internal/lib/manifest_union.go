@@ -48,6 +48,20 @@ func RunMergeManifest(root string, args []string, stdout, stderr io.Writer) int 
 		fmt.Fprintf(stderr, "merge-manifest: BLOCKED: %v\n", err)
 		return 3
 	}
+	code := 0
+	if err := state.WithFeatureLock(root, slug, func() error {
+		code = mergeManifestLocked(root, slug, workspace, args, stdout, stderr)
+		return nil
+	}); err != nil {
+		fmt.Fprintf(stderr, "merge-manifest: %v\n", err)
+		return 1
+	}
+	return code
+}
+
+// mergeManifestLocked reads, unions, and rewrites touched-files.md under the
+// feature lock so a concurrent writer cannot interleave with the rewrite.
+func mergeManifestLocked(root, slug, workspace string, args []string, stdout, stderr io.Writer) int {
 	manifestPath := filepath.Join(workspace, "touched-files.md")
 	releaseRaw, err := readBoundedRegularFile(manifestPath, maxCandidateManifestBytes)
 	if err != nil {

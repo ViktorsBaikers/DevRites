@@ -28,6 +28,9 @@ Read-only: never repair files, advance a feature, or diagnose the application.
    Cross-check the loaded/effective host configuration when the host exposes it:
    Claude root plan mode with only `devrites-slice-wright` writable; Codex root
    `devrites-orchestrator`, wright `:workspace`, all reviewers `:read-only`.
+   Also allowed as writers: `fast-builder` (`acceptEdits` / `:workspace`, ADR-0033)
+   and the `overhaul-*` agents (every tool, ADR-0031); the other `fast-*` roles
+   are read-only.
    File presence without effective loading is `WARN`; wrong permissions or a
    missing required profile is `FAIL`.
 4. **Inspect workspace topology.** Read `.devrites/ACTIVE` if present. An empty

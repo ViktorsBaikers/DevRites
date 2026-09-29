@@ -6,10 +6,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/state"
 )
 
 // dispatch.go: launch-wave barrier for host-native agent dispatch. Hosts own
@@ -31,9 +33,10 @@ type dispatchFile struct {
 }
 
 type dispatchWave struct {
-	Phase string                   `json:"phase"`
-	State string                   `json:"state"` // open, sealed, abandoned, complete
-	Roles map[string]*dispatchRole `json:"roles"`
+	Phase  string                   `json:"phase"`
+	State  string                   `json:"state"` // open, sealed, abandoned, complete
+	Reason string                   `json:"reason,omitempty"`
+	Roles  map[string]*dispatchRole `json:"roles"`
 }
 
 type dispatchRole struct {
@@ -79,7 +82,7 @@ func saveDispatch(path string, f *dispatchFile) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o600)
+	return state.AtomicWrite(path, data, 0o600)
 }
 
 func nowStamp() string { return time.Now().UTC().Format(time.RFC3339) }
@@ -122,6 +125,20 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
 		return 2
 	}
+	// Serialize load-modify-save so concurrent start/return calls never lose
+	// an update and strand the wave short of complete.
+	code := 0
+	if err := state.WithFeatureLock(root, slug, func() error {
+		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, stdout, stderr)
+		return nil
+	}); err != nil {
+		fmt.Fprintf(stderr, "dispatch: %v\n", err)
+		return 3
+	}
+	return code
+}
+
+func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles []string, stdout, stderr io.Writer) int {
 	f, path, err := loadDispatch(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -204,6 +221,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			}
 		}
 		if len(missing) > 0 {
+			sort.Strings(missing)
 			return fail("wave %q cannot seal: no start handle for %s", wave, strings.Join(missing, ","))
 		}
 		w.State = "sealed"
@@ -244,7 +262,8 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 
 	case "status":
 		if wave == "" {
-			for name, w := range f.Waves {
+			for _, name := range sortedKeys(f.Waves) {
+				w := f.Waves[name]
 				fmt.Fprintf(stdout, "dispatch: wave %s state=%s roles=%d\n", name, w.State, len(w.Roles))
 			}
 			if len(f.Waves) == 0 {
@@ -257,7 +276,8 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			return fail("no wave %q", wave)
 		}
 		var pending []string
-		for name, r := range w.Roles {
+		for _, name := range sortedKeys(w.Roles) {
+			r := w.Roles[name]
 			mark := "declared"
 			if r.Handle != "" {
 				mark = "started"
@@ -281,9 +301,10 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			return fail("no wave %q", wave)
 		}
 		if strings.TrimSpace(reason) == "" {
-			return fail("--reason is required (non-empty, surfaced in handoff)")
+			return fail("--reason is required (non-empty, recorded in dispatch.json)")
 		}
 		w.State = "abandoned"
+		w.Reason = reason
 		if err := saveDispatch(path, f); err != nil {
 			return fail("%v", err)
 		}

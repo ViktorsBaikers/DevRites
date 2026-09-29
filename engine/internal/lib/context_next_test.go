@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -517,5 +518,57 @@ func TestDiffScopeAllowlist(t *testing.T) {
 	code = RunCheckDiffScope(root, []string{"feat", "--allow", "src", "--cwd", repo}, stdout, stderr)
 	if code != 0 || !strings.Contains(stdout.String(), "2 changed") {
 		t.Fatalf("code=%d\n%s", code, stdout.String())
+	}
+}
+
+func TestDispatchConcurrentReturnsCompleteWave(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	run := func(args ...string) int {
+		out, err := &bytes.Buffer{}, &bytes.Buffer{}
+		return RunDispatch(root, args, out, err)
+	}
+	roles := []string{"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"}
+	open := []string{"feat", "open", "--phase", "review", "--wave", "w"}
+	for _, r := range roles {
+		open = append(open, "--role", r)
+	}
+	if c := run(open...); c != 0 {
+		t.Fatal("open failed")
+	}
+	for _, r := range roles {
+		if c := run("feat", "start", "--wave", "w", "--role", r, "--handle", "h-"+r); c != 0 {
+			t.Fatalf("start %s failed", r)
+		}
+	}
+	if c := run("feat", "seal", "--wave", "w"); c != 0 {
+		t.Fatal("seal failed")
+	}
+	var wg sync.WaitGroup
+	for _, r := range roles {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if c := run("feat", "return", "--wave", "w", "--role", r); c != 0 {
+				t.Errorf("return %s failed: %d", r, c)
+			}
+		}()
+	}
+	wg.Wait()
+	if c := run("feat", "status", "--wave", "w"); c != 0 {
+		data, _ := os.ReadFile(filepath.Join(featureDir, "dispatch.json"))
+		t.Fatalf("concurrent returns lost an update; wave not complete:\n%s", data)
+	}
+}
+
+func TestDispatchAbandonRecordsReason(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
+	if c := RunDispatch(root, []string{"feat", "open", "--phase", "build", "--wave", "w", "--role", "x"}, out, errOut); c != 0 {
+		t.Fatal("open failed")
+	}
+	RunDispatch(root, []string{"feat", "abandon", "--wave", "w", "--reason", "host limit"}, out, errOut)
+	data, err := os.ReadFile(filepath.Join(featureDir, "dispatch.json"))
+	if err != nil || !strings.Contains(string(data), `"reason": "host limit"`) {
+		t.Fatalf("abandon reason not persisted: %v\n%s", err, data)
 	}
 }

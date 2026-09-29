@@ -314,6 +314,11 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 	ibranch := IntegrateBranchName(opts.Slug, lease.BatchID)
 	stageWT := filepath.Join(ScratchRoot(opts.Root), lease.BatchID, "integrate")
 	_ = os.RemoveAll(stageWT)
+	// A crashed prior attempt leaves the worktree registered; prune it so the
+	// branch delete and worktree add below can succeed on retry.
+	if _, err := git(opts.Root, "worktree", "prune"); err != nil {
+		warnf("worktree prune: %v", err)
+	}
 	if exists, _ := branchExists(opts.Root, ibranch); exists {
 		_ = deleteBranch(opts.Root, ibranch)
 	}

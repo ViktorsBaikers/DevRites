@@ -29,9 +29,9 @@ for entry in "${PRINCIPLES[@]}"; do
   pattern="${entry%%|*}"
   canonical="${entry##*|}"
   # Use literal-string grep (-F) to avoid regex meta-char surprises in headings.
-  # Match anchored to line start by adding the '## ' prefix ourselves.
+  # -x matches the whole line, so a deeper heading or quoted prose is not a hit.
   needle="${pattern#^}"
-  matches="$(grep -rln -F -- "$needle" "$PACK"/skills "$PACK"/agents 2>/dev/null | sort -u)"
+  matches="$(grep -rlx -F -- "$needle" "$PACK"/skills "$PACK"/agents 2>/dev/null | sort -u)"
   count="$(printf '%s\n' "$matches" | grep -c .)"
   if [ "$count" -eq 1 ] && [ "$matches" = "$ROOT/$canonical" ]; then
     printf 'ok: unique heading "%s" (canonical: %s)\n' "$needle" "$canonical"

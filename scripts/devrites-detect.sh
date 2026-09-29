@@ -38,7 +38,9 @@ if [[ ${#FILES[@]} -eq 0 ]]; then
     fi
   done
   if [[ -n "$BASE" ]]; then
-    mapfile -t FILES < <(git diff --name-only --diff-filter=ACMR "$BASE" 2>/dev/null || true)
+    # bash 3.2 (macOS default) has no mapfile.
+    while IFS= read -r line; do FILES+=("$line"); done \
+      < <(git diff --name-only --diff-filter=ACMR "$BASE" 2>/dev/null || true)
   fi
 fi
 
@@ -47,7 +49,7 @@ fi
 # scan because they discuss the patterns under audit.
 SCAN=()
 SCAN_MD=()
-for f in "${FILES[@]}"; do
+for f in ${FILES[@]+"${FILES[@]}"}; do
   [[ -z "$f" ]] && continue
   [[ ! -f "$f" ]] && continue
   case "$f" in

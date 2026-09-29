@@ -136,7 +136,7 @@ jobs:
         run: bash scripts/check-gating-eval-ledger.sh
 
       - name: Anti-slop detector (advisory)
-        run: bash scripts/devrites-detect.sh || true
+        run: bash scripts/devrites-detect.sh --advisory
 
   # Every tests/*.sh through the same runner developers use locally (npm test).
   # run-tests.mjs auto-discovers the suite, supports weighted CI sharding so

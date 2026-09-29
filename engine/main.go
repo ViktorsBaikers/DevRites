@@ -46,8 +46,8 @@ Usage:
   devrites-engine orient <slug>            Alias for observe summary
   devrites-engine next [slug]              Print the minimal remaining lifecycle path with advisory skips
   devrites-engine handoff [slug]           Emit the deterministic resume record (cursor, blocking gates, ledger, dead ends)
-  devrites-engine context <slug> --phase <p> [--role <r>] [--trigger a,b]
-                                         Emit one deduplicated read-set bundle for a phase or dispatch role
+  devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--trigger a,b]
+                                         Emit one deduplicated read-set bundle for a phase, skill, or dispatch role
   devrites-engine metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   devrites-engine metrics summary [slug]   Summarize the per-feature metrics.jsonl event ledger
   devrites-engine dispatch <slug> <sub>    Launch-wave barrier for parallel dispatch: open/start/seal/return/status/abandon

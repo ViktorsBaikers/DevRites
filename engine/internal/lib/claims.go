@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/devrites/devrites/internal/parallel"
+	"github.com/devrites/devrites/internal/state"
 )
 
 // ClaimsFile is the repo-level append-only claim ledger under .devrites.
@@ -249,6 +250,20 @@ func claimAdd(root string, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	path := claimsPath(root)
+	// Hold the ledger lock across read, conflict check, and append so two
+	// sessions cannot both pass the check and claim the same path.
+	code := 0
+	if err := state.WithLock(path+".lock", func() error {
+		code = claimAddLocked(path, session, reason, ttl, paths, stdout, stderr)
+		return nil
+	}); err != nil {
+		fmt.Fprintf(stderr, "claim: %v\n", err)
+		return 2
+	}
+	return code
+}
+
+func claimAddLocked(path, session, reason string, ttl int, paths []string, stdout, stderr io.Writer) int {
 	latest, order, _, err := readClaims(path)
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)

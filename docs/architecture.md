@@ -413,7 +413,9 @@ contract.
 - **Agents**: 17 fresh-context roles at flat depth one: 16 read-only leaves and
   one wright. Dispatch uses the exact named project role; if it cannot spawn,
   the workflow stops for HITL. `/overhaul` adds eight `overhaul-*` agents
-  that only it dispatches and that keep every tool (ADR-0031).
+  that only it dispatches and that keep every tool (ADR-0031). `/rite-fast`
+  adds four `fast-*` agents: three read-only roles and `fast-builder`, its own
+  writer (ADR-0033).
 - **Review**: **feature-scoped** multi-axis review with severity labels and
   fresh-context agents at the seal.
 - **Scope**: clarify → seal (decide) → ship (read-only preflight → type-GO →

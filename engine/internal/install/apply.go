@@ -274,9 +274,11 @@ func (r *runner) pruneDropped() error {
 						return fmt.Errorf("strip hooks from %s: %w", merge.TargetRel, err)
 					}
 				} else if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
-					_ = r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), true)
-				} else {
-					_ = stripMarkerPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End)
+					if err := r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), true); err != nil {
+						return fmt.Errorf("strip DevRites settings from %s: %w", merge.TargetRel, err)
+					}
+				} else if err := stripMarkerPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End); err != nil {
+					return fmt.Errorf("strip marker block from %s: %w", merge.TargetRel, err)
 				}
 			}
 			if err := os.Remove(dead); err != nil && !os.IsNotExist(err) {

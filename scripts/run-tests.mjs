@@ -107,9 +107,11 @@ for (let i = 0; i < args.length; i++) {
   } else filters.push(arg);
 }
 if (serial) jobs = 1;
+const testTimeoutSec = Number(process.env.DEVRITES_TEST_TIMEOUT_SEC) || 900;
 
 const allTests = readdirSync(testsDir)
-  .filter((name) => name.endsWith('.sh'))
+  // *-lib.sh files are sourced helpers, not tests.
+  .filter((name) => name.endsWith('.sh') && !name.endsWith('-lib.sh'))
   .sort()
   .map((name) => join('tests', name));
 const tests = filters.length
@@ -359,7 +361,16 @@ function runOne(test) {
     });
     child.stdout.on('data', (chunk) => chunks.push(chunk));
     child.stderr.on('data', (chunk) => chunks.push(chunk));
+    // ponytail: kills only the bash child; orphaned grandchildren may linger,
+    // but destroying the pipes lets the runner report the hung test and move on.
+    const timer = setTimeout(() => {
+      chunks.push(Buffer.from(`timeout: killed after ${testTimeoutSec}s (DEVRITES_TEST_TIMEOUT_SEC)\n`));
+      child.kill('SIGKILL');
+      child.stdout.destroy();
+      child.stderr.destroy();
+    }, testTimeoutSec * 1000);
     child.on('close', (code, signal) => {
+      clearTimeout(timer);
       const elapsed = ((Date.now() - start) / 1000).toFixed(2);
       const status = code === 0 ? 'PASS' : 'FAIL';
       const displayName = typeof test === 'string' ? test : label;

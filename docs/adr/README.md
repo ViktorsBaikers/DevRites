@@ -47,7 +47,7 @@ architecture; per-feature `decisions.md` files stay scoped to that feature.
 | ADR | Title | Status | Guard test |
 |-----|-------|--------|-----------|
 | [0001](0001-go-engine-as-control-plane.md) | Go engine as deterministic control plane | Accepted in part; all-state-transition/derivation scope superseded by 0024 | none |
-| [0002](0002-dual-host-harness.md) | Dual-host harness (Claude + Codex) | Accepted | `tests/parity_*_test.go` |
+| [0002](0002-dual-host-harness.md) | Dual-host harness (Claude + Codex) | Accepted | `engine/tests/parity_*_test.go` |
 | [0003](0003-gate-model-hitl-pause.md) | Gates block as HITL pause, never crash | Accepted | `engine/tests/adr_0003_gate_exit_code_test.go` |
 | [0004](0004-state-schema-phases-sections.md) | Phase-relative section completeness | Accepted | `engine/tests/adr_0004_required_by_phase_test.go`, `engine/internal/state/state_test.go` |
 | [0005](0005-hooks-as-engine-subcommands.md) | Hooks are engine subcommands, not shell scripts | Accepted; active hook clause superseded by 0018 | historical |

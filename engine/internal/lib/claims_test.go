@@ -3,9 +3,11 @@ package lib
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -178,5 +180,31 @@ func TestClaimLedgerToleratesMalformedLines(t *testing.T) {
 	code, out, _ := runClaim(t, root, "list")
 	if code != 0 || !strings.Contains(out, "unparsed") {
 		t.Fatalf("malformed ledger: %d %q", code, out)
+	}
+}
+
+func TestClaimAddConcurrentOverlapOneWins(t *testing.T) {
+	root := claimTestRoot(t)
+	const n = 8
+	codes := make(chan int, n)
+	var wg sync.WaitGroup
+	for i := range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var out, errOut bytes.Buffer
+			codes <- RunClaim(root, []string{"add", "--session", fmt.Sprintf("s%d", i), "pkg/a.go"}, &out, &errOut)
+		}()
+	}
+	wg.Wait()
+	close(codes)
+	wins := 0
+	for c := range codes {
+		if c == 0 {
+			wins++
+		}
+	}
+	if wins != 1 {
+		t.Fatalf("overlapping concurrent claims: %d succeeded, want exactly 1", wins)
 	}
 }

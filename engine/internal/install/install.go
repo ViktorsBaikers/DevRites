@@ -405,28 +405,3 @@ func semverLike(v string) bool {
 	v = strings.TrimPrefix(v, "v")
 	return len(v) > 0 && v[0] >= '0' && v[0] <= '9'
 }
-
-func verGT(a, b string) bool {
-	a = strings.TrimPrefix(a, "v")
-	b = strings.TrimPrefix(b, "v")
-	as := strings.Split(strings.Split(a, "-")[0], ".")
-	bs := strings.Split(strings.Split(b, "-")[0], ".")
-	for len(as) < 3 {
-		as = append(as, "0")
-	}
-	for len(bs) < 3 {
-		bs = append(bs, "0")
-	}
-	for i := 0; i < 3; i++ {
-		var ai, bi int
-		_, _ = fmt.Sscanf(as[i], "%d", &ai)
-		_, _ = fmt.Sscanf(bs[i], "%d", &bi)
-		if ai > bi {
-			return true
-		}
-		if ai < bi {
-			return false
-		}
-	}
-	return false
-}
