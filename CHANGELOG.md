@@ -2,6 +2,17 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.14.1](https://github.com/ViktorsBaikers/DevRites/compare/v5.14.0...v5.14.1) (2026-09-29)
+
+### Added
+
+* **no-release:** add /rite-fast lane for mid-size work ([#89](https://github.com/ViktorsBaikers/DevRites/issues/89)) ([7b71593](https://github.com/ViktorsBaikers/DevRites/commit/7b7159377a88002d33b19277f3b365cd9be89520))
+* **no-release:** close /overhaul audit and repair coverage gaps ([f7c4e6a](https://github.com/ViktorsBaikers/DevRites/commit/f7c4e6a0e27b83e7fa65befdee44df2efebbccca))
+
+### Fixed
+
+* **repo:** close engine, script, and doc quality gaps ([#90](https://github.com/ViktorsBaikers/DevRites/issues/90)) ([61572e2](https://github.com/ViktorsBaikers/DevRites/commit/61572e2bccae418aa47c7852807d2551f7f0bda1))
+
 ## [5.14.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.13.1...v5.14.0) (2026-09-25)
 
 ### Added
