@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "GHSA-rpw4-54j3-4h4q",
+    "package": "ip-address",
+    "range": "<=10.5.0",
+    "nodes": [
+      "node_modules/npm/node_modules/ip-address"
+    ],
+    "source": "https://github.com/advisories/GHSA-rpw4-54j3-4h4q",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override, latest 11.x) and npm@12.1.0 both bundle ip-address@10.5.0 via socks-proxy-agent, and root overrides cannot repair npm's bundled tree. The release job does not configure a SOCKS proxy or classify untrusted addresses. Remove once npm bundles ip-address@10.5.1 or newer.",
+    "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-2vr4-cq9g-pvrc",
+    "package": "ip-address",
+    "range": ">=10.2.0 <=10.5.0",
+    "nodes": [
+      "node_modules/npm/node_modules/ip-address"
+    ],
+    "source": "https://github.com/advisories/GHSA-2vr4-cq9g-pvrc",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override, latest 11.x) and npm@12.1.0 both bundle ip-address@10.5.0 via socks-proxy-agent, and root overrides cannot repair npm's bundled tree. The release job does not configure a SOCKS proxy or classify untrusted addresses. Remove once npm bundles ip-address@10.5.1 or newer.",
+    "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-3wwx-pv8p-q78v",
+    "package": "undici",
+    "range": ">=6.25.0 <6.28.1",
+    "nodes": [
+      "node_modules/npm/node_modules/undici"
+    ],
+    "source": "https://github.com/advisories/GHSA-3wwx-pv8p-q78v",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override, latest 11.x) and npm@12.1.0 both bundle undici@6.28.0 via node-gyp, and root overrides cannot repair npm's bundled tree. The release job only authenticates and publishes; it opens no WebSocket connections. Remove once npm bundles undici@6.28.1 or newer.",
+    "expires": "2026-10-29"
+  }
+]

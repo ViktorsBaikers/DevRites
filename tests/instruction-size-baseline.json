@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1446911,
+  "total_bytes": 1446888,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 104,
@@ -187,7 +187,7 @@
     "pack/.claude/skills/rite-define/reference/gates.md": 6895,
     "pack/.claude/skills/rite-define/reference/plan-template.md": 7824,
     "pack/.claude/skills/rite-define/SKILL.md": 15794,
-    "pack/.claude/skills/rite-doctor/SKILL.md": 4532,
+    "pack/.claude/skills/rite-doctor/SKILL.md": 4509,
     "pack/.claude/skills/rite-dogfood/SKILL.md": 4089,
     "pack/.claude/skills/rite-explain/reference/intake.md": 6198,
     "pack/.claude/skills/rite-explain/SKILL.md": 9806,

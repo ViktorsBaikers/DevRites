@@ -9,3 +9,21 @@
 # fast-uri@3.1.6 cleared the previous bundled-npm and fast-uri advisories.
 # Leave this file without ignore entries until a new exact, owned,
 # expiring exception is required.
+
+# 2026-09-29: npm@11.20.0 and npm@12.1.0 still bundle ip-address@10.5.0 and
+# undici@6.28.0 (node_modules/npm/node_modules/*); no patched npm exists yet.
+# Owner: release-maintainers. Mirrors scripts/npm-audit-exceptions.json.
+[[IgnoredVulns]]
+id = "GHSA-rpw4-54j3-4h4q"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via socks-proxy-agent; release job uses no SOCKS proxy. Remove once npm bundles ip-address@10.5.1+."
+
+[[IgnoredVulns]]
+id = "GHSA-2vr4-cq9g-pvrc"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via socks-proxy-agent; release job uses no SOCKS proxy. Remove once npm bundles ip-address@10.5.1+."
+
+[[IgnoredVulns]]
+id = "GHSA-3wwx-pv8p-q78v"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via node-gyp; release job opens no WebSocket. Remove once npm bundles undici@6.28.1+."
