@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1446596,
+  "total_bytes": 1446888,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 104,
@@ -187,7 +187,7 @@
     "pack/.claude/skills/rite-define/reference/gates.md": 6895,
     "pack/.claude/skills/rite-define/reference/plan-template.md": 7824,
     "pack/.claude/skills/rite-define/SKILL.md": 15794,
-    "pack/.claude/skills/rite-doctor/SKILL.md": 4350,
+    "pack/.claude/skills/rite-doctor/SKILL.md": 4509,
     "pack/.claude/skills/rite-dogfood/SKILL.md": 4089,
     "pack/.claude/skills/rite-explain/reference/intake.md": 6198,
     "pack/.claude/skills/rite-explain/SKILL.md": 9806,
@@ -228,7 +228,7 @@
     "pack/.claude/skills/rite-prove/reference/proof-ladder.md": 1656,
     "pack/.claude/skills/rite-prove/reference/test-command-discovery.md": 1847,
     "pack/.claude/skills/rite-prove/SKILL.md": 12221,
-    "pack/.claude/skills/rite-quick/SKILL.md": 6837,
+    "pack/.claude/skills/rite-quick/SKILL.md": 6970,
     "pack/.claude/skills/rite-resolve/reference/answer-protocol.md": 4751,
     "pack/.claude/skills/rite-resolve/SKILL.md": 7002,
     "pack/.claude/skills/rite-review/reference/anti-patterns.md": 1819,

@@ -16,12 +16,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 # Offline semantic rubric grading — never a required merge check.
 jobs:
   rubric:
     name: offline rubric evals
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      RUBRIC_VERSION: ${{ github.event.inputs.rubric_version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -42,7 +48,6 @@ jobs:
 
       - name: Run rubric grader over captured transcripts (advisory)
         env:
-          RUBRIC_VERSION: ${{ github.event.inputs.rubric_version }}
           DEVRITES_RUBRIC_JUDGE: ${{ vars.DEVRITES_RUBRIC_JUDGE }}
           DEVRITES_RUBRIC_JUDGE_BASE_URL: ${{ vars.DEVRITES_RUBRIC_JUDGE_BASE_URL }}
           DEVRITES_RUBRIC_JUDGE_API_KEY: ${{ secrets.DEVRITES_RUBRIC_JUDGE_API_KEY }}

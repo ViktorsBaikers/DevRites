@@ -50,6 +50,8 @@ Load this lane's conditional standards when needed:
    `state.md` directly; `/rite-quick` does **not** require
    a workspace and does **not** create the full tree.
 1. **Significance gate** (above). Fail → STOP, tell the user to run `/rite-spec <feature>`.
+   If the only failing item is size (more than one slice) and no risk item holds, name
+   `/rite-fast <task>` as the lighter option.
 2. **One-line contract.** Restate in 1-3 lines: the change, its **acceptance** (how you'll
    know it works), and the **scope boundary** (what you will NOT touch). This is the entire
    "spec + plan" for a quick change: keep it in the chat; optionally drop a `brief.md` +

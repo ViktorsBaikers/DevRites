@@ -72,7 +72,10 @@ is_open() {
   esac
 }
 
-# First pass: num -> status map ("num<TAB>status" lines).
+[ ${#dirs[@]} -gt 0 ] || exit 0
+
+# First pass: dir+num -> status map ("dir<TAB>num<TAB>status" lines). Keyed by
+# dir so "Blocked by: 01" resolves within the same feature, not another's 01.
 map_file="$(mktemp)"
 trap 'rm -f "$map_file"' EXIT
 
@@ -81,12 +84,12 @@ for d in "${dirs[@]}"; do
     [ -f "$f" ] || continue
     n="$(issue_num "$f")"
     [ -n "$n" ] || continue
-    printf '%s\t%s\n' "$n" "$(status_of "$f")" >>"$map_file"
+    printf '%s\t%s\t%s\n' "$d" "$n" "$(status_of "$f")" >>"$map_file"
   done
 done
 
 status_for_num() {
-  awk -F '\t' -v n="$1" '$1 == n { print $2 }' "$map_file" | head -1
+  awk -F '\t' -v d="$1" -v n="$2" '$1 == d && $2 == n { print $3 }' "$map_file" | head -1
 }
 
 for d in "${dirs[@]}"; do
@@ -98,7 +101,7 @@ for d in "${dirs[@]}"; do
     is_open "$st" || continue
     ready=1
     for dep in $(blockers_of "$f"); do
-      dep_st="$(status_for_num "$dep")"
+      dep_st="$(status_for_num "$d" "$dep")"
       is_terminal "$dep_st" || { ready=0; break; }
     done
     [ "$ready" -eq 1 ] || continue

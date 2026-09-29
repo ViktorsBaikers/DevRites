@@ -7,8 +7,8 @@ set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 fail=0
 
-SCRIPTS="$ROOT/install.sh $ROOT/uninstall.sh"
-for f in "$ROOT"/scripts/*.sh; do SCRIPTS="$SCRIPTS $f"; done
+# Array, not a space-joined string: a checkout path with spaces must not split.
+SCRIPTS=("$ROOT/install.sh" "$ROOT/uninstall.sh" "$ROOT/update.sh" "$ROOT"/scripts/*.sh)
 
 # 1) the no-global guard marker must exist in install.sh
 if ! grep -q 'GUARD:no-global' "$ROOT/install.sh"; then
@@ -24,7 +24,7 @@ fi
 #    prose like "install into a project", which is not a write.)
 WRITE_RE='(\bmkdir\b|\bcp\b|\btee\b|\brsync\b|\bmv\b|\bln\b|>>?)'
 GLOBAL_RE='(\$HOME/\.(claude|codex)|~/\.(claude|codex))'
-for f in $SCRIPTS; do
+for f in "${SCRIPTS[@]}"; do
   [ -f "$f" ] || continue
   # lines that contain a global-claude path AND a write verb, excluding comments
   hits="$(grep -nE "$GLOBAL_RE" "$f" | grep -vE '^\s*[0-9]+:\s*#' | grep -E "$WRITE_RE" || true)"
@@ -46,7 +46,7 @@ BIN_RE='((\$HOME|~)/\.local/bin|/usr/local/bin|/usr/bin|/bin|/sbin)'
 # under /usr/local/bin or ~/.local/bin. The trailing boundary keeps `devrites-lib`
 # or `devritesX` from sneaking through.
 SANCTIONED_RE='((\$HOME|~)/\.local/bin|/usr/local/bin)/devrites-engine(\.exe)?([^A-Za-z0-9._-]|$)'
-for f in $SCRIPTS; do
+for f in "${SCRIPTS[@]}"; do
   [ -f "$f" ] || continue
   hits="$(grep -nE "$BIN_RE" "$f" | grep -vE '^\s*[0-9]+:\s*#' | grep -E "$WRITE_RE" \
     | grep -vE "$SANCTIONED_RE" || true)"

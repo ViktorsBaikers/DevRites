@@ -51,9 +51,15 @@ func WithFeatureLock(root, slug string, fn func() error) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("lock feature %q: %w", slug, err)
 	}
-	l, err := acquireLock(filepath.Join(dir, ".lock"))
+	return WithLock(filepath.Join(dir, ".lock"), fn)
+}
+
+// WithLock runs fn while holding the same exclusive advisory lock as
+// WithFeatureLock, keyed on lockPath, for shared ledgers outside one feature.
+func WithLock(lockPath string, fn func() error) error {
+	l, err := acquireLock(lockPath)
 	if err != nil {
-		return fmt.Errorf("lock feature %q: %w", slug, err)
+		return fmt.Errorf("lock %s: %w", lockPath, err)
 	}
 	defer func() { _ = l.release() }()
 	return fn()

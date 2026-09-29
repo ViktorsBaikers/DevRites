@@ -19,8 +19,9 @@ guidance block in `AGENTS.md`.
 The root and reviewers never write source. Claude enforces the root boundary in
 plan mode. Codex uses a workspace-capable root so its sole write-capable
 slice-wright can execute, while all other specialists remain read-only. On
-Devin, `allowed-tools` gives only `devrites-slice-wright` `edit`, `write`, and
-`exec`; a missing required profile stops for HITL instead of substituting a
+Devin, `allowed-tools` gives `edit`, `write`, and `exec` only to
+`devrites-slice-wright` among lifecycle roles (plus `fast-builder` for
+`/rite-fast`); a missing required profile stops for HITL instead of substituting a
 generic profile. The
 installed `devrites-engine` owns strict candidate identity, deterministic checks,
 exact proof/review/seal bindings,
@@ -262,8 +263,10 @@ and `Shipped`. Utility commands keep the same compact labels and one-next-action
 DevRites ships 17 role profiles at depth one. Both hosts have 16 read-only
 leaves and one source/test writer role. The explicit `/overhaul` skill ships eight
 more agents, `overhaul-*`, that only it dispatches and that keep every tool
-([ADR-0031](adr/0031-overhaul-agents-keep-every-tool.md)); the counts here cover the
-lifecycle roles. Four read-only work roles handle
+([ADR-0031](adr/0031-overhaul-agents-keep-every-tool.md)). `/rite-fast` adds four
+`fast-*` agents that only it dispatches: three read-only roles and `fast-builder`,
+its own writer ([ADR-0033](adr/0033-rite-fast-own-agents.md)). The counts here cover
+the lifecycle roles. Four read-only work roles handle
 bounded evidence, planning, proof, and compatibility while the root keeps
 authority:
 
@@ -303,7 +306,8 @@ Seal fan-out diagram: [`flow.md` § /rite-seal fan-out](flow.md#4-rite-seal-fan-
 
 ## Executor agent: fresh-context writer
 
-The catalog has one writer role. Claude and Codex run it with one exact
+The lifecycle catalog has one writer role (`/rite-fast` keeps its own
+`fast-builder`, ADR-0033). Claude and Codex run it with one exact
 path-bounded slice or accepted correction; every other agent remains read-only.
 
 | Agent | Purpose |

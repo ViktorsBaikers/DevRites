@@ -25,7 +25,9 @@ permissions:
 # A fresh Dependabot push cancels the stale auto-merge attempt; the next
 # event re-runs it. Nothing here is mid-flight-unsafe (approve/merge only).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # pull_request_target sets github.ref to the base branch, so key on the PR
+  # number or every Dependabot PR would cancel the others.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

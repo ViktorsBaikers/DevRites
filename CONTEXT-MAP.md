@@ -39,7 +39,7 @@ when the task needs it.
 | Progress regression vs baseline | `devrites-engine check regression <slug> [--update]` |
 | Which readiness input drifted since Vet | `devrites-engine check drift <slug> [--record]` (advisory) |
 | Real repo test/lint/build commands | `devrites-engine detect commands [--root <dir>] [--json]` (read-only) |
-| Near-duplicate code leads | `devrites-engine check dup [slug] [--all|--worktree|--staged|--base <ref>]` (advisory) |
+| Near-duplicate code leads | `devrites-engine check dup [slug] [--all\|--worktree\|--staged\|--base <ref>]` (advisory) |
 | Acceptance ledger | `devrites-engine gates <sub> <slug>`; grammar in `devrites-lib/reference/standards/gates.md` |
 | Engine working rules | [`engine/AGENTS.md`](engine/AGENTS.md) |
 | Install health (pack + host) | `/rite-doctor` (skill; not an engine command) |

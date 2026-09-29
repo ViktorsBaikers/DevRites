@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/devrites/devrites/internal/fsutil"
+	"github.com/devrites/devrites/internal/version"
 )
 
 func (r *runner) installBinary() error {
@@ -28,7 +29,8 @@ func (r *runner) installBinary() error {
 	incoming := strings.TrimPrefix(tag, "v")
 	dest := binaryDest()
 	if exists(dest) {
-		if ev := engineVersion(dest); semverLike(ev) && semverLike(incoming) && verGT(ev, incoming) {
+		ev := engineVersion(dest)
+		if c, ok := version.Compare(ev, incoming); ok && c > 0 {
 			fmt.Fprintf(r.opts.Stderr, "warning: engine binary: installed %s is newer than %s - refusing to downgrade (kept).\n", ev, tag)
 			return nil
 		}

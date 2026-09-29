@@ -110,7 +110,9 @@ is a native, preservation-first workflow edit. See
   instruction-enforced there. Both hosts make only the exact slice-wright
   writable among specialists; the task states its exact paths and the root
   rejects an out-of-scope diff. The explicit `/overhaul` skill's eight `overhaul-*`
-  agents are outside this lifecycle roster and keep every tool (ADR-0031).
+  agents are outside this lifecycle roster and keep every tool (ADR-0031);
+  `/rite-fast`'s four `fast-*` agents are too, with `fast-builder` as its
+  only writer (ADR-0033).
   Leaves never own human questions, phase
   changes, or canonical
   `.devrites/` writes

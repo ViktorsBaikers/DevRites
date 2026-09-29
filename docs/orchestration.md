@@ -52,6 +52,9 @@ slice-wright uses `default_permissions = ":workspace"` and the other 16
 specialists use `default_permissions = ":read-only"`. The eight `overhaul-*` agents of the
 explicit `/overhaul` skill sit outside this split: Claude gives them every tool and
 Codex gives them `:workspace` ([ADR-0031](adr/0031-overhaul-agents-keep-every-tool.md)).
+The four `fast-*` agents of `/rite-fast` also sit outside it: `fast-builder` uses
+`acceptEdits` on Claude and `:workspace` on Codex, and the other three are
+read-only ([ADR-0033](adr/0033-rite-fast-own-agents.md)).
 
 If the exact role is unavailable, the root stops instead of substituting a
 generic agent or doing specialist/writer work inline.

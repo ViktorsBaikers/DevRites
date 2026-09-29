@@ -21,7 +21,7 @@ good() { printf 'ok: %s\n' "$*"; }
 # ---- 1. bash -n on every shell script ------------------------------------
 section "bash syntax (bash -n)"
 SH_LIST=("$ROOT/install.sh" "$ROOT/uninstall.sh" "$ROOT/update.sh")
-for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/pack/.claude/hooks/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do
+for f in "$ROOT"/scripts/*.sh "$ROOT"/tests/*.sh "$ROOT"/scripts/live-hosts/*.sh "$ROOT"/pack/.claude/skills/*/scripts/*.sh; do
   [ -f "$f" ] && SH_LIST+=("$f")
 done
 for f in "${SH_LIST[@]}"; do
@@ -33,7 +33,7 @@ section "python syntax"
 if command -v python3 >/dev/null 2>&1; then
   for f in "$ROOT"/scripts/*.py; do
     [ -f "$f" ] || continue
-    if python3 -c "import py_compile,sys; py_compile.compile('$f', doraise=True)" 2>${DR_SCRATCH}/dr_pyerr; then
+    if python3 -m py_compile "$f" 2>${DR_SCRATCH}/dr_pyerr; then
       good "compiles ${f#$ROOT/}"; else bad "py ${f#$ROOT/}: $(cat ${DR_SCRATCH}/dr_pyerr)"; fi
   done
 else
@@ -420,7 +420,7 @@ if command -v actionlint >/dev/null 2>&1; then
   # No -color flag: it is boolean in actionlint, so `-color never` made
   # actionlint treat "never" as a workflow filename and exit 3. Color is off
   # anyway outside a TTY.
-  if actionlint .github/workflows/*.yml; then
+  if actionlint "$ROOT"/.github/workflows/*.yml; then
     good "actionlint"
   else
     bad "actionlint reported workflow issues"
@@ -429,7 +429,7 @@ else
   echo "skip: actionlint not installed locally (CI installs and enforces)"
 fi
 if command -v zizmor >/dev/null 2>&1; then
-  if zizmor --offline .github/workflows/; then
+  if zizmor --offline "$ROOT/.github/workflows/"; then
     good "zizmor"
   else
     bad "zizmor reported workflow security issues"

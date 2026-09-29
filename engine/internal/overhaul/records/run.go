@@ -339,7 +339,7 @@ func publish(run string, stdout, stderr io.Writer) (int, error) {
 	}
 	manifest := map[string]any{"schema": "overhaul.manifest/1", "generation": gen, "previous": previous,
 		"files": files, "revisions": revs}
-	if err := ovio.WriteJSON(join(tmp, "manifest.json"), manifest, 0o666); err != nil {
+	if err := ovio.WriteJSON(join(tmp, "manifest.json"), manifest, 0o644); err != nil {
 		return 0, err
 	}
 	if err := os.Rename(tmp, join(run, gen)); err != nil {

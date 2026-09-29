@@ -1,5 +1,5 @@
 {
-  "$comment": "DevRites keeps the root orchestration context source-read-only. Native subagents own specialist execution; only devrites-slice-wright may edit source. Its task lists exact project-relative paths, and the root rejects any returned diff outside that contract.",
+  "$comment": "DevRites keeps the root orchestration context source-read-only. Native subagents own specialist execution; only devrites-slice-wright may edit source in the lifecycle (fast-builder writes for /rite-fast; overhaul-* agents keep every tool). Its task lists exact project-relative paths, and the root rejects any returned diff outside that contract.",
   "permissions": {
     "defaultMode": "plan",
     "allow": [
