@@ -213,6 +213,9 @@ require "$DEBUG_CLASSIFY" 'Hard rules' 'debug classification defers to the singl
 require "$FAILURE_TRIAGE" 'no-progress attempts' 'prove triage consumes only no-progress budget'
 require "$AUTOCOMPLETE_STOPS" 'no runnable recovery command' 'autocomplete terminal blockers do not advertise a retry command'
 require "$STATE_WORKSPACE" 'terminal: none' 'state cursor represents terminal technical exhaustion explicitly'
+SCHEMA_VERSION="$(sed -n 's/^const SchemaVersion = \([0-9][0-9]*\)$/\1/p' "$ROOT/engine/internal/state/schema.go")"
+[ -n "$SCHEMA_VERSION" ] || no 'engine SchemaVersion is readable'
+require "$STATE_WORKSPACE" "| schema | $SCHEMA_VERSION |" 'state template stamps the engine workspace schema version'
 require "$REPLY" 'Technical recovery exhausted' 'reply contract has a terminal technical blocker shape'
 require "$REPLY" 'No runnable recovery command' 'reply contract does not turn exhaustion into another user command'
 require "$AFK_HITL" 'three no-progress attempts per exact causal fingerprint' 'recovery budget attaches to the exact unresolved cause'

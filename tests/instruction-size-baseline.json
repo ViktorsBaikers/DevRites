@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1446888,
+  "total_bytes": 1446903,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 104,
@@ -263,7 +263,7 @@
     "pack/.claude/skills/rite-spec/reference/references-intake.md": 3975,
     "pack/.claude/skills/rite-spec/reference/spec-checklists.md": 5479,
     "pack/.claude/skills/rite-spec/reference/spec-template.md": 7516,
-    "pack/.claude/skills/rite-spec/reference/state-workspace.md": 9378,
+    "pack/.claude/skills/rite-spec/reference/state-workspace.md": 9393,
     "pack/.claude/skills/rite-spec/SKILL.md": 13382,
     "pack/.claude/skills/rite-status/SKILL.md": 3672,
     "pack/.claude/skills/rite-temper/reference/anti-patterns.md": 2882,
