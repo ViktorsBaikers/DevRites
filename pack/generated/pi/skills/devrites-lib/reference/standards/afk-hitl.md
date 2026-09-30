@@ -86,8 +86,8 @@ counter is the effective remaining budget even when the read-only sentinel omits
 ### Sequence continuation (`continue_sequence`, `max_workspaces`)
 
 `continue_sequence: true` lets one armed run open the next **recorded** continuation
-after a `Seal GO` instead of stopping. Absent means `1` — the current workspace only;
-an existing sentinel never receives the default implicitly. `max_workspaces` is the
+after a `Seal GO` instead of stopping. Under `/rite-autocomplete`, absent means on, even
+in an existing sentinel; `false` opts out. `max_workspaces` (default 5) is the
 sequence budget (nonnegative decimal, fail closed): spend one when a new workspace is
 opened, never when resuming the current one. `max_slices` stays **per workspace** —
 each new workspace's `state.md` seeds its own `afk_slices_remaining`.

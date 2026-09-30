@@ -15,7 +15,7 @@ routine phases. Acceptance-preserving Reslice authority is
 ```yaml
 allow_gates: [advisory, validating]
 # max_slices / max_agents / max_minutes / max_review_queue omitted: unlimited
-# continue_sequence: true          # opt-in: chain recorded continuations after Seal GO
+# continue_sequence: false         # opt out; default chains after Seal GO
 # max_workspaces: 5                # sequence budget when chaining
 # max_parallel: 10                 # default cap when this invocation omits `--parallel N`; `--parallel N` wins and rewrites only this field
 # max_tokens: <N>
@@ -85,7 +85,7 @@ floor; `--update` never excuses an unreconciled regression.
 
 ## Sequence continuation
 
-With `continue_sequence: true` and sequence budget remaining
+Unless `continue_sequence: false`, while sequence budget remains
 ([sentinel](../../devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces)),
 step 10 does not end the run: leave the sealed workspace unshipped with its
 `Next step: $rite-ship`, then invoke the next recorded continuation

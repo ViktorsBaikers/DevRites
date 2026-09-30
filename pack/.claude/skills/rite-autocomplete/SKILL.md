@@ -121,7 +121,7 @@ executable controller/harness/bundle bytes or a missing writer, read
    a user handoff. Technical exhaustion records terminal
    `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
 6. **Seal boundary.** Without a ship flag, stop at Seal GO with `/rite-ship` —
-   unless `continue_sequence` is armed and sequence budget remains, in which case
+   unless `continue_sequence: false` or sequence budget is spent; otherwise
    leave the sealed workspace unshipped and open the next recorded continuation
    ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation));
    report the sequence position on every stop.
