@@ -27,3 +27,43 @@ reason = "Bundled in npm@11.20.0/12.1.0 via socks-proxy-agent; release job uses 
 id = "GHSA-3wwx-pv8p-q78v"
 ignoreUntil = 2026-10-29
 reason = "Bundled in npm@11.20.0/12.1.0 via node-gyp; release job opens no WebSocket. Remove once npm bundles undici@6.28.1+."
+
+# 2026-09-30: new advisories against the same bundled tree. npm@11.20.0 and
+# npm@12.1.0 bundle brace-expansion@5.0.9, ip-address@10.5.0 and undici@6.28.0.
+# Only GHSA-rfgv-xxqx-mfg5 is a blocking npm audit finding, so only it is
+# mirrored in scripts/npm-audit-exceptions.json (its checker rejects
+# exceptions for advisories npm audit does not block on). Owner: release-maintainers.
+[[IgnoredVulns]]
+id = "GHSA-6j4f-fj2g-mc7p"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via minimatch; release job expands no untrusted brace patterns. Remove once npm bundles brace-expansion@5.0.12+."
+
+[[IgnoredVulns]]
+id = "GHSA-q2hr-2g5m-vwhr"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via minimatch; release job expands no untrusted brace patterns. Remove once npm bundles brace-expansion@5.0.12+."
+
+[[IgnoredVulns]]
+id = "GHSA-qhr7-859c-m2p7"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via minimatch; release job expands no untrusted brace patterns. Remove once npm bundles brace-expansion@5.0.12+."
+
+[[IgnoredVulns]]
+id = "GHSA-h3mg-xc3c-68pw"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via socks-proxy-agent; release job uses no SOCKS proxy. Remove once npm bundles ip-address@10.7.1+."
+
+[[IgnoredVulns]]
+id = "GHSA-j6r3-76f7-8jcv"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via socks-proxy-agent; release job does no subnet allowlist checks. Remove once npm bundles ip-address@10.7.1+."
+
+[[IgnoredVulns]]
+id = "GHSA-r53p-7pc4-xj5r"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via node-gyp; release job uses no undici retry interceptor. Remove once npm bundles undici@6.28.1+."
+
+[[IgnoredVulns]]
+id = "GHSA-rfgv-xxqx-mfg5"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0/12.1.0 via node-gyp; release job opens no WebSocket. Remove once npm bundles undici@6.28.1+."

@@ -34,5 +34,17 @@
     "owner": "release-maintainers",
     "reason": "npm@11.20.0 (the @semantic-release/npm override, latest 11.x) and npm@12.1.0 both bundle undici@6.28.0 via node-gyp, and root overrides cannot repair npm's bundled tree. The release job only authenticates and publishes; it opens no WebSocket connections. Remove once npm bundles undici@6.28.1 or newer.",
     "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-rfgv-xxqx-mfg5",
+    "package": "undici",
+    "range": ">=6.7.0 <6.28.1",
+    "nodes": [
+      "node_modules/npm/node_modules/undici"
+    ],
+    "source": "https://github.com/advisories/GHSA-rfgv-xxqx-mfg5",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override, latest 11.x) and npm@12.1.0 both bundle undici@6.28.0 via node-gyp, and root overrides cannot repair npm's bundled tree. The release job only authenticates and publishes; it opens no WebSocket connections. Remove once npm bundles undici@6.28.1 or newer.",
+    "expires": "2026-10-29"
   }
 ]
