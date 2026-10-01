@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.14.3](https://github.com/ViktorsBaikers/DevRites/compare/v5.14.2...v5.14.3) (2026-10-01)
+
+### Fixed
+
+* **skills:** stop treating read-only dispatch failures as one-shot ([#93](https://github.com/ViktorsBaikers/DevRites/issues/93)) ([836a002](https://github.com/ViktorsBaikers/DevRites/commit/836a0020ffdd70f01380990648b853df32a4c0e0))
+
 ## [5.14.2](https://github.com/ViktorsBaikers/DevRites/compare/v5.14.1...v5.14.2) (2026-09-30)
 
 ### Fixed
