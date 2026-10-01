@@ -46,5 +46,65 @@
     "owner": "release-maintainers",
     "reason": "npm@11.20.0 (the @semantic-release/npm override, latest 11.x) and npm@12.1.0 both bundle undici@6.28.0 via node-gyp, and root overrides cannot repair npm's bundled tree. The release job only authenticates and publishes; it opens no WebSocket connections. Remove once npm bundles undici@6.28.1 or newer.",
     "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-q2hr-2g5m-vwhr",
+    "package": "brace-expansion",
+    "range": ">=4.0.0 <5.0.12",
+    "nodes": [
+      "node_modules/npm/node_modules/brace-expansion"
+    ],
+    "source": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override) and the latest npm@11.21.0 and npm@12.2.0 all bundle brace-expansion@5.0.9 via minimatch, and root overrides cannot repair npm's bundled tree. The release job only expands repository-controlled package file patterns, never untrusted brace input. Remove once npm bundles brace-expansion@5.0.12 or newer.",
+    "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-qhr7-859c-m2p7",
+    "package": "brace-expansion",
+    "range": ">=4.0.0 <5.0.11",
+    "nodes": [
+      "node_modules/npm/node_modules/brace-expansion"
+    ],
+    "source": "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override) and the latest npm@11.21.0 and npm@12.2.0 all bundle brace-expansion@5.0.9 via minimatch, and root overrides cannot repair npm's bundled tree. The release job only expands repository-controlled package file patterns, never untrusted brace input. Remove once npm bundles brace-expansion@5.0.12 or newer.",
+    "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-6j4f-fj2g-mc7p",
+    "package": "brace-expansion",
+    "range": ">=4.0.0 <5.0.10",
+    "nodes": [
+      "node_modules/npm/node_modules/brace-expansion"
+    ],
+    "source": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override) and the latest npm@11.21.0 and npm@12.2.0 all bundle brace-expansion@5.0.9 via minimatch, and root overrides cannot repair npm's bundled tree. The release job only expands repository-controlled package file patterns, never untrusted brace input. Remove once npm bundles brace-expansion@5.0.12 or newer.",
+    "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-j6r3-76f7-8jcv",
+    "package": "ip-address",
+    "range": "<=10.7.0",
+    "nodes": [
+      "node_modules/npm/node_modules/ip-address"
+    ],
+    "source": "https://github.com/advisories/GHSA-j6r3-76f7-8jcv",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override) and the latest npm@11.21.0 and npm@12.2.0 all bundle ip-address@10.5.0 via socks-proxy-agent, and root overrides cannot repair npm's bundled tree. The release job does not configure a SOCKS proxy or classify untrusted addresses. Remove once npm bundles ip-address@10.7.1 or newer.",
+    "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-h3mg-xc3c-68pw",
+    "package": "ip-address",
+    "range": "<=10.7.0",
+    "nodes": [
+      "node_modules/npm/node_modules/ip-address"
+    ],
+    "source": "https://github.com/advisories/GHSA-h3mg-xc3c-68pw",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override) and the latest npm@11.21.0 and npm@12.2.0 all bundle ip-address@10.5.0 via socks-proxy-agent, and root overrides cannot repair npm's bundled tree. The release job does not configure a SOCKS proxy or classify untrusted addresses. Remove once npm bundles ip-address@10.7.1 or newer.",
+    "expires": "2026-10-29"
   }
 ]
