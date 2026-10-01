@@ -132,5 +132,31 @@ for f in "$TMP_GEN_DIR/out-reviewer.md" "$TMP_GEN_DIR/out-proof.md"; do
 done
 [ "$readonly_ok" -eq 1 ] && ok "read-only generated agents stay read-only"
 
+gen_pi_agents_bridge "$TMP_GEN_DIR/AGENTS.md"
+
+grep -qF 'An asynchronous launch receipt is not a reviewer result or completion.' "$TMP_GEN_DIR/AGENTS.md" &&
+  ok "bridge distinguishes launch receipts from reviewer results" ||
+  no "bridge distinguishes launch receipts from reviewer results"
+
+grep -qF 'Keep the returned native run/workflow handle and use the public management/status/completion API exposed by the installed tool schema to wait for and collect its terminal result.' "$TMP_GEN_DIR/AGENTS.md" &&
+  ok "bridge collects results through the installed public API" ||
+  no "bridge collects results through the installed public API"
+
+grep -qF 'Reconcile that result before `devrites-engine dispatch ... return`; never re-dispatch to retrieve output.' "$TMP_GEN_DIR/AGENTS.md" &&
+  ok "bridge reconciles terminal results before engine return without redispatch" ||
+  no "bridge reconciles terminal results before engine return without redispatch"
+
+grep -qF 'Host configuration may force asynchronous execution even with `async: false`.' "$TMP_GEN_DIR/AGENTS.md" &&
+  ok "bridge does not assume async false guarantees foreground execution" ||
+  no "bridge does not assume async false guarantees foreground execution"
+
+grep -qF 'Routine native result collection uses the exposed public tool; it does not require a bespoke workflow capture helper, private transcripts, or source excavation.' "$TMP_GEN_DIR/AGENTS.md" &&
+  ok "bridge avoids bespoke capture requirements for public results" ||
+  no "bridge avoids bespoke capture requirements for public results"
+
+grep -qF 'Preserve confidentiality and any one-shot limits. Failed, malformed, or unavailable terminal results remain `gap`, never a passed review.' "$TMP_GEN_DIR/AGENTS.md" &&
+  ok "bridge preserves privacy, one-shot limits, and failure admission" ||
+  no "bridge preserves privacy, one-shot limits, and failure admission"
+
 [ "$fail" -eq 0 ] && echo "pi-generator-test: PASS" || echo "pi-generator-test: FAIL"
 exit "$fail"

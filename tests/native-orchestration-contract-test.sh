@@ -650,6 +650,22 @@ for path, retired in retired_build_phrases.items():
     for phrase in retired:
         if phrase in text:
             raise SystemExit(f"{path}: retired unconditional Build wording returned: {phrase!r}")
+
+# A failed read-only dispatch is a retryable transport gap, never a consumptive action.
+agents_text = " ".join(agents_doc.read_text().split())
+for phrase in (
+    "**Transport failure is not a finding.**",
+    "Re-dispatch one fresh child with the same brief and read-set — never a resume of the failed child.",
+    "A second transport failure of the same role is a host defect: stop for HITL",
+):
+    if phrase not in agents_text:
+        raise SystemExit(f"{agents_doc}: missing transport-failure retry rule: {phrase!r}")
+one_shot = canonical / "skills/devrites-lib/reference/standards/one-shot-actions.md"
+one_shot_text = " ".join(one_shot.read_text().split())
+if "needs fresh human authorization" in one_shot_text:
+    raise SystemExit(f"{one_shot}: approval limits must not define a consumptive action")
+if "Read-only `devrites-*` dispatches (scout, drafter, reviewers, proof runner) and local offline checks are never consumptive." not in one_shot_text:
+    raise SystemExit(f"{one_shot}: missing read-only dispatch exclusion")
 PY
 
 echo "native orchestration contract: PASS"
