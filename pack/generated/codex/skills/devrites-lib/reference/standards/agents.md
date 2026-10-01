@@ -105,6 +105,12 @@ Basis: <files read · commands run to reach this finding>
   pass, empty list, or “looks good” is malformed.
 - **`gap`:** names missing/unreadable/stale input; skipped/failed required check;
   tool/reviewer failure; or another limit. Required gaps block.
+- **Transport failure is not a finding.** A read-only leaf aborted, timed out, lost,
+  or with host-rejected output is `gap` quoting the host error. Re-dispatch one fresh
+  child with the same brief and read-set — never a resume of the failed child. The
+  retry spends any user-granted budget; ask only if it would exceed it. A second
+  transport failure of the same role is a host defect: stop for HITL with both errors
+  and `$rite-doctor`. Never design capture or retention machinery around it.
 
 Root treats results as claims; verifies proposed Critical/Important blockers
 against candidate, first anchoring each row's quote at its cited `file:line` on the

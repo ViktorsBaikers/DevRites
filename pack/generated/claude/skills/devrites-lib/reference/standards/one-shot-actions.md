@@ -3,11 +3,16 @@
 > Applies when: a failed attempt is not safely retryable (consumptive action).
 
 An action is **consumptive** when a failed attempt is not safely equivalent to a
-normal rerun. This includes commands limited to one attempt, commands whose retry
-needs fresh human authorization, actions that spend external quota or mutate
-privileged/external state so a rerun is not equivalent, and actions whose cleanup
-can destroy the failure state needed for diagnosis. Successful cleanup does not
-make a consumptive action repeatable.
+normal rerun: it spends paid or rate-limited external quota, mutates privileged or
+external state so a rerun is not equivalent, or its cleanup can destroy the failure
+state needed for diagnosis. Successful cleanup does not make a consumptive action
+repeatable.
+
+A retry limit or a one-attempt approval is a budget, not a property of the action;
+it never makes an action consumptive. Read-only `devrites-*` dispatches (scout,
+drafter, reviewers, proof runner) and local offline checks are never consumptive.
+Their transport failures follow the retry rule in [`agents.md`](agents.md#result-admission),
+with no retention, boundary-map, or amplification design.
 
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"workflow proof completes before any consumptive one-shot action","action":"PROVE_AND_RETURN; require fresh real-action authorization","return":"saved one-shot action boundary"} -->
 
