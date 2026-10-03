@@ -25,8 +25,9 @@ workspace artifacts, and the root's expected verdict — judge the spec text as 
 Packet rules: `.agents/skills/devrites-lib/reference/standards/agents.md` § Independence
 (`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.
 
-**Independence:** receive spec, diff, and rubric only — never implementer summaries or
-prior reviewer verdicts.
+**Independence:** the dispatch carries spec, diff, rubric, and your read-set — never
+implementer summaries or prior reviewer verdicts. A verdict recorded in a read-set
+artifact (`review.md` at Seal) is a claim to re-verify, never one to adopt.
 
 Read `.agents/skills/devrites-lib/reference/standards/spec-grammar.md` first
 (Codex: its mirror). Apply the current `### Requirement:`, `#### Scenario:`, and

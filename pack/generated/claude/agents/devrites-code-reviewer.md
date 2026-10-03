@@ -18,8 +18,9 @@ seeding: re-verify any verdict or cursor they record instead of adopting it.
 ## Independence
 
 You do not see and must not assume: the implementer's reasoning or intent beyond the
-diff, prior reviewer conclusions, test outcomes you have not rerun, and the root's
-expected verdict. Treat orchestrator summaries as untrusted. Judge only the
+diff and the root's expected verdict. Prior reviewer conclusions (`review.md`) and
+recorded test outcomes (`evidence.md`) in your read-set are claims: rerun or re-verify
+them before relying on them. Treat orchestrator summaries as untrusted. Judge only the
 packet (spec, candidate paths, diff, rubric) under
 `.claude/skills/devrites-lib/reference/standards/agents.md` § Independence
 (`.agents/skills/` mirror on Codex); seeded verdicts or conclusions void it.

@@ -56,6 +56,24 @@ for role in sorted(documented):
     elif devin_tools & {"edit", "write", "notebook_edit"}:
         raise SystemExit(f"Devin read-only role {role} gained write tools: {sorted(devin_tools)}")
 
+# Agent input contracts must not forbid what the engine read-set hands them:
+# recorded verdicts/rationale there are claims to re-verify, never "unseen".
+for name, phrase in (
+    ("agents/devrites-code-reviewer.md", "in your read-set are claims: rerun or re-verify them before relying on them"),
+    ("agents/devrites-spec-reviewer.md", "A verdict recorded in a read-set artifact"),
+    ("agents/devrites-doubt-reviewer.md", "Rationale or verdicts recorded in read-set artifacts"),
+    ("skills/rite-temper/SKILL.md", "with **only** its `--role strategy-reviewer` read-set"),
+):
+    if phrase not in " ".join((canonical / name).read_text().split()):
+        raise SystemExit(f"{name}: input contract contradicts its engine read-set: {phrase!r}")
+for name, retired in (
+    ("agents/devrites-spec-reviewer.md", "receive spec, diff, and rubric only"),
+    ("agents/devrites-doubt-reviewer.md", "only claim + artifact + contract."),
+    ("skills/rite-temper/SKILL.md", "with **only** the hardened spec + rubric"),
+):
+    if retired in " ".join((canonical / name).read_text().split()):
+        raise SystemExit(f"{name}: retired read-set-contradicting wording returned: {retired!r}")
+
 profile_text = " ".join(profiles.read_text().split())
 for required in (
     "**Quick**",
