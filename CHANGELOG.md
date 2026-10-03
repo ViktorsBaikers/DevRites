@@ -2,6 +2,15 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [5.14.4](https://github.com/ViktorsBaikers/DevRites/compare/v5.14.3...v5.14.4) (2026-10-03)
+
+### Fixed
+
+* **agents:** align reviewer input contracts with engine read-sets ([#97](https://github.com/ViktorsBaikers/DevRites/issues/97)) ([22beb4b](https://github.com/ViktorsBaikers/DevRites/commit/22beb4b24d37625d49caa6cb3c93803777fcc31e))
+* **no-release:** default sequence continuation on under /rite-autocomplete ([#92](https://github.com/ViktorsBaikers/DevRites/issues/92)) ([52bb178](https://github.com/ViktorsBaikers/DevRites/commit/52bb1783fe14f07f5217cdbad6ea8156a2a65675))
+* **no-release:** scope seeding to dispatch instructions, not read-sets ([#96](https://github.com/ViktorsBaikers/DevRites/issues/96)) ([e9d2fbd](https://github.com/ViktorsBaikers/DevRites/commit/e9d2fbd30cb19f40854678525f6ed596755326b7))
+* **no-release:** treat read-set history as reviewer input, not seeding ([#94](https://github.com/ViktorsBaikers/DevRites/issues/94)) ([56bd765](https://github.com/ViktorsBaikers/DevRites/commit/56bd765afc19a1037b332d8b5cf308d3c1d3e130))
+
 ## [5.14.3](https://github.com/ViktorsBaikers/DevRites/compare/v5.14.2...v5.14.3) (2026-10-01)
 
 ### Fixed
