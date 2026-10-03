@@ -7,6 +7,7 @@ run_engine=true
 run_pack_evals=true
 run_full=true
 run_tests=true
+run_deps=true
 
 # Docs-only PRs skip validate and the shell suite (job-level `if:` still
 # reports success for required checks). Deny-by-default allowlist: any path
@@ -44,6 +45,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
   if [[ "$listed" == true ]]; then
     engine=false
     pack=false
+    deps=false
     for path in "${changed[@]}"; do
       [[ -z "$path" ]] && continue
       case "$path" in
@@ -52,12 +54,22 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
         pack/*|evals/*|scripts/validate.sh|scripts/run-evals.sh|scripts/run-outcome-evals.sh|scripts/run-behavioral-evals.sh|scripts/check-*)
           pack=true ;;
       esac
+      # Dependency advisory gates (npm audit + OSV) judge the PR's own
+      # dependency inputs; scheduled deps-scan.yml catches newly published
+      # advisories against unchanged ones.
+      case "$path" in
+        package.json|package-lock.json|engine/go.mod|engine/go.sum|osv-scanner.toml|scripts/npm-audit-exceptions.json|scripts/check-npm-audit.mjs|scripts/ci-install-validate-tools.sh)
+          deps=true ;;
+      esac
     done
     if [[ "$engine" == false ]]; then
       run_engine=false
     fi
     if [[ "$pack" == false ]]; then
       run_pack_evals=false
+    fi
+    if [[ "$deps" == false ]]; then
+      run_deps=false
     fi
     if [[ "${#changed[@]}" -gt 0 ]]; then
       docs_only=true
@@ -86,9 +98,11 @@ if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   echo "run_pack_evals=${run_pack_evals}" >>"$GITHUB_OUTPUT"
   echo "run_full=${run_full}" >>"$GITHUB_OUTPUT"
   echo "run_tests=${run_tests}" >>"$GITHUB_OUTPUT"
+  echo "run_deps=${run_deps}" >>"$GITHUB_OUTPUT"
 else
   echo "run_engine=${run_engine}"
   echo "run_pack_evals=${run_pack_evals}"
   echo "run_full=${run_full}"
   echo "run_tests=${run_tests}"
+  echo "run_deps=${run_deps}"
 fi

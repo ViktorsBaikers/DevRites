@@ -1,0 +1,47 @@
+name: deps-scan
+
+# Daily full dependency advisory scan. PR CI runs npm audit and OSV only when a
+# PR changes dependency inputs, so this job surfaces advisories published
+# against unchanged dependencies. A red run is the cue for a dedicated
+# chore(deps) fix or exception PR; Dependabot covers patchable advisories.
+
+on:
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: npm audit + OSV.dev
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+
+      - name: Install osv-scanner
+        run: bash scripts/ci-install-validate-tools.sh
+
+      - name: Audit npm dependency advisories
+        run: npm run audit
+
+      - name: OSV.dev dependency scan (lockfile + engine module)
+        # Report both data sources even when npm audit already failed.
+        if: success() || failure()
+        run: osv-scanner scan --config osv-scanner.toml --lockfile package-lock.json --lockfile engine/go.mod

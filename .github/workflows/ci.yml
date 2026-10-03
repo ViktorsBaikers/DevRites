@@ -31,6 +31,7 @@ jobs:
       run_pack_evals: ${{ steps.scope.outputs.run_pack_evals }}
       run_full: ${{ steps.scope.outputs.run_full }}
       run_tests: ${{ steps.scope.outputs.run_tests }}
+      run_deps: ${{ steps.scope.outputs.run_deps }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -110,13 +111,19 @@ jobs:
       - name: "Supply-chain IOC scan (npm lockfile: BLOCKING)"
         run: python3 scripts/scan-supply-chain-iocs.py package-lock.json
 
+      # Dependency advisory gates run on PRs only when the PR changes
+      # dependency inputs (run_deps), so a newly published advisory never fails
+      # an unrelated PR. Push/merge_group runs and scheduled deps-scan.yml
+      # still scan the full graph.
       - name: Audit npm dependency advisories (BLOCKING)
+        if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_deps == 'true'
         run: npm run audit
 
       # OSV.dev data source: broader than the npm advisory DB npm audit uses,
       # and covers the engine module. Allowlist lives in osv-scanner.toml and
       # mirrors scripts/npm-audit-exceptions.json policy.
       - name: "OSV.dev dependency scan (lockfile + engine module: BLOCKING)"
+        if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_deps == 'true'
         run: osv-scanner scan --config osv-scanner.toml --lockfile package-lock.json --lockfile engine/go.mod
 
       - name: Validate trigger eval schemas
