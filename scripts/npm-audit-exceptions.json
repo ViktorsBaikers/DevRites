@@ -106,5 +106,29 @@
     "owner": "release-maintainers",
     "reason": "npm@11.20.0 (the @semantic-release/npm override) and the latest npm@11.21.0 and npm@12.2.0 all bundle ip-address@10.5.0 via socks-proxy-agent, and root overrides cannot repair npm's bundled tree. The release job does not configure a SOCKS proxy or classify untrusted addresses. Remove once npm bundles ip-address@10.7.1 or newer.",
     "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-vfj7-8cjw-p6xm",
+    "package": "braces",
+    "range": "<=3.0.3",
+    "nodes": [
+      "node_modules/braces"
+    ],
+    "source": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+    "owner": "release-maintainers",
+    "reason": "braces@3.0.3 is the latest release and no patched version exists; it reaches the tree through micromatch in @semantic-release/commit-analyzer. The release job only matches repository-controlled release-rule patterns against commit fields, so braces never parses untrusted patterns. Remove once a patched braces release exists.",
+    "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-ch52-4w7c-c8xp",
+    "package": "http-cache-semantics",
+    "range": "<=4.2.0",
+    "nodes": [
+      "node_modules/npm/node_modules/http-cache-semantics"
+    ],
+    "source": "https://github.com/advisories/GHSA-ch52-4w7c-c8xp",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override) bundles http-cache-semantics@4.2.0, the latest release, via make-fetch-happen, and root overrides cannot repair npm's bundled tree. The release job runs one identity against an ephemeral CI cache, so no cross-user cached response exists to disclose. Remove once a patched http-cache-semantics release is bundled.",
+    "expires": "2026-10-29"
   }
 ]

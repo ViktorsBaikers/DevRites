@@ -67,3 +67,17 @@ reason = "Bundled in npm@11.20.0/12.1.0 via node-gyp; release job uses no undici
 id = "GHSA-rfgv-xxqx-mfg5"
 ignoreUntil = 2026-10-29
 reason = "Bundled in npm@11.20.0/12.1.0 via node-gyp; release job opens no WebSocket. Remove once npm bundles undici@6.28.1+."
+
+# 2026-10-03: new advisories with no patched release. braces@3.0.3 (via
+# micromatch in @semantic-release/commit-analyzer) and http-cache-semantics@4.2.0
+# (bundled in npm@11.20.0 via make-fetch-happen) are the latest versions.
+# Owner: release-maintainers. Mirrors scripts/npm-audit-exceptions.json.
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2026-10-29
+reason = "braces@3.0.3 via micromatch in commit-analyzer; release job only expands repository-controlled release-rule patterns. Remove once a patched braces release exists."
+
+[[IgnoredVulns]]
+id = "GHSA-ch52-4w7c-c8xp"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm@11.20.0 via make-fetch-happen; release job runs one identity on an ephemeral cache. Remove once npm bundles a patched http-cache-semantics."
