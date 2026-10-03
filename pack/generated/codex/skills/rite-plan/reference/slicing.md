@@ -106,8 +106,8 @@ Make each continuation cheap and drift-free:
 - Phases chain automatically only **inside** one workspace (`$rite-autocomplete`
   drives spec → clarify → temper → define → vet → build × slices → prove → polish →
   review → seal; plain HITL chains plan↔vet inline and stops at each other boundary).
-  Next continuation is a new invocation by default. Same-run chaining is
-  `continue_sequence: true` (Deferred-ship).
+  HITL: next continuation is a new invocation. Autocomplete chains it
+  (Deferred-ship) unless `continue_sequence: false`.
 
 ### Release milestone (full-picture gate)
 
@@ -136,7 +136,7 @@ product:
   then carries the full acceptance burden, and that cost is the named trade-off.
 - The capability ledger (`.devrites/specs/<capability>/spec.md`) accumulates the
   product picture across milestones; Polish folds each milestone's deltas.
-- **Deferred-ship sequence** (`.devrites/AFK` `continue_sequence: true`, `max_workspaces: N`):
+- **Deferred-ship sequence** (autocomplete default; `.devrites/AFK` `max_workspaces: N`):
   milestones are sealed but not shipped, and the armed run opens the next recorded
   continuation automatically; local `WIP(<slug>):` checkpoints still land with
   human summaries (never a slice id),
