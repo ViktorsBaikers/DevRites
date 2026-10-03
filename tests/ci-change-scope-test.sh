@@ -58,6 +58,7 @@ expect $'package-lock.json' run_deps true
 expect $'engine/go.sum' run_deps true
 expect $'osv-scanner.toml' run_deps true
 expect $'scripts/npm-audit-exceptions.json' run_deps true
+expect $'.github/workflows/ci.yml' run_deps false
 
 # Uncomputable PR file list keeps the full matrix. Missing merge-base used
 # to look like "no engine files" and skip gosec until after merge to main.

@@ -58,7 +58,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
       # dependency inputs; scheduled deps-scan.yml catches newly published
       # advisories against unchanged ones.
       case "$path" in
-        package.json|package-lock.json|engine/go.mod|engine/go.sum|osv-scanner.toml|scripts/npm-audit-exceptions.json|scripts/check-npm-audit.mjs|scripts/ci-install-validate-tools.sh|.github/workflows/ci.yml|.github/workflows/deps-scan.yml)
+        package.json|package-lock.json|engine/go.mod|engine/go.sum|osv-scanner.toml|scripts/npm-audit-exceptions.json|scripts/check-npm-audit.mjs|scripts/ci-install-validate-tools.sh)
           deps=true ;;
       esac
     done
