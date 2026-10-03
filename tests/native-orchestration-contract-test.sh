@@ -666,6 +666,15 @@ if "needs fresh human authorization" in one_shot_text:
     raise SystemExit(f"{one_shot}: approval limits must not define a consumptive action")
 if "Read-only `devrites-*` dispatches (scout, drafter, reviewers, proof runner) and local offline checks are never consumptive." not in one_shot_text:
     raise SystemExit(f"{one_shot}: missing read-only dispatch exclusion")
+# Seeding means the dispatch instructions, not the engine-generated read-set.
+admission = canonical / "agents/_shared/result-admission.md"
+admission_text = " ".join(admission.read_text().split())
+for phrase in (
+    "in the dispatch instructions voids it",
+    "Workspace artifacts in the engine-generated read-set are inputs, not seeding",
+):
+    if phrase not in admission_text:
+        raise SystemExit(f"{admission}: missing read-set seeding boundary: {phrase!r}")
 PY
 
 echo "native orchestration contract: PASS"
