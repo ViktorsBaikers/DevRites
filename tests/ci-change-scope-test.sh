@@ -49,6 +49,16 @@ expect $'pack/.claude/skills/rite-build/SKILL.md' run_engine false
 expect $'.github/workflows/ci.yml' run_tests true
 expect $'engine/main.go\n.github/workflows/ci.yml' run_tests true
 
+# Dependency advisory gates run only when a PR touches dependency inputs, so a
+# newly published advisory never fails an unrelated PR (deps-scan.yml covers it).
+printf '%s\n' "$out" | grep -qx 'run_deps=true' && ok "push keeps run_deps=true" || no "push should run dependency gates"
+expect $'pack/.claude/skills/rite-build/SKILL.md' run_deps false
+expect $'engine/main.go' run_deps false
+expect $'package-lock.json' run_deps true
+expect $'engine/go.sum' run_deps true
+expect $'osv-scanner.toml' run_deps true
+expect $'scripts/npm-audit-exceptions.json' run_deps true
+
 # Uncomputable PR file list keeps the full matrix. Missing merge-base used
 # to look like "no engine files" and skip gosec until after merge to main.
 : >"$OUTPUT"
@@ -61,6 +71,10 @@ printf '%s\n' "$out" | grep -qx 'run_engine=true' && ok "unknown PR file list ke
 }
 printf '%s\n' "$out" | grep -qx 'run_full=true' && ok "unknown PR file list keeps run_full=true" || {
   no "unknown PR file list should keep run_full=true; got:"
+  printf '%s\n' "$out"
+}
+printf '%s\n' "$out" | grep -qx 'run_deps=true' && ok "unknown PR file list keeps run_deps=true" || {
+  no "unknown PR file list should keep run_deps=true; got:"
   printf '%s\n' "$out"
 }
 

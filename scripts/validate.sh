@@ -399,7 +399,9 @@ fi
 # ---- 16b. osv.dev dependency scan ----------------------------------------
 # OSV.dev data source (broader than the npm advisory DB npm audit uses) over
 # the npm lockfile and the engine module. Allowlist: osv-scanner.toml, which
-# mirrors scripts/npm-audit-exceptions.json policy.
+# mirrors scripts/npm-audit-exceptions.json policy. Advisory-only here: a newly
+# published advisory is not caused by the local change. CI's OSV step (gated on
+# dependency changes) and scheduled deps-scan.yml enforce it.
 section "osv dependency scan (lockfile + engine module)"
 if command -v osv-scanner >/dev/null 2>&1; then
   if osv-scanner scan --config "$ROOT/osv-scanner.toml" \
@@ -408,7 +410,7 @@ if command -v osv-scanner >/dev/null 2>&1; then
     good "osv dependency scan passed"
   else
     sed -n '1,40p' ${DR_SCRATCH}/dr_osv
-    bad "osv dependency scan failed"
+    echo "warn: osv dependency scan found unexcepted advisories (advisory; CI enforces on dependency changes)"
   fi
 else
   echo "skip: osv-scanner not installed locally (CI installs and enforces)"

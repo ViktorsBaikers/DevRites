@@ -298,6 +298,24 @@ else
   echo "FAIL [engine-fuzz.yml missing persist-credentials: false]"; fail=1
 fi
 
+# Daily dependency scan stays off PRs; PR CI gates deps via run_deps.
+DEPS="$HERE/../.github/workflows/deps-scan.yml"
+if grep -q '^[[:space:]]*pull_request:' "$DEPS"; then
+  echo "FAIL [deps-scan.yml must not run on pull_request]"; fail=1
+else
+  echo "ok   [deps-scan.yml is schedule/dispatch only]"
+fi
+if grep -q 'persist-credentials: false' "$DEPS"; then
+  echo "ok   [deps-scan.yml persist-credentials false]"
+else
+  echo "FAIL [deps-scan.yml missing persist-credentials: false]"; fail=1
+fi
+if [ "$(grep -c "needs.detect-changes.outputs.run_deps == 'true'" "$HERE/../.github/workflows/ci.yml")" -eq 2 ]; then
+  echo "ok   [ci.yml gates npm audit + OSV on run_deps]"
+else
+  echo "FAIL [ci.yml must gate npm audit + OSV on run_deps]"; fail=1
+fi
+
 # CodeQL covers installer/scripts JS without a compiled build.
 CODEQL="$HERE/../.github/workflows/codeql.yml"
 if grep -q 'javascript-typescript' "$CODEQL" && grep -q 'build-mode: none' "$CODEQL"; then

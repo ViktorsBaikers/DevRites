@@ -110,6 +110,10 @@ semantic-release derives the next section from the accepted commits on `main`.
 owner-bound, justified, sourced, and near-term expiring; stale, broadened,
 unmatched, expired, or inside-the-7-day-refresh-horizon entries fail
 validation. `osv-scanner.toml` `ignoreUntil` dates must match those expiries.
+Pull requests run both dependency gates only when they change dependency inputs
+(lockfiles, `engine/go.mod`/`go.sum`, the allowlists, or the gate scripts);
+pushes to `main` and the daily `deps-scan.yml` scan the full graph. A red
+scheduled scan is the cue for a dedicated `chore(deps)` fix or exception PR.
 Do not extend an expiry silently: refresh the ancestor (today, pin
 `@semantic-release/npm`'s bundled `npm` to `11.19.1` via `overrides`) or
 remove the exception.
