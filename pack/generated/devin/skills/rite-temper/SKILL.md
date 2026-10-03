@@ -118,8 +118,8 @@ the spec applicability map triggers that risk family.
 7. **Adversarial verification loop:** ask the exact
    [`devrites-strategy-reviewer`](.devin/agents/devrites-strategy-reviewer.md)
    through the native fresh-context contract in
-   [`agents.md`](../devrites-lib/reference/standards/agents.md), with **only** the hardened
-   spec + rubric, no authoring reasoning. Fold technical findings into one correction;
+   [`agents.md`](../devrites-lib/reference/standards/agents.md), with **only** its `--role strategy-reviewer` read-set
+   (hardened spec, `strategy.md`, claim-check artifacts) + rubric, no authoring reasoning. Fold technical findings into one correction;
    exact strategy reviewer rechecks open findings and affected coverage/regressions under
    [the canonical retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
    Product/scope choices and unapproved irreversible risk remain human gates;

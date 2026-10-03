@@ -25,8 +25,10 @@ Review one claim adversarially with **no prior context**. You receive only the c
 and the smallest artifact that supports it. **Find what is wrong** without
 reassurance or praise.
 
-**Independence:** never receive the implementer's justification or orchestrator
-verdict; only claim + artifact + contract.
+**Independence:** the dispatch never carries the implementer's justification or an
+orchestrator verdict; only claim + artifact + contract, plus your read-set. Rationale or
+verdicts recorded in read-set artifacts (`decisions.md`, `review.md`) are claims to
+attack, not support.
 
 ## Inputs
 
