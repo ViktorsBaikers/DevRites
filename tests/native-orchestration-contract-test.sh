@@ -660,6 +660,14 @@ for phrase in (
 ):
     if phrase not in agents_text:
         raise SystemExit(f"{agents_doc}: missing transport-failure retry rule: {phrase!r}")
+# Verdicts recorded in role read-set artifacts are inputs, not packet seeding.
+for phrase in (
+    "are inputs, not seeding",
+    "a verdict they record is a historical claim the reviewer re-verifies",
+    "Never hand-edit installed read-sets",
+):
+    if phrase not in agents_text:
+        raise SystemExit(f"{agents_doc}: missing read-set independence rule: {phrase!r}")
 one_shot = canonical / "skills/devrites-lib/reference/standards/one-shot-actions.md"
 one_shot_text = " ".join(one_shot.read_text().split())
 if "needs fresh human authorization" in one_shot_text:
