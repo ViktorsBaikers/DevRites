@@ -130,6 +130,7 @@ None.
 | active_slice | none |
 | slice_mode | none |
 | risk | none |
+| spec_gate | <passed <iso>; marker sweep: <n> files, <k> hits, <d> discarded — absent until $rite-spec passes> |
 | next_action | <single command + reason, or terminal: none — technical recovery exhausted for an unchanged causal fingerprint> |
 | return_phase | <originating later phase; clarification or agent-owned technical backtracking only> |
 | return_next_action | <saved originating command> |

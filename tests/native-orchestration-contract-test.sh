@@ -477,6 +477,19 @@ for path, phrases in (
             raise SystemExit(f"semantic preservation contract missing {phrase!r} in {path}")
 if len(re.findall(r"(?m)^Capability impact:", spec_template.read_text())) != 1:
     raise SystemExit("spec template must contain exactly one capability-impact declaration")
+# spec.md is in every reviewer read-set: phase verdicts live in the state.md cursor,
+# never in the product contract, or reviewers reject the spec as seeded.
+spec_body = spec_template.read_text().split("```markdown", 1)[1].split("\n```", 1)[0]
+verdicts = re.findall(r"(?m)^(Status:|Spec gate|## Readiness gate)|spec_gate", spec_body)
+if verdicts:
+    raise SystemExit(f"spec.md template carries phase verdicts {verdicts!r}; record them in state.md")
+for name, phrase in (
+    ("skills/rite-spec/SKILL.md", "`state.md` `spec_gate`"),
+    ("skills/rite-spec/reference/state-workspace.md", "| spec_gate |"),
+    ("skills/devrites-lib/reference/standards/agents.md", "status, readiness-checklist, or gate lines"),
+):
+    if phrase not in " ".join((canonical / name).read_text().split()):
+        raise SystemExit(f"{name}: spec gate home contract missing {phrase!r}")
 
 plan_template = canonical / "skills/rite-define/reference/plan-template.md"
 plan_text = " ".join(plan_template.read_text().split())

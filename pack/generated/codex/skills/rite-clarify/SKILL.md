@@ -40,7 +40,7 @@ dispatch uses
 ## Workflow
 
 1. **Orient.** Read `.devrites/ACTIVE`, `state.md`, and `spec.md`. Require
-   `Spec gate: passed`; otherwise stop at `$rite-spec`. Apply the native cursor
+   `state.md` `spec_gate: passed` (legacy `Spec gate: passed` line accepted); otherwise stop at `$rite-spec`. Apply the native cursor
    protocol below before changing workspace artifacts.
 2. **Enumerate the topology.** From the spec, live code, contracts, references,
    and recorded decisions, list every material stakeholder/priority, invariant, actor,

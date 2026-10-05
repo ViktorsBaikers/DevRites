@@ -142,8 +142,8 @@ load a routed standard to discover required behavior, not to prescribe implement
    complete-block preservation rule.
    `tasks.md` deliberately does not exist yet; cross-artifact traceability starts in
    `/rite-define`. Any grammar or delta failure blocks. The interruption forecast must be resolved, owned, or a justified
-   action-time gate. Run the [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) marker sweep; a kept hit blocks. Then write
-   `Spec gate: passed <iso>` with its `marker sweep:` line.
+   action-time gate. Run the [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) marker sweep; a kept hit blocks. Then record
+   `passed <iso>; marker sweep: …` in the `state.md` `spec_gate` row, never in `spec.md`.
 6a. **Existing-spec delta.** For a pre-existing slug/workspace, compare old/new
    spec and questions, then show `Acceptance delta` (added/removed/reworded IDs)
    and `Open-question delta` (opened/resolved/reworded IDs), using `none` for

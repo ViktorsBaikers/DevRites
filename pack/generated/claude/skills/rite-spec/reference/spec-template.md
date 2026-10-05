@@ -6,12 +6,13 @@ topology in `architecture.md`/`flows.md`, coverage in `traceability.md`.
 Use `[NEEDS CLARIFICATION: <question>]` (blocking stops `/rite-clarify`); before readiness
 every surviving marker converts to a gated `q-YYYY-MM-DD-NNN` open question (released `Q-###` kept) ([`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md) §
 Unresolved-question markers — fail closed). Stable `REQ-001`/`AC-001` IDs; link, never
-duplicate, source artifacts; over-budget requires `Budget override: <reason>`.
+duplicate, source artifacts; over-budget requires `Budget override: <reason>`. `spec.md`
+is the product contract only: the phase verdict goes in the `state.md` `spec_gate` row,
+never in this file (every reviewer read-set includes `spec.md`).
 
 ```markdown
 # Spec: <Feature>
 Slug: <kebab-case>
-Status: Draft | Ready
 Created: <date>
 
 ## Problem
@@ -136,8 +137,11 @@ status routes Define/Vet/Build/Prove to the named standard without copying it he
 | Question ID | Gate | Question | Impact |
 | --- | --- | --- | --- |
 | q-YYYY-MM-DD-NNN | blocking | <question text, no marker> | AC-001 |
+```
 
 ## Readiness gate
+Run before stamping `spec_gate`; it is an authoring check, never written into `spec.md`.
+
 - [ ] No blocking clarification or open `blocking`/`escalating` question; REQ/AC IDs are valid and ACs independently provable.
 - [ ] `marker sweep:` recorded with zero kept hits (spec-grammar § Unresolved-question markers).
 - [ ] Every verbatim ask in `brief.md` `## Asks` maps to REQ/AC, a reasoned Non-goal, or a blocking question.
@@ -153,4 +157,3 @@ status routes Define/Vet/Build/Prove to the named standard without copying it he
 - [ ] AI has `ai-spec.md` and UI has `design-brief.md`; out-of-scope work states not applicable.
 - [ ] Non-goals/scope are explicit; capability impact is singular/specific and matches ledger deltas.
 - [ ] Architecture/flows/decisions are linked, not duplicated; Coverage seed names Clarify surfaces.
-```
