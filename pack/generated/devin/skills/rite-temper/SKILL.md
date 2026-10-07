@@ -49,7 +49,7 @@ the spec applicability map triggers that risk family.
 0. **Read `.devin/skills/devrites-lib/reference/standards/core.md`**, then
    resolve the active slug, require its `state.md`, and read the cursor directly.
    Then read the workspace: `spec.md`, `decision-coverage.md` (+ `decisions.md`,
-   `assumptions.md`, `design-brief.md` if UI), `state.md`. Require `Spec gate: passed`: else
+   `assumptions.md`, `design-brief.md` if UI), `state.md`. Require `state.md` `spec_gate: passed` (legacy `Spec gate:` accepted): else
    STOP → `/rite-spec`. Require `Decision coverage: CLEAR`: else STOP →
    `/rite-clarify`. If a plan already exists, scope changes route through `/rite-plan
    repair` (record in `drift.md`), not a blind spec edit.

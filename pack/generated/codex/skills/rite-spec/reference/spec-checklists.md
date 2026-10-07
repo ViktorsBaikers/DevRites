@@ -77,7 +77,7 @@ Each question checks one requirement-prose failure mode:
 The spec **Readiness gate** at the bottom of
 [`spec-template.md`](spec-template.md) requires every
 emitted `checklists/<domain>.md` to reach `Verdict: pass` (zero CRITICAL fails) before the gate
-passes. Minor fails are logged, not blocking. A single open CRITICAL keeps the spec `Status: Draft`.
+passes. Minor fails are logged, not blocking. A single open CRITICAL blocks `spec_gate: passed`.
 `$rite-define` reads the checklists at step 0 and **hard-blocks while any CRITICAL is
 unchecked**. A spec without checklists is not yet checked, so define stops and routes
 back here.
