@@ -1,4 +1,4 @@
-# `.devrites/` state schema (v3)
+# `.devrites/` state schema (v4)
 
 The engine reads workflow state from plain files under `.devrites/`. Those
 human-editable files remain authoritative; the engine has no database or

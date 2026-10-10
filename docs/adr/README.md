@@ -47,13 +47,13 @@ architecture; per-feature `decisions.md` files stay scoped to that feature.
 | ADR | Title | Status | Guard test |
 |-----|-------|--------|-----------|
 | [0001](0001-go-engine-as-control-plane.md) | Go engine as deterministic control plane | Accepted in part; all-state-transition/derivation scope superseded by 0024 | none |
-| [0002](0002-dual-host-harness.md) | Dual-host harness (Claude + Codex) | Accepted | `engine/tests/parity_*_test.go` |
+| [0002](0002-dual-host-harness.md) | Dual-host harness (Claude + Codex) | Accepted in part; the `internal/harness` adapter and `harness-matrix` mechanism no longer exist, and the two-host count is superseded by the five host packs under `pack/generated/` (claude, codex, omp, pi, devin) | historical |
 | [0003](0003-gate-model-hitl-pause.md) | Gates block as HITL pause, never crash | Accepted | `engine/tests/adr_0003_gate_exit_code_test.go` |
 | [0004](0004-state-schema-phases-sections.md) | Phase-relative section completeness | Accepted | `engine/tests/adr_0004_required_by_phase_test.go`, `engine/internal/state/state_test.go` |
 | [0005](0005-hooks-as-engine-subcommands.md) | Hooks are engine subcommands, not shell scripts | Accepted; active hook clause superseded by 0018 | historical |
 | [0006](0006-clock-seam-and-engine-ci-gates.md) | Clock seam + Go static-analysis CI gates | Accepted in part; next-qid seam/guard superseded by 0024, CI analyzer wiring superseded by 0032 | historical |
 | [0007](0007-canonical-live-workspace-filenames.md) | Canonical live workspace filenames | Accepted; unsupported alias/migration clauses superseded by 0022 | `engine/internal/state/state_test.go`, `engine/internal/lib/cursor_compat_test.go` |
-| [0008](0008-sanctioned-engine-network-boundary.md) | Sanctioned engine network boundary | Accepted in part; engine network allowance superseded by 0024 | `engine/tests/meta_test.go` |
+| [0008](0008-sanctioned-engine-network-boundary.md) | Sanctioned engine network boundary | Accepted in part; engine network allowance superseded by 0024, then reintroduced for release acquisition in `engine/internal/release` by 0028 | `engine/tests/meta_test.go` |
 | [0009](0009-prebuild-decision-coverage-and-readiness.md) | Pre-build decision coverage and implementation readiness | Accepted; semantic engine-gate implementation superseded by 0022 | historical |
 | [0010](0010-agent-first-fresh-context-orchestration.md) | Agent-first fresh-context orchestration | Accepted | `tests/native-orchestration-contract-test.sh`, `tests/codex-agent-generation-test.sh` |
 | [0011](0011-define-plan-transition-rights.md) | Separate Define authoring from the Plan checkpoint | Accepted | `engine/internal/state/state_test.go`, `engine/tests/adr_0011_define_plan_test.go` |
@@ -75,6 +75,7 @@ architecture; per-feature `decisions.md` files stay scoped to that feature.
 | [0027](0027-content-bound-build-readiness.md) | Content-bound build readiness | Accepted; AC ID map amended 2026-09-04 | `engine/tests/adr_0027_readiness_binding_test.go`, `engine/internal/state/acceptance_test.go` |
 | [0028](0028-self-contained-engine-update.md) | Self-contained engine update | Accepted | `engine/internal/install/install_test.go`, `engine/internal/release/release_test.go`, `engine/tests/meta_test.go` |
 | [0029](0029-v5-workspace-schema-and-native-migration.md) | v5 workspace schema and native migration | Accepted | `engine/internal/state/workspaceschema_test.go`, `engine/tests/parity_resolve_test.go`, `engine/tests/parity_closeout_test.go` |
+| 0030 | Reserved number; no ADR is published under it | Unpublished | none |
 | [0031](0031-overhaul-agents-keep-every-tool.md) | `/overhaul` ships its own agents that keep every tool | Accepted; scopes the one-writer clauses of 0010/0015/0017/0018/0019 to `devrites-*` specialists | `scripts/validate-agent-composition.py`, `tests/codex-agent-generation-test.sh` |
 | [0032](0032-single-lint-gate-and-cached-pr-tests.md) | One engine lint gate, and PR tests that reuse main's results | Accepted | `tests/validation-governance-test.sh` |
 | [0033](0033-rite-fast-own-agents.md) | `/rite-fast` ships its own agents and its own writer | Accepted; adds `fast-builder` as a writer outside the `devrites-*` one-writer rule | `scripts/validate-agent-composition.py`, `tests/rite-fast-contract-test.sh` |

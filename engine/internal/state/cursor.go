@@ -216,10 +216,15 @@ func DeleteCursorField(lines []string, key string) []string {
 
 // CursorForm reports the presentation of the state.md cursor: "table" when a
 // canonical table row exists, "legacy" when only bullet fields exist, and
-// "none" when neither is present.
+// "none" when neither is present. Fenced blocks are not structural, so a
+// cursor row inside one is not a cursor row.
 func CursorForm(lines []string) string {
+	structural, ok := structuralCursorLines(lines)
+	if !ok {
+		return "none"
+	}
 	form := "none"
-	for _, line := range lines {
+	for _, line := range structural {
 		_, _, kind, ok := parseCursorLine(line)
 		if !ok {
 			continue
@@ -237,14 +242,19 @@ func CursorForm(lines []string) string {
 // ConvertCursorToTable rewrites legacy bullet cursor fields into canonical
 // table rows in place. A bullet whose key resolves to a canonical cursor key
 // is a cursor field wherever it appears — the same rule CursorField uses to
-// read — so such a bullet is converted even inside prose sections. Prose
-// without a canonical cursor key is preserved, and a value carrying a raw pipe
-// keeps its bullet form because a table cell cannot represent it. It reports
-// whether any line changed.
+// read — so such a bullet is converted even inside prose sections. Fenced
+// blocks are not structural, so their bullets are left exactly as written.
+// Prose without a canonical cursor key is preserved, and a value carrying a
+// raw pipe keeps its bullet form because a table cell cannot represent it. It
+// reports whether any line changed.
 func ConvertCursorToTable(lines []string) ([]string, bool) {
+	structural, ok := structuralCursorLines(lines)
+	if !ok {
+		return append([]string(nil), lines...), false
+	}
 	changed := false
 	out := append([]string(nil), lines...)
-	for i, line := range out {
+	for i, line := range structural {
 		key, value, kind, ok := parseCursorLine(line)
 		if !ok || kind != cursorLineLegacy {
 			continue
@@ -259,7 +269,8 @@ func ConvertCursorToTable(lines []string) ([]string, bool) {
 		if !ok {
 			continue
 		}
-		indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		original := out[i]
+		indent := original[:len(original)-len(strings.TrimLeft(original, " \t"))]
 		out[i] = indent + "| " + spelling + " | " + value + " |"
 		changed = true
 	}

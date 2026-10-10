@@ -2,9 +2,11 @@ package lib
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -484,5 +486,181 @@ func TestDupStagedQuotedPathAndDiffConfig(t *testing.T) {
 	code := RunCheckDup(filepath.Join(project, ".devrites"), []string{"--staged", "--min-lines", "5"}, &out, &errOut)
 	if code != 0 || !strings.Contains(out.String(), "* "+name+":") {
 		t.Fatalf("code=%d out=%s err=%s", code, &out, &errOut)
+	}
+}
+
+const dupBlockC = `func loadSettings(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read: %w", err)
+	}
+	out := map[string]string{}
+	for _, line := range strings.Split(string(data), "\n") {
+		k, v, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		out[strings.TrimSpace(k)] = strings.TrimSpace(v)
+	}
+	return out, nil
+}
+`
+
+const dupBlockD = `func readProfile(file string) (map[string]string, error) {
+	raw, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("open: %w", err)
+	}
+	res := map[string]string{}
+	for _, row := range strings.Split(string(raw), "\n") {
+		name, val, found := strings.Cut(row, "=")
+		if !found {
+			continue
+		}
+		res[strings.TrimSpace(name)] = strings.TrimSpace(val)
+	}
+	return res, nil
+}
+`
+
+func dupMetricBytes(t *testing.T, root, slug string) []int64 {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(root, "work", slug, MetricsFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []int64
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		var ev metricEvent
+		if err := json.Unmarshal([]byte(line), &ev); err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, ev.Bytes)
+	}
+	return got
+}
+
+func TestRunCheckDupMetricIgnoresLimitAndCountsOnlyShown(t *testing.T) {
+	project := t.TempDir()
+	initDupRepo(t, project)
+	testutil.WriteFile(t, filepath.Join(project, "a/one.go"), "package a\n\n"+dupBlockA)
+	testutil.WriteFile(t, filepath.Join(project, "c/three.go"), "package c\n\n"+dupBlockC)
+	testutil.WriteFile(t, filepath.Join(project, "b/two.go"), "package b\n\n"+dupBlockB)
+	testutil.WriteFile(t, filepath.Join(project, "d/four.go"), "package d\n\n"+dupBlockD)
+	runDupGit(t, project, "add", ".")
+	runDupGit(t, project, "commit", "-qm", "base")
+	root := filepath.Join(project, ".devrites")
+	if err := os.MkdirAll(filepath.Join(root, "work", "demo"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	var hashes []string
+	for _, limit := range []string{"1", "50"} {
+		var stdout, stderr bytes.Buffer
+		args := []string{"demo", "--all", "--min-lines", "5", "--limit", limit}
+		if code := RunCheckDup(root, args, &stdout, &stderr); code != 0 {
+			t.Fatalf("limit=%s code=%d stderr=%s", limit, code, stderr.String())
+		}
+		if limit == "50" {
+			for _, m := range regexp.MustCompile(`cluster \d+ \(([0-9a-f]+)\)`).FindAllStringSubmatch(stdout.String(), -1) {
+				hashes = append(hashes, m[1])
+			}
+		}
+	}
+	if len(hashes) != 2 {
+		t.Fatalf("want 2 clusters, got %v", hashes)
+	}
+	got := dupMetricBytes(t, root, "demo")
+	if len(got) != 2 || got[0] != got[1] {
+		t.Fatalf("metric depends on --limit: %v", got)
+	}
+
+	testutil.WriteFile(t, filepath.Join(root, "dup-ignore"), hashes[0]+"\n")
+	var stdout, stderr bytes.Buffer
+	if code := RunCheckDup(root, []string{"demo", "--all", "--min-lines", "5"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	oneIgnored := dupMetricBytes(t, root, "demo")[2]
+
+	testutil.WriteFile(t, filepath.Join(root, "dup-ignore"), hashes[0]+"\n"+hashes[1]+"\n")
+	stdout.Reset()
+	if code := RunCheckDup(root, []string{"demo", "--all", "--min-lines", "5"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	if allIgnored := dupMetricBytes(t, root, "demo")[3]; allIgnored > oneIgnored {
+		t.Fatalf("metric rose when findings were dismissed: %d -> %d", oneIgnored, allIgnored)
+	}
+}
+
+// dupGroupedInput builds nFiles files of 10 units each (lines 10u..10u+4)
+// where every unit position is linked across consecutive files of each group.
+func dupGroupedInput(nFiles, group int) ([]dupSegment, []dupFile) {
+	files := make([]dupFile, nFiles)
+	for i := range files {
+		files[i] = dupFile{path: "pkg" + string(rune('a'+i%26)) + "/f" + string(rune('a'+i/26%26)) + string(rune('a'+i/676)) + ".go", lines: make([]dupLine, 100)}
+	}
+	var segs []dupSegment
+	for base := 0; base+group <= nFiles; base += group {
+		for u := 0; u < 10; u++ {
+			for k := 0; k+1 < group; k++ {
+				segs = append(segs, dupSegment{
+					aFile: base + k, bFile: base + k + 1,
+					aStart: u * 10, aEnd: u*10 + 4, bStart: u * 10, bEnd: u*10 + 4,
+					boosted: float64((base+k+u)%7+1) / 10,
+				})
+			}
+		}
+	}
+	return segs, files
+}
+
+func TestDupClusterUnitsSmallCase(t *testing.T) {
+	files := []dupFile{
+		{path: "a/x.go", lines: make([]dupLine, 40)},
+		{path: "b/y.go", lines: make([]dupLine, 40)},
+		{path: "c/z.go", lines: make([]dupLine, 40)},
+	}
+	segs := []dupSegment{
+		{aFile: 0, bFile: 1, aStart: 0, aEnd: 4, bStart: 0, bEnd: 4, boosted: 0.5},
+		{aFile: 1, bFile: 2, aStart: 0, aEnd: 4, bStart: 0, bEnd: 4, boosted: 0.9},
+		{aFile: 0, bFile: 1, aStart: 20, aEnd: 24, bStart: 20, bEnd: 24, boosted: 0.3},
+	}
+	clusters, units, edges := dupClusterUnits(segs, files)
+	if len(units) != 5 || len(edges) != 3 || len(clusters) != 2 {
+		t.Fatalf("units=%d edges=%d clusters=%d", len(units), len(edges), len(clusters))
+	}
+	if len(clusters[0].units) != 3 || clusters[0].score != 0.9 {
+		t.Fatalf("first cluster = %d units score %v", len(clusters[0].units), clusters[0].score)
+	}
+	if len(clusters[1].units) != 2 || clusters[1].score != 0.3 {
+		t.Fatalf("second cluster = %d units score %v", len(clusters[1].units), clusters[1].score)
+	}
+	if clusters[0].hash == clusters[1].hash || len(clusters[0].hash) != dupHashLength {
+		t.Fatalf("hashes %q %q", clusters[0].hash, clusters[1].hash)
+	}
+}
+
+func TestDupClusterUnitsWorkIsLinear(t *testing.T) {
+	segs, files := dupGroupedInput(1600, 20)
+	var steps int
+	clusters, units, _ := dupClusterUnitsCounted(segs, files, &steps)
+	if len(clusters) != 80*10 {
+		t.Fatalf("clusters=%d, want 800", len(clusters))
+	}
+	for _, c := range clusters {
+		if len(c.units) != 20 {
+			t.Fatalf("cluster has %d units, want 20", len(c.units))
+		}
+	}
+	// Every unit sits alone in a 10-line slot, so each of the two endpoints of
+	// a segment overlaps exactly one unit, and the scoring pass visits each
+	// edge once. A path that scans all units or all edges per cluster does
+	// more work, and one that skips the counter does none.
+	groups, perGroup, unitsPerFile := 1600/20, 20, 10
+	if want := groups * unitsPerFile * (perGroup - 1); len(segs) != want {
+		t.Fatalf("fixture has %d segments, want %d", len(segs), want)
+	}
+	if want := 3 * len(segs); steps != want {
+		t.Fatalf("examined %d units/edges for %d segments and %d units, want exactly %d", steps, len(segs), len(units), want)
 	}
 }

@@ -27,3 +27,10 @@ dist/
 # Copy `.mcp.example.json` to `.mcp.json` and fill in keys locally.
 .mcp.json
 .mcp.local.json
+
+# Local secrets and agent-local state. Never commit.
+.env
+.env.*
+.claude/settings.local.json
+.codex/
+.worktrees/

@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 MODE="default"
 TX=""
+# The --transaction and --abort-snapshot modes are operator-invoked: no automated producer calls them and the default suite never enters them.
 USAGE='usage: acceptance-preserving-reslice-policy-test.sh [--transaction <P-000-scratch-path> | --abort-snapshot <P-000-scratch-path>]'
 DEFAULT_FAILURE='acceptance-preserving-reslice-policy-test: FAIL | reason_code=default_validation_failed | recovery_owner=sole_writer | next_action=correct_candidate_and_rerun'
 TRANSACTION_FAILURE='acceptance-preserving-reslice-policy-test: FAIL | reason_code=transaction_failed | recovery_owner=sole_writer | next_action=inspect_retained_transaction_and_retry'
@@ -1536,6 +1537,19 @@ def failure_diagnostic_proof():
         globals()["run_process"] = original
     if public != "P-010 child failed; exit_status=7" or any(value in public for value in hostile_output.splitlines()):
         raise ContractFailure("run_gate replayed non-allowlisted child output")
+    globals()["run_process"] = lambda _command, _env=None: subprocess.CompletedProcess(
+        args=["synthetic"], returncode=0, stdout="unrelated output\n", stderr=""
+    )
+    try:
+        try:
+            run_gate("P-001", ["synthetic"])
+        except ContractFailure as exc:
+            if "missing allowlisted success signal" not in str(exc):
+                raise ContractFailure("run_gate rejected a signal-less child for the wrong reason") from exc
+        else:
+            raise ContractFailure("run_gate accepted a zero-exit child without its success signal")
+    finally:
+        globals()["run_process"] = original
     if set(PUBLIC_FAILURES) != {"default", "transaction", "abort"}:
         raise ContractFailure("top-level public failure mode inventory invalid")
     public_schema = re.compile(
@@ -1551,6 +1565,7 @@ def failure_diagnostic_proof():
     ):
         raise ContractFailure("top-level public failure schema invalid")
 
+    os.environ.pop("DEVRITES_TEST_VERBOSE", None)
     source = read_text_at(
         ROOT_FD,
         "tests/acceptance-preserving-reslice-policy-test.sh",
@@ -1589,6 +1604,25 @@ def failure_diagnostic_proof():
                 1,
             )
             run_boundary(f"{mode}-{failure_type}", injected, arguments, expected)
+
+    def run_named_failure(message):
+        named = TEMP / "public-boundary-named.sh"
+        named.write_text(source.replace("try:\n    main()", f"try:\n    raise ContractFailure({message!r})", 1))
+        return subprocess.run(["bash", str(named)], cwd=ROOT, capture_output=True, text=True)
+
+    stale = run_named_failure("accepted baseline changed: logical_id=.devrites/work/stale/entry.md")
+    stale_lines = stale.stderr.splitlines()
+    if (
+        stale.returncode != 1
+        or stale.stdout != ""
+        or stale_lines[:1] != [PUBLIC_FAILURES["default"]]
+        or "logical_id=.devrites/work/stale/entry.md" not in stale.stderr
+    ):
+        raise ContractFailure("stale-baseline failure does not name the failing logical_id after the public line")
+    sensitive = run_named_failure("accepted baseline changed: logical_id=.devrites/work/stale/token.md")
+    if sensitive.returncode != 1 or sensitive.stdout != "" or sensitive.stderr != PUBLIC_FAILURES["default"] + "\n":
+        raise ContractFailure("sensitive-looking logical_id was relayed")
+    print("  ok: a stale-baseline failure names its logical_id after the unchanged public line; sensitive-looking ids are withheld")
 
     malformed_root = TEMP / "malformed-initialization"
     malformed_tasks = malformed_root / TASKS_REL
@@ -2775,107 +2809,25 @@ def snapshot_validator_proof():
 
 
 def protected_gate(root):
+    # Pin only repo-tracked bytes: the git-ignored lifecycle workspace is absent on a fresh checkout and its recorded digests go stale with every legitimate source edit.
     with root_descriptor(root) as descriptor:
-        manifest_bytes = read_bytes_at(
-            descriptor,
-            ".devrites/work/workspace-observation/touched-files.md",
-            owner="Workspace Observation manifest",
-        )
-        if sha256(manifest_bytes).hexdigest() != "cf5ef8aec435896c6844a47ef8a50ae5cacc44e23ab19be7c069f58fa44c871a":
-            raise ContractFailure("Workspace Observation manifest changed")
-        section = manifest_bytes.decode("utf-8").split("## Source hashes", 1)[1].split("## Deliberately untouched", 1)[0]
-        rows = re.findall(r"^\| `([^`]+)` \| `([0-9a-f]{64})` \|$", section, re.M)
-        if len(rows) != 17:
-            raise ContractFailure("Workspace Observation source inventory changed")
-        for raw, expected in rows:
-            payload = read_bytes_at(descriptor, raw, owner=f"accepted baseline logical_id={raw}")
-            if sha256(payload).hexdigest() != expected:
-                raise ContractFailure(f"accepted baseline changed: logical_id={raw}")
         fixed = {
-            ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
-            ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
+            ".gitignore": "0ef01deb1cfe17d2fb117ebc0677ec4d812b42a46d16c0e35bb566db99ebcf19",
         }
         for raw, expected in fixed.items():
             payload = read_bytes_at(descriptor, raw, owner=f"protected file logical_id={raw}")
             if sha256(payload).hexdigest() != expected:
                 raise ContractFailure(f"protected file changed: logical_id={raw}")
-    return len(rows) + len(fixed)
-
-
-LIFECYCLE_PROTECTED_INPUTS = (
-    ".devrites/work/workspace-observation/touched-files.md",
-    ".devrites/ACTIVE",
-)
-
-
-def lifecycle_protected_state(root):
-    present = []
-    with root_descriptor(root) as descriptor:
-        for raw in LIFECYCLE_PROTECTED_INPUTS:
-            entry = open_regular_at(
-                descriptor,
-                raw,
-                allow_absent=True,
-                owner="lifecycle protected input",
-            )
-            present.append(entry is not None)
-            if entry is not None:
-                os.close(entry)
-    if any(present) and not all(present):
-        raise ContractFailure("partial lifecycle protected input set")
-    return "complete" if all(present) else "absent"
+    return len(fixed)
 
 
 def protected_failure_proof():
-    absent_root = TEMP / "protected-lifecycle-absent"
-    absent_root.mkdir()
-    if lifecycle_protected_state(absent_root) != "absent":
-        raise ContractFailure("fully absent disposable lifecycle workspace was not detected")
-    print(
-        "P-011 DEFAULT PROOF NOT-APPLICABLE | lifecycle_workspace=absent | "
-        "proof_owner=transaction-owned | proof_root=disposable"
-    )
-
-    for index, raw in enumerate(LIFECYCLE_PROTECTED_INPUTS):
-        partial_root = TEMP / f"protected-lifecycle-partial-{index}"
-        target = partial_root / raw
-        target.parent.mkdir(parents=True)
-        target.write_text("present\n")
-        try:
-            lifecycle_protected_state(partial_root)
-        except ContractFailure as exc:
-            if str(exc) != "partial lifecycle protected input set":
-                raise ContractFailure("partial lifecycle protected-input proof produced wrong rejection") from exc
-        else:
-            raise ContractFailure("partial lifecycle protected input set accepted")
-    print("  ok: both partial lifecycle protected-input sets fail before protected-byte reads")
-
-    current_state = lifecycle_protected_state(ROOT)
-    if current_state == "absent":
-        print(
-            "P-011 DEFAULT PROOF NOT-APPLICABLE | lifecycle_workspace=absent | "
-            "proof_owner=transaction-owned | proof_root=current"
-        )
-        return
-
     copy_root = TEMP / "protected-copy"
-    manifest_rel = Path(".devrites/work/workspace-observation/touched-files.md")
-    manifest_target = copy_root / manifest_rel
-    manifest_target.parent.mkdir(parents=True)
-    manifest_target.write_bytes(
-        read_bytes_at(ROOT_FD, manifest_rel.as_posix(), owner="Workspace Observation manifest")
-    )
-    section = manifest_target.read_text().split("## Source hashes", 1)[1].split("## Deliberately untouched", 1)[0]
-    rows = re.findall(r"^\| `([^`]+)` \| `([0-9a-f]{64})` \|$", section, re.M)
-    for raw, _ in rows:
-        target = copy_root / raw
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(read_bytes_at(ROOT_FD, raw, owner=f"accepted baseline logical_id={raw}"))
-    for raw in (".gitignore", ".devrites/ACTIVE"):
-        target = copy_root / raw
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(read_bytes_at(ROOT_FD, raw, owner=f"protected file logical_id={raw}"))
-    (copy_root / ".gitignore").write_text("mutated\n")
+    target = copy_root / ".gitignore"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(read_bytes_at(ROOT_FD, ".gitignore", owner="protected file logical_id=.gitignore"))
+    protected_gate(copy_root)
+    target.write_text("mutated\n")
     try:
         protected_gate(copy_root)
     except ContractFailure as exc:
@@ -2883,7 +2835,7 @@ def protected_failure_proof():
             raise
     else:
         raise ContractFailure("protected-byte mutant accepted")
-    print("  ok: complete lifecycle inputs retain the hostile protected-byte mutant proof")
+    print("  ok: the protected-byte gate accepts the tracked bytes and rejects the hostile mutant")
 
 
 def default_validation_and_drills():
@@ -2905,6 +2857,14 @@ def default_validation_and_drills():
     base = TEMP / "validation-base"
     copy_validation_base(base)
     expect_invalid(base, "standard deletion mutant rejected", "canonical standard missing", lambda case: (case / STANDARD_REL).unlink())
+    try:
+        expect_invalid(base, "needle self-check", "absent from every rejection", lambda case: (case / STANDARD_REL).unlink())
+    except ContractFailure as exc:
+        if "wrong rejection signal" not in str(exc):
+            raise
+    else:
+        raise ContractFailure("expect_invalid accepted a rejection that lacks its needle")
+    print("  ok: expect_invalid fails a rejection with the wrong signal")
     expect_invalid(
         base,
         "missing active load mutant rejected",
@@ -4748,8 +4708,9 @@ def main():
 
 try:
     main()
-except ContractFailure:
+except ContractFailure as exc:
     print(SHELL_PUBLIC_FAILURE, file=sys.stderr)
+    print(f"detail: {exc}", file=sys.stderr)
     raise SystemExit(1)
 except Exception:
     print(SHELL_PUBLIC_FAILURE, file=sys.stderr)
@@ -4761,6 +4722,12 @@ then
     exit 1
   fi
 else
+  if [ "${DEVRITES_TEST_VERBOSE:-}" = "1" ]; then
+    command cat -- "$PYTHON_STDERR" >&2 || true
+  fi
   printf '%s\n' "$PUBLIC_FAILURE" >&2
+  # Relay only a detail line naming a plain logical_id; anything else in the captured stderr stays private.
+  command grep -E -x -m1 -e 'detail: [a-z][a-z ]{0,63}: logical_id=[A-Za-z0-9._/-]{1,200}' -- "$PYTHON_STDERR" 2>/dev/null \
+    | command grep -v -i -E 'authorization|bearer|credential|password|secret|token|(api|access)[_-]?key' >&2 || true
   exit 1
 fi

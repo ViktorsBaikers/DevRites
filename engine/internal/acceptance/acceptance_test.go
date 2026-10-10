@@ -231,10 +231,10 @@ func TestReduceCountsAndIds(t *testing.T) {
 	if len(red.UnapprIDs) != 2 {
 		t.Fatalf("unapproved ids=%v", red.UnapprIDs)
 	}
-	// A nil approved surface (unreadable plan) reports no unapproved diagnostic.
+	// A nil approval surface approves nothing: every unmet runnable gate is unapproved.
 	red = doc.Reduce(nil)
-	if len(red.UnapprIDs) != 0 {
-		t.Fatalf("nil approved must not flag: %v", red.UnapprIDs)
+	if len(red.UnapprIDs) != 2 {
+		t.Fatalf("nil approved must flag every unmet runnable gate: %v", red.UnapprIDs)
 	}
 }
 
@@ -293,8 +293,9 @@ func TestApprovedCommandsNoSection(t *testing.T) {
 	if approved := ApprovedCommands([]byte("# Plan\n\nno table\n")); len(approved) != 0 {
 		t.Fatalf("approved=%+v", approved)
 	}
-	if approved := ApprovedCommands(nil); approved != nil {
-		t.Fatalf("nil plan must approve nothing: %+v", approved)
+	// A nil plan approves nothing and reports it as an empty value, never nil.
+	if approved := ApprovedCommands(nil); approved == nil || len(approved) != 0 {
+		t.Fatalf("nil plan must approve nothing, and report it as a value: %+v", approved)
 	}
 }
 
@@ -553,8 +554,9 @@ func TestLintMostlyManualAndCounts(t *testing.T) {
 	if !mostlyManual {
 		t.Fatalf("findings=%+v", findings)
 	}
+	// The one runnable gate (G1) has no approved row, so lint reports an error.
 	errs, warns := LintCounts(findings)
-	if errs != 0 || warns == 0 {
+	if errs != 1 || warns == 0 {
 		t.Fatalf("counts=%d/%d", errs, warns)
 	}
 }
@@ -567,7 +569,7 @@ func TestScaffoldLedger(t *testing.T) {
 	if len(doc.Errors) != 0 || len(doc.Gates) != 1 || doc.Gates[0].ID != "G1" {
 		t.Fatalf("placeholder scaffold malformed: %v %+v", doc.Errors, doc.Gates)
 	}
-	spec := []byte("# Spec\n\n- AC-002 first\n- AC-001 second\n- AC-002 repeated\n")
+	spec := []byte("# Spec\n\n## Acceptance criteria\n\n- AC-002 first\n- AC-001 second\n- AC-002 repeated\n\n## Non-goals\n\n- AC-003 not required\n")
 	scaffolded := ScaffoldLedger("feat", spec)
 	doc = ParseLedger(scaffolded)
 	if len(doc.Errors) != 0 || len(doc.Gates) != 2 || doc.Gates[0].ID != "AC-002" || doc.Gates[1].ID != "AC-001" {
@@ -652,4 +654,293 @@ func mustRead(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return string(raw)
+}
+
+// An unresolvable approval surface is refused, never executed. Each consumer
+// (run, reduce, lint) is asserted at its own guard, and nil and empty surfaces
+// must behave identically.
+
+func TestApprovedCommandsNeverNilSurface(t *testing.T) {
+	// ApprovedCommands never returns nil: a consumer must be able to refuse on an
+	// empty surface.
+	cases := map[string][]byte{
+		"absent file (empty input)": nil,
+		"invalid utf8":              {0xff, 0xfe, 0x00, 'a'},
+		"no preflight section":      []byte("# Test plan\n\n## Plan\nnothing here\n"),
+		"heading only":              []byte("## Build-entry preflight\n"),
+		"header row only":           []byte("## Build-entry preflight\n| command | cwd |\n"),
+	}
+	for name, in := range cases {
+		got := ApprovedCommands(in)
+		if got == nil {
+			t.Errorf("CASE %s: ApprovedCommands returned nil; nil reads as 'approval not applicable' so every CHECK executes unreviewed. Must return a non-nil (possibly empty) surface.", name)
+			continue
+		}
+		if len(got) != 0 {
+			t.Errorf("CASE %s: ApprovedCommands = %v; want non-nil empty (nothing was approved)", name, got)
+		}
+	}
+}
+
+func TestRunGatesRefusesUnresolvableApprovalSurface(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		approved []ApprovedCommand
+	}{
+		{"nil surface", nil},
+		{"empty non-nil surface", []ApprovedCommand{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			project := t.TempDir()
+			work := filepath.Join(project, ".devrites", "work", "feat")
+			if err := os.MkdirAll(work, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			ledgerPath := filepath.Join(work, GatesFile)
+			body := "- [ ] G1: unreviewed oracle\n  CHECK: echo UNAPPROVED-MUST-NOT-RUN\n  EXPECT: UNAPPROVED-MUST-NOT-RUN\n  EVIDENCE: pending\n"
+			if err := os.WriteFile(ledgerPath, []byte(body), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			doc := ParseLedger(mustRead(t, ledgerPath))
+			results := RunGates(context.Background(), project, ledgerPath, doc, tc.approved, false, 10*time.Second)
+			if len(results) != 1 {
+				t.Fatalf("results=%+v", results)
+			}
+			r := results[0]
+			if r.Ran {
+				t.Errorf("DEFECT: gate executed under a %s approval surface (passed=%v detail=%q). An unreviewed CHECK must not execute when approvals cannot be established.", tc.name, r.Passed, r.Detail)
+			}
+			if r.Passed {
+				t.Errorf("DEFECT: gate reported passed under a %s approval surface; certification must not happen.", tc.name)
+			}
+			if !strings.Contains(r.Detail, "not an approved") {
+				t.Errorf("detail=%q; want a refusal naming the unapproved CHECK", r.Detail)
+			}
+			after := mustRead(t, ledgerPath)
+			if strings.Contains(after, EvidenceMarker) {
+				t.Errorf("DEFECT: ledger was certified with automatic evidence under a %s approval surface:\n%s", tc.name, after)
+			}
+			if !strings.Contains(after, "EVIDENCE: pending") {
+				t.Errorf("ledger evidence was mutated under a %s approval surface:\n%s", tc.name, after)
+			}
+			if red := doc.Reduce(tc.approved); red.Unapproved != 1 {
+				t.Errorf("reduction under %s surface: Unapproved=%d; want 1 so `gates status` cannot report unapproved: 0", tc.name, red.Unapproved)
+			}
+		})
+	}
+}
+
+func TestLintFlagsNilAndEmptyApprovalSurfaceIdentically(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		approved []ApprovedCommand
+	}{
+		{"nil surface", nil},
+		{"empty surface", []ApprovedCommand{}},
+	} {
+		doc := &Document{Abandoned: map[string]string{}}
+		g := runnableGate("G1", true, "pending")
+		g.Check = "echo anything"
+		g.Cwd = ""
+		doc.Gates = []*Gate{g}
+		found := false
+		for _, f := range LintLedger(doc, tc.approved) {
+			if f.Rule == "unapproved-check" && strings.Contains(f.Message, "echo anything") {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("DEFECT: Lint(%s) reported no unapproved-check finding; `gates lint --strict` reports LINT OK instead of the authorization error.", tc.name)
+		}
+	}
+}
+
+// Refusal applies only where a command would actually execute; manual and
+// already-met gates must not be blocked by an unresolvable approval surface.
+func TestUnresolvableApprovalDoesNotBlockNonExecutingGates(t *testing.T) {
+	project := t.TempDir()
+
+	// Manual gates execute nothing, so there is nothing to authorize.
+	manualOnly := ParseLedger("- [x] M1: human judged\n  EVIDENCE: a stranger checked the transcript\n")
+	if red := manualOnly.Reduce(nil); !red.AllMet() {
+		t.Errorf("a manual-only ledger has no CHECK to approve and must still reduce all-met: %+v", red)
+	}
+	if red := manualOnly.Reduce(nil); red.Unapproved != 0 {
+		t.Errorf("manual gates are not executions and must not count as unapproved: %+v", red)
+	}
+	for _, f := range LintLedger(manualOnly, nil) {
+		if f.Rule == "unapproved-check" {
+			t.Errorf("manual gates must never be flagged unapproved: %+v", f)
+		}
+	}
+
+	// An already-met runnable gate returns before the approval guard, so a
+	// workspace whose gates were vetted and met in an earlier run keeps its state.
+	met := runnableGate("R1", true, "")
+	met.Check = "echo already"
+	met.Expect = "already"
+	met.Evidence = FormatEvidence(met, OutputDigest("already\n"), 8, "2026-01-01T00:00:00Z")
+	if got := GateState(met, &Document{Abandoned: map[string]string{}}); got != StateMet {
+		t.Fatalf("fixture must be genuinely met, not %s", got)
+	}
+	manualUnmet := &Gate{ID: "M2", Title: "human judged", Evidence: "pending"}
+	doc := &Document{Abandoned: map[string]string{}, Gates: []*Gate{manualUnmet, met}}
+	for _, r := range RunGates(context.Background(), project, filepath.Join(project, "unused.md"), doc, nil, false, 10*time.Second) {
+		if strings.Contains(r.Detail, "not an approved") {
+			t.Errorf("gate %s was refused for approval although it never executes: %q", r.ID, r.Detail)
+		}
+		switch r.ID {
+		case "M2":
+			if !strings.Contains(r.Detail, "manual gate") {
+				t.Errorf("M2 detail=%q; want the manual-gate wording, proving the approval guard was never reached", r.Detail)
+			}
+		case "R1":
+			if !strings.Contains(r.Detail, "already met") {
+				t.Errorf("R1 detail=%q; want already-met, proving a vetted pass is not re-litigated", r.Detail)
+			}
+		}
+	}
+}
+
+// An unreadable test-plan.md leaves every runnable CHECK unapproved: the runner
+// refuses it and the reduction and lint report it, whatever the value's nil-ness.
+func TestLoadTestPlanUnreadableApprovesNothing(t *testing.T) {
+	approved := loadTestPlan(filepath.Join(t.TempDir(), "missing", "test-plan.md"))
+	if Approved("echo hi", "", approved) {
+		t.Fatalf("unreadable plan approved a command: %+v", approved)
+	}
+	g := runnableGate("G1", true, "pending")
+	g.Check = "echo hi"
+	doc := &Document{Abandoned: map[string]string{}, Gates: []*Gate{g}}
+	if red := doc.Reduce(approved); red.Unapproved != 1 {
+		t.Fatalf("Unapproved=%d; want 1", red.Unapproved)
+	}
+	errs, _ := LintCounts(LintLedger(doc, approved))
+	if errs != 1 {
+		t.Fatalf("lint errs=%d; want 1 unapproved-check", errs)
+	}
+}
+
+// `gates attest` refuses a placeholder note at write time, so a manual gate is
+// never left checked on evidence the reader would later reject.
+func TestAttestRefusesPlaceholderNotes(t *testing.T) {
+	placeholders := []string{"n/a", "tbd", "-", "ok", "done", "yes", "pending", "PENDING", "verified", "TODO", "N/A", "none", "n/a (see notes)", "done.", "AC-004: outcome seen", "outcome seen", "AC-004 - outcome seen", "**done**"}
+	for _, note := range placeholders {
+		project := t.TempDir()
+		root := filepath.Join(project, ".devrites")
+		work := filepath.Join(root, "work", "feat")
+		if err := os.MkdirAll(work, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		ledgerPath := filepath.Join(work, GatesFile)
+		body := "- [ ] AC-004: outcome seen\n  EVIDENCE: pending\n"
+		writeLedger(t, ledgerPath, body)
+		var stdout, stderr strings.Builder
+		if code := Run(root, []string{"attest", "feat", "AC-004", note}, &stdout, &stderr); code == ExitOK {
+			t.Errorf("placeholder %q was accepted at write time", note)
+		}
+		if !strings.Contains(stderr.String(), "placeholder") {
+			t.Errorf("placeholder %q: stderr=%q; want a message naming the placeholder", note, stderr.String())
+		}
+		if got := mustRead(t, ledgerPath); got != body {
+			t.Errorf("placeholder %q mutated the ledger:\n%s", note, got)
+		}
+	}
+}
+
+// The refusal must say a trailing parenthetical after a placeholder word is
+// ignored, since the note otherwise appears to already cite who and where.
+func TestAttestRefusalExplainsIgnoredParenthetical(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	work := filepath.Join(root, "work", "feat")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeLedger(t, filepath.Join(work, GatesFile), "- [ ] AC-004: outcome seen\n  EVIDENCE: pending\n")
+	var stdout, stderr strings.Builder
+	note := "done (verified on staging by Ann, q-12)"
+	if code := Run(root, []string{"attest", "feat", "AC-004", note}, &stdout, &stderr); code == ExitOK {
+		t.Fatalf("note %q was accepted", note)
+	}
+	for _, want := range []string{"placeholder", "trailing (", "is ignored"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("stderr=%q; want it to contain %q", stderr.String(), want)
+		}
+	}
+}
+
+func TestAttestAcceptsSubstantiveNote(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	work := filepath.Join(root, "work", "feat")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ledgerPath := filepath.Join(work, GatesFile)
+	writeLedger(t, ledgerPath, "- [ ] AC-004: outcome seen\n  EVIDENCE: pending\n")
+	var stdout, stderr strings.Builder
+	if code := Run(root, []string{"attest", "feat", "AC-004", "verified on staging by reviewer"}, &stdout, &stderr); code != ExitOK {
+		t.Fatalf("substantive note refused: code=%d stderr=%q", code, stderr.String())
+	}
+	doc := ParseLedger(mustRead(t, ledgerPath))
+	if len(doc.Gates) != 1 || GateState(doc.Gates[0], doc) != StateMet {
+		t.Fatalf("substantive attestation not met: %+v", doc.Gates)
+	}
+}
+
+func manualLedger(note string) *Document {
+	return ParseLedger("# Gates\n\n- [x] AC-004: outcome seen\n  EVIDENCE: " + note + "\n")
+}
+
+func TestManualGatePlaceholdersNeverMet(t *testing.T) {
+	for _, ev := range []string{"n/a", "tbd", "-", "ok", "done", "yes", "pending", "PENDING", "Pending", "verified", "TODO", "N/A", "TBD", "none", "n/a (see notes)", "done.",
+		"AC-004 — outcome seen", "AC-004 - outcome seen", "`done`", "**done**", "\"n/a\"",
+		"AC-004: outcome seen", "outcome seen", "AC-004", "AC-004 – outcome seen", "*done*", "_done_", "'done'", "Done!", "  yes.  ", "N.A.", "—", "✅", "✓ done", "[done]", "> done", "~~tbd~~", "outcome seen (AC-004)", "AC-004 (outcome seen)", "AC004 outcome seen", "ac-004: OUTCOME SEEN.", "pass", "passed", "true", "0", "okay", "none.", "TODO: later", "not applicable", "N/A - not applicable", "AC-004 done", "done - AC-004", "AC004 outcome seen", "AC 004 done", "see above", "(done)", "TBD (see notes)"} {
+		d := manualLedger(ev)
+		if len(d.Gates) != 1 || d.Gates[0].ID != "AC-004" || d.Gates[0].Evidence == "" {
+			t.Logf("PARSE %q: gates=%d errs=%v", ev, len(d.Gates), d.Errors)
+			continue
+		}
+		if got := GateState(d.Gates[0], d); got == StateMet {
+			t.Errorf("placeholder %q reached met", ev)
+		}
+		if d.Reduce(nil).AllMet() {
+			t.Errorf("placeholder %q: AllMet", ev)
+		}
+	}
+}
+
+// A title's own trailing parenthetical is part of the title, so a note that
+// repeats only that parenthetical restates the title and stays unmet.
+func TestManualGateTitleParentheticalIsTitleText(t *testing.T) {
+	for _, title := range []string{"Refund appears in ledger. (REQ-002)", "Refund appears in ledger (REQ-002)"} {
+		for _, note := range []string{"REQ-002", "(REQ-002)", "req 002", "Refund appears in ledger (REQ-002)"} {
+			d := ParseLedger("# Gates\n\n- [x] AC-004: " + title + "\n  EVIDENCE: " + note + "\n")
+			if len(d.Gates) != 1 {
+				t.Fatalf("title %q note %q: gates=%d errs=%v", title, note, len(d.Gates), d.Errors)
+			}
+			if got := GateState(d.Gates[0], d); got == StateMet {
+				t.Errorf("title %q: title-only note %q reached met", title, note)
+			}
+		}
+		d := ParseLedger("# Gates\n\n- [x] AC-004: " + title + "\n  EVIDENCE: REQ-002 confirmed on staging by Brooke\n")
+		if got := GateState(d.Gates[0], d); got != StateMet {
+			t.Errorf("title %q: substantive note = %s, want met", title, got)
+		}
+	}
+}
+
+func TestManualGateSubstantiveNotesMet(t *testing.T) {
+	for _, ev := range []string{"verified on staging by reviewer", "Verified on staging by reviewer (ticket 42)", "done on prod: 3 orders replayed, outcome seen in dashboard",
+		"Done: reviewer confirmed checkout on staging (q-12)", "q-12: Brooke confirmed the outcome seen on staging", "Yes - Brooke saw the banner on iPhone 15 (q-7)",
+		"(q-12) Brooke confirmed refund on staging", "outcome seen on staging by Brooke", "AC-004 outcome seen on staging by Brooke, q-3", "(Brooke confirmed refund on staging, q-12)"} {
+		d := manualLedger(ev)
+		if got := GateState(d.Gates[0], d); got != StateMet {
+			t.Errorf("substantive %q = %s, want met", ev, got)
+		}
+		if !d.Reduce(nil).AllMet() {
+			t.Errorf("substantive %q not AllMet", ev)
+		}
+	}
 }

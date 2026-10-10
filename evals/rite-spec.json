@@ -29,8 +29,9 @@
     },
     {
       "text": "Interview me about a webhook delivery feature.",
-      "expected": "should_trigger",
-      "rationale": "Description names 'interview me' phrasing."
+      "expected": "should_not_trigger",
+      "rationale": "devrites-interview's description names 'interview me'; rite-spec's does not.",
+      "owner": "devrites-interview"
     },
     {
       "text": "I want to add bulk import. Where should it live in the code and what does it touch?",

@@ -152,3 +152,62 @@ func TestMigrateCurrentAndNewerSchemaAreRefused(t *testing.T) {
 		t.Fatalf("newer schema: code=%d stderr=%q", code, stderr.String())
 	}
 }
+
+// End to end through the `migrate` command path. migrate.go
+// calls state.ConvertCursorToTable (apply, unconditional) and state.CursorForm
+// (plan), so a fenced example in state.md — the phase-authority ledger — must
+// survive a migration byte for byte, and a migration plan must not advertise a
+// conversion that only fenced content would have performed.
+
+func seedLedger(t *testing.T, body string) (root, workspace string) {
+	t.Helper()
+	root = t.TempDir()
+	workspace = filepath.Join(root, "work", "feature")
+	if err := os.MkdirAll(workspace, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root, workspace
+}
+
+const ledgerBody = "# State\n\n## Recovery note\n\nThe pre-v5 ledger looked like this:\n\n~~~md\n- Phase: build\n- Status: running\n~~~\n\n## Cursor\n\n- Phase: build\n- Status: running\n"
+
+func TestMigrateLeavesFencedCursorExamplesByteIdentical(t *testing.T) {
+	root, workspace := seedLedger(t, ledgerBody)
+	var stdout, stderr strings.Builder
+	if code := Migrate(root, []string{"feature"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	body, err := os.ReadFile(filepath.Join(workspace, "state.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(body)
+	if got := strings.Count(text, "- Phase: build"); got != 1 {
+		t.Fatalf("fenced example rewritten: %d surviving \"- Phase: build\" lines in\n%s", got, text)
+	}
+	if !strings.Contains(text, "| phase | build |") {
+		t.Fatalf("live cursor bullet not converted to the canonical table row:\n%s", text)
+	}
+	fenced := "~~~md\n- Phase: build\n- Status: running\n~~~"
+	if !strings.Contains(text, fenced) {
+		t.Fatalf("fenced block not preserved byte for byte:\n%s", text)
+	}
+}
+
+func TestMigratePlanDoesNotOfferConversionForFencedCursorsOnly(t *testing.T) {
+	body := "# State\n\n## Recovery note\n\n~~~md\n- Phase: build\n- Status: running\n~~~\n"
+	root, _ := seedLedger(t, body)
+	var stdout, stderr strings.Builder
+	if code := Migrate(root, []string{"feature", "--dry-run", "--answer", "phase=build"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if strings.Contains(stdout.String(), "[cursor]") {
+		t.Fatalf("plan offers a cursor conversion for a ledger whose only legacy bullets are fenced:\n%s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "[schema] record schema") {
+		t.Fatalf("plan incomplete:\n%s", stdout.String())
+	}
+}

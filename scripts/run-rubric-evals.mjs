@@ -178,7 +178,11 @@ for (const file of files) {
   }
   const passVotes = votes.filter((v) => v.verdict === 'pass').length;
   const failVotes = votes.filter((v) => v.verdict === 'fail').length;
-  const verdict = passVotes > failVotes ? 'pass' : 'fail';
+  // The rubric requires total >= 5/6 for a pass. Any vote whose total is below 5,
+  // or whose score line is missing or unparseable (so the total cannot be
+  // confirmed), fails the row; one such dissent overrides a pass majority.
+  const belowBar = votes.some((v) => !v.score || v.score.total < 5);
+  const verdict = passVotes > failVotes && !belowBar ? 'pass' : 'fail';
   const agreement = `${Math.max(passVotes, failVotes)}/${samples}`;
   const last = votes[votes.length - 1];
 

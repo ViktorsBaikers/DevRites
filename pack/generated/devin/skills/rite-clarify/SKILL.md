@@ -35,6 +35,7 @@ dispatch uses
 - One scan may cap at five packets for cognitive load, but readiness has no question cap:
   re-scan until clear.
 - Material assumptions carry evidence, confidence, owner, validation, and consequence.
+- Refuse the rationalizations in [`anti-patterns`](reference/anti-patterns.md).
 
 ## Workflow
 
@@ -46,14 +47,14 @@ dispatch uses
    journey/component, state, data lifecycle, integration, failure/recovery path,
    operation, proof surface, applicability row, and must-NOT boundary.
 3. **Scan coverage.** Apply `devrites-interview` in clarify mode and mark each
-   material surface Clear, Partial, Missing, not-applicable, or justified
-   deferred-nonblocking with evidence and an owner. Use native repository search
+   material surface `closed`, `agent-owned`, `not-applicable`,
+   `deferred-nonblocking`, or `open` with evidence and an owner. Use native repository search
    first. Ask the host to run `devrites-evidence-scout` only for a bounded missing
    fact, then reconcile its cited result.
 4. **Close decisions.** Record facts and reversible technical choices directly.
    Ask one coherent option packet only for product, scope, policy, irreversible
    risk, or human-only access. Persist answers in the owning artifacts and repeat
-   the scan until no blocking Partial/Missing row or unowned material assumption
+   the scan until no blocking `open` row or unowned material assumption
    remains.
 5. **Write the verdict.** Write `Decision coverage: CLEAR` only after re-reading all inputs and confirming
    every material row has current evidence and an owner. Normal flow sets `phase=clarify` and

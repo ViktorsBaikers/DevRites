@@ -1,0 +1,79 @@
+{
+  "skill": "overhaul",
+  "description": "Explicit-only routing evals for the approval-gated overhaul: whole-project, PR or branch audit with approved, verified repairs.",
+  "queries": [
+    {
+      "text": "/overhaul full",
+      "expected": "should_trigger",
+      "rationale": "Direct slash invocation."
+    },
+    {
+      "text": "$overhaul full",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/overhaul pr 482",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation for a pull request."
+    },
+    {
+      "text": "/overhaul branch feature/billing --base main",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation for a branch comparison."
+    },
+    {
+      "text": "/overhaul audit full",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation for an assessment-only run."
+    },
+    {
+      "text": "/overhaul status full-20250101a",
+      "expected": "should_trigger",
+      "rationale": "Read-only status of a recorded run."
+    },
+    {
+      "text": "Do a comprehensive review of this whole codebase and fix everything you find.",
+      "expected": "should_not_trigger",
+      "owner": null,
+      "owner_rationale": "Overhaul is explicit-only; the user must invoke /overhaul.",
+      "rationale": "Implicit overhaul intent must not start a run."
+    },
+    {
+      "text": "Audit this project for security and performance problems.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-audit",
+      "rationale": "One bounded audit axis belongs to devrites-audit, not an approval-gated overhaul."
+    },
+    {
+      "text": "Review the diff for this feature before seal.",
+      "expected": "should_not_trigger",
+      "owner": "rite-review",
+      "rationale": "Lifecycle feature review belongs to rite-review."
+    },
+    {
+      "text": "Fix the typo in the footer copyright line.",
+      "expected": "should_not_trigger",
+      "owner": "rite-quick",
+      "rationale": "A one-line reversible change belongs to rite-quick."
+    },
+    {
+      "text": "The checkout test is failing with a 500 error, fix it.",
+      "expected": "should_not_trigger",
+      "owner": "devrites-debug-recovery",
+      "rationale": "A single failing behavior belongs to devrites-debug-recovery."
+    },
+    {
+      "text": "Clean up and normalize the code I just wrote before review.",
+      "expected": "should_not_trigger",
+      "owner": "rite-polish",
+      "rationale": "A finish pass over one feature belongs to rite-polish."
+    },
+    {
+      "text": "Prove this feature works with the full test suite and screenshots.",
+      "expected": "should_not_trigger",
+      "owner": "rite-prove",
+      "rationale": "Feature proof belongs to rite-prove."
+    }
+  ]
+}

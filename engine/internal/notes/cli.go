@@ -18,7 +18,8 @@ const (
 	ExitBlocked = 3
 )
 
-const noteUsage = `usage: devrites-engine note <subcommand> <slug>
+// Usage is the note family help text, shared by the --help and error paths.
+const Usage = `usage: devrites-engine note <add|list|check|rm> <slug> ...
 
 Subcommands:
   add <slug> <subject> <quote> <title> [body]
@@ -28,20 +29,22 @@ Subcommands:
   rm <slug> <NOTE-id>        Remove a note
 
 Grades: exact | moved | stale | ambiguous | lost. A non-exact note means the
-rationale drifted from the code it anchors to; check seal enforces it.
+rationale drifted from the code it anchors to; check seal enforces it. A subject
+this pass cannot read as text — binary, non-regular, unreadable — is
+never treated as absent, so --repair will not re-anchor it.
 Exit codes: 0 ok, 2 usage, 3 blocked`
 
 // Run is the engine entrypoint for `note …`; root is the resolved DevRites
 // root from the caller's single root resolution.
 func Run(root string, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, noteUsage)
+		fmt.Fprintln(stderr, Usage)
 		return ExitUsage
 	}
 	sub, rest := args[0], args[1:]
 	switch sub {
 	case "-h", "-help", "--help", "help":
-		fmt.Fprintln(stdout, noteUsage)
+		fmt.Fprintln(stdout, Usage)
 		return ExitOK
 	case "add":
 		return cmdAdd(root, rest, stdout, stderr)
@@ -52,7 +55,7 @@ func Run(root string, args []string, stdout, stderr io.Writer) int {
 	case "rm":
 		return cmdRm(root, rest, stdout, stderr)
 	default:
-		fmt.Fprintf(stderr, "note: unknown subcommand %q\n\n%s\n", sub, noteUsage)
+		fmt.Fprintf(stderr, "note: unknown subcommand %q\n\n%s\n", sub, Usage)
 		return ExitUsage
 	}
 }
@@ -111,12 +114,12 @@ func cmdAdd(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	// Fail closed: a note is only written while its anchor is exact. A quote
 	// that does not resolve is a wrong note, not a note to fix later.
-	subjectText, ok := fileText(filepath.Join(project, filepath.FromSlash(subject)))
-	if !ok {
+	subjectRead := fileHasQuote(filepath.Join(project, filepath.FromSlash(subject)), normalizeWS(quote))
+	if !subjectRead.readable() {
 		fmt.Fprintf(stderr, "note add: subject %q is not a readable repository file\n", subject)
 		return ExitBlocked
 	}
-	if !strings.Contains(subjectText, normalizeWS(quote)) {
+	if !subjectRead.found {
 		fmt.Fprintf(stderr, "note add: quote not found in %s; anchor before writing\n", subject)
 		return ExitBlocked
 	}
@@ -163,6 +166,9 @@ func cmdList(root string, args []string, stdout, stderr io.Writer) int {
 		line := fmt.Sprintf("%s: %s | %s | %s", graded.ID, graded.Grade, graded.Subject, graded.Summary)
 		if graded.Grade == GradeMoved {
 			line += " -> " + graded.MovedTo
+		}
+		if graded.Detail != "" {
+			line += " (" + graded.Detail + ")"
 		}
 		fmt.Fprintln(stdout, line)
 	}
@@ -244,6 +250,9 @@ func reportCheck(root, slug, notesPath, project string, repair bool, stdout, std
 	for _, g := range graded {
 		counts[g.Grade]++
 		line := fmt.Sprintf("note: %s %s", g.ID, g.Grade)
+		if g.Detail != "" {
+			line += ": " + g.Detail
+		}
 		switch g.Grade {
 		case GradeMoved:
 			line += " -> " + g.MovedTo + " (repair with `note check --repair`)"
@@ -254,7 +263,9 @@ func reportCheck(root, slug, notesPath, project string, repair bool, stdout, std
 	}
 	fmt.Fprintf(stdout, "exact: %d\nmoved: %d\nstale: %d\nambiguous: %d\nlost: %d\n",
 		counts[GradeExact], counts[GradeMoved], counts[GradeStale], counts[GradeAmbiguous], counts[GradeLost])
-	if counts[GradeMoved]+counts[GradeStale]+counts[GradeAmbiguous]+counts[GradeLost] > 0 {
+	// Every grade but exact is drift; comparing against the graded total makes a
+	// grade added later exit non-zero by default.
+	if len(graded) > counts[GradeExact] {
 		fmt.Fprintln(stdout, "result: drifted")
 		return ExitBlocked
 	}
@@ -263,11 +274,14 @@ func reportCheck(root, slug, notesPath, project string, repair bool, stdout, std
 }
 
 // repairMoved rewrites each moved note's SUBJECT to the file its quote now
-// lives in. Ambiguous, stale, and lost notes are left for human resolution.
+// lives in. A grade the grader did not positively determine is never rewritten,
+// whatever produced it: no read bound, size or otherwise, licenses repointing an
+// anchor at a file the author never chose. Ambiguous, stale and lost notes are
+// left for human resolution.
 func repairMoved(text string, doc *Document, graded []Graded) (int, string) {
 	repaired := 0
 	for _, g := range graded {
-		if g.Grade != GradeMoved {
+		if g.Grade != GradeMoved || g.MovedTo == "" {
 			continue
 		}
 		text = RepairSubject(text, doc.Newline(), g.Note, g.MovedTo)
@@ -340,7 +354,11 @@ func SealCheck(root, slug string, stdout io.Writer) bool {
 			continue
 		}
 		drifted = true
-		fmt.Fprintf(stdout, "note: %s %s (%s)\n", g.ID, g.Grade, g.Subject)
+		line := fmt.Sprintf("note: %s %s (%s)", g.ID, g.Grade, g.Subject)
+		if g.Detail != "" {
+			line += ": " + g.Detail
+		}
+		fmt.Fprintln(stdout, line)
 	}
 	if drifted {
 		fmt.Fprintf(stdout, "next: devrites-engine note check %s --repair  # re-anchor moved; re-anchor or rm the rest\n", slug)

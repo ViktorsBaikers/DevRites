@@ -206,8 +206,8 @@ the lease `running` and control at `B`; cleanup still refuses — the commits
 cannot be lost. `record-green` and `integrate` also accept an `integrate-failed`
 lease, so a failed integrate retries after repair. `--apply-to-control`
 refuses when control moved past `B` or holds uncommitted changes on slice
-paths — commit/stash and retry; the batch is untouched. Go is SSOT; never
-ad-hoc git/bash orchestration.
+paths — stop for the human (never stash or commit their work); the batch is
+untouched. Go is SSOT; never ad-hoc git/bash orchestration.
 
 ## Runtime isolation
 

@@ -143,7 +143,15 @@ def _line_suppressed(line):
 
 def _file_suppressions(text):
     classes = set()
-    for m in _FILE_SUPPRESS.finditer(text):
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        # Only the leading run of comment lines can carry the marker.
+        if not line.lstrip().startswith(("<!--", "#", "//")):
+            break
+        m = _FILE_SUPPRESS.search(line)
+        if not m:
+            continue
         for c in m.group(1).split(","):
             classes.add(c.strip().lower())
     return classes

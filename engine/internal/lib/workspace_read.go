@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/devrites/devrites/internal/devritespaths"
@@ -19,17 +18,9 @@ func readWorkspaceArtifact(root, slug, name string) ([]byte, error) {
 		return nil, fmt.Errorf("workspace artifact: workspace unavailable: %w", err)
 	}
 	path := filepath.Join(workspace, name)
-	info, err := os.Stat(path)
+	raw, err := readBoundedRegularFile(path, workspaceArtifactLimit)
 	if err != nil {
-		return nil, fmt.Errorf("workspace artifact: %s unavailable: %w", name, err)
-	}
-	if info.Size() > workspaceArtifactLimit {
-		return nil, fmt.Errorf("workspace artifact: %s exceeds %d MiB limit", name, workspaceArtifactLimit>>20)
-	}
-	// #nosec G304 -- workspace artifact; size cap checked above
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("workspace artifact: cannot read %s: %w", name, err)
+		return nil, fmt.Errorf("workspace artifact: %s: %w", name, err)
 	}
 	return raw, nil
 }

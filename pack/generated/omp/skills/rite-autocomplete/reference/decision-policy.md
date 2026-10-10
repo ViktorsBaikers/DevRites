@@ -39,5 +39,6 @@ not pick the option that's merely easiest to implement.
 Irreversible-risk, escalating, access, and blocking questions with no ranked
 recommended option stay human. A blocking question that already names option 1
 `(Recommended)` or `proposed:` is autocomplete's to resolve: pick that option
-via `devrites-engine state resolve` and continue. Recommended temper `expand`
-auto-applies; do not invent product intent.
+via `devrites-engine state resolve` and continue. Recommended temper
+`expand` and extra acceptance are never auto-picked: they stop for a human through
+`ask`; do not invent product intent.

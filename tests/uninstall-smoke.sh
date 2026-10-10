@@ -20,9 +20,14 @@ else
 fi
 export DEVRITES_HOST_ARTIFACT_DIR="$GEN"
 ENGINE_BIN="$GEN/devrites-engine"
-( cd "$ROOT/engine" && GOCACHE="$GEN/go-cache" CGO_ENABLED=0 go build -trimpath -o "$ENGINE_BIN" . ) >/dev/null 2>&1 \
-  || { echo "  FAIL: could not build test engine"; exit 1; }
-export DEVRITES_ENGINE_CLI="$ENGINE_BIN"
+. "$ROOT/scripts/install-lib.sh"
+if [ -n "${DEVRITES_ENGINE_CLI:-}" ] && [ -x "$DEVRITES_ENGINE_CLI" ] && dr_engine_compatible "$DEVRITES_ENGINE_CLI" "$ROOT" install; then
+  ENGINE_BIN="$DEVRITES_ENGINE_CLI"
+else
+  ( cd "$ROOT/engine" && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X github.com/devrites/devrites/internal/version.Version=$(dr_release_tag "$ROOT")" -o "$ENGINE_BIN" . ) >/dev/null 2>&1 \
+    || { echo "  FAIL: could not build test engine"; exit 1; }
+  export DEVRITES_ENGINE_CLI="$ENGINE_BIN"
+fi
 
 echo "== uninstall-smoke =="
 

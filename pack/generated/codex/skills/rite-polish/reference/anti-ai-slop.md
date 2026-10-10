@@ -18,7 +18,7 @@ Build avoids every UI entry; review and polish admit a hit only by this rule. Cl
 a declared token, brief line or nearest neighbour (cite both locations), or it has a
 measured user consequence (contrast ratio, overflow, CLS, lost or hidden focus). Otherwise
 it is an AES proposal under "Proposals (non-blocking)": never a Visual Verdict FAIL, never
-scored, capped at Suggestion/Minor, never blocking unless `design-brief.md` adopts it (then
+scored, capped at Suggestion, never blocking unless `design-brief.md` adopts it (then
 DS). Act on clusters per [`prose-style.md`](../../devrites-lib/reference/standards/prose-style.md).
 A broken task, data loss or misleading state is reported and fixed before any AES item.
 **Failing case:** `tokens.css` declares Inter and a 20 px card radius, yet review files

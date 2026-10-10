@@ -28,13 +28,14 @@ if [[ ! -d "$ENGINE" ]]; then
   exit 1
 fi
 
-# The release matrix: darwin arm64/amd64, linux amd64/arm64, windows amd64.
+# The release matrix: darwin arm64/amd64, linux amd64/arm64, windows amd64/arm64.
 TARGETS=(
   "darwin/arm64"
   "darwin/amd64"
   "linux/amd64"
   "linux/arm64"
   "windows/amd64"
+  "windows/arm64"
 )
 
 rm -rf "$OUT"

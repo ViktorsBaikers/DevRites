@@ -37,6 +37,38 @@ def public_rites(skills_dir: Path):
     return names
 
 
+COMMAND_ROW = re.compile(r"\[\s*`?(?P<name>/[A-Za-z0-9_.-]+)[^\]`]*`?\s*\]\((?P<target>[^)]+)\)")
+
+
+def public_command_rows(docs_map: str):
+    """Rows of the `## Public commands` table, keyed by the command each row names.
+
+    Only the leading `/name` token keys a row, so `/rite use <slug>` counts as `/rite`.
+
+    Keyed on the command cell, not on the link target: a row renamed to a command that
+    does not exist still contains the old name inside its own link path, so a presence
+    needle over the whole document survives that falsification.
+    """
+    rows: dict[str, list[str]] = {}
+    lines = docs_map.splitlines()
+    start = next(
+        (i for i, line in enumerate(lines) if line.startswith("## Public commands")), None
+    )
+    if start is None:
+        return rows
+    end = next(
+        (i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines)
+    )
+    for line in lines[start + 1:end]:
+        if not line.startswith("|") or line.count("|") < 2:
+            continue
+        cell = line.split("|")[1]
+        match = COMMAND_ROW.search(cell)
+        if match:
+            rows.setdefault(match.group("name"), []).append(match.group("target"))
+    return rows
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--skills-dir", type=Path, default=ROOT / "pack/.claude/skills")
@@ -79,6 +111,9 @@ def main():
         ):
             errors.append("docs imply plugin distribution instead of npx install")
             break
+    rows = public_command_rows(docs_map)
+    if not args.generated_root.exists():
+        errors.append(f"generated root absent: {args.generated_root}")
     for name in skills:
         verb = name.removeprefix("rite-")
         needle = f"/rite-{verb}"
@@ -87,6 +122,12 @@ def main():
         if needle not in docs_map:
             errors.append(
                 f"docs/command-map Claude direct: missing Claude command {needle} for {name}"
+            )
+        targets = rows.get(needle, [])
+        if len(targets) != 1:
+            errors.append(
+                f"docs/command-map Claude direct: expected exactly one command row naming "
+                f"{needle} for {name}, found {len(targets)}"
             )
         if args.generated_root.exists():
             for rel in [
@@ -100,6 +141,19 @@ def main():
             ]:
                 if not (args.generated_root / rel).exists():
                     errors.append(f"generated artifact missing {rel}")
+    for command, targets in rows.items():
+        for target in targets:
+            linked = re.search(r"skills/([^/]+)/SKILL\.md$", target)
+            if linked is None or linked.group(1) != command[1:]:
+                errors.append(
+                    f"docs/command-map Claude direct: command row for {command} links to "
+                    f"{target}, which is not skills/{command[1:]}/SKILL.md"
+                )
+            elif not (args.skills_dir / linked.group(1) / "SKILL.md").is_file():
+                errors.append(
+                    f"docs/command-map Claude direct: command row for {command} links to "
+                    f"a skill directory that does not exist: {linked.group(1)}"
+                )
     if errors:
         for e in errors:
             print(f"FAIL: {e}")

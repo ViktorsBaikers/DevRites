@@ -85,8 +85,8 @@ protocol with the revised premise.
 When clarifying a written spec rather than extracting intent from scratch, first enumerate
 its actors, journeys/components, states, data boundaries, interfaces/integrations, and
 operational/proof surfaces. Scan every material surface against that taxonomy and mark
-**Clear / Partial / Missing** with evidence. Ask at most **3 prioritized decision packets per
-pass**, targeting Missing before Partial, one per turn with an explicit recommendation and reason.
+`closed`, `agent-owned`, `not-applicable`, `deferred-nonblocking`, or `open` with evidence. Ask at most **3 prioritized decision packets per
+pass**, targeting `open` rows, one per turn with an explicit recommendation and reason.
 A packet may close
 several cells only when they share one owner and trade-off.
 
@@ -95,8 +95,8 @@ insufficient.
 Record each question and resolution in `decision-coverage.md` as scan evidence, not a
 transcript block in `spec.md`.
 Re-run the scan after each pass. Packet limits control cognitive load, never readiness. Continue
-later passes while human-owned blockers remain, and stop only when every row is clear, agent-owned,
-not applicable, or explicitly deferred by the user with a nonblocking reason, owner, and validation
+later passes while human-owned blockers remain, and stop only when every row is `closed`, `agent-owned`,
+`not-applicable`, or `deferred-nonblocking` by the user with a nonblocking reason, owner, and validation
 gate. Then re-score the affected
 `checklists/<domain>.md`.
 

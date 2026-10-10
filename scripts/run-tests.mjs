@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
@@ -41,7 +41,6 @@ function itemWeight(item) {
       || testWeights.get('workflow-artifact-identity-test.sh#core')
       || 80;
   }
-  if (item.waiMode === 'matrix') return testWeights.get('workflow-artifact-identity-test.sh#matrix') || 60;
   return testWeights.get(`workflow-artifact-identity-test.sh#boundary-${item.waiBoundaryShard}`)
     || testWeights.get('workflow-artifact-identity-test.sh#boundary')
     || 90;
@@ -51,9 +50,6 @@ function itemLabel(item) {
   if (typeof item === 'string') return item;
   if (item.waiMode === 'boundary') {
     return `${item.path}#boundary-${item.waiBoundaryShard}`;
-  }
-  if (item.waiMode === 'matrix') {
-    return `${item.path}#delivery-model-matrix`;
   }
   if (item.waiCoreShard) {
     return `${item.path}#core-${item.waiCoreShard}`;
@@ -90,21 +86,42 @@ function repositoryPackageVersion() {
   return version;
 }
 
-for (let i = 0; i < args.length; i++) {
-  const arg = args[i];
-  if (arg === '--serial') serial = true;
-  else if (arg === '--fast') fast = true;
-  else if (arg === '--jobs' || arg === '-j') jobs = Math.max(1, Number(args[++i] || 1) || 1);
-  else if (arg.startsWith('--jobs=')) jobs = Math.max(1, Number(arg.slice('--jobs='.length)) || 1);
-  else if (arg === '--shard') {
-    const parsed = parseShard(String(args[++i] || ''));
-    shardIndex = parsed.index;
-    shardTotal = parsed.total;
-  } else if (arg.startsWith('--shard=')) {
-    const parsed = parseShard(arg.slice('--shard='.length));
-    shardIndex = parsed.index;
-    shardTotal = parsed.total;
-  } else filters.push(arg);
+const usage = `usage: node scripts/run-tests.mjs [options] [name-filter ...]
+
+Runs tests/*.sh whose path contains any name filter (all tests if none).
+
+options:
+  --fast          skip the integration tests
+  --serial        run one test at a time (same as --jobs 1)
+  --jobs N, -j N  run N tests at once (also --jobs=N)
+  --shard i/n     run only shard i of n, 1 <= i <= n (also --shard=i/n)
+  --help, -h      print this message and exit`;
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(usage);
+  process.exit(0);
+}
+
+try {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--serial') serial = true;
+    else if (arg === '--fast') fast = true;
+    else if (arg === '--jobs' || arg === '-j') jobs = Math.max(1, Number(args[++i] || 1) || 1);
+    else if (arg.startsWith('--jobs=')) jobs = Math.max(1, Number(arg.slice('--jobs='.length)) || 1);
+    else if (arg === '--shard') {
+      const parsed = parseShard(String(args[++i] || ''));
+      shardIndex = parsed.index;
+      shardTotal = parsed.total;
+    } else if (arg.startsWith('--shard=')) {
+      const parsed = parseShard(arg.slice('--shard='.length));
+      shardIndex = parsed.index;
+      shardTotal = parsed.total;
+    } else filters.push(arg);
+  }
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
 }
 if (serial) jobs = 1;
 const testTimeoutSec = Number(process.env.DEVRITES_TEST_TIMEOUT_SEC) || 900;
@@ -144,7 +161,6 @@ const integrationTests = new Set([
 const testWeights = new Map([
   // Core checks split round-robin into 8 pieces (~117s of checks in total).
   ['workflow-artifact-identity-test.sh#core', 15],
-  ['workflow-artifact-identity-test.sh#matrix', 8],
   ['workflow-artifact-identity-test.sh#boundary', 27],
   ['workflow-artifact-identity-test.sh#boundary-1/6', 28],
   ['workflow-artifact-identity-test.sh#boundary-2/6', 20],
@@ -160,12 +176,12 @@ const testWeights = new Map([
   ['release-tarball-test.sh', 51],
   ['validate-path-spaces-test.sh', 42],
   ['npx-pack-smoke.sh', 19],
-  ['install-smoke.sh', 5],
+  ['install-smoke.sh', 167],
   ['bootstrap-security-test.sh', 12],
-  ['acceptance-preserving-reslice-policy-test.sh', 5],
-  ['host-artifacts-test.sh', 7],
+  ['acceptance-preserving-reslice-policy-test.sh', 219],
+  ['host-artifacts-test.sh', 137],
   ['workspace-schema-test.sh', 4],
-  ['install-shared-file-merge-smoke.sh', 3],
+  ['install-shared-file-merge-smoke.sh', 116],
   ['cli-smoke.sh', 2],
   ['engine-observation-contract-test.sh', 3],
   ['update-smoke.sh', 3],
@@ -179,7 +195,9 @@ const testWeights = new Map([
   ['codex-runtime-smoke.sh', 1],
   ['hooks-parity-test.sh', 3],
   ['install-pin-no-global-smoke.sh', 1],
-  ['native-host-loop-evals-test.sh', 6],
+  ['native-host-loop-evals-test.sh', 132],
+  ['validate-skip-summary-test.sh', 103],
+  ['release-routes-test.sh', 45],
   ['scan-pack-security-test.sh', 4],
 ]);
 
@@ -204,15 +222,19 @@ const installExclusiveTests = new Set([
   'update-smoke.sh',
 ]);
 
-// WAI core installs live protected fixtures into the checkout; reslice policy
-// snapshots repository entry identities. Running them together races on disk.
+// WAI core and reslice policy both read live checkout entry identities; this
+// chain keeps them from running at the same time.
 const repoMutatingExclusiveTests = new Set([
   'acceptance-preserving-reslice-policy-test.sh',
   'workflow-artifact-identity-test.sh',
 ]);
 
-let installExclusiveChain = Promise.resolve();
-let repoMutatingExclusiveChain = Promise.resolve();
+function exclusiveChain(test) {
+  const label = basename(typeof test === 'string' ? test : test.path);
+  if (installExclusiveTests.has(label)) return 'install';
+  if (repoMutatingExclusiveTests.has(label)) return 'repo';
+  return '';
+}
 
 tests.sort((a, b) => {
   const aw = itemWeight(a);
@@ -229,9 +251,10 @@ if (fast) {
 const waiTest = 'tests/workflow-artifact-identity-test.sh';
 const waiBoundaryShards = Math.max(1, Math.floor(Number(process.env.DEVRITES_WAI_BOUNDARY_SHARDS || 4)) || 4);
 const waiCoreShards = Math.max(1, Math.floor(Number(process.env.DEVRITES_WAI_CORE_SHARDS || 2)) || 2);
-if (shardTotal > 0) {
+if (tests.includes(waiTest) || shardTotal > 0) {
   // Expand WAI into core + boundary pieces BEFORE weighting so each piece can
-  // land on a different matrix runner (avoids packing ~5 heavy WAI jobs onto one VM).
+  // land on a different matrix runner (avoids packing ~5 heavy WAI jobs onto one VM)
+  // and every piece gets its own timeout budget when the run is not sharded.
   const expandable = [];
   for (const test of tests) {
     if (test === waiTest) {
@@ -242,7 +265,6 @@ if (shardTotal > 0) {
           waiCoreShard: `${coreShard}/${waiCoreShards}`,
         });
       }
-      expandable.push({ path: waiTest, waiMode: 'matrix' });
       for (let boundaryShard = 1; boundaryShard <= waiBoundaryShards; boundaryShard++) {
         expandable.push({
           path: waiTest,
@@ -259,9 +281,9 @@ if (shardTotal > 0) {
     const bw = itemWeight(b);
     return aw === bw ? itemLabel(a).localeCompare(itemLabel(b)) : bw - aw;
   });
-  const shards = assignWeightedShards(expandable, shardTotal);
   tests.length = 0;
-  tests.push(...shards[shardIndex - 1].items);
+  if (shardTotal > 0) tests.push(...assignWeightedShards(expandable, shardTotal)[shardIndex - 1].items);
+  else tests.push(...expandable);
 }
 
 if (tests.length === 0) {
@@ -270,6 +292,7 @@ if (tests.length === 0) {
 }
 
 let failed = false;
+const failedTests = new Set();
 const started = Date.now();
 let sharedHostArtifacts = process.env.DEVRITES_HOST_ARTIFACT_DIR || '';
 let sharedEngineDir = '';
@@ -333,6 +356,12 @@ if (!sharedEngine && existsSync(join(root, 'engine', 'go.mod'))) {
   }
 }
 
+// Tests that build the engine reuse the user's Go build cache instead of
+// falling back to a cold per-test temp cache.
+const goCache = process.env.GOCACHE
+  || spawnSync('go', ['env', 'GOCACHE'], { encoding: 'utf8' }).stdout?.trim()
+  || '';
+
 function runOne(test) {
   return new Promise((resolve) => {
     const path = typeof test === 'string' ? test : test.path;
@@ -343,15 +372,15 @@ function runOne(test) {
     const start = Date.now();
     const env = { ...process.env, DEVRITES_HOST_ARTIFACT_DIR: sharedHostArtifacts, DEVRITES_TEST_WORKER: label };
     if (typeof test === 'object' && test.waiMode === 'core') {
+      env.DEVRITES_WAI_ALLOW_PARTIAL = '1';
       env.DEVRITES_WAI_SKIP_DELIVERY_MODES = '1';
-      env.DEVRITES_WAI_SKIP_DELIVERY_MODEL_MATRIX = '1';
       if (test.waiCoreShard) env.DEVRITES_WAI_CORE_SHARD = test.waiCoreShard;
-    } else if (typeof test === 'object' && test.waiMode === 'matrix') {
-      env.DEVRITES_WAI_DELIVERY_MODEL_ONLY = '1';
     } else if (typeof test === 'object' && test.waiMode === 'boundary') {
+      env.DEVRITES_WAI_ALLOW_PARTIAL = '1';
       env.DEVRITES_WAI_BOUNDARY_ONLY = '1';
       env.DEVRITES_WAI_BOUNDARY_SHARD = test.waiBoundaryShard;
     }
+    if (goCache) env.GOCACHE = goCache;
     if (engineIsolatedTests.has(basename(path))) delete env.DEVRITES_ENGINE_CLI;
     else if (sharedEngine) env.DEVRITES_ENGINE_CLI = sharedEngine;
     const child = spawn('bash', [path], {
@@ -361,16 +390,23 @@ function runOne(test) {
     });
     child.stdout.on('data', (chunk) => chunks.push(chunk));
     child.stderr.on('data', (chunk) => chunks.push(chunk));
-    // ponytail: kills only the bash child; orphaned grandchildren may linger,
+    // SIGTERM first so the test's cleanup handlers can run; SIGKILL after the
+    // grace period.
+    // ponytail: signals only the bash child; orphaned grandchildren may linger,
     // but destroying the pipes lets the runner report the hung test and move on.
+    let killTimer;
     const timer = setTimeout(() => {
       chunks.push(Buffer.from(`timeout: killed after ${testTimeoutSec}s (DEVRITES_TEST_TIMEOUT_SEC)\n`));
-      child.kill('SIGKILL');
-      child.stdout.destroy();
-      child.stderr.destroy();
+      child.kill('SIGTERM');
+      killTimer = setTimeout(() => {
+        child.kill('SIGKILL');
+        child.stdout.destroy();
+        child.stderr.destroy();
+      }, 30000);
     }, testTimeoutSec * 1000);
     child.on('close', (code, signal) => {
       clearTimeout(timer);
+      clearTimeout(killTimer);
       const elapsed = ((Date.now() - start) / 1000).toFixed(2);
       const status = code === 0 ? 'PASS' : 'FAIL';
       const displayName = typeof test === 'string' ? test : label;
@@ -379,49 +415,36 @@ function runOne(test) {
       if (chunks.length && !String(chunks.at(-1)).endsWith('\n')) process.stdout.write('\n');
       process.stdout.write(`${status}: ${displayName} (${elapsed}s)\n`);
       if (signal) process.stdout.write(`signal: ${signal}\n`);
+      if (code !== 0) failedTests.add(path);
       resolve(code === 0);
     });
   });
 }
 
-async function runExclusive(getChain, setChain, test) {
-  const previous = getChain();
-  let release;
-  setChain(new Promise((resolve) => {
-    release = resolve;
-  }));
-  await previous;
-  try {
-    return await runOne(test);
-  } finally {
-    release();
-  }
-}
-
+// A test whose exclusive chain is busy stays queued; the worker takes the next
+// runnable test instead of idling on a held slot.
 async function runBatch(batch, batchJobs) {
-  let cursor = 0;
+  const pending = [...batch];
+  const busy = new Set();
+  let waiters = [];
   async function worker() {
-    while (cursor < batch.length) {
-      const test = batch[cursor++];
-      const path = typeof test === 'string' ? test : test.path;
-      const label = basename(path);
-      let ok;
-      if (installExclusiveTests.has(label)) {
-        ok = await runExclusive(
-          () => installExclusiveChain,
-          (next) => { installExclusiveChain = next; },
-          test,
-        );
-      } else if (repoMutatingExclusiveTests.has(label)) {
-        ok = await runExclusive(
-          () => repoMutatingExclusiveChain,
-          (next) => { repoMutatingExclusiveChain = next; },
-          test,
-        );
-      } else {
-        ok = await runOne(test);
+    while (pending.length) {
+      const index = pending.findIndex((test) => !busy.has(exclusiveChain(test)));
+      if (index < 0) {
+        await new Promise((resolve) => waiters.push(resolve));
+        continue;
       }
-      if (!ok) failed = true;
+      const [test] = pending.splice(index, 1);
+      const chain = exclusiveChain(test);
+      if (chain) busy.add(chain);
+      try {
+        if (!(await runOne(test))) failed = true;
+      } finally {
+        busy.delete(chain);
+        const woken = waiters;
+        waiters = [];
+        for (const resolve of woken) resolve();
+      }
     }
   }
   await Promise.all(Array.from({ length: Math.min(batchJobs, batch.length) }, worker));
@@ -445,5 +468,8 @@ process.stdout.write('\n');
 if (serial) await runSerial(tests);
 else await runBatch(tests, jobs);
 const elapsed = ((Date.now() - started) / 1000).toFixed(2);
+for (const name of failedTests) {
+  process.stdout.write(`\nfailed: ${name}\nrerun: node scripts/run-tests.mjs ${name}\n`);
+}
 process.stdout.write(`\n${failed ? 'TESTS FAILED' : 'TESTS PASSED'} (${elapsed}s)\n`);
 process.exit(failed ? 1 : 0);

@@ -1,6 +1,7 @@
 package records
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,9 +11,15 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/devrites/devrites/internal/gitenv"
 	"github.com/devrites/devrites/internal/overhaul/snapshot"
+)
+
+const (
+	gitTimeout   = 60 * time.Second
+	gitWaitDelay = 5 * time.Second
 )
 
 var runIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
@@ -104,8 +111,9 @@ func addExclude(top string) error {
 
 // gitIgnores reports whether git's ignore rules match rel (tracked or not).
 func gitIgnores(top, rel string) (bool, error) {
-	cmd := gitCmd(top, "check-ignore", "-q", "--no-index", rel)
-	err := cmd.Run()
+	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
+	defer cancel()
+	err := gitCmd(ctx, top, "check-ignore", "-q", "--no-index", rel).Run()
 	var ee *exec.ExitError
 	switch {
 	case err == nil:
@@ -118,15 +126,18 @@ func gitIgnores(top, rel string) (bool, error) {
 }
 
 func gitText(dir string, args ...string) (string, error) {
-	out, err := gitCmd(dir, args...).Output()
+	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
+	defer cancel()
+	out, err := gitCmd(ctx, dir, args...).Output()
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(string(out)), nil
 }
 
-func gitCmd(dir string, args ...string) *exec.Cmd {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...) // #nosec G204 -- fixed git binary; arguments passed as argv, no shell
+func gitCmd(ctx context.Context, dir string, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...) // #nosec G204 -- fixed git binary; arguments passed as argv, no shell
 	cmd.Env = append(gitenv.Sanitize(os.Environ()), "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0")
+	cmd.WaitDelay = gitWaitDelay
 	return cmd
 }

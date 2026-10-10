@@ -60,8 +60,10 @@ func ReadLedgerFile(ledgerPath string) (string, error) {
 // RunGates executes the runnable gates of ledgerPath. reverify re-runs every
 // runnable gate including already-met ones; the normal mode runs only unmet
 // runnable gates. approved is the vetted command set from test-plan.md; a
-// CHECK outside it never executes. Each pass writes definition-bound evidence;
-// each failure clears the box and restores EVIDENCE: pending.
+// CHECK outside it never executes, and neither does one outside a surface that
+// could not be determined — an absent preflight is a refusal, not permission.
+// Each pass writes definition-bound evidence; each failure clears the box and
+// restores EVIDENCE: pending.
 //
 // The caller holds the feature lock across this call.
 func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, approved []ApprovedCommand, reverify bool, timeout time.Duration) []GateResult {
@@ -79,7 +81,7 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 			results = append(results, GateResult{ID: gate.ID, Passed: true, Detail: "already met"})
 			continue
 		}
-		if approved != nil && !Approved(gate.Check, gate.Cwd, approved) {
+		if !Approved(gate.Check, gate.Cwd, approved) {
 			results = append(results, GateResult{ID: gate.ID, Detail: "CHECK/CWD is not an approved test-plan.md preflight row; not executed"})
 			continue
 		}

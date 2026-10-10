@@ -62,12 +62,13 @@ else
 fi
 
 # 4) no language-specific rule subdirectories exist anywhere
+found=0
 for d in "$EMPTY" "$RAILS" "$REACT"; do
   for sub in ruby python typescript web golang rust ecc; do
-    [ -e "$d/.claude/skills/devrites-lib/reference/standards/$sub" ] && no "unexpected stack-specific rules dir: $sub" || true
+    [ -e "$d/.claude/skills/devrites-lib/reference/standards/$sub" ] && { no "unexpected stack-specific rules dir: $sub"; found=1; } || true
   done
 done
-ok "no language-specific rule packs anywhere"
+[ "$found" -eq 0 ] && ok "no language-specific rule packs anywhere"
 
 echo ""
 [ "$fail" -eq 0 ] && echo "fixture-install: PASS" || echo "fixture-install: FAIL"

@@ -4,6 +4,7 @@ package parallel
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,9 @@ import (
 	"sort"
 	"strings"
 )
+
+// ErrPathOverlap marks a path-disjoint refusal caused by shared ownership.
+var ErrPathOverlap = errors.New("path sets overlap")
 
 var winAbsRE = regexp.MustCompile(`(?i)^[A-Za-z]:[/\\]`)
 
@@ -126,10 +130,24 @@ func CheckPathDisjoint(slices []SlicePaths, root string) ([]string, error) {
 		if len(labels) > 1 {
 			overlaps = append(overlaps, fmt.Sprintf("%q shared by %s", path, strings.Join(labels, ", ")))
 		}
+		// A path claimed by one slice contains every path beneath it, so a
+		// directory claim and a file under it are shared ownership.
+		for i := len(path) - 1; i > 0; i-- {
+			if path[i] != '/' {
+				continue
+			}
+			for _, outer := range owners[path[:i]] {
+				for _, inner := range labels {
+					if outer != inner {
+						overlaps = append(overlaps, fmt.Sprintf("%q (%s) contains %q (%s)", path[:i], outer, path, inner))
+					}
+				}
+			}
+		}
 	}
 	if len(overlaps) > 0 {
 		sort.Strings(overlaps)
-		return nil, fmt.Errorf("path sets overlap: %s", strings.Join(overlaps, "; "))
+		return nil, fmt.Errorf("%w: %s", ErrPathOverlap, strings.Join(overlaps, "; "))
 	}
 	return ids, nil
 }

@@ -7,9 +7,9 @@ permissionMode: plan
 
 <!-- include:_shared/untrusted-input.md -->
 
-## Role / scope
-
 <!-- include:_shared/result-admission.md -->
+
+## Role / scope
 
 Compare one feature diff with
 `spec.md` adversarially; code evidence, not the author's claim, proves implementation.

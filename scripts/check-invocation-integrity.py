@@ -63,7 +63,8 @@ def names(pattern, strip):
 def scan(path, valid_names, valid_rules, problems):
     try:
         txt = open(path, encoding="utf-8").read()
-    except Exception:
+    except (OSError, UnicodeDecodeError) as exc:
+        problems.append(f"{path}: cannot read: {exc}")
         return
     for name in set(SKILL_TOK.findall(txt)):
         if name in valid_names or name in NONSKILL or name in DOCUMENTED_NONEXISTENT:
@@ -81,7 +82,8 @@ def scan(path, valid_names, valid_rules, problems):
 def scan_codex_sigils(path, problems):
     try:
         txt = open(path, encoding="utf-8").read()
-    except Exception:
+    except (OSError, UnicodeDecodeError) as exc:
+        problems.append(f"{path}: cannot read: {exc}")
         return
     for lineno, line in enumerate(txt.splitlines(), 1):
         if CODEX_SLASH_RITE.search(line):

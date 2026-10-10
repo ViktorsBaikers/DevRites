@@ -59,7 +59,6 @@ const (
 	dupMaxPostings     = 32
 	dupMaxPairAnchors  = 8192
 	dupMergeGap        = 4
-	dupMaxClusters     = 200
 	dupHashLength      = 12
 	dupCrossDirMaxHops = 8
 	dupCrossDirBoost   = 0.15
@@ -440,6 +439,18 @@ func dupDistanceBoost(pathA, pathB string, seg dupSegment) float64 {
 // dupClusterUnits merges per-file ranges into units, unions segments into
 // transitive clusters, and orders clusters by their strongest boosted pair.
 func dupClusterUnits(segs []dupSegment, files []dupFile) ([]dupCluster, []dupUnit, []dupEdge) {
+	return dupClusterUnitsCounted(segs, files, nil)
+}
+
+// dupClusterUnitsCounted is dupClusterUnits with an optional counter of the
+// units and edges it examines, so tests can assert on work done instead of
+// wall time.
+func dupClusterUnitsCounted(segs []dupSegment, files []dupFile, steps *int) ([]dupCluster, []dupUnit, []dupEdge) {
+	step := func() {
+		if steps != nil {
+			*steps++
+		}
+	}
 	// Merge each file's overlapping/adjacent ranges into units.
 	perFile := map[int][]dupUnit{}
 	for _, s := range segs {
@@ -465,15 +476,22 @@ func dupClusterUnits(segs []dupSegment, files []dupFile) ([]dupCluster, []dupUni
 		}
 	}
 	// Locate the unit covering a segment endpoint: same file, maximal overlap.
+	// Each file's units are already sorted by start, so only the units that
+	// reach the range are visited.
+	byFile := map[int][]int{}
+	for i, u := range units {
+		byFile[u.file] = append(byFile[u.file], i)
+	}
 	unitIndex := func(file, start, end int) int {
+		idxs := byFile[file]
 		best, bestOverlap := -1, 0
-		for i, u := range units {
-			if u.file != file {
-				continue
-			}
+		k := sort.Search(len(idxs), func(k int) bool { return units[idxs[k]].end >= start })
+		for ; k < len(idxs) && units[idxs[k]].start <= end; k++ {
+			step()
+			u := units[idxs[k]]
 			ov := min(u.end, end) - max(u.start, start) + 1
 			if ov > bestOverlap {
-				best, bestOverlap = i, ov
+				best, bestOverlap = idxs[k], ov
 			}
 		}
 		return best
@@ -503,19 +521,25 @@ func dupClusterUnits(segs []dupSegment, files []dupFile) ([]dupCluster, []dupUni
 		}
 	}
 	groups := map[int][]int{}
+	seen := map[int]bool{}
+	best := map[int]float64{}
 	for _, e := range edges {
+		step()
 		r := find(e.a)
-		if !containsInt(groups[r], e.a) {
-			groups[r] = append(groups[r], e.a)
+		for _, u := range [2]int{e.a, e.b} {
+			if !seen[u] {
+				seen[u] = true
+				groups[r] = append(groups[r], u)
+			}
 		}
-		if !containsInt(groups[r], e.b) {
-			groups[r] = append(groups[r], e.b)
+		if e.boosted > best[r] {
+			best[r] = e.boosted
 		}
 	}
 	var clusters []dupCluster
-	for _, members := range groups {
+	for r, members := range groups {
 		sort.Ints(members)
-		c := dupCluster{units: members}
+		c := dupCluster{units: members, score: best[r]}
 		var sb strings.Builder
 		var hashes []string
 		for _, u := range members {
@@ -529,19 +553,6 @@ func dupClusterUnits(segs []dupSegment, files []dupFile) ([]dupCluster, []dupUni
 		sum := sha256.Sum256([]byte(sb.String()))
 		c.hash = hex.EncodeToString(sum[:])[:dupHashLength]
 		clusters = append(clusters, c)
-	}
-	for i := range clusters {
-		best := 0.0
-		member := map[int]bool{}
-		for _, u := range clusters[i].units {
-			member[u] = true
-		}
-		for _, e := range edges {
-			if member[e.a] && member[e.b] && e.boosted > best {
-				best = e.boosted
-			}
-		}
-		clusters[i].score = best
 	}
 	sort.Slice(clusters, func(i, j int) bool {
 		if clusters[i].score != clusters[j].score {
@@ -579,15 +590,6 @@ func dupHeaderLine(tokens string) bool {
 	switch fields[0] {
 	case "package", "module", "namespace":
 		return true
-	}
-	return false
-}
-
-func containsInt(xs []int, v int) bool {
-	for _, x := range xs {
-		if x == v {
-			return true
-		}
 	}
 	return false
 }
@@ -961,11 +963,12 @@ func RunCheckDup(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintln(stdout, "dup: ok (no similar regions)")
 		}
 		if opts.slug != "" {
-			recordMetric(root, opts.slug, opts.phase, "dup", "", int64(len(clusters)))
+			recordMetric(root, opts.slug, opts.phase, "dup", "", 0)
 		}
 		return 0
 	}
-	fmt.Fprintf(stdout, "dup: %d cluster(s)", len(shown))
+	shownCount := len(shown)
+	fmt.Fprintf(stdout, "dup: %d cluster(s)", shownCount)
 	if ignoredCount > 0 {
 		fmt.Fprintf(stdout, " (%d ignored)", ignoredCount)
 	}
@@ -1000,7 +1003,7 @@ func RunCheckDup(root string, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	if opts.slug != "" {
-		recordMetric(root, opts.slug, opts.phase, "dup", "", int64(len(shown)))
+		recordMetric(root, opts.slug, opts.phase, "dup", "", int64(shownCount))
 	}
 	return 0
 }

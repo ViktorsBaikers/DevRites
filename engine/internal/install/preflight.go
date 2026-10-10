@@ -190,8 +190,15 @@ func (r *runner) recheckPath(rel string) error {
 	if now != before {
 		return fmt.Errorf("refusing to change %s: file changed after preflight; retry the operation", rel)
 	}
+	if afterRecheckPath != nil {
+		afterRecheckPath(rel)
+	}
 	return nil
 }
+
+// afterRecheckPath lets tests swap a path component in the window between the
+// recheck and the write that follows it.
+var afterRecheckPath func(rel string)
 
 func inspectManagedPath(target, rel string) (pathSnapshot, error) {
 	native := filepath.FromSlash(rel)

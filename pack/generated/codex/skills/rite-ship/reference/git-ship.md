@@ -52,7 +52,8 @@ Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
    sequence whose workspace is sealed in this run
    ([afk-hitl.md § Sequence continuation](../../devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces));
    disclose the exact slug set. A different slug, missing colon, broad `WIP(` match,
-   ordinary commit, or mixed history blocks; never reinterpret the range.
+   ordinary commit, or mixed history blocks; never reinterpret the range. The recorded
+   ship commit of a resumed ship (step 7a) is not an ordinary commit for that rerun.
 2. **Verify the candidate.** Rerun `devrites-engine check candidate <slug>` and
    `devrites-engine check seal <slug>`, compare every binding, require the
    candidate worktree paths to be unchanged, and inspect the existing staged
@@ -98,6 +99,11 @@ Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
    paths still match `HEAD`, then rerun `devrites-engine check candidate <slug>`
    and `devrites-engine check seal <slug>` and compare the exact digest again.
    Any mismatch stops; do not reinterpret it.
+7a. **Record before push.** Write `ship.md` `Commit(s)` and `Push: pending`. A failed
+    push/tag/PR records `failed`, an unanswered or timed-out one `unknown`; stop. Check
+    the remote ref (`git ls-remote`) before any retry. A rerun whose HEAD equals the
+    recorded commit and whose candidate digest is unchanged skips steps 1-7 and
+    prompts a fresh type-GO for only the remaining push/tag/PR commands.
 8. **Push** to the project-conventional target branch.
 9. **Tag / PR** only when project convention requires it; otherwise skip.
 10. **Close sealed predecessors** only when the prompt disclosed them: run the
@@ -105,7 +111,7 @@ Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
     because `ACTIVE` names the release workspace; a nonzero exit stops the rest and
     is reported, never retried against an unverified destination.
 
-Record SHA(s), branch, and tag/PR URL in `ship.md`.
+Update `Push:` to `pushed` and record branch and tag/PR URL in `ship.md`.
 
 ## Pull request body
 

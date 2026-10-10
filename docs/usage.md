@@ -334,7 +334,7 @@ by its cap and pause rules.
 # Drop the sentinel before bed. Keys are optional: empty file works.
 cat > .devrites/AFK <<'EOF'
 max_slices: 10
-notify: "curl -d \"$DEVRITES_QID: $DEVRITES_QUESTION\" ntfy.sh/my-topic"
+notify: "curl -fsS -m 10 -d \"$DEVRITES_QID: $DEVRITES_QUESTION\" ntfy.sh/my-topic"
 allow_gates: [advisory, validating]
 EOF
 

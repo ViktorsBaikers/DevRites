@@ -43,7 +43,7 @@ const REVIEW_SCHEMA = {
   properties: {
     outcome: { enum: ['findings', 'no-findings', 'gap'] },
     inspected: { type: 'array', items: { type: 'string' } },
-    findings: { type: 'array', maxItems: 5, items: FINDING_SCHEMA },
+    findings: { type: 'array', items: FINDING_SCHEMA },
     gaps: { type: 'array', items: { type: 'string' } },
   },
 }
@@ -100,7 +100,7 @@ const discovery = await agent(
   },
 )
 
-if (!discovery || discovery.outcome !== 'ready') {
+if (!discovery || discovery.outcome !== 'ready' || !Array.isArray(discovery.gaps) || discovery.gaps.length !== 0) {
   return { outcome: 'gap', read_only: true, discovery: discovery || null, reviews: [], verification: null, completeness: null }
 }
 
@@ -158,10 +158,11 @@ const verification = await agent(
 
 phase('Complete')
 const completeness = await agent(
-  `Check completeness of this read-only review: required reviewer availability, candidate/spec/proof/test inputs, review modalities, and one verification verdict per unique finding. Report missing or unread evidence; do not synthesize a pass from gaps and do not edit anything.\n\nDiscovery: ${JSON.stringify(discovery)}\nReviews: ${JSON.stringify(reviews)}\nFindings: ${JSON.stringify(findings)}\nVerification: ${JSON.stringify(verification)}`,
+  `Check completeness of this read-only review: required reviewer availability, candidate/spec/proof/test inputs, review modalities, and one verification verdict per unique finding. Report missing or unread evidence; do not synthesize a pass from gaps and do not edit anything.\n\nDiscovery: ${JSON.stringify(discovery)}\nReviews: ${JSON.stringify(reviews)}\nFinding keys: ${JSON.stringify(findings.map(finding => finding.key))}\nVerification: ${JSON.stringify(verification)}`,
   {
     label: 'complete:coverage',
     phase: 'Complete',
+    agentType: 'devrites-doubt-reviewer',
     schema: COMPLETENESS_SCHEMA,
   },
 )
@@ -187,7 +188,7 @@ return {
   read_only: true,
   discovery,
   reviews,
-  findings,
+  findings: findings.map(({ key, reviewer }) => ({ key, reviewer })),
   verification: verification || null,
   completeness: completeness || null,
   admission: { reviewers: reviewerAdmission, verification: verificationAdmission, semantic: Boolean(semanticAdmission) },

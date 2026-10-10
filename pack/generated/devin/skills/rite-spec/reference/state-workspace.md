@@ -196,6 +196,7 @@ proposed: <best current answer>
 raised_at: <iso>
 answered_at:
 answer:
+answered_by:        # human, only when resolved with `state resolve --human`
 impact: <affected AC/REQ/slice IDs>
 ```
 

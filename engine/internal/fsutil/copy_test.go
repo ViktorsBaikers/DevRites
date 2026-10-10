@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestWriteFileAtomicWritesAndOverwrites(t *testing.T) {
@@ -22,7 +21,7 @@ func TestWriteFileAtomicWritesAndOverwrites(t *testing.T) {
 	if string(got) != "first\n" {
 		t.Fatalf("content %q", got)
 	}
-	if !PermissionsMatch(mustMode(t, path), 0o644) {
+	if runtime.GOOS != "windows" && mustMode(t, path).Perm() != 0o644 {
 		t.Fatalf("perm %v", mustMode(t, path))
 	}
 	// Overwrite in place.
@@ -53,128 +52,6 @@ func mustMode(t *testing.T, path string) os.FileMode {
 	return info.Mode()
 }
 
-func TestFileModTime(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "file.txt")
-	if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	modified, ok := FileModTime(path)
-	if !ok {
-		t.Fatal("regular file should report mod time")
-	}
-	if modified <= 0 {
-		t.Fatalf("mod time %d", modified)
-	}
-	if _, ok := FileModTime(filepath.Join(dir, "missing.txt")); ok {
-		t.Fatal("missing file should report !ok")
-	}
-	if _, ok := FileModTime(dir); ok {
-		t.Fatal("directory should report !ok")
-	}
-}
-
-func TestNewestModTime(t *testing.T) {
-	dir := t.TempDir()
-	old := filepath.Join(dir, "old.txt")
-	new := filepath.Join(dir, "new.txt")
-	if err := os.WriteFile(old, []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(new, []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	future := time.Now().Add(2 * time.Hour)
-	if err := os.Chtimes(new, future, future); err != nil {
-		t.Skipf("cannot set file times on this platform: %v", err)
-	}
-	newest, ok := NewestModTime(old, new)
-	if !ok {
-		t.Fatal("expected ok")
-	}
-	want, _ := FileModTime(new)
-	if newest != want {
-		t.Fatalf("newest=%d want %d", newest, want)
-	}
-	if _, ok := NewestModTime(filepath.Join(dir, "missing.txt")); ok {
-		t.Fatal("missing-only inputs should report !ok")
-	}
-}
-
-func TestCopyTreeMissingSourceIsNoOp(t *testing.T) {
-	dir := t.TempDir()
-	dst := filepath.Join(dir, "dst")
-	if err := CopyTree(filepath.Join(dir, "missing"), dst); err != nil {
-		t.Fatalf("missing src must not error: %v", err)
-	}
-	if _, err := os.Stat(dst); !os.IsNotExist(err) {
-		t.Fatalf("dst must not be created, got %v", err)
-	}
-}
-
-func TestCopyTreeFileAndTree(t *testing.T) {
-	dir := t.TempDir()
-	src := filepath.Join(dir, "src")
-	if err := os.MkdirAll(filepath.Join(src, "sub"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(src, "root.txt"), []byte("root\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(src, "sub", "leaf.txt"), []byte("leaf\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	dst := filepath.Join(dir, "dst")
-	if err := CopyTree(src, dst); err != nil {
-		t.Fatal(err)
-	}
-	for rel, want := range map[string]string{
-		"root.txt":     "root\n",
-		"sub/leaf.txt": "leaf\n",
-	} {
-		got, err := os.ReadFile(filepath.Join(dst, filepath.FromSlash(rel)))
-		if err != nil {
-			t.Fatalf("%s: %v", rel, err)
-		}
-		if string(got) != want {
-			t.Fatalf("%s: %q want %q", rel, got, want)
-		}
-	}
-
-	// Copying a single file copies its contents.
-	single := filepath.Join(dir, "single.txt")
-	if err := os.WriteFile(single, []byte("one\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	singleDst := filepath.Join(dir, "single-copy.txt")
-	if err := CopyTree(single, singleDst); err != nil {
-		t.Fatal(err)
-	}
-	if got, _ := os.ReadFile(singleDst); string(got) != "one\n" {
-		t.Fatalf("single copy %q", got)
-	}
-
-	// Recopying overwrites existing files.
-	if err := os.WriteFile(filepath.Join(src, "root.txt"), []byte("changed\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := CopyTree(src, dst); err != nil {
-		t.Fatal(err)
-	}
-	if got, _ := os.ReadFile(filepath.Join(dst, "root.txt")); string(got) != "changed\n" {
-		t.Fatalf("overwrite %q", got)
-	}
-}
-
-func TestPermissionsMatch(t *testing.T) {
-	if !PermissionsMatch(0o644, 0o644) {
-		t.Fatal("matching perms must match")
-	}
-	if runtime.GOOS != "windows" && PermissionsMatch(0o600, 0o644) {
-		t.Fatal("differing POSIX perms must not match")
-	}
-}
-
 func TestWriteFileAtomicSurfacesFailure(t *testing.T) {
 	dir := t.TempDir()
 	blocker := filepath.Join(dir, "blocker")
@@ -189,5 +66,89 @@ func TestWriteFileAtomicSurfacesFailure(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "atomic write") {
 		t.Fatalf("error should identify the operation, got %v", err)
+	}
+}
+
+func TestWriteFileAtomicSyncsParentDirAfterRename(t *testing.T) {
+	var calls []string
+	var existedAtSync bool
+	path := filepath.Join(t.TempDir(), "nested", "file.txt")
+	orig := syncDir
+	syncDir = func(dir string) error {
+		calls = append(calls, dir)
+		_, err := os.Stat(path)
+		existedAtSync = err == nil
+		return nil
+	}
+	t.Cleanup(func() { syncDir = orig })
+	if err := WriteFileAtomic(path, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) != 1 || calls[0] != filepath.Dir(path) {
+		t.Fatalf("syncDir calls = %v, want one call with %q", calls, filepath.Dir(path))
+	}
+	if !existedAtSync {
+		t.Fatal("syncDir ran before the rename")
+	}
+}
+
+func TestWriteFileAtomicInRefusesSymlinkedDirectoryOutsideRoot(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs elevated privileges on Windows")
+	}
+	base := t.TempDir()
+	target := filepath.Join(base, "target")
+	outside := filepath.Join(base, "outside")
+	for _, dir := range []string{target, outside} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink(outside, filepath.Join(target, ".claude")); err != nil {
+		t.Fatal(err)
+	}
+	root, err := os.OpenRoot(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := WriteFileAtomicIn(root, filepath.Join(".claude", "skills", "x.md"), []byte("x"), 0o644); err == nil {
+		t.Fatal("expected the write through a symlink leaving the root to fail")
+	}
+	entries, err := os.ReadDir(outside)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("outside directory was written to: %v", entries)
+	}
+}
+
+func TestWriteFileAtomicInWritesOverwritesAndLeavesNoTemp(t *testing.T) {
+	target := t.TempDir()
+	root, err := os.OpenRoot(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	rel := filepath.Join("a", "b", "f.txt")
+	for _, content := range []string{"one", "two"} {
+		if err := WriteFileAtomicIn(root, rel, []byte(content), 0o640); err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(filepath.Join(target, rel))
+		if err != nil || string(got) != content {
+			t.Fatalf("read = %q, %v; want %q", got, err, content)
+		}
+	}
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(filepath.Join(target, rel))
+		if err != nil || info.Mode().Perm() != 0o640 {
+			t.Fatalf("mode = %v, %v; want 0640", info, err)
+		}
+	}
+	entries, err := os.ReadDir(filepath.Join(target, "a", "b"))
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("directory entries = %v, %v; want only the target file", entries, err)
 	}
 }

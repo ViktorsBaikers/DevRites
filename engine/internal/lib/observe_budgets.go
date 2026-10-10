@@ -28,33 +28,48 @@ type BulkFile struct {
 }
 
 // observeArtifactBudgets lists canonical artifacts present in the workspace root with
-// their budget status, plus non-canonical files large enough to hurt a reader.
-func observeArtifactBudgets(workspace string) ([]ArtifactBudget, []BulkFile, error) {
+// their budget status, plus non-canonical files large enough to hurt a reader. The
+// third return names every entry it could not read: one unreadable artifact must not
+// hide the budgets of every other artifact.
+func observeArtifactBudgets(workspace string) ([]ArtifactBudget, []BulkFile, []string, error) {
 	entries, err := os.ReadDir(workspace)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	var budgets []ArtifactBudget
 	var bulk []BulkFile
+	var unreadable []string
 	for _, entry := range entries {
 		if !entry.Type().IsRegular() {
 			continue
 		}
+		name := entry.Name()
 		info, err := entry.Info()
 		if err != nil {
-			return nil, nil, err
+			unreadable = append(unreadable, name)
+			continue
 		}
-		name := entry.Name()
 		if _, canonical := state.ArtifactLineBudget(name); !canonical {
 			if info.Size() > bulkFileThreshold {
 				bulk = append(bulk, BulkFile{File: name, Bytes: info.Size()})
 			}
 			continue
 		}
-		// #nosec G304 -- canonical workspace artifact name from a fixed table
-		raw, err := os.ReadFile(filepath.Join(workspace, name))
+		if info.Size() > maxCandidateArtifactBytes {
+			measured, _ := state.ArtifactBudget(name, nil)
+			budgets = append(budgets, ArtifactBudget{
+				File:       name,
+				Bytes:      info.Size(),
+				LineBudget: measured.LineBudget,
+				ByteBudget: measured.ByteBudget,
+				Over:       true,
+			})
+			continue
+		}
+		raw, err := readBoundedRegularFile(filepath.Join(workspace, name), maxCandidateArtifactBytes)
 		if err != nil {
-			return nil, nil, err
+			unreadable = append(unreadable, name)
+			continue
 		}
 		measured, _ := state.ArtifactBudget(name, raw)
 		budgets = append(budgets, ArtifactBudget{
@@ -69,5 +84,6 @@ func observeArtifactBudgets(workspace string) ([]ArtifactBudget, []BulkFile, err
 	}
 	sort.Slice(budgets, func(i, j int) bool { return budgets[i].File < budgets[j].File })
 	sort.Slice(bulk, func(i, j int) bool { return bulk[i].File < bulk[j].File })
-	return budgets, bulk, nil
+	sort.Strings(unreadable)
+	return budgets, bulk, unreadable, nil
 }

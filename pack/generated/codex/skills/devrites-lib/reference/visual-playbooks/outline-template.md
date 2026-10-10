@@ -103,4 +103,4 @@ outline changes, regenerate the JSON from it in the same edit.
 - `open-visual` checks `## ID inventory` against HTML `id="..."` attributes
   (inventory → HTML only; HTML-only decorative ids such as SVG marker defs are
   not reported).
-- Budget: 200 lines (see workspace artifact schema).
+- Budget: 200 lines, advisory and not gate-checked (see workspace artifact schema).

@@ -2,9 +2,9 @@
 # Focused checks for the Claude-to-pi generator used by host packaging.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-fail=0
-ok() { printf '  ok: %s\n' "$*"; }
-no() { printf '  FAIL: %s\n' "$*"; fail=1; }
+
+# shellcheck source=generator-test-lib.sh
+. "$ROOT/tests/generator-test-lib.sh"
 
 TMP_GEN_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_GEN_DIR"' EXIT
@@ -13,16 +13,6 @@ trap 'rm -rf "$TMP_GEN_DIR"' EXIT
 . "$ROOT/scripts/pi-generate.sh"
 
 echo "== pi-generator-test =="
-
-NAV="ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics"
-
-expect_tools() {
-  local got="$1" want="$2" label="$3"
-  [ "$got" = "$want" ] && ok "$label" || {
-    no "$label"
-    printf '    got:  %s\n    want: %s\n' "$got" "$want"
-  }
-}
 
 expect_tools \
   "$(_pi_append_extension_tools "read, grep, find, bash")" \
@@ -157,6 +147,39 @@ grep -qF 'Routine native result collection uses the exposed public tool; it does
 grep -qF 'Preserve confidentiality and any one-shot limits. Failed, malformed, or unavailable terminal results remain `gap`, never a passed review.' "$TMP_GEN_DIR/AGENTS.md" &&
   ok "bridge preserves privacy, one-shot limits, and failure admission" ||
   no "bridge preserves privacy, one-shot limits, and failure admission"
+
+quoted_src="$TMP_GEN_DIR/QUOTED.md"
+cat >"$quoted_src" <<'SKILL'
+---
+name: rite-quoted
+description: "Build the slice."
+---
+Body.
+SKILL
+gen_pi_prompt_stub "$quoted_src" rite-quoted "$TMP_GEN_DIR/rite-quoted.prompt.md"
+grep -qxF 'description: "Build the slice."' "$TMP_GEN_DIR/rite-quoted.prompt.md" &&
+  ok "prompt stub does not re-quote a quoted description" || no "prompt stub does not re-quote a quoted description"
+cat >"$quoted_src" <<'SKILL'
+---
+name: rite-quoted
+description: "Build \"the\" slice."
+---
+Body.
+SKILL
+gen_pi_prompt_stub "$quoted_src" rite-quoted "$TMP_GEN_DIR/rite-quoted.prompt.md"
+grep -qxF 'description: "Build \"the\" slice."' "$TMP_GEN_DIR/rite-quoted.prompt.md" &&
+  ok "prompt stub round-trips escapes in a quoted description" || no "prompt stub round-trips escapes in a quoted description"
+cat >"$quoted_src" <<'SKILL'
+---
+name: rite-quoted
+description: "Quoted agent."
+tools: Read
+---
+Body.
+SKILL
+gen_pi_agent "$quoted_src" "$TMP_GEN_DIR/quoted.agent.md"
+grep -qxF 'description: "Quoted agent."' "$TMP_GEN_DIR/quoted.agent.md" &&
+  ok "agent does not re-quote a quoted description" || no "agent does not re-quote a quoted description"
 
 [ "$fail" -eq 0 ] && echo "pi-generator-test: PASS" || echo "pi-generator-test: FAIL"
 exit "$fail"

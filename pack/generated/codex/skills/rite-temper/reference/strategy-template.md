@@ -74,8 +74,15 @@ already exists, record in `drift.md` and route via `$rite-plan repair` instead o
     mitigations go to *Failure and recovery behavior* rows.
   - *Open questions* table: one row per scope call (options offered → decision → owner).
   - **Re-run the Readiness gate** at the bottom of the spec after edits; it must still pass, and
-    **every folded scope delta must trace to a recorded decision** (a `questions.md` qid or a
-    `decisions.md` ADR): an untraceable change is the batch-dump failure.
+    **every folded scope delta must trace to a recorded decision**: a reduction or non-growth
+    delta traces to a `questions.md` qid **or** a `decisions.md` ADR, but an **acceptance-growth**
+    delta (`expand` or any added *Success metrics* / *Acceptance criteria* row) traces **only** to a
+    **resolved human `questions.md` qid** (`status: answered` plus an unindented, lowercase `answered_by: human` line; a qid without exactly
+    that line, including every qid written before the field existed, does not satisfy growth traceability).
+    A `decisions.md` ADR written by the same run is **not**
+    the human approval that growth requires, so an ADR-only growth fold is untraceable and the
+    Readiness gate fails closed — `$rite-define` step 0 hard-blocks while it is unresolved. An
+    untraceable change is the batch-dump failure.
 - **`decisions.md`:** one ADR-style entry per scope call and accepted trade-off:
   `context · decision · why-not-the-alternative · what-would-change-it`.
 - **`assumptions.md`:** every "we'll probably need X" demoted to an explicit
@@ -86,5 +93,9 @@ already exists, record in `drift.md` and route via `$rite-plan repair` instead o
   `devrites-strategy-reviewer` agent is **read-only** and only returns findings + bands.
 - **No silent scope.** An expansion that the human didn't opt into, or a reduction that drops an
   acceptance criterion without a recorded decision, is a defect, not a convenience.
+- **An ADR is not its own approval.** A `decisions.md` ADR the run writes about its own scope call
+  records *why* it chose that mode; it never stands in for the human's answer. Acceptance growth
+  stays blocked until a resolved human `questions.md` qid lands, so an unattended run cannot fold
+  an expansion by citing its own record.
 - Add `strategy.md` to the workspace between `spec.md` and `plan.md`; `$rite-define` and
   `$rite-ship` read it.

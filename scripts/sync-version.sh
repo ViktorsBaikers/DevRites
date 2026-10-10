@@ -35,13 +35,17 @@ for (const u of updates) {
 
 // Update README status line so the published version shows on the repo
 // landing page. Matches the previous status block (single- or two-line form)
-// and rewrites it to a one-liner pointing at the new tag.
+// and rewrites it to a one-liner pointing at the new tag. A second line counts
+// as part of the block only when it starts lowercase (a wrapped sentence); a
+// following line that starts any other way is kept. Known limit: a paragraph
+// that starts lowercase directly after the status, with no blank line, still
+// loses its first line.
 const readmePath = path.resolve('README.md');
 const readme = fs.readFileSync(readmePath, 'utf8');
 const statusLine =
   `**Status:** [\`v${version}\`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v${version}): ` +
   "see [`CHANGELOG.md`](CHANGELOG.md) for release notes.";
-const re = /\*\*Status:\*\*[^\n]*(?:\n(?!\n)[^\n]*)*/;
+const re = /\*\*Status:\*\*[^\n]*(?:\n(?=[a-z])[^\n]*)?/;
 if (re.test(readme)) {
   const updated = readme.replace(re, statusLine);
   if (updated !== readme) {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -274,6 +275,14 @@ func inspectWorkspaceState(facts *Facts) {
 				Refuse:      true,
 			})
 		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		facts.Hazards = append(facts.Hazards, Hazard{
+			ID:          "DRV-WORKSPACE-SCAN-FAILED",
+			Severity:    "error",
+			Message:     fmt.Sprintf("cannot enumerate workspace directory: %v", err),
+			Remediation: fmt.Sprintf("chmod u+rx %s", shellQuote(filepath.Join(root, "work"))),
+			Refuse:      true,
+		})
 	}
 	if strings.TrimSpace(os.Getenv("DEVRITES_WORKSPACE")) != "" {
 		if _, err := devritespaths.WorkspaceOverrideChecked(root, ""); err != nil {

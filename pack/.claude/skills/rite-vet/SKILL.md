@@ -20,11 +20,11 @@ Vet owns implementation; current `$ARGUMENTS` (`--full`) feeds the depth trigger
 ## Rules
 
 Read the active standard from: [`principles.md`](../devrites-lib/reference/standards/principles.md), [`patterns.md`](../devrites-lib/reference/standards/patterns.md) + [`coding-style.md`](../devrites-lib/reference/standards/coding-style.md) (over-engineering / YAGNI rubric, trigger `yagni`),
-[`testing.md`](../devrites-lib/reference/standards/testing.md), [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md), [`performance.md`](../devrites-lib/reference/standards/performance.md), [`error-handling.md`](../devrites-lib/reference/standards/error-handling.md),
+[`testing.md`](../devrites-lib/reference/standards/testing.md), [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md), [`performance.md`](../devrites-lib/reference/standards/performance.md), [`error-handling.md`](../devrites-lib/reference/standards/error-handling.md) (trigger `errors`),
 [`development-workflow.md`](../devrites-lib/reference/standards/development-workflow.md), [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md), [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md),
-[`developer-experience.md`](../devrites-lib/reference/standards/developer-experience.md), [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md), and [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md). Load
+[`developer-experience.md`](../devrites-lib/reference/standards/developer-experience.md), [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md), and [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md) (trigger `dod`). Load
 repository topology, data integrity, and integration reliability only when
-triggered. When the plan's scope generalizes an existing boundary — a second
+triggered (trigger `applicability`). When the plan's scope generalizes an existing boundary — a second
 platform/tenant/source of truth, a newly optional field, a constant turned parameter —
 confirm the [`assumption-checkpoints.md`](../devrites-lib/reference/standards/assumption-checkpoints.md) question (trigger `assumption-delta`)
 was answered and recorded, not skipped-as-negative.
@@ -65,6 +65,7 @@ plan declares a root-authored executable workflow file, read
   repeat unaffected axes/reviewers. One dispatch covers every open fingerprint
   of the fold — each checked individually — with a mandatory correction-created
   regression audit.
+- Refuse the rationalizations in [`anti-patterns`](reference/anti-patterns.md).
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"plan declares root-authored executable workflow file","action":"emit exact admission; stale/missing authority uses PLAN_VET_REPAIR","return":"Vet READY cursor or exact technical replan"} -->
 ## Workflow
 

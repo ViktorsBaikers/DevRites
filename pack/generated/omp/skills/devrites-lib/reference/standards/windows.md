@@ -38,9 +38,9 @@ devrites-engine check windows <slug> [--worktree|--staged|--base <ref>]
 
 Exit `0` when no marker is introduced or every hit is waived; `3` when any
 introduced marker lacks a waiver or the workspace/ledger is unreadable; `2`
-on usage errors. The check parses the unified diff (`-U0`) for added lines,
-treats untracked files as wholly new, ignores binary files, deletions, and
-`.devrites/` paths, and runs on worktree, staged, or base-reference diffs.
+on usage errors. It parses the unified diff (`-U0`), treats untracked files as
+wholly new in `--worktree`, and ignores binary files, deletions, and
+`.devrites/` paths; `--staged` and `--base` cover the tracked diff only.
 
 ## Reviewer posture
 

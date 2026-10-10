@@ -120,13 +120,15 @@ or caches run in exclusive measurement windows (see
 
 ## Dispatch packets
 
-Write each packet to `<run>/packets/<run>__<task>__<attempt>__<role>.json`, then
-dispatch the `overhaul-<role>` agent with: "Read your packet at `<path>` completely.
+Create each packet with `devrites-engine overhaul packet write <run> <task> <attempt> <role>`
+(fields: [`records.md`](records.md#dispatch-packet-schema)); it writes
+`<run>/packets/<run>__<task>__<attempt>__<role>.json`, refuses to overwrite one and
+prints the path. Then dispatch the `overhaul-<role>` agent with: "Read your packet at `<path>` completely.
 Follow your contract; write your receipt to `<receipt-path>`; return a short summary."
 Keep the `role` field in packets and receipts unprefixed (`implementer`, `verifier`):
 the engine tools match those names. Every packet carries:
 
-- `run_id`, `phase`, `wave`, `task_id`, `attempt_id` (unique triple);
+- `run_id`, `phase`, `task_id`, `attempt_id` (unique triple), and `wave` (optional for the packet tool);
 - snapshot or candidate fingerprint, and expected input file hashes for writers;
 - role, lane, specialization, component IDs, profile IDs with revisions, rule IDs;
 - read paths and ranges, exact write paths (writers only), shared boundaries;

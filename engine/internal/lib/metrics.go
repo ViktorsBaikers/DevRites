@@ -216,6 +216,10 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		totalEvents++
 		totalBytes += ev.Bytes
 	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(stderr, "metrics: ledger unreadable after %d events: %v\n", totalEvents, err)
+		return 2
+	}
 	if len(phases) == 0 && bad == 0 {
 		fmt.Fprintf(stdout, "metrics: no events recorded for %s\n", slug)
 		return 0

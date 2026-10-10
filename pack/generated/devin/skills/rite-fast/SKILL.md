@@ -1,6 +1,6 @@
 ---
 name: rite-fast
-description: Fast lane for mid-size work: one spec-and-plan step with clarifying questions, up to ten slices built without per-slice gates, one completeness check with gap fixes, review, polish, proof.
+description: "Fast lane for mid-size work: one spec-and-plan step with clarifying questions, up to ten slices built without per-slice gates, one completeness check with gap fixes, review, polish, proof."
 argument-hint: "<task | slug>"
 triggers:
   - user

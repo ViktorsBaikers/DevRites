@@ -2,6 +2,7 @@
 // checks for worker output.
 //
 //	receipt RUN RECEIPT [--observed FILE]   receipt vs its dispatch packet; writers vs observed paths
+//	packet RUN PACKET                       packet shape and identity vs its dispatch attempt
 //	anchor ROOT PROPOSALS                   every quoted location matches its file lines (ROOT = snapshot tree or repo)
 //
 // Exit: 0 admissible, 1 reject (reasons listed), 2 usage/IO error, 3 duplicate
@@ -30,6 +31,7 @@ import (
 const usage = `usage: overhaul admit <command> ...
 
   receipt RUN RECEIPT [--observed FILE]   receipt vs its dispatch packet; writers vs observed paths
+  packet RUN PACKET                       packet shape and identity vs its dispatch attempt
   anchor ROOT PROPOSALS                   every quoted location matches its file lines (ROOT = snapshot tree or repo)
 Exit: 0 admissible, 1 reject (reasons listed), 2 usage/IO error, 3 duplicate or late receipt.
 `
@@ -57,6 +59,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 			}
 		}
 		code, err = receipt(args[1], args[2], observed, hasObserved, stdout)
+	case len(args) == 3 && args[0] == "packet":
+		code, err = packetAdmit(args[1], args[2], stdout)
 	case len(args) >= 3 && args[0] == "anchor":
 		code, err = anchor(args[1], args[2], stdout, stderr)
 	default:

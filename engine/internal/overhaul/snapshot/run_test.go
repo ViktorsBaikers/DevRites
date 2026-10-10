@@ -2,6 +2,8 @@ package snapshot
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -42,6 +44,44 @@ func write(t *testing.T, root, rel, content string) {
 	}
 	if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// regularFileText concatenates every regular file under root and fails on any
+// walk or read error, so an unreadable entry cannot make a leak scan pass.
+func regularFileText(root string) (string, error) {
+	var sb strings.Builder
+	err := filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.Type().IsRegular() {
+			b, err := os.ReadFile(p)
+			if err != nil {
+				return err
+			}
+			sb.Write(b)
+		}
+		return nil
+	})
+	return sb.String(), err
+}
+
+func TestRegularFileTextReportsWalkErrors(t *testing.T) {
+	root := t.TempDir()
+	if _, err := regularFileText(filepath.Join(root, "missing")); err == nil {
+		t.Error("missing root: want error")
+	}
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		return
+	}
+	write(t, root, "locked/secret.txt", "hidden")
+	if err := os.Chmod(filepath.Join(root, "locked"), 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(filepath.Join(root, "locked"), 0o700) })
+	if _, err := regularFileText(root); err == nil {
+		t.Error("unreadable directory: want error")
 	}
 }
 
@@ -178,9 +218,14 @@ func TestCaptureDirtyRepo(t *testing.T) {
 		!strings.Contains(unstaged, "+B-unstaged") || !strings.Contains(unstaged, "deleted file mode") {
 		t.Errorf("unstaged.patch:\n%s", unstaged)
 	}
-	for _, name := range []string{"status.bin", "index.bin"} {
-		if _, err := os.Stat(filepath.Join(out, name)); err != nil {
+	for _, name := range []string{"status.bin", "index.bin", "staged.patch", "unstaged.patch", "manifest.json"} {
+		fi, err := os.Stat(filepath.Join(out, name))
+		if err != nil {
 			t.Error(err)
+			continue
+		}
+		if runtime.GOOS != "windows" && fi.Mode().Perm()&0o077 != 0 {
+			t.Errorf("%s mode %v is group or world accessible", name, fi.Mode().Perm())
 		}
 	}
 
@@ -192,14 +237,11 @@ func TestCaptureDirtyRepo(t *testing.T) {
 		t.Errorf("summary %q: %v", stdout, err)
 	}
 	leaks := stdout + stderr
-	if err := filepath.WalkDir(out, func(p string, d os.DirEntry, err error) error {
-		if err == nil && d.Type().IsRegular() {
-			leaks += read(t, p)
-		}
-		return nil
-	}); err != nil {
+	tree, err := regularFileText(out)
+	if err != nil {
 		t.Fatal(err)
 	}
+	leaks += tree
 	for _, s := range []string{envSecret, keySecret} {
 		if strings.Contains(leaks, s) {
 			t.Errorf("secret %q leaked into output or snapshot", s)
@@ -302,6 +344,21 @@ func TestVerifySeparatesAgentAndUserChanges(t *testing.T) {
 	}
 }
 
+func TestVerifyReportsModeOnlyChange(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission bits are not meaningful on windows")
+	}
+	root := dirtyRepo(t)
+	out := captureOK(t, root)
+	if err := os.Chmod(filepath.Join(root, "note.txt"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	code, r := verifyRun(t, root, out)
+	if code != 1 || !slices.Equal(r.User, []string{"note.txt"}) || len(r.Agent) != 0 {
+		t.Fatalf("mode-only change: exit %d %+v", code, r)
+	}
+}
+
 func TestVerifyDetectsIndexChange(t *testing.T) {
 	root := dirtyRepo(t)
 	out := captureOK(t, root)
@@ -359,6 +416,26 @@ func TestCaptureStaysReadOnlyAtBoundaries(t *testing.T) {
 	}
 }
 
+func TestCaptureFailsWhenIndexChangesDuringCapture(t *testing.T) {
+	root := dirtyRepo(t)
+	calls := 0
+	orig := indexDigest
+	indexDigest = func(string) (string, error) {
+		calls++
+		return strings.Repeat("0", 63) + string(rune('0'+calls)), nil
+	}
+	t.Cleanup(func() { indexDigest = orig })
+
+	out := filepath.Join(t.TempDir(), "snap")
+	code, _, stderr := run("capture", root, out)
+	if code == 0 || !strings.Contains(stderr, "index changed during capture") {
+		t.Fatalf("capture exit %d, stderr %q", code, stderr)
+	}
+	if _, err := os.Lstat(filepath.Join(out, "manifest.json")); err == nil {
+		t.Error("manifest.json written despite index change")
+	}
+}
+
 func TestDeltaReportsOnlyAttemptChanges(t *testing.T) {
 	root := dirtyRepo(t)
 	before := filepath.Join(t.TempDir(), "before.json")
@@ -372,6 +449,24 @@ func TestDeltaReportsOnlyAttemptChanges(t *testing.T) {
 	}
 }
 
+func TestDeltaReportsModeOnlyChange(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission bits are not meaningful on windows")
+	}
+	root := dirtyRepo(t)
+	before := filepath.Join(t.TempDir(), "before.json")
+	if code, _, stderr := run("state", root, before); code != 0 {
+		t.Fatalf("state exit %d: %s", code, stderr)
+	}
+	if err := os.Chmod(filepath.Join(root, "src/b.py"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	code, stdout, stderr := run("delta", before, root)
+	if code != 0 || stdout != "src/b.py\n" {
+		t.Fatalf("delta exit %d stdout %q stderr %q", code, stdout, stderr)
+	}
+}
+
 func fingerprintOf(t *testing.T, root string) string {
 	t.Helper()
 	code, stdout, stderr := run("fingerprint", root)
@@ -379,4 +474,243 @@ func fingerprintOf(t *testing.T, root string) string {
 		t.Fatalf("fingerprint exit %d: %s", code, stderr)
 	}
 	return strings.TrimSpace(stdout)
+}
+
+func TestCaptureWithholdsKeysBeyondFirstWindow(t *testing.T) {
+	const window = 65536
+	root := newRepo(t)
+	block := func(kind, body string) (string, string) {
+		return "-----BEGIN " + kind + "-----\n" + body + "\n", "-----END " + kind + "-----"
+	}
+	pad := func(n int) string { return strings.Repeat("A", n) }
+
+	files := map[string]string{}
+	bodies := map[string]string{}
+	add := func(name, prefix, kind, body string) {
+		head, tail := block(kind, body)
+		files[name] = prefix + head + tail
+		bodies[name] = body
+	}
+	add("k0.txt", "", "OPENSSH PRIVATE KEY", "body-k0-4d1f")
+	nearHead, nearTail := block("RSA PRIVATE KEY", "body-knear-4d1f")
+	add("knear.txt", pad(window-len(nearHead)-len(nearTail)), "RSA PRIVATE KEY", "body-knear-4d1f")
+	edgeHead := "-----BEGIN ENCRYPTED "
+	add("kedge.txt", pad(window-8-len(edgeHead)), "ENCRYPTED PRIVATE KEY", "body-kedge-4d1f")
+	// Drop the END line: it holds a second, fully in-window marker that would hide a missing carry.
+	files["kedge.txt"] = strings.TrimSuffix(files["kedge.txt"], "-----END ENCRYPTED PRIVATE KEY-----")
+	add("kfar.txt", pad(200000), "EC PRIVATE KEY", "body-kfar-4d1f")
+	add("kpgp.txt", "", "PGP PRIVATE KEY BLOCK", "body-kpgp-4d1f")
+	if len(files["knear.txt"]) != window {
+		t.Fatalf("knear.txt is %d bytes, want %d", len(files["knear.txt"]), window)
+	}
+	for _, name := range []string{"a.pem", "a.asc", "a.pgp", "a.gpg", "a.p8"} {
+		files[name] = "body-" + name + "-4d1f"
+		bodies[name] = files[name]
+	}
+	for name, content := range files {
+		write(t, root, name, content)
+	}
+	write(t, root, "clean_big.txt", strings.Repeat("B", 200000))
+
+	out := captureOK(t, root)
+	m := loadManifest(t, out)
+	var leaks string
+	for _, p := range []string{"staged.patch", "unstaged.patch"} {
+		leaks += read(t, filepath.Join(out, p))
+	}
+	tree, err := regularFileText(filepath.Join(out, "tree"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	leaks += tree
+	for name, body := range bodies {
+		g := m.Files[name]
+		if g == nil || !g.Sensitive || g.Copied {
+			t.Errorf("%s: got %+v, want sensitive and not copied", name, g)
+		}
+		if _, err := os.Lstat(filepath.Join(out, "tree", name)); err == nil {
+			t.Errorf("%s: present in tree", name)
+		}
+		if strings.Contains(leaks, body) {
+			t.Errorf("%s: body leaked into snapshot", name)
+		}
+	}
+	if g := m.Files["clean_big.txt"]; g == nil || g.Sensitive || !g.Copied {
+		t.Errorf("clean_big.txt: got %+v, want copied and not sensitive", g)
+	}
+
+	stdout := func() string {
+		_, s, _ := run("capture", root, filepath.Join(t.TempDir(), "again"))
+		return s
+	}()
+	var summary struct {
+		Withheld []string `json:"sensitive_not_copied"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &summary); err != nil {
+		t.Fatal(err)
+	}
+	for name := range bodies {
+		if !slices.Contains(summary.Withheld, name) {
+			t.Errorf("%s: missing from sensitive_not_copied", name)
+		}
+	}
+}
+
+func TestCaptureManifestFingerprintMatchesFiles(t *testing.T) {
+	root := newRepo(t)
+	stop := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; ; i++ {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			_ = os.WriteFile(filepath.Join(root, "src", "b.py"), []byte(strings.Repeat("x", i%97+1)+"\n"), 0o644)
+		}
+	}()
+	defer func() { close(stop); <-done }()
+	for i := 0; i < 20; i++ {
+		out := filepath.Join(t.TempDir(), "snap")
+		if code, _, _ := run("capture", root, out); code != 0 {
+			continue
+		}
+		m := loadManifest(t, out)
+		if got := fingerprint(m.Files); got != m.Fingerprint {
+			t.Fatalf("capture %d: manifest.fingerprint %s does not match manifest.files %s", i, m.Fingerprint, got)
+		}
+	}
+}
+
+func TestUnreadablePathFailsClosed(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("directory permissions are not enforced")
+	}
+	root := newRepo(t)
+	write(t, root, "locked/x.txt", "x\n")
+	gitT(t, root, "add", "-A")
+	gitT(t, root, "commit", "-q", "-m", "locked")
+	locked := filepath.Join(root, "locked")
+	if err := os.Chmod(locked, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o700) })
+	if _, err := os.Lstat(filepath.Join(locked, "x.txt")); err == nil {
+		t.Skip("path stays readable")
+	}
+	out := t.TempDir()
+	for _, args := range [][]string{
+		{"state", root, filepath.Join(out, "state.json")},
+		{"capture", root, filepath.Join(out, "cap")},
+	} {
+		code, _, stderr := run(args...)
+		if code == 0 || !strings.Contains(stderr, "permission denied") {
+			t.Errorf("%s exit %d stderr %q: want non-zero naming the permission error", args[0], code, stderr)
+		}
+	}
+}
+
+func TestDirectoryReplacedByFileReportsDeleted(t *testing.T) {
+	root := newRepo(t)
+	write(t, root, "src/a.py", "a\n")
+	gitT(t, root, "add", "-A")
+	gitT(t, root, "commit", "-q", "-m", "src")
+	if err := os.RemoveAll(filepath.Join(root, "src")); err != nil {
+		t.Fatal(err)
+	}
+	write(t, root, "src", "now a file\n")
+	m := loadManifest(t, captureOK(t, root))
+	if got := m.Files["src/a.py"]; got == nil || got.SHA256 != "deleted" {
+		t.Errorf("src/a.py = %+v, want deleted", got)
+	}
+}
+
+func TestCaptureClassifiesSymlinks(t *testing.T) {
+	root := newRepo(t)
+	outside := filepath.Join(t.TempDir(), "outside.txt")
+	otherOutside := filepath.Join(t.TempDir(), "other.txt")
+	for _, p := range []string{outside, otherOutside} {
+		if err := os.WriteFile(p, []byte("outside\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	link := func(target, name string) {
+		t.Helper()
+		if err := os.Symlink(target, filepath.Join(root, name)); err != nil {
+			t.Skipf("symlinks unavailable: %v", err)
+		}
+	}
+	retarget := func(target, name string) {
+		t.Helper()
+		if err := os.Remove(filepath.Join(root, name)); err != nil {
+			t.Fatal(err)
+		}
+		link(target, name)
+	}
+	link("src/b.py", "clean.lnk")
+	link("src/b.py", "in.lnk")
+	link(outside, "out.lnk")
+	gitT(t, root, "add", "-A")
+	gitT(t, root, "commit", "-q", "-m", "links")
+	retarget("src/a.py", "in.lnk")
+	retarget(otherOutside, "out.lnk")
+	link("src/clean.py", "new.lnk")
+
+	out := captureOK(t, root)
+	m := loadManifest(t, out)
+	for _, c := range []struct {
+		name, target, source string
+		copied               bool
+	}{
+		{"clean.lnk", "src/b.py", "tracked", false},
+		{"in.lnk", "src/a.py", "tracked", true},
+		{"out.lnk", otherOutside, "tracked", true},
+		{"new.lnk", "src/clean.py", "untracked", true},
+	} {
+		sum := sha256.Sum256([]byte(c.target))
+		want := entry{SHA256: "link:" + hex.EncodeToString(sum[:]), Mode: 0o120000, Source: c.source, Copied: c.copied}
+		if g := m.Files[c.name]; g == nil || *g != want {
+			t.Errorf("%s: got %+v want %+v", c.name, g, want)
+		}
+		fi, err := os.Lstat(filepath.Join(out, "tree", c.name))
+		if !c.copied {
+			if err == nil {
+				t.Errorf("%s: clean link copied into tree", c.name)
+			}
+			continue
+		}
+		if err != nil || fi.Mode()&os.ModeSymlink == 0 {
+			t.Errorf("%s: tree entry must be a symlink: %v %v", c.name, fi, err)
+			continue
+		}
+		if got, err := os.Readlink(filepath.Join(out, "tree", c.name)); err != nil || got != c.target {
+			t.Errorf("%s: tree link target %q (%v), want %q", c.name, got, err, c.target)
+		}
+	}
+}
+
+func TestGitRunnerTimesOut(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell stub")
+	}
+	bin := t.TempDir()
+	stub := "#!/bin/sh\nexec sleep 10\n"
+	if err := os.WriteFile(filepath.Join(bin, "git"), []byte(stub), 0o755); err != nil { // #nosec G306 -- test stub must be executable
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	old := gitTimeout
+	gitTimeout = 200 * time.Millisecond
+	t.Cleanup(func() { gitTimeout = old })
+	start := time.Now()
+	var out, errb bytes.Buffer
+	code := Run([]string{"fingerprint", t.TempDir()}, &out, &errb)
+	if code == 0 {
+		t.Fatalf("fingerprint succeeded against a hung git: %q", out.String())
+	}
+	if d := time.Since(start); d > 2*time.Second {
+		t.Fatalf("hung git held fingerprint for %v", d)
+	}
 }

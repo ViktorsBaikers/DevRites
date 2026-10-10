@@ -79,12 +79,26 @@ external tracker unless the controlling user explicitly authorizes that write.
 - [ ] `npm run validate` passes.
 - [ ] `npm run audit` reports no unexcepted moderate-or-higher dependency advisories; every allowed advisory has an exact, current, unexpired exception.
 - [ ] `npm test` passes (install/uninstall smoke + pack validation).
+- [ ] The remaining blocking `validate` gates pass: `python3 scripts/check-cross-refs.py`,
+  `python3 scripts/check-invocation-integrity.py`,
+  `python3 scripts/scan-pack-security.py pack/.claude pack/generated`,
+  `python3 scripts/validate-workflow-security.py`, and
+  `python3 scripts/scan-supply-chain-iocs.py package-lock.json`.
+- [ ] If you touched `engine/`, `make -C engine quality` passes (golangci-lint,
+  govulncheck, osv-scanner, `go test -race`); at minimum
+  `(cd engine && go test ./... -count=1)` plus `golangci-lint run` from `engine/`.
+  CI also cross-compiles every release target (`bash scripts/build-binaries.sh 0.0.0-ci`)
+  and builds the release tarball (`bash scripts/build-release-tarball.sh 0.0.0-ci`).
 - [ ] If you touched a skill, you ran the matching eval (`scripts/run-evals.sh`).
+- [ ] If you touched evals or gating skills/agents, `bash scripts/run-outcome-evals.sh` and `bash scripts/check-gating-eval-ledger.sh` pass.
 - [ ] If you touched a **gating** skill's discipline (or its `anti-patterns.md`), you ran / updated its behavioral eval (`scripts/run-behavioral-evals.sh`).
-- [ ] No skill, agent, or hook artifacts are written to `~/.claude` or
-  `~/.codex`; any global write is limited to the shared engine-binary lifecycle.
-- [ ] No network calls exist in the Go engine; release/source/binary acquisition
-  is confined to shell/npm bootstrap entrypoints; skill research uses explicit host tools.
+- [ ] No skill, agent, or hook artifacts are written to `~/.claude`,
+  `~/.codex`, or another host's home directory; any global write is limited to the shared engine-binary lifecycle.
+- [ ] Network imports are allowed only in `engine/internal/release` (release
+  acquisition for `devrites-engine update`); no other first-party engine package
+  imports a network package, enforced by `engine/tests/meta_test.go`
+  `TestNetworkImportsStayInReleaseBoundary` (ADR-0028). Skill research uses
+  explicit host tools.
 - [ ] Canonical pack edits were regenerated with
   `bash scripts/build-host-artifacts.sh`; generated files were reviewed rather
   than hand-edited.
@@ -98,7 +112,8 @@ external tracker unless the controlling user explicitly authorizes that write.
 ```bash
 git clone https://github.com/ViktorsBaikers/DevRites devrites
 cd devrites
-npm install            # installs husky + commitlint + semantic-release toolchain
+npm install            # installs husky + commitlint + semantic-release toolchain (.npmrc ignore-scripts=true skips lifecycle scripts)
+npm run prepare        # wires the husky commit-msg hook (ignore-scripts=true skips it on install)
 npm run validate       # static validation of pack structure
 npm run audit          # known dependency vulnerabilities (moderate+ blocks)
 npm test               # install + uninstall smoke + fixture install + pack validation
@@ -112,7 +127,8 @@ expired, or inside-the-7-day-refresh-horizon exceptions fail the gate. Prefer
 an `overrides` pin of the patched ancestor over extending an expiry.
 
 You do not need Claude Code for most development work. The validators and tests
-run as plain shell scripts.
+run as plain shell scripts. Running `scripts/validate.sh` locally needs PyYAML:
+`pip install -r scripts/requirements-ci.txt`.
 
 To try your changes inside a real project:
 
@@ -124,7 +140,7 @@ To try your changes inside a real project:
 
 ## Project layout (what lives where)
 
-This is the short map. The [README layout section](README.md#repository-layout) has the
+This is the short map. The [README layout section](README.md#contributing) has the
 full version.
 
 - `pack/.claude/skills/`: canonical public rites, internal specialists, and the `devrites-lib` reference library.
@@ -182,15 +198,17 @@ Run `python3 scripts/validate-frontmatter.py <files>` (or `npm run validate`) an
 
 ## Commit message format (strict)
 
-DevRites enforces Conventional Commits via husky + commitlint. Non-conforming
-messages are rejected at commit time. There is no bypass.
+DevRites enforces Conventional Commits via husky + commitlint. After
+`npm run prepare`, the local commit-msg hook rejects non-conforming messages at
+commit time; the CI `commitlint` workflow enforces the same rules on every PR
+commit. There is no bypass.
 
 **Format:** `type(scope): subject`
 
 - **type** (required, lower-case): one of
   `feat | fix | remove | docs | style | refactor | perf | test | build | ci | chore | revert`
 - **scope** (required, lower-case): one of
-  `skills | rite | devrites | agents | rules | installer | uninstall | scripts | docs | tests | deps | release | repo | ci`
+  `skills | rite | devrites | agents | rules | installer | uninstall | scripts | docs | tests | deps | deps-dev | release | repo | ci | no-release | readme`
 - **subject:** imperative mood, no leading capital, no trailing period.
 - **Header length:** 12 to 72 chars total.
 - **Body:** blank line after header; lines ≤ 100 chars.
@@ -225,9 +243,31 @@ Full policy: [`commitlint.config.js`](commitlint.config.js).
      any follow-ups intentionally left out.
    - Linked issue (`Closes #N`) where applicable.
 6. **Address review feedback** with new commits. Do not force-push during
-   review; the maintainer will squash on merge.
-7. **CI must be green** before merge. CI runs `scripts/validate.sh`,
-   install/uninstall smoke, fixture install, commitlint, and the eval suite.
+   review, except to fix commit messages flagged by commitlint; the maintainer will
+   squash on merge.
+7. **CI must be green** before merge. A path-scoped job that is skipped counts as
+   passing. Blocking jobs:
+   - `commitlint` (separate workflow, PRs only): every commit in the PR passes commitlint.
+   - `validate pack`: runs on every PR except those that change only `LICENSE` or
+     `.scratch/` (README, CHANGELOG, CONTRIBUTING and `docs/` edits still run it).
+     `scripts/validate.sh`, the cross-reference, invocation-integrity, pack-security,
+     workflow-security and supply-chain IOC scripts run unconditionally. Inside it, `npm run audit`
+     and `osv-scanner` run on PRs only when dependency inputs change (path-scoped), and the
+     trigger, outcome and behavioral evals plus the gating-eval ledger run on PRs only when
+     the pack, evals or their validators change (path-scoped).
+   - `shell test suite` (path-scoped): every `tests/*.sh` via `node scripts/run-tests.mjs`,
+     sharded. Skipped only for docs-only PRs; `docs/engine/` changes are not docs-only.
+   - `engine (lint + cross-compile)` (path-scoped): golangci-lint, govulncheck, the
+     release-target cross-compile, the release asset set and checksum sidecar checks against
+     the npx consumer enumeration, and the release tarball smoke.
+   - `engine (go test, ...)` (path-scoped): `go test` on linux amd64/arm64, macOS and
+     Windows (with `-race` except on Windows), plus a `-shuffle=on -count=1` run on linux amd64.
+
+   The engine jobs run on PRs that touch `engine/`, `.github/workflows/ci.yml`,
+   `scripts/build-binaries.sh`, `scripts/build-release-tarball.sh`, `bin/devrites.mjs`,
+   the `devrites-lib` or `rite-spec` reference docs, or `docs/engine/`. Pushes to `main`,
+   merge-queue runs and manual runs execute every job. The anti-slop detector is advisory
+   and does not block.
 
 Draft PRs are welcome and encouraged for early feedback.
 
@@ -237,8 +277,19 @@ Draft PRs are welcome and encouraged for early feedback.
 npm run validate                # pack structure + frontmatter
 npm run audit                   # dependency advisory gate
 npm test                        # install/uninstall + fixture install + validation
+node scripts/run-tests.mjs --help   # shell-suite options: name filters, --fast, --serial, --jobs N, --shard i/n
 bash scripts/run-evals.sh       # run all eval files
 bash scripts/run-evals.sh evals/rite-spec.json   # run one eval file
+bash scripts/run-outcome-evals.sh               # deterministic outcome grader
+bash scripts/run-behavioral-evals.sh            # behavioral eval shape gate
+bash scripts/check-gating-eval-ledger.sh        # gating skills + P0 agents have evals
+python3 scripts/check-cross-refs.py             # no dead pointers
+python3 scripts/check-invocation-integrity.py   # named skills/rules resolve
+python3 scripts/scan-pack-security.py pack/.claude pack/generated
+python3 scripts/validate-workflow-security.py   # SHA-pinned actions, scoped permissions
+python3 scripts/scan-supply-chain-iocs.py package-lock.json
+make -C engine quality          # golangci-lint + govulncheck + osv-scanner + go test -race
+(cd engine && go test ./... -count=1)   # focused engine tests
 ```
 
 If a test fails locally that you didn't touch, file an issue rather than
@@ -252,9 +303,10 @@ Releases are fully automated via semantic-release on every push to `main`:
 |---|---|
 | `feat:` | **minor** (e.g. `0.1.0` → `0.2.0`) |
 | `remove:` | **minor**; grouped under Removed in release notes |
-| `fix:` / `perf:` / `refactor:` / `build:` / `docs(README):` | **patch** |
+| `fix:` / `perf:` / `refactor:` / `build:` / `docs(readme):` | **patch** |
 | Any type with `BREAKING CHANGE:` footer or `!` after type | **major** |
-| `chore:` / `ci:` / `test:` / `docs:` (non-README) | no release |
+| `revert:` | **patch** |
+| `build(deps-dev):` / `chore:` / `ci:` / `test:` / `style:` / `docs:` (non-readme) | no release |
 | Any scope `(no-release)` (e.g. `feat(no-release): …`) | no release |
 
 If you don't want your change to trigger a release, use a non-release type

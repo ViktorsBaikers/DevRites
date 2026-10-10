@@ -20,10 +20,12 @@ else
 fi
 echo "$out" | grep -qi 'no-op' && ok "bare --short-aliases warns it's a no-op" || no "bare --short-aliases did not warn"
 
-if bash "$ROOT/install.sh" --target "$T" --dry-run --totally-bogus >/dev/null 2>&1; then
-  no "install.sh accepted a bogus flag"
-else
+out="$(bash "$ROOT/install.sh" --target "$T" --dry-run --totally-bogus 2>&1)"
+status=$?
+if [ "$status" -ne 0 ] && printf '%s' "$out" | grep -qF 'flag provided but not defined: -totally-bogus'; then
   ok "install.sh still rejects unknown flags"
+else
+  no "install.sh did not reject a bogus flag as an undefined flag (exit $status): $out"
 fi
 
 echo ""

@@ -14,7 +14,11 @@ import (
 	"github.com/devrites/devrites/internal/gitenv"
 )
 
-const gitTimeout = 60 * time.Second
+var gitTimeout = 60 * time.Second
+
+// gitWaitDelay bounds how long git() waits for output pipes to close after the
+// timeout kill; a hook grandchild may keep them open.
+const gitWaitDelay = 5 * time.Second
 
 func git(repo string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
@@ -32,6 +36,7 @@ func git(repo string, args ...string) (string, error) {
 		env = ensureGitIdentityEnv(env)
 	}
 	cmd.Env = env
+	cmd.WaitDelay = gitWaitDelay
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -204,6 +209,39 @@ func worktreeRemove(repo, path string) error {
 		_, _ = git(repo, "worktree", "prune")
 	}
 	return err
+}
+
+// registeredWorktrees returns the symlink-resolved paths git lists as
+// worktrees of repo: the only authoritative record of what worktree add made.
+func registeredWorktrees(repo string) (map[string]bool, error) {
+	out, err := git(repo, "worktree", "list", "--porcelain")
+	if err != nil {
+		return nil, err
+	}
+	set := map[string]bool{}
+	for _, line := range strings.Split(out, "\n") {
+		if p, ok := strings.CutPrefix(line, "worktree "); ok {
+			set[resolvedPath(p)] = true
+		}
+	}
+	return set, nil
+}
+
+func resolvedPath(p string) string {
+	if r, err := filepath.EvalSymlinks(p); err == nil {
+		return r
+	}
+	return filepath.Clean(p)
+}
+
+// createdWorktree reports whether p is a registered worktree. A path that is
+// not on disk has nothing to delete, so it is not refused.
+func createdWorktree(registered map[string]bool, p string) bool {
+	r, err := filepath.EvalSymlinks(p)
+	if err != nil {
+		return os.IsNotExist(err)
+	}
+	return registered[r]
 }
 
 func mergeFFOnly(repo, commit string) error {

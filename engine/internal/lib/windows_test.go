@@ -4,14 +4,32 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/devrites/devrites/internal/testutil"
 )
 
+// windowsStandardPath is the canonical pack standard for this check, relative
+// to engine/internal/lib.
+const windowsStandardPath = "../../../pack/.claude/skills/devrites-lib/reference/standards/windows.md"
+
+var (
+	// The untracked-file guarantee must name the mode that implements it: no git
+	// diff shows an untracked path, so only the whole-file scan in windowsHits
+	// covers one.
+	windowsWorktreeScopeRe = regexp.MustCompile(`(?i)untracked files (?:as|a) wholly new (?:in|under|by) (?:` + "`" + `--)?worktree(?: mode)?`)
+	// The other two modes must state the narrower scope they actually have.
+	windowsOtherModeLimitRe = regexp.MustCompile(`(?i)--staged[^\n]{0,60}--base[^\n]{0,40}(?:diff only|tracked diff)`)
+	// The defective wording: the guarantee stated with no mode qualifier, in the
+	// same sentence that offers worktree, staged and base as one set.
+	windowsUnscopedClaim = "treats untracked files as wholly new,"
+)
+
 func windowsWorkspace(t *testing.T, project, slug string) string {
 	t.Helper()
+	t.Setenv("DEVRITES_WORKSPACE", "")
 	root := filepath.Join(project, ".devrites")
 	ws := filepath.Join(root, "work", slug)
 	if err := os.MkdirAll(ws, 0o755); err != nil {
@@ -233,5 +251,85 @@ func TestCheckWindowsUsageErrors(t *testing.T) {
 	errBuf.Reset()
 	if code := RunCheckWindows(root, []string{"feat", "--base"}, &out, &errBuf); code != 2 {
 		t.Fatalf("missing base ref: code=%d", code)
+	}
+}
+
+// TestCheckWindowsUntrackedScopePerMode pins which modes scan an untracked file.
+// The whole-file scan is inside the worktree branch because neither `git diff
+// HEAD` nor `git diff --cached` nor `git diff <ref>` reports an untracked path;
+// staged and base modes read the index and the tracked diff only. This is the
+// behaviour half of the drift guard in
+// TestWindowsStandardScopesUntrackedFiles.
+func TestCheckWindowsUntrackedScopePerMode(t *testing.T) {
+	project := t.TempDir()
+	initWindowsRepo(t, project)
+	root := windowsWorkspace(t, project, "feat")
+	testutil.WriteFile(t, filepath.Join(project, "base.go"), "package base\n")
+	runSecretScanGit(t, project, "add", "--", "base.go")
+	runSecretScanGit(t, project, "commit", "-qm", "baseline")
+	// Never staged: only the whole-file scan can see this marker.
+	testutil.WriteFile(t, filepath.Join(project, "new.go"), "package n\n\n// TODO: untracked\n")
+
+	var out, errBuf bytes.Buffer
+	if code := RunCheckWindows(root, []string{"feat"}, &out, &errBuf); code != 3 {
+		t.Fatalf("--worktree must scan untracked files: code=%d out=%q err=%q", code, out.String(), errBuf.String())
+	}
+	if !strings.Contains(out.String(), "unwaived: new.go:3 TODO") {
+		t.Fatalf("--worktree must report the untracked marker: out=%q", out.String())
+	}
+	for _, args := range [][]string{{"feat", "--staged"}, {"feat", "--base", "HEAD"}} {
+		out.Reset()
+		errBuf.Reset()
+		if code := RunCheckWindows(root, args, &out, &errBuf); code != 0 {
+			t.Fatalf("%v covers the tracked diff only, so an untracked file is out of scope: code=%d out=%q", args, code, out.String())
+		}
+	}
+}
+
+// TestWindowsStandardScopesUntrackedFiles keeps windows.md honest about the
+// scope each diff mode has. The standard states the untracked-file guarantee
+// next to the list of modes, so an unqualified claim reads as covering all
+// three; --staged and --base then pass on a workspace holding a not-yet-staged
+// marker. The assertions pair with TestCheckWindowsUntrackedScopePerMode:
+// changing either the engine's per-mode scope or the wording requires changing
+// both.
+func TestWindowsStandardScopesUntrackedFiles(t *testing.T) {
+	raw, err := os.ReadFile(windowsStandardPath)
+	if err != nil {
+		t.Fatalf("read canonical standard: %v", err)
+	}
+	prose := strings.Join(strings.Fields(string(raw)), " ")
+	if !windowsWorktreeScopeRe.MatchString(prose) {
+		t.Errorf("%s must scope the untracked-file guarantee to --worktree mode: no unqualified or wrong-mode claim found", windowsStandardPath)
+	}
+	if !windowsOtherModeLimitRe.MatchString(prose) {
+		t.Errorf("%s must state that --staged and --base cover the tracked diff only", windowsStandardPath)
+	}
+	if strings.Contains(prose, windowsUnscopedClaim) {
+		t.Errorf("%s still states the untracked-file guarantee with no mode qualifier (%q); --staged and --base do not scan untracked files", windowsStandardPath, windowsUnscopedClaim)
+	}
+}
+
+// TestCheckWindowsFailsWhenStatusScanFails pins that a failed untracked-file
+// listing is an error, never a clean result: the whole-file scan is the only
+// reader of untracked files, so skipping it silently leaves them unexamined.
+func TestCheckWindowsFailsWhenStatusScanFails(t *testing.T) {
+	project := t.TempDir()
+	initWindowsRepo(t, project)
+	root := windowsWorkspace(t, project, "feat")
+	testutil.WriteFile(t, filepath.Join(project, "a.go"), "package a\n")
+	runSecretScanGit(t, project, "add", "--", "a.go")
+	runSecretScanGit(t, project, "commit", "-qm", "baseline")
+	testutil.WriteFile(t, filepath.Join(project, "new.go"), "package n\n\n// TODO: untracked\n")
+	// git status rejects this value; git diff never reads it.
+	runSecretScanGit(t, project, "config", "status.renames", "bogus")
+
+	var out, errBuf bytes.Buffer
+	code := RunCheckWindows(root, []string{"feat"}, &out, &errBuf)
+	if code == 0 || strings.Contains(out.String(), "windows: ok") {
+		t.Fatalf("status failure must not report clean: code=%d out=%q err=%q", code, out.String(), errBuf.String())
+	}
+	if !strings.Contains(errBuf.String(), "windows:") {
+		t.Fatalf("status failure must be reported on stderr: err=%q", errBuf.String())
 	}
 }

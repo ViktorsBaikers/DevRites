@@ -88,11 +88,11 @@ Map a tool's own state onto status × result; there is no separate enum:
 | --- | --- |
 | completed with no findings | `fresh` × `pass`, only for units in the tool's own processed set reconciled to the inventory; other units stay `missing` |
 | completed with findings | `fresh` × `fail` for the affected units |
-| supported | `missing` until a completed run is recorded |
-| partially supported, unsupported | result `unverified` for the affected units |
+| supported | `missing` × `unverified` until a completed run is recorded |
+| partially supported, unsupported | `blocked` × `unverified` for the affected units |
 | not configured, unavailable | `missing` or `blocked` × `unverified` |
 | failed | `failed` × `unverified` |
-| stale | not `fresh`: rerun, or `reused` after an applicability check |
+| stale | `missing` × `unverified` until a rerun, or `reused` after an applicability check |
 
 A findings-only report has no processed set and covers nothing beyond its findings. An
 empty processed set covers and retires nothing; a prior finding closes only when a

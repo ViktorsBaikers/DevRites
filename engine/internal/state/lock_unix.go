@@ -19,13 +19,19 @@ func acquireLock(path string) (*fileLock, error) {
 	if err != nil {
 		return nil, fmt.Errorf("acquire lock: %w", err)
 	}
+	return lockOpened(f, path)
+}
+
+// lockOpened takes the flock on f, an already-open handle on path, and confirms
+// the lock is still the file at path.
+func lockOpened(f *os.File, path string) (*fileLock, error) {
 	// LOCK_EX blocks until the lock is available; contending devrites-engine processes
 	// queue here rather than racing the read-modify-write.
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
 		_ = f.Close()
 		return nil, fmt.Errorf("flock %s: %w", path, err)
 	}
-	return &fileLock{f: f}, nil
+	return confirmLock(&fileLock{f: f}, path)
 }
 
 func (l *fileLock) release() error {

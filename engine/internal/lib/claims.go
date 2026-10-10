@@ -29,6 +29,9 @@ const (
 	claimDefaultTTL = 30
 	claimMinTTL     = 1
 	claimMaxTTL     = 240
+	// claimMaxLine bounds one ledger line; the reader's scanner cannot
+	// return a longer one.
+	claimMaxLine = 1 << 20
 )
 
 const claimUsage = `usage: devrites-engine claim <add|release|list|check> ...
@@ -86,7 +89,7 @@ func readClaims(path string) (latest map[string]*claimRecord, order []string, ba
 	}
 	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 64<<10), 1<<20)
+	scanner.Buffer(make([]byte, 64<<10), claimMaxLine)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -103,7 +106,10 @@ func readClaims(path string) (latest map[string]*claimRecord, order []string, ba
 		r := rec
 		latest[rec.ID] = &r
 	}
-	return latest, order, bad, scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return nil, nil, 0, fmt.Errorf("read %s: %w (a line may exceed %d bytes; repair or remove the oversized line by hand)", path, err, claimMaxLine)
+	}
+	return latest, order, bad, nil
 }
 
 func liveClaims(latest map[string]*claimRecord, order []string, now time.Time) []*claimRecord {
@@ -126,6 +132,9 @@ func appendClaim(path string, rec *claimRecord) error {
 	line, err := json.Marshal(rec)
 	if err != nil {
 		return err
+	}
+	if len(line) >= claimMaxLine {
+		return fmt.Errorf("claim record is %d bytes once encoded, limit is %d; shorten --reason", len(line), claimMaxLine)
 	}
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600) // #nosec G304 -- path is the validated project claims ledger
 	if err != nil {
@@ -198,6 +207,10 @@ func claimConflicts(live []*claimRecord, session string, paths []string) []*clai
 	return out
 }
 
+// An unreadable line may be a live claim, so the conflict gates refuse to
+// answer rather than report a path free.
+const unparsedLedgerMsg = "claim: %d unparsed ledger line(s); cannot rule out a conflict, repair the claims ledger\n"
+
 func printConflicts(w io.Writer, conflicts []*claimRecord) {
 	for _, rec := range conflicts {
 		fmt.Fprintf(w, "claim: BLOCKED: %s held by session %q until %s", strings.Join(rec.Paths, ","), rec.Session, rec.ExpiresAt)
@@ -264,9 +277,13 @@ func claimAdd(root string, args []string, stdout, stderr io.Writer) int {
 }
 
 func claimAddLocked(path, session, reason string, ttl int, paths []string, stdout, stderr io.Writer) int {
-	latest, order, _, err := readClaims(path)
+	latest, order, bad, err := readClaims(path)
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
+		return 2
+	}
+	if bad > 0 {
+		fmt.Fprintf(stderr, unparsedLedgerMsg, bad)
 		return 2
 	}
 	now := time.Now().UTC()
@@ -411,9 +428,13 @@ func claimCheck(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
 		return 2
 	}
-	latest, order, _, err := readClaims(claimsPath(root))
+	latest, order, bad, err := readClaims(claimsPath(root))
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
+		return 2
+	}
+	if bad > 0 {
+		fmt.Fprintf(stderr, unparsedLedgerMsg, bad)
 		return 2
 	}
 	conflicts := claimConflicts(liveClaims(latest, order, time.Now().UTC()), session, paths)

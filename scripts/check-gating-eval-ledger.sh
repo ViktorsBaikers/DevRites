@@ -2,7 +2,7 @@
 # Eval coverage scoreboard: gating ledger + full skill/agent matrix.
 #
 # Usage:
-#   scripts/check-gating-eval-ledger.sh              # blocking: require_behavioral + require_behavioral_agents
+#   scripts/check-gating-eval-ledger.sh              # blocking: require_behavioral + require_behavioral_agents + require_trigger
 #   scripts/check-gating-eval-ledger.sh --advisory   # full scoreboard; exit 0
 #   scripts/check-gating-eval-ledger.sh --json         # machine-readable scoreboard
 # Env: DEVRITES_COVERAGE_JSON, DEVRITES_BEHAVIORAL_DIR (tests)
@@ -92,19 +92,10 @@ for path in sorted(evals_dir.glob("*.json")):
     data = json.loads(path.read_text())
     triggers[data["skill"]] = path.name
 
-outcome_skills = set(coverage.get("outcome_skills", []))
-if not outcome_skills:
-    outcome_skills = {
-        "rite-seal",
-        "rite-prove",
-        "rite-review",
-        "rite-vet",
-        "rite-clarify",
-        "rite-build",
-        "rite-spec",
-        "rite-plan",
-        "rite-define",
-    }
+if "outcome_skills" not in coverage:
+    print("FAIL: coverage.json is missing outcome_skills")
+    sys.exit(1)
+outcome_skills = set(coverage["outcome_skills"])
 
 gating_failed = 0
 for skill in coverage.get("require_behavioral", []):
@@ -125,11 +116,26 @@ for agent in coverage.get("require_behavioral_agents", []):
     elif not as_json:
         print(f"OK: behavioral agent {agent} -> {', '.join(behavioral_by_agent[agent])}")
 
+# require_trigger names the set of skills whose trigger corpus is blocking.
+# Absent: a missing gating-skill corpus only warns.
+trigger_scopes = {
+    "gating_skills": coverage.get("gating_skills", []),
+    "all_public_skills_except_devrites-lib": skills,
+}
+require_trigger = coverage.get("require_trigger")
+trigger_failed = 0
+if require_trigger is not None and require_trigger not in trigger_scopes:
+    print(f"FAIL: unknown require_trigger scope {require_trigger!r}")
+    trigger_failed += 1
 for skill in coverage.get("gating_skills", []):
     if skill not in triggers:
         print(f"WARN: gating skill {skill} missing trigger eval")
     elif not as_json:
         print(f"OK: trigger {skill} -> {triggers[skill]}")
+for skill in trigger_scopes.get(require_trigger, []):
+    if skill not in triggers:
+        print(f"FAIL: required trigger corpus for {skill} missing")
+        trigger_failed += 1
 
 # Rubric tier results (offline judge over captured transcripts). Absent file
 # keeps the historical "-" placeholder: the tier is advisory and manual.
@@ -194,6 +200,7 @@ if as_json:
             "agents_behavioral": sum(1 for r in agent_rows if r["behavioral"] == "yes"),
             "gating_behavioral_failed": gating_failed,
             "gating_agent_behavioral_failed": agent_gating_failed,
+            "gating_trigger_failed": trigger_failed,
         },
     }
     print(json.dumps(payload, indent=2))
@@ -244,5 +251,5 @@ else:
 
 if advisory:
     sys.exit(0)
-sys.exit(1 if gating_failed or agent_gating_failed else 0)
+sys.exit(1 if gating_failed or agent_gating_failed or trigger_failed else 0)
 PY

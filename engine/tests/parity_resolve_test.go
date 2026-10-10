@@ -111,8 +111,8 @@ answer: prior
 	})
 
 	t.Run("batch-unterminated", func(t *testing.T) {
-		// No trailing newline: a final line without a terminating newline is not
-		// applied (q-2 stays open), so the golden captures the truncated batch.
+		// No trailing newline: a final line without a terminating newline is
+		// still applied, so q-2 is dropped like the lines before it.
 		gwork := setup(t, resolveQuestions, resolveState)
 		writeFile(t, gwork, "batch.txt", "q-1: answer one\n--drop q-2: reason two") // no trailing \n
 		run(t, gwork, "--batch", "batch.txt")

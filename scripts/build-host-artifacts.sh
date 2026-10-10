@@ -23,6 +23,21 @@ OUT_ROOT="${DEVRITES_HOST_ARTIFACT_DIR:-$ROOT/pack/generated}"
   exit 1
 }
 
+command -v python3 >/dev/null 2>&1 || {
+  echo "build-host-artifacts: python3 is required" >&2
+  exit 1
+}
+[ -f "$ROOT/scripts/expand-includes.py" ] || {
+  echo "build-host-artifacts: missing $ROOT/scripts/expand-includes.py" >&2
+  exit 1
+}
+
+_out_parent="$(dirname "$OUT_ROOT")"
+[ "$OUT_ROOT" = . ] || { mkdir -p "$_out_parent" 2>/dev/null && [ -d "$_out_parent" ] && [ -w "$_out_parent" ]; } || {
+  echo "build-host-artifacts: output parent of $OUT_ROOT is not a writable directory (DEVRITES_HOST_ARTIFACT_DIR)" >&2
+  exit 1
+}
+
 TMP_GEN_DIR="$(mktemp -d)"
 cleanup() { rm -rf "$TMP_GEN_DIR"; }
 trap cleanup EXIT

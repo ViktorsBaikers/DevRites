@@ -87,8 +87,9 @@ substitute a generic agent. Opt-in `$rite-build --parallel N` fans out only unde
 
 After `claim add`, every terminal path releases the claim with
 `devrites-engine claim release --session <id> --id <claim-id>`: successful
-return, rejected result, gap, stop, or launch failure. TTL is crash recovery,
-not normal cleanup.
+return, rejected result, stop, or a launch the host refused with no handle. A
+timeout or unknown outcome keeps the claim ([`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)).
+TTL is crash recovery, not normal cleanup.
 
 ## Inspect and prove
 

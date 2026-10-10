@@ -91,6 +91,62 @@ expect_fail_contains \
   env GIT_DIR="$POISON_REPO/.git" GIT_WORK_TREE="$POISON_REPO" \
   bash -c 'cd "$1" && "$2"' _ "$TARGET_REPO" "$ROOT/scripts/devrites-detect.sh"
 
+INDEX_REPO="$T/index repo"
+mkdir -p "$INDEX_REPO"
+git -C "$INDEX_REPO" init -q
+git -C "$INDEX_REPO" config user.email devrites@example.invalid
+git -C "$INDEX_REPO" config user.name 'DevRites Test'
+printf 'one\n' >"$INDEX_REPO/LICENSE"
+git -C "$INDEX_REPO" add LICENSE
+git -C "$INDEX_REPO" commit -qm one
+printf 'two\n' >"$INDEX_REPO/notes.txt"
+git -C "$INDEX_REPO" add notes.txt
+git -C "$INDEX_REPO" commit -qm two
+git -C "$INDEX_REPO" update-index --refresh >/dev/null
+sleep 1
+touch "$INDEX_REPO/LICENSE"
+index_before="$(shasum "$INDEX_REPO/.git/index")"
+(cd "$INDEX_REPO" && "$ROOT/scripts/devrites-detect.sh" --advisory >/dev/null 2>&1)
+index_after="$(shasum "$INDEX_REPO/.git/index")"
+if [[ "$index_before" == "$index_after" ]]; then
+  echo "PASS: detector leaves the git index untouched"
+else
+  echo "FAIL: detector rewrote the git index"
+  fail=1
+fi
+
+STAT_REPO="$T/stat repo"
+mkdir -p "$STAT_REPO"
+git -C "$STAT_REPO" init -q
+git -C "$STAT_REPO" config user.email devrites@example.invalid
+git -C "$STAT_REPO" config user.name 'DevRites Test'
+printf '// Updated to handle the empty response edge case.\nexport const old = true;\n' >"$STAT_REPO/old.js"
+git -C "$STAT_REPO" add old.js
+git -C "$STAT_REPO" commit -qm old
+printf 'export const fresh = true;\n' >"$STAT_REPO/fresh.js"
+git -C "$STAT_REPO" add fresh.js
+git -C "$STAT_REPO" commit -qm fresh
+git -C "$STAT_REPO" branch -m fixture
+git -C "$STAT_REPO" update-index --refresh >/dev/null
+sleep 1
+touch "$STAT_REPO/old.js"
+stat_index_before="$(shasum "$STAT_REPO/.git/index")"
+stat_output="$(cd "$STAT_REPO" && "$ROOT/scripts/devrites-detect.sh" 2>&1)" && stat_exit=0 || stat_exit=$?
+if [[ "$stat_exit" -eq 0 && "$stat_output" == *"clean"* \
+  && "$stat_index_before" == "$(shasum "$STAT_REPO/.git/index")" ]]; then
+  echo "PASS: detector ignores files that only changed timestamp"
+else
+  echo "FAIL: detector scanned a timestamp-only change (exit $stat_exit)"
+  echo "$stat_output"
+  fail=1
+fi
+
+printf '// Updated to handle the empty response edge case.\nexport const fresh = true;\n' >"$STAT_REPO/fresh.js"
+expect_fail_contains \
+  "detector still reports real content changes" \
+  "fresh.js" \
+  bash -c 'cd "$1" && "$2"' _ "$STAT_REPO" "$ROOT/scripts/devrites-detect.sh"
+
 if [[ "$fail" -ne 0 ]]; then
   echo "DEVRITES DETECT SMOKE: FAIL"
   exit 1

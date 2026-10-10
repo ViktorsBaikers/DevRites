@@ -1,8 +1,9 @@
 # Allowlist for the OSV.dev dependency scan (ci.yml validate job +
-# scripts/validate.sh). Mirrors scripts/npm-audit-exceptions.json: same
-# advisory IDs, same owner, same expiry via ignoreUntil. Keep the two files
-# in sync the same day. An unused ignore here is a warning; a missing ignore
-# for a live finding is a failure. Prefer pinning a patched ancestor in
+# scripts/validate.sh). Mirrors scripts/npm-audit-exceptions.json: same owner
+# and same expiry via ignoreUntil. The IDs here are a superset of that file
+# (its checker rejects exceptions for advisories npm audit does not block on).
+# Keep the two files in sync the same day. An unused ignore here is a warning;
+# a missing ignore for a live finding is a failure. Prefer pinning a patched ancestor in
 # package.json overrides over adding an ignore.
 
 # 2026-09-04: npm@11.19.1 (via @semantic-release/npm override) and
@@ -30,9 +31,9 @@ reason = "Bundled in npm@11.20.0/12.1.0 via node-gyp; release job opens no WebSo
 
 # 2026-09-30: new advisories against the same bundled tree. npm@11.20.0 and
 # npm@12.1.0 bundle brace-expansion@5.0.9, ip-address@10.5.0 and undici@6.28.0.
-# Only GHSA-rfgv-xxqx-mfg5 is a blocking npm audit finding, so only it is
-# mirrored in scripts/npm-audit-exceptions.json (its checker rejects
-# exceptions for advisories npm audit does not block on). Owner: release-maintainers.
+# GHSA-r53p-7pc4-xj5r is the only ID here without a counterpart in
+# scripts/npm-audit-exceptions.json, because npm audit does not block on it.
+# Owner: release-maintainers.
 [[IgnoredVulns]]
 id = "GHSA-6j4f-fj2g-mc7p"
 ignoreUntil = 2026-10-29
@@ -81,3 +82,11 @@ reason = "braces@3.0.3 via micromatch in commit-analyzer; release job only expan
 id = "GHSA-ch52-4w7c-c8xp"
 ignoreUntil = 2026-10-29
 reason = "Bundled in npm@11.20.0 via make-fetch-happen; release job runs one identity on an ephemeral cache. Remove once npm bundles a patched http-cache-semantics."
+
+# 2026-10-09: npm@11.20.0, npm@11.21.0 and npm@12.2.0 bundle
+# postcss-selector-parser@7.1.4 via @npmcli/query; no patched npm exists.
+# Owner: release-maintainers. Mirrors scripts/npm-audit-exceptions.json.
+[[IgnoredVulns]]
+id = "GHSA-rj75-hqrm-r3gf"
+ignoreUntil = 2026-10-29
+reason = "Bundled in npm via @npmcli/query; release job parses only repository-controlled npm selectors. Remove once npm bundles postcss-selector-parser@7.1.6+."

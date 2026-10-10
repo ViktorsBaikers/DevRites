@@ -130,5 +130,17 @@
     "owner": "release-maintainers",
     "reason": "npm@11.20.0 (the @semantic-release/npm override) bundles http-cache-semantics@4.2.0, the latest release, via make-fetch-happen, and root overrides cannot repair npm's bundled tree. The release job runs one identity against an ephemeral CI cache, so no cross-user cached response exists to disclose. Remove once a patched http-cache-semantics release is bundled.",
     "expires": "2026-10-29"
+  },
+  {
+    "id": "GHSA-rj75-hqrm-r3gf",
+    "package": "postcss-selector-parser",
+    "range": "<7.1.6",
+    "nodes": [
+      "node_modules/npm/node_modules/postcss-selector-parser"
+    ],
+    "source": "https://github.com/advisories/GHSA-rj75-hqrm-r3gf",
+    "owner": "release-maintainers",
+    "reason": "npm@11.20.0 (the @semantic-release/npm override) and the latest npm@11.21.0 and npm@12.2.0 all bundle postcss-selector-parser@7.1.4 via @npmcli/query, and root overrides cannot repair npm's bundled tree. The release job parses only npm-built, repository-controlled dependency selectors (npm sbom and query), never untrusted selector input. Remove once npm bundles postcss-selector-parser@7.1.6 or newer.",
+    "expires": "2026-10-29"
   }
 ]

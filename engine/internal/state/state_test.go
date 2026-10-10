@@ -624,17 +624,6 @@ func writeStatusRequiredArtifacts(t *testing.T, root, slug string, phase Phase) 
 	}
 }
 
-func writeSection(t *testing.T, root, slug, name, body string) {
-	t.Helper()
-	dir := filepath.Join(root, "work", slug)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func writeWorkSection(t *testing.T, root, slug, name, body string) {
 	t.Helper()
 	dir := filepath.Join(root, "work", slug)
@@ -651,12 +640,12 @@ func writeWorkSection(t *testing.T, root, slug, name, body string) {
 // evidence.md/state.md. The engine must load, list, and report it anyway.
 func TestStatusFromOfficialBulletLedger(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
-	writeSection(t, root, "live", "state.md", "- Phase: prove\n- Status: running\n")
-	writeSection(t, root, "live", "spec.md", "# Spec\n\nDo the thing.\n")
-	writeSection(t, root, "live", "plan.md", "# Plan\n\nApproach.\n")
-	writeSection(t, root, "live", "decisions.md", "# Decisions\n\nChose X.\n")
-	writeSection(t, root, "live", "tasks.md", "# Tasks\n\n- [x] slice 1\n")
-	writeSection(t, root, "live", "evidence.md", "# Evidence\n\nTests pass.\n")
+	writeWorkSection(t, root, "live", "state.md", "- Phase: prove\n- Status: running\n")
+	writeWorkSection(t, root, "live", "spec.md", "# Spec\n\nDo the thing.\n")
+	writeWorkSection(t, root, "live", "plan.md", "# Plan\n\nApproach.\n")
+	writeWorkSection(t, root, "live", "decisions.md", "# Decisions\n\nChose X.\n")
+	writeWorkSection(t, root, "live", "tasks.md", "# Tasks\n\n- [x] slice 1\n")
+	writeWorkSection(t, root, "live", "evidence.md", "# Evidence\n\nTests pass.\n")
 
 	rep, err := Status(root, "live")
 	if err != nil {
@@ -788,7 +777,7 @@ func TestStatusCursorCannotStandInForPhase(t *testing.T) {
 // clear error rather than silently falling back or mis-loading.
 func TestLedgerPhaseRejectsUnknownWord(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
-	writeSection(t, root, "bogus", "state.md", "- Phase: building\n")
+	writeWorkSection(t, root, "bogus", "state.md", "- Phase: building\n")
 	if _, err := Status(root, "bogus"); err == nil {
 		t.Error("Status on a ledger with an unknown phase word = nil error, want an error")
 	}
@@ -951,5 +940,47 @@ func TestListFeaturesIgnoresAllOperationalRemnants(t *testing.T) {
 	}
 	if len(got) != 1 || got[0] != "live" {
 		t.Fatalf("ListFeatures() = %v, want [live]; operational remnants became workspaces", got)
+	}
+}
+
+func TestRequireWorkspaceSchemaRefusesUnsafeStateFile(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(t *testing.T, statePath string)
+		want  string
+	}{
+		{"symlink", func(t *testing.T, statePath string) {
+			outside := filepath.Join(t.TempDir(), "outside.md")
+			if err := os.WriteFile(outside, []byte("- schema: 4\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(outside, statePath); err != nil {
+				t.Skipf("symlinks unavailable: %v", err)
+			}
+		}, string(DiagnosticFinalSymlink)},
+		{"directory", func(t *testing.T, statePath string) {
+			if err := os.Mkdir(statePath, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}, string(DiagnosticNonRegular)},
+		{"oversize", func(t *testing.T, statePath string) {
+			if err := os.WriteFile(statePath, make([]byte, maxArtifactBytes+1), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}, string(DiagnosticFileTooLarge)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			dir := featureDir(root, "demo")
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			tt.setup(t, filepath.Join(dir, LedgerFile))
+			err := RequireWorkspaceSchema(root, "demo")
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("RequireWorkspaceSchema err=%v, want it to mention %s", err, tt.want)
+			}
+		})
 	}
 }

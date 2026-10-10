@@ -159,3 +159,31 @@ func TestOpenVisualIDsOkTip(t *testing.T) {
 		t.Fatalf("stdout = %q, want ids=ok tip", stdout.String())
 	}
 }
+
+func TestCheckVisualIDConsistencyAttributeForms(t *testing.T) {
+	outline := `## ID inventory
+| HTML id | Meaning |
+| --- | --- |
+| viz-title | Header |
+`
+	cases := []struct {
+		name        string
+		html        string
+		wantMissing []string
+	}{
+		{"unquoted", `<section id=viz-title></section>`, nil},
+		{"unquoted before close", `<section id=viz-title>x</section>`, nil},
+		{"single quoted", `<section id='viz-title'></section>`, nil},
+		{"data-id is not id", `<section data-id="viz-title"></section>`, []string{"viz-title"}},
+		{"hyphenated name ending in id", `<section grid-id=viz-title></section>`, []string{"viz-title"}},
+		{"newline before attribute", "<section\nid=viz-title></section>", nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := CheckVisualIDConsistency(tc.html, outline).MissingInHTML
+			if len(got) != len(tc.wantMissing) || (len(got) == 1 && got[0] != tc.wantMissing[0]) {
+				t.Fatalf("MissingInHTML = %#v, want %#v", got, tc.wantMissing)
+			}
+		})
+	}
+}

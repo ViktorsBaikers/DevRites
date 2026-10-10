@@ -38,9 +38,14 @@ if [[ ${#FILES[@]} -eq 0 ]]; then
     fi
   done
   if [[ -n "$BASE" ]]; then
+    # git diff refreshes stat data and rewrites the index; run it against a
+    # throwaway copy so the repository index stays untouched.
+    TMP_INDEX="$(mktemp)"
+    trap 'rm -f "$TMP_INDEX"' EXIT
+    cp "$(git rev-parse --git-path index)" "$TMP_INDEX" 2>/dev/null || true
     # bash 3.2 (macOS default) has no mapfile.
     while IFS= read -r line; do FILES+=("$line"); done \
-      < <(git diff --name-only --diff-filter=ACMR "$BASE" 2>/dev/null || true)
+      < <(GIT_INDEX_FILE="$TMP_INDEX" GIT_OPTIONAL_LOCKS=0 git diff --name-only --diff-filter=ACMR "$BASE" 2>/dev/null || true)
   fi
 fi
 

@@ -9,6 +9,7 @@ package snapshot
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +23,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/devrites/devrites/internal/gitenv"
@@ -38,10 +40,14 @@ const usage = `usage: devrites-engine overhaul snapshot <command> ...
 `
 
 var sensitive = []string{".env", ".env.*", "*.key", "*.p12", "*.pfx", "*.keystore", "*.jks", ".npmrc", ".pypirc", ".netrc",
-	"*credentials*", "*secret*", "*.tfstate", "*.tfvars"}
+	"*credentials*", "*secret*", "*.tfstate", "*.tfvars", "*.pem", "*.asc", "*.pgp", "*.gpg", "*.p8"}
 
-// keyMarker flags private key material in any file, whatever its name.
-var keyMarker = []byte("PRIVATE KEY-----")
+// keyMarkers flag private key material in any file, whatever its name.
+var keyMarkers = [][]byte{[]byte("PRIVATE KEY-----"), []byte("PRIVATE KEY BLOCK-----")}
+
+// keyCarry is kept between reads so a marker split across two reads is still
+// matched; it must be at least the longest marker minus one.
+const keyCarry = 31
 
 var diffArgs = []string{"-c", "diff.autoRefreshIndex=false", "diff", "--no-ext-diff", "--no-textconv", "--no-color",
 	"--src-prefix=a/", "--dst-prefix=b/", "--binary"}
@@ -127,18 +133,48 @@ func exit(err error) (int, error) {
 	return 0, nil
 }
 
+var gitTimeout = 60 * time.Second
+
+// gitWaitDelay bounds how long git waits for output pipes to close after the
+// timeout kill; a hook grandchild may keep them open.
+const gitWaitDelay = 5 * time.Second
+
 func git(root string, args ...string) ([]byte, error) {
-	cmd := exec.Command("git", append([]string{"-C", root}, args...)...) // #nosec G204 -- fixed git binary; arguments passed as argv, no shell
-	cmd.Env = append(gitenv.Sanitize(os.Environ()), "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0")
-	out, err := cmd.Output()
-	if err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
-			return nil, fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, bytes.TrimSpace(ee.Stderr))
-		}
-		return nil, fmt.Errorf("git %s: %v", strings.Join(args, " "), err)
+	var out bytes.Buffer
+	if err := gitTo(&out, root, args...); err != nil {
+		return nil, err
 	}
-	return out, nil
+	return out.Bytes(), nil
+}
+
+// gitTo streams git's stdout to w; the run is killed after gitTimeout.
+func gitTo(w io.Writer, root string, args ...string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", root}, args...)...) // #nosec G204 -- fixed git binary; arguments passed as argv, no shell
+	cmd.Env = append(gitenv.Sanitize(os.Environ()), "GIT_OPTIONAL_LOCKS=0", "GIT_TERMINAL_PROMPT=0")
+	cmd.WaitDelay = gitWaitDelay
+	var stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = w, &stderr
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			err = fmt.Errorf("%w: %v", ctx.Err(), err)
+		}
+		return fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, bytes.TrimSpace(stderr.Bytes()))
+	}
+	return nil
+}
+
+func gitToFile(dst, root string, args ...string) error {
+	f, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) // #nosec G304 -- destination inside the new owner-only snapshot directory
+	if err != nil {
+		return err
+	}
+	err = gitTo(f, root, args...)
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	return err
 }
 
 func split0(b []byte) []string {
@@ -240,8 +276,11 @@ func permBits(m fs.FileMode) int {
 
 func digest(p string) (string, int, error) {
 	fi, err := os.Lstat(p)
-	if err != nil {
+	if errors.Is(err, fs.ErrNotExist) || errors.Is(err, syscall.ENOTDIR) {
 		return "deleted", 0, nil
+	}
+	if err != nil {
+		return "", 0, err
 	}
 	switch {
 	case fi.Mode()&fs.ModeSymlink != 0:
@@ -267,8 +306,25 @@ func holdsKey(p string) (bool, error) {
 		return false, err
 	}
 	defer func() { _ = f.Close() }()
-	head, err := io.ReadAll(io.LimitReader(f, 65536))
-	return bytes.Contains(head, keyMarker), err
+	const chunk = 65536
+	buf := make([]byte, chunk+keyCarry)
+	n := 0 // bytes of buf already holding carry
+	for {
+		m, err := f.Read(buf[n : n+chunk])
+		window := buf[:n+m]
+		for _, marker := range keyMarkers {
+			if bytes.Contains(window, marker) {
+				return true, nil
+			}
+		}
+		if err == io.EOF {
+			return false, nil
+		}
+		if err != nil {
+			return true, err
+		}
+		n = copy(buf, window[max(0, len(window)-keyCarry):])
+	}
 }
 
 func isSensitiveName(p string) bool {
@@ -309,7 +365,8 @@ func state(root string) (map[string]*entry, error) {
 	return out, nil
 }
 
-func indexDigest(root string) (string, error) {
+// indexDigest is a variable so tests can simulate the index moving mid-capture.
+var indexDigest = func(root string) (string, error) {
 	b, err := git(root, "ls-files", "-s", "-z")
 	if err != nil {
 		return "", err
@@ -420,11 +477,7 @@ func capture(root, out string, stdout io.Writer) error {
 		{"staged.patch", slices.Concat(diffArgs, []string{"--cached"}, safe)},
 		{"unstaged.patch", slices.Concat(diffArgs, safe)},
 	} {
-		b, err := git(root, o.args...)
-		if err != nil {
-			return err
-		}
-		if err := os.WriteFile(filepath.Join(out, o.name), b, 0o600); err != nil {
+		if err := gitToFile(filepath.Join(out, o.name), root, o.args...); err != nil {
 			return err
 		}
 	}
@@ -445,8 +498,12 @@ func capture(root, out string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
+	fp := fingerprint(st)
+	if fingerprint(now) != fp {
+		return errors.New("working tree changed during capture; stop and reconcile with the user")
+	}
 	man := manifest{Schema: "overhaul.snapshot/1", Root: root, Head: head, IndexSHA256: before,
-		Fingerprint: fingerprint(now), Files: st, Submodules: gitlinks}
+		Fingerprint: fp, Files: st, Submodules: gitlinks}
 	if err := ovio.WriteJSON(filepath.Join(out, "manifest.json"), man, 0o600); err != nil {
 		return err
 	}

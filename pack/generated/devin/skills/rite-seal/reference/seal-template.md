@@ -16,6 +16,8 @@ Candidate SHA-256: <64 lowercase hex>
 - devrites-security-auditor: <outcome>
 - devrites-performance-reviewer: <outcome>
 - devrites-devex-reviewer: <outcome>
+- devrites-proof-runner: <outcome>
+- devrites-doubt-reviewer: <outcome, or Not-applicable: no decision stood>
 ## Risks / Rollback
 <risks/recovery>
 ## Stood Decisions

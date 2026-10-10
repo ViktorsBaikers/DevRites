@@ -8,16 +8,16 @@ run_pack_evals=true
 run_full=true
 run_tests=true
 run_deps=true
+run_docs=true
 
-# Docs-only PRs skip validate and the shell suite (job-level `if:` still
-# reports success for required checks). Deny-by-default allowlist: any path
-# outside these prefixes keeps validate.
+# Docs-only PRs skip the shell suite shards (job-level `if:` still reports
+# success for required checks). run_full=false only when every path is
+# allowlisted, and `validate` also runs when run_docs=true, so in practice only
+# LICENSE-only or .scratch/-only PRs skip validate. Deny-by-default allowlist:
+# any path outside these prefixes keeps validate. docs/engine/ is read by
+# engine tests, so it never counts as docs-only. run_docs is true for any
+# README/CHANGELOG/CONTRIBUTING/docs/ change.
 docs_only_allowlist='^(README\.md|CHANGELOG\.md|LICENSE|CONTRIBUTING\.md|docs/|\.scratch/)'
-
-# Engine-only PRs still run validate (OSV/go.mod, workflow pins) and the
-# engine jobs, but skip the 8 shell shards. Deny-by-default: any path
-# outside engine/ keeps the shards.
-engine_only_allowlist='^engine/'
 
 changed=()
 listed=false
@@ -46,6 +46,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
     engine=false
     pack=false
     deps=false
+    docs=false
     for path in "${changed[@]}"; do
       [[ -z "$path" ]] && continue
       case "$path" in
@@ -53,6 +54,18 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
           engine=true ;;
         pack/*|evals/*|scripts/validate.sh|scripts/run-evals.sh|scripts/run-outcome-evals.sh|scripts/run-behavioral-evals.sh|scripts/check-*)
           pack=true ;;
+      esac
+      # Engine tests and the npm launcher read these pack docs and launcher.
+      case "$path" in
+        bin/devrites.mjs|pack/.claude/skills/devrites-lib/reference/*|pack/.claude/skills/rite-spec/reference/*)
+          engine=true ;;
+      esac
+      case "$path" in
+        README.md|CHANGELOG.md|CONTRIBUTING.md|docs/*) docs=true ;;
+      esac
+      # Engine tests read docs/engine/.
+      case "$path" in
+        docs/engine/*) engine=true ;;
       esac
       # Dependency advisory gates (npm audit + OSV) judge the PR's own
       # dependency inputs; scheduled deps-scan.yml catches newly published
@@ -71,22 +84,19 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
     if [[ "$deps" == false ]]; then
       run_deps=false
     fi
+    if [[ "$docs" == false ]]; then
+      run_docs=false
+    fi
     if [[ "${#changed[@]}" -gt 0 ]]; then
       docs_only=true
-      engine_only=true
       for path in "${changed[@]}"; do
         [[ -z "$path" ]] && continue
-        if ! [[ "$path" =~ $docs_only_allowlist ]]; then
+        if ! [[ "$path" =~ $docs_only_allowlist ]] || [[ "$path" == docs/engine/* ]]; then
           docs_only=false
-        fi
-        if ! [[ "$path" =~ $engine_only_allowlist ]]; then
-          engine_only=false
         fi
       done
       if [[ "$docs_only" == true ]]; then
         run_full=false
-        run_tests=false
-      elif [[ "$engine_only" == true ]]; then
         run_tests=false
       fi
     fi
@@ -99,10 +109,12 @@ if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   echo "run_full=${run_full}" >>"$GITHUB_OUTPUT"
   echo "run_tests=${run_tests}" >>"$GITHUB_OUTPUT"
   echo "run_deps=${run_deps}" >>"$GITHUB_OUTPUT"
+  echo "run_docs=${run_docs}" >>"$GITHUB_OUTPUT"
 else
   echo "run_engine=${run_engine}"
   echo "run_pack_evals=${run_pack_evals}"
   echo "run_full=${run_full}"
   echo "run_tests=${run_tests}"
   echo "run_deps=${run_deps}"
+  echo "run_docs=${run_docs}"
 fi

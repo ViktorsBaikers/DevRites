@@ -1,8 +1,10 @@
 package state
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -63,5 +65,37 @@ func TestWorkspaceSchemaMissingLedgerIsRefused(t *testing.T) {
 	root := t.TempDir()
 	if err := RequireWorkspaceSchema(root, "absent"); err == nil {
 		t.Fatal("missing workspace must be refused")
+	}
+}
+
+func TestRefusalMessagesFormatSchemaVersionWithoutVersionLabel(t *testing.T) {
+	root, slug := writeSchemaWorkspace(t, "| phase | build |\n| schema | 2 |\n")
+	older := RequireWorkspaceSchema(root, slug)
+	root, slug = writeSchemaWorkspace(t, fmt.Sprintf("| phase | build |\n| schema | %d |\n", SchemaVersion+1))
+	newer := RequireWorkspaceSchema(root, slug)
+	for name, err := range map[string]error{"older": older, "newer": newer} {
+		if err == nil {
+			t.Fatalf("%s schema must be refused", name)
+		}
+		if strings.Contains(err.Error(), "v5") {
+			t.Fatalf("%s refusal hardcodes a version label: %v", name, err)
+		}
+		if want := fmt.Sprintf("%d", SchemaVersion); !strings.Contains(err.Error(), want) {
+			t.Fatalf("%s refusal must format SchemaVersion %s: %v", name, want, err)
+		}
+	}
+}
+
+func TestStateTemplateSchemaCellMatchesEngine(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "pack", ".claude", "skills", "rite-spec", "reference", "state-workspace.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`(?m)^\|\s*schema\s*\|\s*(\d+)\s*\|`).FindSubmatch(raw)
+	if m == nil {
+		t.Fatal("template has no schema cell")
+	}
+	if want := fmt.Sprintf("%d", SchemaVersion); string(m[1]) != want {
+		t.Fatalf("template schema cell=%s, engine SchemaVersion=%s", m[1], want)
 	}
 }

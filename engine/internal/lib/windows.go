@@ -201,16 +201,20 @@ func windowsHits(opts diffScopeOpts) ([]windowHit, error) {
 		// Whole files whose diff produced no hunks: staged additions land in
 		// `git diff HEAD`, untracked files never do — scan those in full.
 		// Status paths are repo-root-relative, so reads anchor at toplevel.
-		repoRoot, rerr := runGitCommand(dir, nil, "rev-parse", "--show-toplevel")
-		status, serr := gitStatusPaths(dir)
-		if serr == nil && rerr == nil {
-			repo := strings.TrimSpace(string(repoRoot))
-			for _, p := range status {
-				if diffPaths[p] || strings.HasPrefix(p, ".devrites/") {
-					continue
-				}
-				hits = scanWholeFile(repo, p, hits)
+		repoRoot, err := runGitCommand(dir, nil, "rev-parse", "--show-toplevel")
+		if err != nil {
+			return nil, err
+		}
+		status, err := gitStatusPaths(dir)
+		if err != nil {
+			return nil, err
+		}
+		repo := strings.TrimSpace(string(repoRoot))
+		for _, p := range status {
+			if diffPaths[p] || strings.HasPrefix(p, ".devrites/") {
+				continue
 			}
+			hits = scanWholeFile(repo, p, hits)
 		}
 	}
 	var kept []windowHit

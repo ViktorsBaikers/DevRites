@@ -5,13 +5,13 @@
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-SCAN="python3 $HERE/../scripts/scan-supply-chain-iocs.py"
+SCAN=(python3 "$HERE/../scripts/scan-supply-chain-iocs.py")
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 fail=0
 
-finds() { if $SCAN "$2" >/dev/null 2>&1; then echo "FAIL [$1]: expected a finding"; fail=1; else echo "ok   [$1]"; fi; }
-clean() { if $SCAN "$2" >/dev/null 2>&1; then echo "ok   [$1]"; else echo "FAIL [$1]: expected clean:"; $SCAN "$2"; fail=1; fi; }
+finds() { if out="$("${SCAN[@]}" "$2" 2>&1)"; then echo "FAIL [$1]: expected a finding"; fail=1; elif ! printf '%s\n' "$out" | grep -qF "FINDING $3"; then echo "FAIL [$1]: expected FINDING $3, got:"; printf '%s\n' "$out"; fail=1; else echo "ok   [$1]"; fi; }
+clean() { if "${SCAN[@]}" "$2" >/dev/null 2>&1; then echo "ok   [$1]"; else echo "FAIL [$1]: expected clean:"; "${SCAN[@]}" "$2"; fail=1; fi; }
 
 # v3 lockfile pinning a compromised ua-parser-js release → finding
 cat > "$TMP/bad.json" <<'EOF'
@@ -21,7 +21,7 @@ cat > "$TMP/bad.json" <<'EOF'
   "node_modules/left-pad": { "version": "1.3.0" }
 } }
 EOF
-finds "compromised version flagged" "$TMP/bad.json"
+finds "compromised version flagged" "$TMP/bad.json" "ua-parser-js@0.7.29"
 
 # v3 lockfile with a SAFE ua-parser-js version → clean
 cat > "$TMP/clean.json" <<'EOF'
@@ -40,7 +40,7 @@ cat > "$TMP/v1.json" <<'EOF'
   "lodash": { "version": "4.17.21" }
 } }
 EOF
-finds "v1 lockfile path flagged" "$TMP/v1.json"
+finds "v1 lockfile path flagged" "$TMP/v1.json" "event-stream@3.3.6"
 
 # missing lockfile → clean (exit 0)
 clean "missing lockfile → clean" "$TMP/does-not-exist.json"

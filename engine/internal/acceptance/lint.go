@@ -61,7 +61,7 @@ func LintLedger(doc *Document, approved []ApprovedCommand) []Finding {
 				add("warn", gate.ID, "tautological-check",
 					"CHECK looks like a fixed-output command: %q; use an oracle that observes the named outcome", gate.Check)
 			}
-			if approved != nil && !Approved(gate.Check, gate.Cwd, approved) {
+			if !Approved(gate.Check, gate.Cwd, approved) {
 				add("error", gate.ID, "unapproved-check",
 					"CHECK %q with CWD %q matches no Build-entry preflight row in test-plan.md; the runner refuses it", gate.Check, gate.Cwd)
 			}

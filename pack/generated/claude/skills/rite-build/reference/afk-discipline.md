@@ -114,7 +114,7 @@ logged to `evidence.md` so the user sees them on return.
 
 Example targets:
 
-- `curl -d "$DEVRITES_QID: $DEVRITES_QUESTION" ntfy.sh/my-topic`
+- `curl -fsS -m 10 -d "$DEVRITES_QID: $DEVRITES_QUESTION" ntfy.sh/my-topic`
 - `osascript -e "display notification \"$DEVRITES_QUESTION\" with title \"DevRites: $DEVRITES_GATE\""`
 - `pb push "$DEVRITES_SLUG: $DEVRITES_QUESTION"` (via pushbullet CLI)
 

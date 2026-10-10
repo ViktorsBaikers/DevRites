@@ -68,6 +68,19 @@ func TestDetectManifestFallbackAndJSON(t *testing.T) {
 	}
 }
 
+func TestDetectManifestFallbackSkipsManifestWithoutSlot(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root+"/setup.py", "from setuptools import setup\nsetup()\n")
+	writeFile(t, root+"/build.gradle", "plugins { id 'java' }\n")
+	code, out := runDetect(t, root)
+	if code != 0 {
+		t.Fatalf("code=%d out=%s", code, out)
+	}
+	if !strings.Contains(out, "gradle build") || !strings.Contains(out, "build.gradle") {
+		t.Fatalf("build slot should resolve from build.gradle:\n%s", out)
+	}
+}
+
 func TestDetectEmptyRepoReportsUnresolved(t *testing.T) {
 	root := t.TempDir()
 	code, out := runDetect(t, root)

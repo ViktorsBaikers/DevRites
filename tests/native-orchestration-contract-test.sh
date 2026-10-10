@@ -56,6 +56,57 @@ for role in sorted(documented):
     elif devin_tools & {"edit", "write", "notebook_edit"}:
         raise SystemExit(f"Devin read-only role {role} gained write tools: {sorted(devin_tools)}")
 
+# Every shipped role on every host view carries that host's required identity keys, and
+# its writer-ness agrees with the Codex profiles. No host takes a dispatch `mode` key
+# (OpenCode, which needs one, is not generated).
+def agent_field(head, key, sep):
+    found = re.search(rf"(?m)^{re.escape(key)}{sep}\s*(.*)$", head)
+    return found.group(1).strip().strip("\"'") if found else None
+
+def agent_head(text, suffix):
+    if suffix == ".toml":
+        before, marker, _ = text.partition("\ndeveloper_instructions = ")
+        return before + marker
+    found = re.match(r"---\n(.*?)\n---\n", text, re.S)
+    return found.group(1) if found else ""
+
+def tool_list(head, key):
+    return {t.strip().lower() for t in (agent_field(head, key, ":") or "").split(",")}
+
+AGENT_HOSTS = {
+    "claude-canonical": (canonical / "agents", ".md", ":", ("name", "description"),
+                         lambda h: agent_field(h, "permissionMode", ":") != "plan"),
+    "claude-generated": (root / "pack/generated/claude/agents", ".md", ":", ("name", "description"),
+                         lambda h: agent_field(h, "permissionMode", ":") != "plan"),
+    "codex": (root / "pack/generated/codex/agents", ".toml", r"\s*=",
+              ("name", "description", "developer_instructions", "default_permissions"),
+              lambda h: agent_field(h, "default_permissions", r"\s*=") == ":workspace"),
+    "devin": (root / "pack/generated/devin/agents", ".md", ":", ("name", "description", "allowed-tools"),
+              lambda h: bool(set(re.findall(r"(?m)^  - ([a-z_]+)$", h)) & {"edit", "write"})),
+    "omp": (root / "pack/generated/omp/agents", ".md", ":", ("name", "description", "tools"),
+            lambda h: bool(tool_list(h, "tools") & {"edit", "write"})),
+    "pi": (root / "pack/generated/pi/agents", ".md", ":", ("name", "description", "tools"),
+           lambda h: bool(tool_list(h, "tools") & {"edit", "write"})),
+}
+shipped = {p.stem for p in (canonical / "agents").glob("*.md")}
+writers = {
+    p.stem for p in AGENT_HOSTS["codex"][0].glob("*.toml")
+    if agent_field(agent_head(p.read_text(), ".toml"), "default_permissions", r"\s*=") == ":workspace"
+}
+for host, (directory, suffix, sep, required, is_writer) in AGENT_HOSTS.items():
+    stems = {p.stem for p in directory.glob(f"*{suffix}")}
+    if stems != shipped:
+        raise SystemExit(f"{host} roles differ from shipped: missing={sorted(shipped - stems)}, extra={sorted(stems - shipped)}")
+    for role in sorted(shipped):
+        head = agent_head((directory / f"{role}{suffix}").read_text(), suffix)
+        if agent_field(head, "name", sep) != role:
+            raise SystemExit(f"{host} role {role} has the wrong name")
+        missing = [k for k in required if agent_field(head, k, sep) is None]
+        if missing:
+            raise SystemExit(f"{host} role {role} is missing required keys {missing}")
+        if is_writer(head) != (role in writers):
+            raise SystemExit(f"{host} role {role} writer-ness disagrees with the Codex profiles (codex writer: {role in writers})")
+
 # Agent input contracts must not forbid what the engine read-set hands them:
 # recorded verdicts/rationale there are claims to re-verify, never "unseen".
 for name, phrase in (
@@ -183,12 +234,10 @@ for required in (
     "manifest",
     "package",
     "symlink",
-    "OK",
-    "WARN",
-    "FAIL",
-    "Remediation",
+    "Emit every check as `OK`, `WARN`, or `FAIL`",
+    "one concrete `Remediation:`",
 ):
-    if required not in doctor:
+    if required not in " ".join(doctor.split()):
         raise SystemExit(f"native rite-doctor contract missing {required!r}")
 
 settings = json.loads((canonical / "settings.json").read_text())
@@ -364,6 +413,212 @@ if "optional **design-memory** rollup → project `DESIGN.md` in Polish before R
 if re.search(r"DESIGN\.md.*\bship\b", frontend_trigger, re.I):
     raise SystemExit("top-level command map still assigns DESIGN.md rollup to Ship")
 
+# docs/command-map.md: each cross-plane claim must appear verbatim, whitespace-folded.
+# Numbers and names inside a claim come from the engine, the agent frontmatter and the
+# owning skills, so a wrong value or a reworded claim fails; a re-wrapped line does not.
+map_raw = command_map.read_text()
+map_flat = " ".join(map_raw.split())
+engine_main = (root / "engine/main.go").read_text()
+
+
+def pin(sentence):
+    if sentence not in map_flat:
+        raise SystemExit(f"command map no longer states: {sentence!r}")
+
+
+def pin_source(rel, sentence):
+    if sentence not in " ".join((canonical / rel).read_text().split()):
+        raise SystemExit(f"{rel} no longer states {sentence!r}, which command-map.md relies on")
+
+
+def engine_const(name):
+    found = re.search(rf"\b{name}\s*=\s*(\d+)", engine_main)
+    if found is None:
+        raise SystemExit(f"engine/main.go does not define {name}")
+    return int(found.group(1))
+
+
+producer_fmt = re.search(r'Fprintf\(stdout,\s*"(candidate-[^"]*)"', engine_main)
+if producer_fmt is None:
+    raise SystemExit("engine/main.go prints no `check candidate` stdout record")
+produced_fields = re.findall(r"(candidate-[a-z0-9-]+):", producer_fmt.group(1))
+if len(produced_fields) != 2:
+    raise SystemExit(f"engine/main.go prints {produced_fields}; command-map.md documents two fields")
+pin(
+    "There are no legacy operational aliases. `check candidate <slug>` prints exactly "
+    f"`{produced_fields[0]}: <64 lowercase hex>` and `{produced_fields[1]}: <row count>` on a pass; "
+    f"usage/root errors exit `{engine_const('exitUsage')}` and candidate blocks exit `{engine_const('exitBlocked')}`."
+)
+
+ones = (
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen "
+    "fourteen fifteen sixteen seventeen eighteen nineteen"
+).split()
+tens = "twenty thirty forty fifty sixty seventy eighty ninety".split()
+
+
+def word_number(word):
+    """A count as the command map writes it: digits, or spelled words up to ninety-nine."""
+    word = word.lower()
+    if word.isdigit():
+        return int(word)
+    if word in ones:
+        return ones.index(word)
+    head, _, tail = word.partition("-")
+    if head in tens and (not tail or tail in ones):
+        return (tens.index(head) + 2) * 10 + (ones.index(tail) if tail else 0)
+    return None
+
+
+writable_profiles = sorted(
+    role for role in claude
+    if "permissionMode: acceptEdits" in (canonical / "agents" / f"{role}.md").read_text().split("---", 2)[1]
+)
+if len(writable_profiles) != 1:
+    raise SystemExit(f"command-map.md documents one writable specialist; frontmatter declares {writable_profiles}")
+writable = writable_profiles[0]
+profile_claim = re.search(
+    r"fresh-context leaves\) \*\*([A-Za-z0-9-]+) role profiles:\*\* both hosts have ([A-Za-z0-9-]+) "
+    r"read-only leaves plus the write-capable `([a-z-]+)`\.",
+    map_flat,
+)
+if profile_claim is None:
+    raise SystemExit("command map no longer states its role profile, read-only leaf and write-capable counts")
+if (
+    word_number(profile_claim.group(1)),
+    word_number(profile_claim.group(2)),
+    profile_claim.group(3),
+) != (len(claude), len(claude) - 1, writable):
+    raise SystemExit(
+        f"command map states {profile_claim.group(1)} role profiles, {profile_claim.group(2)} read-only leaves, "
+        f"write-capable `{profile_claim.group(3)}`; the agents tree has {len(claude)} profiles, writable {writable_profiles}"
+    )
+agent_names = [p.stem for p in (canonical / "agents").glob("*.md")]
+skills_flat = " ".join((root / "docs/skills.md").read_text().split())
+roster_claim = re.search(
+    r"DevRites ships ([A-Za-z0-9-]+) role profiles at depth one\. Both hosts have ([A-Za-z0-9-]+) read-only "
+    r"leaves and one source/test writer role\. The explicit `/overhaul` skill ships ([A-Za-z0-9-]+) more agents, "
+    r"`overhaul-\*`.*?`/rite-fast` adds ([A-Za-z0-9-]+) `fast-\*` agents",
+    skills_flat,
+)
+if roster_claim is None:
+    raise SystemExit("docs/skills.md no longer states its role profile, read-only leaf, overhaul-* and fast-* counts")
+documented = tuple(word_number(roster_claim.group(i)) for i in (1, 2, 3, 4))
+actual = (
+    len(claude),
+    len(claude) - 1,
+    sum(n.startswith("overhaul-") for n in agent_names),
+    sum(n.startswith("fast-") for n in agent_names),
+)
+if documented != actual:
+    raise SystemExit(
+        "docs/skills.md states (profiles, read-only leaves, overhaul-*, fast-*) = "
+        f"{documented}; the agents tree has {actual}"
+    )
+pin(
+    "that root from editing source/tests. "
+    f"Among the lifecycle `devrites-*` specialists, both hosts expose only `{writable}` as a writable one. "
+    "The shipped profiles are the full role-to-permission map; `/rite-doctor` step 3 checks them."
+)
+
+# The Codex profiles ship more than one :workspace writer (overhaul-*, fast-builder), so prose
+# that names a sole writer without the lifecycle scope contradicts the shipped artifacts.
+codex_writers = [
+    p.stem for p in (root / "pack/generated/codex/agents").glob("*.toml")
+    if 'default_permissions = ":workspace"' in p.read_text()
+]
+compliance_flat = " ".join((root / "docs/harness-compliance.md").read_text().split())
+for claim in (
+    "Claude lifecycle `devrites-*` reviewer profiles use permissionMode plan",
+    'Codex lifecycle `devrites-*` reviewer profiles use `default_permissions = ":read-only"`',
+    "its root no-source-writing boundary is instruction-enforced",
+    "both hosts dispatch the exact slice-wright while every other lifecycle `devrites-*` specialist remains read-only",
+):
+    if claim not in compliance_flat:
+        raise SystemExit(f"docs/harness-compliance.md no longer states: {claim!r}")
+if len(codex_writers) > 1 and "while every other specialist remains read-only" in compliance_flat:
+    raise SystemExit("docs/harness-compliance.md: retired unscoped read-only wording returned")
+
+if len(codex_writers) > 1:
+    for rel, retired, scoped in (
+        (
+            "pack/generated/codex/AGENTS.md",
+            'every other specialist uses `default_permissions = ":read-only"`',
+            f"Among the lifecycle `devrites-*` specialists, `{writable}` alone uses",
+        ),
+        (
+            "docs/command-map.md",
+            f"Both hosts expose only `{writable}` as a writable specialist.",
+            f"Among the lifecycle `devrites-*` specialists, both hosts expose only `{writable}`",
+        ),
+        (
+            "README.md",
+            f"On every host, `{writable}` is the only writable specialist",
+            f"among the lifecycle `devrites-*` specialists only `{writable}` is writable",
+        ),
+        (
+            "pack/generated/devin/AGENTS.md",
+            f"Only `{writable}` may edit source or tests; every other specialist is read-only by `allowed-tools`.",
+            f"Among the lifecycle `devrites-*` specialists, only `{writable}` may edit source or tests",
+        ),
+        (
+            "pack/generated/pi/AGENTS.md",
+            f"Only `{writable}` may edit source or tests; every other specialist is read-only by tool allowlist.",
+            f"Among the lifecycle `devrites-*` specialists, only `{writable}` may edit source or tests",
+        ),
+        (
+            "SECURITY.md",
+            f"On both hosts, `{writable}` is the only writable specialist.",
+            f"Among the lifecycle `devrites-*` specialists, `{writable}` is the only writable one",
+        ),
+    ):
+        flat = " ".join((root / rel).read_text().split())
+        if retired in flat:
+            raise SystemExit(f"{rel}: retired sole-writer wording returned: {retired!r}")
+        if scoped not in flat:
+            raise SystemExit(f"{rel}: sole-writer claim lost its lifecycle scope: {scoped!r}")
+        if "`/rite-doctor` step 3" not in flat:
+            raise SystemExit(f"{rel}: role-to-permission claim lost its `/rite-doctor` step 3 pointer")
+
+pin_source(
+    "skills/rite-seal/SKILL.md",
+    "dispatch remaining required exact roles under `../devrites-lib/reference/parallel-dispatch.md`",
+)
+pin_source("skills/devrites-lib/reference/parallel-dispatch.md", "launch every native agent nonblocking")
+pin_source("skills/devrites-lib/reference/parallel-dispatch.md", "Ask for each exact named agent in fresh context")
+pin(
+    "- `/rite-seal` fans out to `.claude/agents/devrites-*` reviewers **in parallel** "
+    "for independent, fresh-context judgment, then writes the GO / NO-GO verdict: it runs no git."
+)
+
+upgrade_row = [l for l in map_raw.splitlines() if l.startswith("| [`/rite-upgrade`]")]
+if len(upgrade_row) != 1 or not upgrade_row[0].startswith(
+    "| [`/rite-upgrade`](../pack/.claude/skills/rite-upgrade/SKILL.md) | compatibility | `[slug]` |"
+):
+    raise SystemExit(f"command map needs exactly one /rite-upgrade row linking its skill, found {upgrade_row}")
+if not (canonical / "skills/rite-upgrade/SKILL.md").is_file():
+    raise SystemExit("command map links a /rite-upgrade skill that does not exist")
+pin(
+    "**Conditional recovery.** Audit an older released workspace against current contracts. "
+    "Only cited defects route through Clarify, Plan repair, Converge, Vet, Prove, Polish, Review, or Seal. "
+    "Ambiguous candidate scope is a gap; age/cursor form alone is never a defect, "
+    "and old passes are never synthesized."
+)
+pin(
+    "`/rite-upgrade` separately audits an older active workspace. Only a cited "
+    "current-contract defect may route a repair through its existing Clarify, Plan repair, "
+    "Converge, Vet, Prove, Polish, Review, or Seal owner."
+)
+pin_source("agents/devrites-upgrade-planner.md", "ambiguous candidate scope produces `gap`")
+pin_source("skills/rite-upgrade/SKILL.md", "cursor form, or pack version alone is never a defect")
+pin_source("skills/rite-upgrade/SKILL.md", "never synthesize or guess scope, bytes, proof, freshness, or a historical pass")
+
+pin_source("skills/rite-autocomplete/SKILL.md", "it never authorizes Git.")
+pin(
+    "/rite-autocomplete drives the reversible sequence unattended; --ship reaches "
+    "only the exact-plan Ship approval boundary and never authorizes Git."
+)
+
 ship = " ".join(lifecycle_owners["ship"].read_text().split())
 for phrase in (
     "candidate-read-only",
@@ -397,6 +652,10 @@ for phrase in (
     "git diff-tree --root --no-commit-id --name-status --no-renames -r -z HEAD",
     "candidate paths still match `HEAD`",
     "Any mismatch stops; do not reinterpret it",
+    "Push: pending",
+    "git ls-remote",
+    "HEAD equals the recorded",
+    "fresh type-GO for only the remaining push/tag/PR commands",
 ):
     if phrase not in git_ship:
         raise SystemExit(f"Ship Git integrity contract missing {phrase!r}")
@@ -448,6 +707,15 @@ post_order = (
 positions = [after_go_normalized.index(phrase) for phrase in post_order]
 if positions != sorted(positions):
     raise SystemExit("Ship mutates or commits before the required post-GO revalidation order")
+resume_order = (
+    "**Commit**",
+    "Verify the commit",
+    "**Record before push.**",
+    "**Push**",
+)
+resume_positions = [after_go_normalized.index(phrase) for phrase in resume_order]
+if resume_positions != sorted(resume_positions):
+    raise SystemExit("Ship records push state outside the commit-verify-record-push order")
 
 binding = "Candidate SHA-256: <64 lowercase hex>"
 seal_template = (canonical / "skills/rite-seal/reference/seal-template.md").read_text()
@@ -521,7 +789,7 @@ for path in (
     canonical / "agents/devrites-plan-reviewer.md",
 ):
     normalized = " ".join(path.read_text().split())
-    for phrase in ("one-sided", "duplicated-contract", "vague", "non-consuming"):
+    for phrase in ("one-sided", "duplicated-contract", "vague, or non-consuming proof"):
         if phrase not in normalized:
             raise SystemExit(f"{path} does not fail closed on {phrase} shared-contract proof")
 
@@ -589,7 +857,7 @@ afk_contract = (canonical / "skills/devrites-lib/reference/standards/afk-hitl.md
 recovery = (canonical / "skills/devrites-debug-recovery/SKILL.md").read_text()
 for text, required in (
     (spec, ("Native grammar re-read checklist", "No parser or replacement script")),
-    (checkpoint, ("scan every question header", "re-read `questions.md` immediately before", "next unused")),
+    (checkpoint, ("scan every question header", "re-read `questions.md` immediately before", "next unused", "under a bounded tool timeout", "append the exit code to `evidence.md`")),
     (clarify, ("return_phase", "return_next_action", "preserve unrelated Markdown", "/rite-plan repair")),
     (afk_contract, (
         "read-only config", "afk_slices_remaining", "released bullet", "pre-seed",
@@ -599,19 +867,30 @@ for text, required in (
         "/rite-autocomplete --parallel N` writes",
         "Above it stop; at it run only reconciliation", "if declared but unobservable, stop",
         "per native activation and start fresh only", "remain durable/recomputed across wakes",
+        "`/rite-autocomplete` deliberately ignores `max_slices`, `max_agents`, `max_minutes` and `max_review_queue`",
     )),
-    (afk, ("afk-hitl.md", "dispatch, charging, and red-path behavior", "exactly once after each green built slice", "never below zero", "fails closed", "before dispatching another slice")),
+    (afk, ("afk-hitl.md", "dispatch, charging, and red-path behavior", "exactly once after each green built slice", "never below zero", "fails closed", "before dispatching another slice", "curl -fsS -m 10 -d")),
     (recovery, ("caller and recovery attempts", "three no-progress attempts", "Count an attempt only", "## Dead ends", "Next: none — technical recovery exhausted")),
     ((canonical / "skills/rite-build/reference/wright-dispatch.md").read_text(), (
         "Isolated writer-worktree pilot", "show-superproject-working-tree",
         "one writer", "transfer_commit", "preserve the worktree and commit",
         "actual `git rev-parse HEAD` equals supplied", "Mismatch returns a gap with no write",
         "Parallel isolated-writer worktrees", "remain forbidden until this serial pilot",
+        "successful return, rejected result, stop, or a launch the host refused with no handle",
+        "A timeout or unknown outcome keeps the claim",
+        "](../../devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)",
+    )),
+    ((canonical / "skills/rite-build/reference/parallel-batch.md").read_text(), (
+        "stop for the human (never stash or commit their work); the batch is untouched",
     )),
 ):
+    normalized = " ".join(text.split())
     for phrase in required:
-        if phrase not in text:
+        if phrase not in normalized:
             raise SystemExit(f"native policy contract missing {phrase!r}")
+
+if "notify: 'curl " not in afk_contract or 'notify: "ntfy.sh' in afk_contract:
+    raise SystemExit("afk-hitl.md sentinel notify example must be a runnable single-quoted shell command")
 
 build = (canonical / "skills/rite-build/reference/phase-contract.md").read_text()
 seal = (canonical / "skills/rite-seal/reference/phase-contract.md").read_text()
@@ -621,8 +900,9 @@ for text, required in (
     (seal, ("devrites-proof-runner", "devrites-spec-reviewer", "by ID and meaning")),
     (define, ("Persist traceability natively", "traceability.md")),
 ):
+    normalized = " ".join(text.split())
     for phrase in required:
-        if phrase not in text:
+        if phrase not in normalized:
             raise SystemExit(f"native semantic ownership missing {phrase!r}")
 
 build_mode_contracts = {
@@ -675,6 +955,9 @@ retired_build_phrases = {
     canonical / "skills/rite/SKILL.md": (
         "implement exactly one verified vertical slice, then stop",
     ),
+    canonical / "skills/rite-build/reference/parallel-batch.md": (
+        "commit/stash and retry",
+    ),
 }
 for path, retired in retired_build_phrases.items():
     text = " ".join(path.read_text().split())
@@ -699,6 +982,13 @@ for phrase in (
 ):
     if phrase not in agents_text:
         raise SystemExit(f"{agents_doc}: missing read-set independence rule: {phrase!r}")
+# A claim is released only on a host-confirmed terminal path; a timeout keeps it.
+for phrase in (
+    "host-confirmed terminal path after `add`",
+    "](../parallel-dispatch.md#cancellation-and-terminal-reconciliation)",
+):
+    if phrase not in agents_text:
+        raise SystemExit(f"{agents_doc}: missing claim-release terminal rule: {phrase!r}")
 one_shot = canonical / "skills/devrites-lib/reference/standards/one-shot-actions.md"
 one_shot_text = " ".join(one_shot.read_text().split())
 if "needs fresh human authorization" in one_shot_text:
@@ -714,6 +1004,24 @@ for phrase in (
 ):
     if phrase not in admission_text:
         raise SystemExit(f"{admission}: missing read-set seeding boundary: {phrase!r}")
+# rite-temper --mode tokens: the argument-hint must name only modes that the artifact
+# template's `Mode:` grammar and the skill's own step 2 accept.
+temper = canonical / "skills/rite-temper"
+temper_skill = (temper / "SKILL.md").read_text()
+hint_line = next(l for l in temper_skill.split("---", 2)[1].splitlines() if l.startswith("argument-hint:"))
+hint_modes = set(re.search(r"--mode ([^\]\"]+)", hint_line).group(1).split("|"))
+template_modes = set(re.search(r"^Mode: (.+)$", (temper / "reference/strategy-template.md").read_text(), re.M).group(1).split(" | "))
+step_two = " ".join(temper_skill.split())
+step_two_modes = set(re.search(r"scope mode \((.+?)\) with its", step_two).group(1).replace("`", "").replace(" opt-in", "").split(" · "))
+if not hint_modes or not hint_modes <= template_modes or not hint_modes <= step_two_modes:
+    raise SystemExit(
+        f"rite-temper --mode hint {sorted(hint_modes)} is not a subset of strategy-template Mode: "
+        f"{sorted(template_modes)} and SKILL.md step 2 {sorted(step_two_modes)}"
+    )
+menu_row = next(l for l in (canonical / "skills/rite/reference/menu.md").read_text().splitlines() if "`/rite-temper`" in l)
+menu_modes = set(re.search(r"scope mode \(([^)]+)\)", menu_row).group(1).split("/"))
+if not menu_modes <= template_modes:
+    raise SystemExit(f"menu.md rite-temper modes {sorted(menu_modes)} are not strategy-template Mode: values {sorted(template_modes)}")
 PY
 
 echo "native orchestration contract: PASS"

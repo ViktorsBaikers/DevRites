@@ -1,9 +1,13 @@
 package parallel
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
+
+// checkPathDisjoint is a seam so tests can inject trial-check outcomes.
+var checkPathDisjoint = CheckPathDisjoint
 
 // SelectGreedy returns the largest plan-order pairwise-disjoint subset of ready
 // whose size is ≤ cap. ready must already be dependency-satisfied and in plan
@@ -45,8 +49,8 @@ func SelectGreedy(cap int, ready []SlicePaths, root string) ([]SlicePaths, error
 			continue
 		}
 		trial := append(append([]SlicePaths{}, selected...), cand)
-		if _, err := CheckPathDisjoint(trial, root); err != nil {
-			if strings.Contains(err.Error(), "overlap") {
+		if _, err := checkPathDisjoint(trial, root); err != nil {
+			if errors.Is(err, ErrPathOverlap) {
 				continue
 			}
 			return nil, err

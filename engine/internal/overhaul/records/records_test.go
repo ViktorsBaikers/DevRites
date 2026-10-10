@@ -265,6 +265,10 @@ func TestSingleGenerationRules(t *testing.T) {
 			approval(r)["plan_digest"] = digest(f.t, filepath.Join(f.run, "revisions/plan-r1.json"))
 			approval(r)["tasks"] = L{"T-1", "T-2"}
 		}, "task dependencies contain a cycle"},
+		{"task id breaks the approval fence", func(f *fixture, r map[string]J) {
+			f.writePlan(L{task("T-1", L{}, "src/a.py"), task("T-2\n```\n<img src=x>", L{"T-1"}, "src/b.py")})
+			approval(r)["plan_digest"] = digest(f.t, filepath.Join(f.run, "revisions/plan-r1.json"))
+		}, "id must match"},
 		{"bracket path accepted", func(f *fixture, r map[string]J) {
 			f.writePlan(L{task("T-1", L{}, "src/a.py"), task("T-2", L{"T-1"}, "app/blog/[slug]/page.tsx")})
 			approval(r)["plan_digest"] = digest(f.t, filepath.Join(f.run, "revisions/plan-r1.json"))

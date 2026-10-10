@@ -9,7 +9,37 @@ case "$output" in
   *) printf 'unexpected native-host eval validation: %s\n' "$output" >&2; exit 1 ;;
 esac
 
-python3 - "$ROOT/scripts/live-hosts/run-loop-evals.py" "$ROOT/evals/native-host/codex-acceptance.json" "$ROOT" <<'PY'
+python3 -I - "$ROOT/scripts/live-hosts/run-loop-evals.py" <<'PY'
+import importlib.util
+import json
+import pathlib
+import sys
+import tempfile
+
+spec = importlib.util.spec_from_file_location("loop_evals", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+corpus = json.loads(module.CORPUS.read_text())
+with tempfile.TemporaryDirectory() as raw:
+    mutated = pathlib.Path(raw) / "corpus.json"
+    module.CORPUS = mutated
+    mutated.write_text(json.dumps(corpus))
+    module.load_corpus()
+    for label, value in (("unlisted", "not_a_real_job"), ("integer", 1), ("list", ["not_a_real_job"])):
+        case = json.loads(json.dumps(corpus))
+        case["scenarios"][0]["expected_job"] = value
+        mutated.write_text(json.dumps(case))
+        try:
+            module.load_corpus()
+        except ValueError as error:
+            if "expected_job" not in str(error):
+                raise SystemExit(f"{label} expected_job rejected for the wrong reason: {error}")
+        else:
+            raise SystemExit(f"{label} expected_job outside job_vocabulary was accepted")
+PY
+
+validate_matrix() {
+python3 - "$ROOT/scripts/live-hosts/run-loop-evals.py" "$1" "$ROOT" <<'PY'
 import argparse
 import importlib.util
 import json
@@ -55,6 +85,9 @@ for case in cases:
         raise SystemExit(f"invalid Codex acceptance fields: {case.get('id')}")
     if (case["mode"], case["availability"]) not in allowed_admission:
         raise SystemExit(f"invalid Codex admission combination: {case['id']}")
+    for field in ("evidence", "claim", "does_not_demonstrate"):
+        if not isinstance(case[field], str) or not case[field].strip():
+            raise SystemExit(f"Codex acceptance case lacks {field}: {case['id']}")
     if case["availability"] == "unavailable":
         if case["runner"] is not None:
             raise SystemExit(f"unavailable Codex case must have no runner: {case['id']}")
@@ -118,11 +151,27 @@ with tempfile.TemporaryDirectory() as raw:
     if copied.read_text() != "{}\n" or (copied.stat().st_mode & 0o777) != 0o600:
         raise SystemExit("Codex auth isolation failed")
 PY
+}
+
+validate_matrix "$ROOT/evals/native-host/codex-acceptance.json"
 
 AUTH_T="$(mktemp -d)"
 trap 'rm -rf "$AUTH_T"' EXIT
 mkdir -p "$AUTH_T/bin" "$AUTH_T/model-home" "$AUTH_T/no-codex"
 ln -s "$(command -v dirname)" "$AUTH_T/no-codex/dirname"
+
+python3 - "$ROOT/evals/native-host/codex-acceptance.json" "$AUTH_T/blank-claim.json" <<'PY'
+import json, sys
+matrix = json.load(open(sys.argv[1]))
+matrix["cases"][0]["claim"] = ""
+json.dump(matrix, open(sys.argv[2], "w"))
+PY
+if validate_matrix "$AUTH_T/blank-claim.json" >/dev/null 2>"$AUTH_T/blank-claim.err"; then
+  printf 'Codex acceptance matrix with an empty claim was accepted\n' >&2
+  exit 1
+fi
+grep -q 'lacks claim' "$AUTH_T/blank-claim.err" \
+  || { printf 'empty-claim matrix failed for the wrong reason\n' >&2; cat "$AUTH_T/blank-claim.err" >&2; exit 1; }
 if PATH="$AUTH_T/no-codex" DEVRITES_CODEX_ACCEPTANCE=1 "$(command -v bash)" \
   "$ROOT/tests/codex-runtime-smoke.sh" >/dev/null 2>&1; then
   printf 'strict Codex acceptance skipped a missing CLI\n' >&2

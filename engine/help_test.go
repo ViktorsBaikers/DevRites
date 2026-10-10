@@ -2,8 +2,12 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/notes"
 )
 
 func TestCommandHelp(t *testing.T) {
@@ -42,6 +46,10 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"observe", "slice", "--help"}, want: "observe slice <slug> <SLICE-ID>"},
 		{args: []string{"orient", "--help"}, want: "orient [slug]"},
 		{args: []string{"handoff", "--help"}, want: "handoff [slug]"},
+		{args: []string{"next", "help"}, want: "devrites-engine next [slug]"},
+		{args: []string{"dispatch", "help"}, want: "devrites-engine dispatch <slug>"},
+		{args: []string{"secret-scan", "help"}, want: "secret-scan [--staged] [--stdin]"},
+		{args: []string{"open-visual", "help"}, want: "open-visual <path-or-name>"},
 		{args: []string{"claim", "--help"}, want: "claim <add|release|list|check>"},
 		{args: []string{"claim", "help"}, want: "claim <add|release|list|check>"},
 		{args: []string{"migrate", "--help"}, want: "migrate <slug>"},
@@ -102,5 +110,131 @@ func TestUnknownCommandHelpStillUnknown(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), `unknown command "frobnicate"`) {
 		t.Fatalf("stderr = %q, want unknown-command diagnostic", stderr.String())
+	}
+}
+
+func TestHelpTokenInValuePositionDoesNotShortCircuit(t *testing.T) {
+	for _, quote := range []string{"maxConns = 4", "--help", "-h", "-help"} {
+		t.Run(quote, func(t *testing.T) {
+			project, _ := noteWorkspace(t)
+			writeBasenameFile(t, project, "pool.go", "package src\n\n// flags: --help -h -help\nconst maxConns = 4\n")
+			var stdout, stderr bytes.Buffer
+			args := []string{"note", "add", "feature", "pool.go", quote, "some title"}
+			code := run(args, strings.NewReader(""), &stdout, &stderr)
+			notes := filepath.Join(project, ".devrites", "work", "feature", "notes.md")
+			if _, err := os.Stat(notes); err != nil {
+				t.Fatalf("notes.md absent (code=%d stdout=%.80q stderr=%q)", code, stdout.String(), stderr.String())
+			}
+			if code != exitOK || !strings.Contains(stdout.String(), "added: NOTE-001") {
+				t.Fatalf("code=%d stdout=%q", code, stdout.String())
+			}
+		})
+	}
+	for _, args := range [][]string{{"note", "add", "--help"}, {"note", "--help"}, {"check", "seal", "--help"}} {
+		var stdout, stderr bytes.Buffer
+		if code := run(args, strings.NewReader(""), &stdout, &stderr); code != exitOK || !strings.Contains(stdout.String(), "usage") && !strings.Contains(stdout.String(), "Usage") {
+			t.Fatalf("%v code=%d stdout=%.80q", args, code, stdout.String())
+		}
+	}
+}
+
+func TestHelpTokenAsFlagValueOrOperandIsNotHelp(t *testing.T) {
+	for _, tok := range []string{"--help", "-h", "-help"} {
+		_, root := noteWorkspace(t)
+		var stdout, stderr bytes.Buffer
+		code := run([]string{"claim", "add", "--reason", tok, "--session", "s1", "src/a.go"}, strings.NewReader(""), &stdout, &stderr)
+		if _, err := os.Stat(filepath.Join(root, "claims.jsonl")); err != nil || code != exitOK {
+			t.Fatalf("reason=%s: code=%d claims absent (%v) stdout=%.60q", tok, code, err, stdout.String())
+		}
+		_, root = noteWorkspace(t)
+		stdout.Reset()
+		code = run([]string{"claim", "add", "--session", "s1", "src/a.go", tok}, strings.NewReader(""), &stdout, &stderr)
+		if _, err := os.Stat(filepath.Join(root, "claims.jsonl")); err == nil {
+			t.Fatalf("trailing %s wrote a claim", tok)
+		}
+		if code != exitOK || !strings.Contains(stdout.String(), "claim") {
+			t.Fatalf("trailing %s code=%d stdout=%.60q", tok, code, stdout.String())
+		}
+	}
+	_, root := noteWorkspace(t)
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"claim", "add", "--reason", "ordinary", "--session", "s1", "src/a.go"}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
+		t.Fatalf("control code=%d", code)
+	}
+	if _, err := os.Stat(filepath.Join(root, "claims.jsonl")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHelpFlagAfterOtherFlagsPrintsHelp(t *testing.T) {
+	t.Setenv("DEVRITES_ROOT", "")
+	for _, test := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"secret-scan", "--staged", "--help"}, "secret-scan [--staged] [--stdin]"},
+		{[]string{"secret-scan", "--staged", "--stdin", "-h"}, "secret-scan [--staged] [--stdin]"},
+		{[]string{"check", "indexes", "--json", "-help"}, "check indexes [--root <dir>]"},
+		{[]string{"parallel", "create", "--json", "--help"}, "parallel create"},
+	} {
+		var stdout, stderr bytes.Buffer
+		code := run(test.args, strings.NewReader(""), &stdout, &stderr)
+		if code != exitOK || stderr.Len() != 0 || !strings.Contains(stdout.String(), test.want) {
+			t.Fatalf("run(%q) code=%d stdout=%.80q stderr=%q", test.args, code, stdout.String(), stderr.String())
+		}
+	}
+}
+
+func TestUsageListsRuntimeFailureExit(t *testing.T) {
+	if !strings.Contains(usage, "\n  1  runtime/I/O failure\n") {
+		t.Fatalf("usage Exit codes block omits exit 1:\n%s", usage)
+	}
+}
+
+func TestCLIDocsStateCloseExitCodes(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "docs", "cli.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := string(data)
+	for _, want := range []string{
+		"`state close` exits `4` for usage or a missing workspace",
+		"`3` for a schema refusal",
+		"`5` when an archive already exists",
+		"`1` for an invalid workspace, archive directory, or ACTIVE cursor",
+	} {
+		if !strings.Contains(doc, want) {
+			t.Errorf("docs/cli.md omits %q", want)
+		}
+	}
+}
+
+func TestNoteHelpAndErrorPathShareLegendAndExitCodes(t *testing.T) {
+	const grades = "Grades: exact | moved | stale | ambiguous | lost"
+	const exits = "Exit codes: 0 ok, 2 usage, 3 blocked"
+	for _, args := range [][]string{
+		{"note", "--help"},
+		{"note", "help"},
+		{"note", "add", "--help"},
+	} {
+		var stdout, stderr bytes.Buffer
+		code := run(args, strings.NewReader(""), &stdout, &stderr)
+		if code != exitOK || stderr.Len() != 0 {
+			t.Fatalf("run(%q) code=%d stderr=%q", args, code, stderr.String())
+		}
+		for _, want := range []string{grades, exits} {
+			if !strings.Contains(stdout.String(), want) {
+				t.Errorf("run(%q) help omits %q:\n%s", args, want, stdout.String())
+			}
+		}
+	}
+	var stdout, stderr bytes.Buffer
+	if code := notes.Run(t.TempDir(), nil, &stdout, &stderr); code != notes.ExitUsage {
+		t.Fatalf("notes.Run with no args = %d, want usage", code)
+	}
+	for _, want := range []string{grades, exits} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("note usage error omits %q:\n%s", want, stderr.String())
+		}
 	}
 }

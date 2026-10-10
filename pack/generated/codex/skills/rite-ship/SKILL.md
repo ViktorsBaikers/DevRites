@@ -72,8 +72,10 @@ if absent, route to `$rite-spec <feature>`. Ship only with current **GO** in `se
    stops. Any command/scope/branch/message/tag/PR change or retry needs a fresh prompt;
    native approval is still required.
 4. On GO, commit; verify committed state/path set and exact candidate digest; then push →
-   tag/PR as applicable via `git-ship.md`. Capture SHA(s), branch, tag/PR URL. Mismatch
-   stops before push/tag; retry needs fresh approval.
+   tag/PR as applicable via `git-ship.md`. Record SHA and push state in `ship.md` before
+   push (git-ship 7a); a push/tag/PR failure stops, and a rerun resumes at push under
+   fresh type-GO. Capture branch, tag/PR URL. Mismatch stops before push/tag; retry
+   needs fresh approval.
 4a. **PR only:** render [`git-ship.md`](reference/git-ship.md#pull-request-body)'s
    structured body; omit empty sections.
 5. Re-scan the four residual sources; any new/missing/changed item blocks archive.

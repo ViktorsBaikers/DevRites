@@ -5,13 +5,15 @@
     ["@semantic-release/commit-analyzer", {
       "preset": "conventionalcommits",
       "releaseRules": [
-        { "type": "docs", "scope": "README", "release": "patch" },
+        { "type": "docs", "scope": "readme", "release": "patch" },
         { "type": "refactor", "release": "patch" },
         { "type": "perf", "release": "patch" },
         { "type": "build", "release": "patch" },
+        { "type": "build", "scope": "deps-dev", "release": false },
         { "type": "remove", "release": "minor" },
         { "breaking": true, "release": "major" },
         { "revert": true, "release": "patch" },
+        { "type": "revert", "release": "patch" },
         { "scope": "no-release", "release": false }
       ]
     }],
@@ -40,8 +42,7 @@
       "prepareCmd": "bash scripts/sync-version.sh ${nextRelease.version} && git add -- CHANGELOG.md README.md package.json && bash scripts/build-release-tarball.sh ${nextRelease.version} && bash scripts/build-binaries.sh ${nextRelease.version}"
     }],
     ["@semantic-release/npm", {
-      "npmPublish": true,
-      "provenance": true
+      "npmPublish": true
     }],
     ["@semantic-release/git", {
       "assets": [

@@ -152,7 +152,7 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		for _, rel := range workspaceList {
 			if writeContextEntry(&bundle, filepath.Join(featureDir, filepath.FromSlash(rel)),
-				"workspace/"+rel, seen) {
+				"workspace/"+rel, seen, false) {
 				loaded++
 			}
 		}
@@ -162,7 +162,7 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	if opts.role != "" {
 		rel := roleAgentPath(manifest, opts.role)
 		if writeContextEntry(&bundle, filepath.Join(skillsRoot, "..", "agents", filepath.FromSlash(rel)),
-			"agents/"+rel, seen) {
+			"agents/"+rel, seen, true) {
 			loaded++
 		} else {
 			// The agent contract is a pack file, not a workspace artifact: a
@@ -280,7 +280,7 @@ func expandIncludes(abs string, data []byte) []byte {
 	})
 }
 
-func writeContextEntry(bundle *strings.Builder, abs, label string, seen map[string]bool) bool {
+func writeContextEntry(bundle *strings.Builder, abs, label string, seen map[string]bool, expand bool) bool {
 	if seen[abs] {
 		return false
 	}
@@ -291,7 +291,11 @@ func writeContextEntry(bundle *strings.Builder, abs, label string, seen map[stri
 		fmt.Fprintf(bundle, "MISSING: %s\n\n", label)
 		return false
 	}
-	bundle.Write(expandIncludes(abs, data))
+	if expand {
+		bundle.Write(expandIncludes(abs, data))
+	} else {
+		bundle.Write(data)
+	}
 	if len(data) > 0 && data[len(data)-1] != '\n' {
 		bundle.WriteByte('\n')
 	}

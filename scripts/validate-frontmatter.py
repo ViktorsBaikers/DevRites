@@ -2,11 +2,15 @@
 """Validate YAML frontmatter of DevRites SKILL.md and agent files.
 
 Usage: validate-frontmatter.py FILE [FILE ...]
-Exits non-zero if any file fails. Uses PyYAML if present, else a minimal parser
-(frontmatter here is simple key: value, no nested structures needed).
+Exits non-zero if any file fails, or if PyYAML is not installed.
 """
 import re
 import sys
+
+try:
+    import yaml  # type: ignore
+except ImportError:
+    sys.exit("PyYAML required: pip install -r scripts/requirements-ci.txt")
 
 KNOWN_SKILL_FIELDS = {
     "name", "description", "argument-hint", "user-invocable",
@@ -28,6 +32,24 @@ DESCRIPTION_WORD_LIMITS = {
     "explicit": 30,
 }
 AGENT_DESCRIPTION_WORD_LIMIT = 45
+# The host generators read agent frontmatter line by line (awk), not as YAML, so
+# agent files are accepted only in exactly the grammar those readers understand.
+AGENT_LINE = re.compile(r"([A-Za-z][A-Za-z0-9_-]*): (\S.*)")
+AGENT_TOOLS = re.compile(r"[A-Za-z][A-Za-z0-9_*-]*(?:, [A-Za-z][A-Za-z0-9_*-]*)*")
+# Only these keys may take an empty value followed by a flat '  - scalar' block list.
+AGENT_LIST_KEYS = ("skills", "disallowedTools")
+AGENT_LIST_HEAD = re.compile(r"([A-Za-z][A-Za-z0-9_-]*):")
+AGENT_LIST_ITEM = re.compile(r"  - [A-Za-z0-9][A-Za-z0-9_.*-]*")
+# The awk readers split on LF only; these characters make other line models (splitlines,
+# YAML) see a line break or fence they do not, so they are rejected anywhere in the frontmatter.
+AGENT_FORBIDDEN_CHAR = re.compile("[\x00-\x08\x0b-\x1f\x7f-\x9f\u2028\u2029\ufeff]")
+# A value that opens a quote must close it on its own line with only whitespace after;
+# block scalars ('|', '>') take their content from later lines, so they are never allowed.
+AGENT_QUOTED_VALUE = re.compile(r'"(?:[^"\\]|\\.)*"\s*|\'(?:[^\']|\'\')*\'\s*')
+# A value may not open with one of these: YAML reads an anchor, tag, alias, directive or flow
+# collection there where the line readers see plain text.
+AGENT_VALUE_START = "&*!|>%@`{["
+YAML_INDICATORS = tuple("> | \" ' [ { # & * ! % @ `".split())
 
 
 def extract_frontmatter(text):
@@ -42,41 +64,93 @@ def extract_frontmatter(text):
     return None, "missing closing '---' frontmatter fence"
 
 
-def parse_simple(fm):
-    """Minimal top-level 'key: value' parser. Good enough for these files.
+def line_value(value):
+    """A value as the generators read it: one pair of outer quotes removed, escapes undone."""
+    if len(value) > 1 and value[0] == value[-1] == '"':
+        return re.sub(r'\\(["\\])', r"\1", value[1:-1])
+    if len(value) > 1 and value[0] == value[-1] == "'":
+        return value[1:-1].replace("''", "'")
+    return value
 
-    Handles YAML block scalars ('|', '>') by collecting indented continuation
-    lines so multi-line values are preserved (and can be detected/rejected).
+
+def agent_grammar_error(text, fields=None):
+    """Return why an agent file's frontmatter is outside the allowlist, or None.
+
+    When `fields` is a dict it receives the key -> value (or item list) mapping the line readers see.
     """
-    data = {}
-    lines = fm.splitlines()
-    i = 0
-    while i < len(lines):
-        raw = lines[i]
-        if not raw.strip() or raw.lstrip().startswith("#"):
-            i += 1
+    if "\r" in text:
+        return "carriage return found; agent files must use LF line endings only"
+    lines = text.split("\n")
+    if lines[0] != "---":
+        return "first line must be exactly '---'"
+    seen = set()
+    n = 1
+    while n < len(lines):
+        n += 1
+        line = lines[n - 1]
+        if AGENT_FORBIDDEN_CHAR.search(line):
+            return "line %d: control or Unicode line-separator character found" % n
+        if "<!--" in line:
+            return "line %d: HTML comment or include marker found in frontmatter" % n
+        if line == "---":
+            return None
+        head = AGENT_LIST_HEAD.fullmatch(line)
+        if head and head.group(1) in AGENT_LIST_KEYS:
+            if head.group(1) in seen:
+                return "line %d: repeated key %r" % (n, head.group(1))
+            seen.add(head.group(1))
+            items = 0
+            while n < len(lines) and lines[n].startswith(" "):
+                if not AGENT_LIST_ITEM.fullmatch(lines[n]):
+                    return "line %d: list items must be flat '  - scalar' lines" % (n + 1)
+                if fields is not None:
+                    fields.setdefault(head.group(1), []).append(lines[n][4:])
+                n += 1
+                items += 1
+            if not items:
+                return "line %d: %r needs at least one '  - scalar' item" % (n, head.group(1))
             continue
-        if raw[0] in (" ", "\t"):
-            i += 1
-            continue
-        if ":" not in raw:
-            i += 1
-            continue
-        key, val = raw.split(":", 1)
-        v = val.strip()
-        # Block scalar indicators: gather indented following lines.
-        if v and v[0] in ("|", ">"):
-            collected = []
-            j = i + 1
-            while j < len(lines) and (lines[j] == "" or lines[j].startswith((" ", "\t"))):
-                collected.append(lines[j].lstrip())
-                j += 1
-            data[key.strip()] = "\n".join(collected).rstrip()
-            i = j
-            continue
-        data[key.strip()] = v.strip('"').strip("'")
-        i += 1
-    return data
+        m = AGENT_LINE.fullmatch(line)
+        if not m:
+            return ("line %d must be a single 'key: value' line (letter-led key, one space, "
+                    "non-empty value; no blank, comment, indented, continuation or complex-key lines)" % n)
+        key, value = m.groups()
+        if key in seen:
+            return "line %d: repeated key %r" % (n, key)
+        seen.add(key)
+        if value[0] in AGENT_VALUE_START:
+            return ("line %d: %r must not start with the YAML indicator %r; write it as one plain "
+                    "or quoted line" % (n, key, value[0]))
+        if value[0] in "\"'" and not AGENT_QUOTED_VALUE.fullmatch(value):
+            return "line %d: a quoted value must close its quote on the same line with nothing after it" % n
+        if re.search(r"\s#", value):
+            return "line %d: %r must not carry a ' #' comment" % (n, key)
+        if fields is not None:
+            fields[key] = line_value(value)
+        if key == "tools" and not AGENT_TOOLS.fullmatch(value):
+            return "line %d: 'tools' must be names joined by ', ' on one line" % n
+        if key == "description" and (value[0] in YAML_INDICATORS or " #" in value):
+            return "line %d: 'description' must be one plain line (no leading YAML indicator, no ' #')" % n
+    return "missing closing '---' frontmatter fence"
+
+
+def agent_yaml_mismatch(fields, data):
+    """Return the first key whose line-reader value differs from the YAML value, or None."""
+    for key in sorted(set(fields) | set(data)):
+        if key not in data:
+            return "%r is read by the host generators but missing from the YAML view" % key
+        if key not in fields:
+            return "%r is in the YAML view but not read by the host generators" % key
+        line, parsed = fields[key], data[key]
+        if isinstance(line, list):
+            same = isinstance(parsed, list) and [str(x) for x in parsed] == line
+        elif isinstance(parsed, (list, dict)):
+            same = False
+        else:
+            same = not isinstance(parsed, str) or parsed == line
+        if not same:
+            return "%r reads as %r on the host generators but %r in YAML" % (key, line, parsed)
+    return None
 
 
 def duplicate_top_level_keys(fm):
@@ -97,13 +171,12 @@ def duplicate_top_level_keys(fm):
 
 def load_fm(fm):
     try:
-        import yaml  # type: ignore
         d = yaml.safe_load(fm)
-        if isinstance(d, dict):
-            return {str(k): d[k] for k in d}
-    except Exception:
-        pass
-    return parse_simple(fm)
+    except yaml.YAMLError as e:
+        return None, str(e)
+    if isinstance(d, dict):
+        return {str(k): d[k] for k in d}, None
+    return None, "frontmatter is not a mapping"
 
 
 def is_agent(path):
@@ -118,12 +191,19 @@ def main(argv):
     errors = 0
     for path in files:
         try:
-            with open(path, "r", encoding="utf-8") as fh:
+            with open(path, "r", encoding="utf-8", newline="") as fh:
                 text = fh.read()
         except OSError as e:
             print("ERROR %s: cannot read (%s)" % (path, e))
             errors += 1
             continue
+        fields = {}
+        if is_agent(path):
+            err = agent_grammar_error(text, fields)
+            if err:
+                print("ERROR %s: %s" % (path, err))
+                errors += 1
+                continue
         fm, err = extract_frontmatter(text)
         if err:
             print("ERROR %s: %s" % (path, err))
@@ -135,7 +215,21 @@ def main(argv):
                   % (path, ", ".join(duplicates)))
             errors += 1
             continue
-        data = load_fm(fm)
+        data, fm_error = load_fm(fm)
+        if fm_error:
+            print("ERROR %s: frontmatter is not valid YAML: %s" % (path, fm_error))
+            errors += 1
+            continue
+        if is_agent(path):
+            err = agent_yaml_mismatch(fields, data)
+            if err:
+                print("ERROR %s: frontmatter differs between line view and YAML: %s" % (path, err))
+                errors += 1
+                continue
+        if is_agent(path) and "tools" in data and not (isinstance(data["tools"], str) and data["tools"].strip()):
+            print("ERROR %s: 'tools' must be a non-empty list of tool names, not %r" % (path, data["tools"]))
+            errors += 1
+            continue
         if not isinstance(data, dict) or not data:
             print("ERROR %s: frontmatter did not parse to key/value fields" % path)
             errors += 1

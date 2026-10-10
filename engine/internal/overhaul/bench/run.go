@@ -172,6 +172,9 @@ func compare(d map[string]any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+	if !(floor >= 0) {
+		return nil, fmt.Errorf("resolution must be a number >= 0, got %v", floor)
+	}
 	rng, err := seeded(d)
 	if err != nil {
 		return nil, err
@@ -207,6 +210,9 @@ func compare(d map[string]any) (any, error) {
 		hiIdx += len(boots)
 	}
 	bootLo, bootHi := boots[int(0.025*float64(len(boots)))], boots[hiIdx]
+	if math.IsInf(bootLo, 0) || math.IsInf(bootHi, 0) || math.IsNaN(bootLo) || math.IsNaN(bootHi) {
+		return noRatio{"NO_RATIO", "resampled medians reach zero: ratio interval is unbounded", ma, mb, bud, er, notes}, nil
+	}
 	lo, hi := bootLo, bootHi
 	target, err := number(d, "target", 1)
 	if err != nil {

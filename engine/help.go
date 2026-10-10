@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/devrites/devrites/internal/notes"
 	"github.com/devrites/devrites/internal/overhaul"
 	"github.com/devrites/devrites/internal/parallel"
 )
@@ -33,6 +34,9 @@ const (
   state resolve <qid> "<answer>"
   state resolve --drop <qid> ["<reason>"]
   state resolve --batch <file>
+  state resolve --human <qid> "<answer>"
+  state resolve --human --drop <qid> ["<reason>"]
+  state resolve --human --batch <file>
   state merge-manifest <slug> [<predecessor>...]
   state close <slug>
 `
@@ -79,7 +83,7 @@ const (
 	detectUsageLine     = "usage: devrites-engine detect commands [--root <dir>] [--json]"
 	windowsUsageLine    = "usage: devrites-engine check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]"
 	dupUsageLine        = "usage: devrites-engine check dup [slug] [--all|--worktree|--staged|--base <ref>] [--min-lines n] [--threshold f] [--ignore-file <path>] [--limit n] [--exclude <csv>] [--phase p] [--cwd <dir>]"
-	resolveUsage        = `usage: devrites-engine state resolve <qid> "<answer>"  |  state resolve --drop <qid> ["<reason>"]  |  state resolve --batch <file>`
+	resolveUsage        = `usage: devrites-engine state resolve <qid> "<answer>"  |  state resolve --drop <qid> ["<reason>"]  |  state resolve --batch <file>  |  state resolve --human <qid> "<answer>"  |  state resolve --human --drop <qid> ["<reason>"]  |  state resolve --human --batch <file>`
 	mergeManifestUsage  = "usage: devrites-engine state merge-manifest <slug> [<predecessor>...]"
 	closeUsage          = "usage: devrites-engine state close <slug>"
 	observeSliceUsage   = "usage: devrites-engine observe slice <slug> <SLICE-ID>"
@@ -93,14 +97,6 @@ const (
   gates lint <slug> [--strict]     Audit oracle quality without executing
   gates attest <slug> <id> <note>  Record human evidence on a manual gate
   gates abandon <slug> <id> <why>  Record a terminal ABANDON handoff on a gate
-`
-	noteFamilyUsage = `usage: devrites-engine note <add|list|check|rm> <slug> ...
-
-  note add <slug> <subject> <quote> <title> [body]
-                                  Anchor a workspace note to verbatim code text
-  note list <slug>                List notes.md entries with their current grade
-  note check <slug> [--repair]    Regrade every anchor; --repair rewrites moved subjects
-  note rm <slug> <NOTE-id>        Remove a note
 `
 )
 
@@ -117,10 +113,40 @@ func isHelpToken(arg string) bool {
 	return isHelpFlag(arg) || arg == "help"
 }
 
-func hasHelpFlag(args []string) bool {
-	for _, arg := range args {
-		if isHelpFlag(arg) {
+// takesSubcommand reports whether command's first argument names a subcommand.
+// A subcommand is consumed by dispatch, so a help flag directly after it is
+// still in flag position rather than in a value position.
+func takesSubcommand(command string) bool {
+	switch command {
+	case "check", "state", "observe", "parallel", "gates", "claim", "note", "metrics", "detect", "overhaul":
+		return true
+	default:
+		return false
+	}
+}
+
+// claimValueFlags are the claim flags that consume the next argument as a value.
+var claimValueFlags = map[string]bool{"--session": true, "--reason": true, "--ttl": true, "--id": true}
+
+// hasHelpFlag reports whether args (the arguments after the command word) are a
+// help request. The command path is consumed by dispatch, so a help flag is
+// honoured among the leading flags that follow it. The scan stops at the first
+// argument that does not start with a dash, because from there the engine
+// cannot tell a flag from a value or operand. Only claim, whose value flags are
+// known, honours a help flag later, and never one that is the value of such a
+// flag.
+func hasHelpFlag(command string, args []string) bool {
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") && takesSubcommand(command) {
+		args = args[1:]
+	}
+	for i := 0; i < len(args); i++ {
+		if isHelpFlag(args[i]) {
 			return true
+		}
+		if command == "claim" && claimValueFlags[args[i]] {
+			i++
+		} else if command != "claim" && !strings.HasPrefix(args[i], "-") {
+			return false
 		}
 	}
 	return false
@@ -133,11 +159,11 @@ func shouldPrintHelp(args []string) bool {
 	if isHelpToken(args[0]) {
 		return true
 	}
-	if hasHelpFlag(args) {
+	if hasHelpFlag(args[0], args[1:]) {
 		return true
 	}
 	switch args[0] {
-	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate", "overhaul":
+	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate", "overhaul", "next", "dispatch", "secret-scan", "open-visual":
 		return len(args) >= 2 && args[1] == "help"
 	default:
 		return false
@@ -194,7 +220,7 @@ func commandHelp(args []string) (string, bool) {
 	case "gates":
 		return gatesFamilyUsage, true
 	case "note":
-		return noteFamilyUsage, true
+		return notes.Usage, true
 	case "overhaul":
 		return overhaul.Usage, true
 	case "migrate":

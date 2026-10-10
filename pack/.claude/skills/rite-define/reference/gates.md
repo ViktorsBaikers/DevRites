@@ -116,20 +116,21 @@ defaults and the always-pause rules:
 | `[]` (or omitted) | log + proceed | pause | pause | pause |
 | `[advisory]` (default) | log + proceed | pause | pause | pause |
 | `[advisory, validating]` | log + proceed | build + queue | pause | pause |
-| `[advisory, validating, blocking]` | log + proceed | build + queue | log + proceed* | pause |
 
-\* but **never** for destructive migrations, auth/authz boundary changes, or public API
-breaks. Red tests/types/lint remain hard build gates and must clear bounded recovery before
-the next slice; only a resulting human-owned ambiguity becomes a pause. See
-[`.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) for the irreversible-risk
-list.
+`blocking` is never auto-handled, even when listed in `allow_gates`: it always pauses, per
+the [`blocking`](#blocking) gate rule above. Red tests/types/lint remain hard build gates and
+must clear bounded recovery before the next slice; only a resulting human-owned ambiguity
+becomes a pause. The irreversible-risk list is owned by
+[`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#irreversible-risk-list-always-pause);
+every item on it pauses regardless of `allow_gates`.
 
 `escalating` is never in `allow_gates`: specialist routing is not something AFK can
 shortcut.
 
 `/rite-autocomplete` does not add `blocking` to `allow_gates`. It auto-resolves
 open blocking questions that already name a recommended option via
-`devrites-engine state resolve`, then continues. That is an orchestrator
+`devrites-engine state resolve`, then continues. Escalating, irreversible-risk, and
+access questions still pause, even with a recommended option. That is an orchestrator
 exception, not an AFK ceiling change.
 
 ## Anti-patterns

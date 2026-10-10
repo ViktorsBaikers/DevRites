@@ -58,8 +58,14 @@ if [[ "$need_actionlint" -eq 1 ]]; then
 fi
 
 if [[ "$need_osv" -eq 1 ]]; then
-  url="https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_${goos}_${goarch}"
+  base="osv-scanner_${goos}_${goarch}"
+  url="https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/${base}"
+  sum_url="https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_SHA256SUMS"
   curl -fsSL "$url" -o "$tmpdir/osv-scanner"
+  curl -fsSL "$sum_url" -o "$tmpdir/osv-scanner.sums"
+  expected="$(awk -v f="$base" '$2 == f { print $1; exit }' "$tmpdir/osv-scanner.sums")"
+  [[ -n "$expected" ]] || { echo "missing checksum for $base" >&2; exit 1; }
+  echo "${expected}  $tmpdir/osv-scanner" | shasum -a 256 -c -
   install -m 0755 "$tmpdir/osv-scanner" "$DEST/tools/osv-scanner"
 fi
 

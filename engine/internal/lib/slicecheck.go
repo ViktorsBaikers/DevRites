@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"io"
+	"path"
 	"regexp"
 	"strings"
 
@@ -68,6 +69,7 @@ func checkAllowlistPaths(paths []string) []string {
 	var problems []string
 	seen := map[string]bool{}
 	for _, p := range paths {
+		c := path.Clean(p)
 		switch {
 		case strings.HasPrefix(p, "/") || windowsDrivePath.MatchString(p):
 			problems = append(problems, fmt.Sprintf("allowlist path %q is not project-relative", p))
@@ -77,12 +79,12 @@ func checkAllowlistPaths(paths []string) []string {
 			problems = append(problems, fmt.Sprintf("allowlist path %q uses a glob — exact paths only", p))
 		case strings.HasSuffix(p, "/"):
 			problems = append(problems, fmt.Sprintf("allowlist path %q is a directory — exact files only", p))
-		case devritesPathRe.MatchString(p):
+		case devritesPathRe.MatchString(c):
 			problems = append(problems, fmt.Sprintf("allowlist path %q targets .devrites — wrights never write workflow state", p))
-		case seen[p]:
+		case seen[c]:
 			problems = append(problems, fmt.Sprintf("allowlist path %q is duplicated", p))
 		}
-		seen[p] = true
+		seen[c] = true
 	}
 	return problems
 }
@@ -128,10 +130,10 @@ func RunCheckSlice(root string, args []string, stdout, stderr io.Writer) int {
 	if touchedRaw, ok := fieldValue(fields, "files likely touched"); ok {
 		allowed := map[string]bool{}
 		for _, p := range allowlist {
-			allowed[p] = true
+			allowed[path.Clean(p)] = true
 		}
 		for _, p := range parsePathList(touchedRaw) {
-			if hasAllow && !allowed[p] {
+			if hasAllow && !allowed[path.Clean(p)] {
 				problems = append(problems, fmt.Sprintf("Files likely touched %q is outside the Writer allowlist", p))
 			}
 		}

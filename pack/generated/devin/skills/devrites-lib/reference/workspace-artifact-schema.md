@@ -20,7 +20,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | Phase | Required artifacts |
 | --- | --- |
 | frame | `state.md` |
-| spec | `README.md`, `brief.md`, `spec.md`, `state.md`, `decisions.md`, `assumptions.md`, `questions.md` |
+| spec | `brief.md`, `spec.md`, `state.md`, `decisions.md`, `assumptions.md`, `questions.md` |
 | clarify | spec artifacts plus `decision-coverage.md` |
 | temper | clarified spec artifacts plus `strategy.md` when temper runs |
 | define/plan | clarified spec artifacts plus `architecture.md`, `plan.md`, `tasks.md`, `traceability.md` |
@@ -40,9 +40,9 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `strategy.md` | temper verdict, scope mode/deltas, pre-mortem risks, deferred ambition | 180 lines |
 | `architecture.md` | owning layer, integration points, data/API/events, dependencies, risks, affected boundaries | 180 lines |
 | `flows.md` | useful Mermaid sequence/state/data/lifecycle diagrams with why-it-matters text and related IDs | 160 lines |
-| `visual/<name>.html` | optional portable human-viewable visualization; pair with sibling `.outline.md`; self-contained preferred | 400 lines |
-| `visual/<name>.outline.md` | required machine dual-read companion for the sibling HTML; outline wins on conflict; never a candidate path | 200 lines |
-| `visual/README.md` | optional index of visuals in the workspace | 80 lines |
+| `visual/<name>.html` | optional portable human-viewable visualization; pair with sibling `.outline.md`; self-contained preferred | 400 lines (advisory; not gate-checked) |
+| `visual/<name>.outline.md` | required machine dual-read companion for the sibling HTML; outline wins on conflict; never a candidate path | 200 lines (advisory; not gate-checked) |
+| `visual/README.md` | optional index of visuals in the workspace | 80 lines (advisory; not gate-checked) |
 | `decisions.md` | ADR-style `DEC-###` log: status, context, options, decision, consequences, related IDs; optional `Files:`/`Tags:` fields make entries queryable by path or theme | 200 lines |
 | `assumptions.md` | assumptions with confidence, owner, validation status | 160 lines |
 | `questions.md` | current `q-YYYY-MM-DD-NNN` (or released `Q-###`) open/resolved questions, gate, answer, impact | 180 lines |

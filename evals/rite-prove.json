@@ -19,8 +19,9 @@
     },
     {
       "text": "Capture browser evidence for the dashboard route.",
-      "expected": "should_trigger",
-      "rationale": "Browser proof = rite-prove."
+      "expected": "should_not_trigger",
+      "owner": "devrites-browser-proof",
+      "rationale": "One route's browser evidence is browser-proof, not the feature's full acceptance proof."
     },
     {
       "text": "Verify the feature end-to-end before review.",

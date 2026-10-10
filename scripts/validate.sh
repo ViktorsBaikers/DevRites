@@ -9,13 +9,16 @@ PACK="$ROOT/pack/.claude"
 SKILLS="$PACK/skills"
 AGENTS="$PACK/agents"
 fail=0
+failures=""
+skips=0
 # Per-run scratch dir: two concurrent validate runs must not corrupt each
 # other's logs the way fixed /tmp/dr_* paths did.
 DR_SCRATCH="$(mktemp -d 2>/dev/null || echo /tmp/dr-validate-$$)"
 trap 'rm -rf "${DR_SCRATCH}"' EXIT
 section() { printf '\n=== %s ===\n' "$1"; }
-bad() { printf 'FAIL: %s\n' "$*"; fail=1; }
+bad() { printf 'FAIL: %s\n' "$*"; fail=1; failures="${failures}  - $*"$'\n'; }
 good() { printf 'ok: %s\n' "$*"; }
+skip() { skips=$((skips + 1)); printf 'skip (validate): %s\n' "$*"; }
 
 
 # ---- 1. bash -n on every shell script ------------------------------------
@@ -37,7 +40,7 @@ if command -v python3 >/dev/null 2>&1; then
       good "compiles ${f#$ROOT/}"; else bad "py ${f#$ROOT/}: $(cat ${DR_SCRATCH}/dr_pyerr)"; fi
   done
 else
-  echo "skip: python3 not found"
+  skip "python3 not found"
 fi
 
 
@@ -74,7 +77,7 @@ if DEVRITES_HOST_ARTIFACT_DIR="$HOST_ARTIFACT_TMP" bash "$ROOT/scripts/build-hos
     good "generated host artifact tree matches canonical sources"
   else
     sed -n '1,40p' ${DR_SCRATCH}/dr_host_artifacts
-    bad "pack/generated tree drifted from canonical sources"
+    bad "pack/generated tree drifted from canonical sources (run: bash scripts/build-host-artifacts.sh)"
   fi
 else
   cat ${DR_SCRATCH}/dr_host_artifacts
@@ -121,28 +124,28 @@ if command -v python3 >/dev/null 2>&1; then
   for a in "$AGENTS"/*.md; do [ -f "$a" ] && FM_FILES+=("$a"); done
   if python3 "$ROOT/scripts/validate-frontmatter.py" "${FM_FILES[@]}"; then good "frontmatter parses"; else bad "frontmatter validation failed"; fi
 else
-  echo "skip: python3 not found"
+  skip "python3 not found"
 fi
 
 section "generated skill payload budget"
 if command -v node >/dev/null 2>&1; then
   if node "$ROOT/scripts/check-generated-skill-budget.mjs" "$SKILLS"; then good "generated skill payload budget passed"; else bad "generated skill payload budget failed"; fi
 else
-  echo "skip: node not found"
+  skip "node not found"
 fi
 
 section "instruction size ratchet"
 if command -v node >/dev/null 2>&1; then
   if node "$ROOT/scripts/check-instruction-size-baseline.mjs"; then good "instruction size baseline passed"; else bad "instruction size baseline failed"; fi
 else
-  echo "skip: node not found"
+  skip "node not found"
 fi
 
 section "reference reachability governance"
 if command -v node >/dev/null 2>&1; then
   if node "$ROOT/scripts/check-reference-governance.mjs"; then good "reference reachability governance passed"; else bad "reference reachability governance failed"; fi
 else
-  echo "skip: node not found"
+  skip "node not found"
 fi
 
 # ---- 6. /rite-polish orchestrator references its phase reference files ---
@@ -163,7 +166,7 @@ if command -v node >/dev/null 2>&1; then
     bad "skills inventory drifted"
   fi
 else
-  echo "skip: node not found"
+  skip "node not found"
 fi
 
 # ---- 6c. host parity -----------------------------------------------------
@@ -171,14 +174,14 @@ section "command host parity"
 if command -v python3 >/dev/null 2>&1; then
   if python3 "$ROOT/scripts/validate-command-parity.py" >${DR_SCRATCH}/dr_command_parity 2>&1; then cat ${DR_SCRATCH}/dr_command_parity; good "command host parity passed"; else cat ${DR_SCRATCH}/dr_command_parity; bad "command host parity failed"; fi
 else
-  echo "skip: python3 not found"
+  skip "python3 not found"
 fi
 
 section "agent composition"
 if command -v python3 >/dev/null 2>&1; then
   if python3 "$ROOT/scripts/validate-agent-composition.py" >${DR_SCRATCH}/dr_agent_composition 2>&1; then cat ${DR_SCRATCH}/dr_agent_composition; good "agent composition contracts passed"; else cat ${DR_SCRATCH}/dr_agent_composition; bad "agent composition validation failed"; fi
 else
-  echo "skip: python3 not found"
+  skip "python3 not found"
 fi
 
 # ---- 6d. loads: manifests ------------------------------------------------
@@ -190,13 +193,13 @@ section "loads: manifest integrity"
 if command -v python3 >/dev/null 2>&1; then
   if python3 "$ROOT/scripts/check-loads-manifest.py" >${DR_SCRATCH}/dr_loads_manifest 2>&1; then cat ${DR_SCRATCH}/dr_loads_manifest; good "loads: manifests valid"; else cat ${DR_SCRATCH}/dr_loads_manifest; bad "loads: manifest validation failed"; fi
 else
-  echo "skip: python3 not found"
+  skip "python3 not found"
 fi
 
 # ---- 7. broken reference links -------------------------------------------
 section "reference links resolve"
 if command -v python3 >/dev/null 2>&1; then
-  python3 - "$SKILLS" <<'PY' || fail=1
+  python3 - "$SKILLS" <<'PY' || bad "reference links: broken skill link(s)"
 import os, re, sys
 skills = sys.argv[1]
 link = re.compile(r"\]\(([^)]+?\.md)\)")
@@ -223,7 +226,7 @@ sys.exit(1 if broken else 0)
 PY
   [ "$fail" -eq 0 ] && good "all reference links resolve" || true
 else
-  echo "skip: python3 not found"
+  skip "python3 not found"
 fi
 
 # ---- 9. DevRites engineering rules present -------------------------------
@@ -239,7 +242,7 @@ section "no personal paths in shipped artifacts"
 if command -v python3 >/dev/null 2>&1; then
   if python3 "$ROOT/scripts/check-no-personal-paths.py" >${DR_SCRATCH}/dr_personal_paths 2>&1; then cat ${DR_SCRATCH}/dr_personal_paths; good "no personal paths check passed"; else cat ${DR_SCRATCH}/dr_personal_paths; bad "personal path check failed"; fi
 else
-  echo "skip: python3 not found"
+  skip "python3 not found"
 fi
 
 # ---- 10b. no global writes ------------------------------------------------
@@ -266,7 +269,7 @@ if command -v go >/dev/null 2>&1; then
     bad "workflow manifest drifted from the typed state registry"
   fi
 else
-  echo "skip: go not found; workflow manifest freshness not checked"
+  skip "go not found; workflow manifest freshness not checked"
 fi
 if command -v python3 >/dev/null 2>&1; then
   if python3 "$ROOT/scripts/check-authority-drift.py" >${DR_SCRATCH}/dr_authority_drift 2>&1; then
@@ -284,7 +287,7 @@ if command -v python3 >/dev/null 2>&1; then
     bad "workspace artifact schema fixtures failed"
   fi
 else
-  echo "skip: python3 not found"
+  skip "python3 not found"
 fi
 
 # ---- 12. no runtime-broken pack/.claude/ path in installed prose ---------
@@ -372,7 +375,7 @@ else
 fi
 
 # ---- 15. shellcheck (error = blocking, warning = advisory) ---------------
-# CI runners include shellcheck and enforce the error-level gate on every PR.
+# CI runners must have shellcheck: with CI=true a missing binary fails the gate.
 # Local validation skips this gate only when shellcheck is not installed.
 section "shellcheck (-S error blocking · -S warning advisory)"
 if command -v shellcheck >/dev/null 2>&1; then
@@ -383,8 +386,10 @@ if command -v shellcheck >/dev/null 2>&1; then
   for f in "${SH_LIST[@]}"; do
     shellcheck -S warning "$f" >/dev/null 2>&1 || echo "  advisory (warning-level): ${f#"$ROOT"/}"
   done
+elif [ "${CI:-}" = true ]; then
+  bad "shellcheck not installed in CI (the error-level gate cannot run)"
 else
-  echo "skip: shellcheck not installed locally (optional: CI enforces the error-level gate)"
+  skip "shellcheck not installed locally (optional: CI enforces the error-level gate)"
 fi
 # ---- 16. eval coverage ledger (blocking gating skills + P0 agents) ------
 section "eval coverage ledger (blocking)"
@@ -404,6 +409,7 @@ fi
 # dependency changes) and scheduled deps-scan.yml enforce it.
 section "osv dependency scan (lockfile + engine module)"
 if command -v osv-scanner >/dev/null 2>&1; then
+  osv-scanner --version 2>&1 | sed -n 1p
   if osv-scanner scan --config "$ROOT/osv-scanner.toml" \
       --lockfile "$ROOT/package-lock.json" \
       --lockfile "$ROOT/engine/go.mod" >${DR_SCRATCH}/dr_osv 2>&1; then
@@ -413,7 +419,7 @@ if command -v osv-scanner >/dev/null 2>&1; then
     echo "warn: osv dependency scan found unexcepted advisories (advisory; CI enforces on dependency changes)"
   fi
 else
-  echo "skip: osv-scanner not installed locally (CI installs and enforces)"
+  skip "osv-scanner not installed locally (CI installs and enforces)"
 fi
 
 # ---- 17. workflow lint (actionlint · zizmor) ------------------------------
@@ -428,7 +434,7 @@ if command -v actionlint >/dev/null 2>&1; then
     bad "actionlint reported workflow issues"
   fi
 else
-  echo "skip: actionlint not installed locally (CI installs and enforces)"
+  skip "actionlint not installed locally (CI installs and enforces)"
 fi
 if command -v zizmor >/dev/null 2>&1; then
   if zizmor --offline "$ROOT/.github/workflows/"; then
@@ -437,11 +443,31 @@ if command -v zizmor >/dev/null 2>&1; then
     bad "zizmor reported workflow security issues"
   fi
 else
-  echo "skip: zizmor not installed locally (CI installs and enforces)"
+  skip "zizmor not installed locally (CI installs and enforces)"
 fi
 
+# ---- 18. committed .gitignore covers local secret and agent files ---------
+# Judged from the repo's .gitignore alone: a private .git/info/exclude or a
+# global excludes file must not be what protects these paths.
+section "gitignore covers local secret and agent files"
+if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  gi_repo="$DR_SCRATCH/gitignore-check"
+  mkdir -p "$gi_repo" && git -C "$gi_repo" init -q && cp "$ROOT/.gitignore" "$gi_repo/.gitignore"
+  for p in .env .env.local .claude/settings.local.json .codex/config.toml .worktrees/x; do
+    src="$(git -C "$gi_repo" -c core.excludesFile=/dev/null check-ignore --no-index -v "$p" 2>/dev/null)"
+    case "$src" in
+      .gitignore:*:\!*) bad "$p is re-included by a negated .gitignore pattern" ;;
+      .gitignore:*) good "gitignored via .gitignore: $p" ;;
+      *) bad "$p is not ignored by the committed .gitignore" ;;
+    esac
+  done
+else
+  skip "not a git checkout; .gitignore coverage not checked"
+fi
 
 # ---- summary -------------------------------------------------------------
 printf '\n========================================\n'
-if [ "$fail" -eq 0 ]; then printf 'VALIDATION PASSED\n'; else printf 'VALIDATION FAILED\n'; fi
+if [ "$fail" -eq 0 ]; then verdict=PASSED; else verdict=FAILED; fi
+[ -z "$failures" ] || printf 'Failed checks:\n%s' "$failures"
+printf 'Skipped gates: %d\nVALIDATION %s\n' "$skips" "$verdict"
 exit "$fail"

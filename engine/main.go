@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"github.com/devrites/devrites/internal/notes"
 	"github.com/devrites/devrites/internal/overhaul"
 	"github.com/devrites/devrites/internal/parallel"
+	"github.com/devrites/devrites/internal/rootfacts"
 	"github.com/devrites/devrites/internal/version"
 )
 
@@ -70,6 +72,7 @@ Usage:
   devrites-engine version                  Print the engine binary's version
 Exit codes:
   0  ok / gate passed
+  1  runtime/I/O failure
   2  usage error
   3  blocked: a deterministic gate paused; resolve the reported gap and retry
      (HITL, never a crash)
@@ -103,7 +106,11 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	root, rootExit, err := resolveRootFor(args[0], args[1:])
 	if err != nil {
-		fmt.Fprintf(stderr, "devrites: root selection: %v\n", err)
+		hint := ""
+		if errors.Is(err, rootfacts.ErrNoRoot) {
+			hint = "; run inside a DevRites project or set DEVRITES_ROOT"
+		}
+		fmt.Fprintf(stderr, "devrites: root selection: %v%s\n", err, hint)
 		return rootExit
 	}
 	switch args[0] {

@@ -183,6 +183,35 @@ func TestClaimLedgerToleratesMalformedLines(t *testing.T) {
 	}
 }
 
+func TestClaimCheckFailsClosedOnUnparsedLine(t *testing.T) {
+	root := claimTestRoot(t)
+	path := filepath.Join(root, ClaimsFile)
+	full, err := json.Marshal(&claimRecord{
+		ID: "cl-1", Session: "s-1", Paths: []string{"b.txt"},
+		ClaimedAt: "2026-01-01T00:00:00Z",
+		ExpiresAt: time.Now().Add(time.Hour).UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	truncated := string(full[:len(full)-12]) + "\n"
+	if err := os.WriteFile(path, []byte(truncated), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	latest, order, bad, err := readClaims(path)
+	if err != nil || bad != 1 || len(liveClaims(latest, order, time.Now())) != 0 {
+		t.Fatalf("premise: want 1 unparsed line and no live claims, got bad=%d live=%d err=%v", bad, len(liveClaims(latest, order, time.Now())), err)
+	}
+	code, out, errOut := runClaim(t, root, "check", "--session", "s-2", "b.txt")
+	if code == 0 || !strings.Contains(out+errOut, "unparsed") {
+		t.Fatalf("check over unreadable ledger must fail closed: code=%d out=%q err=%q", code, out, errOut)
+	}
+	code, out, errOut = runClaim(t, root, "add", "--session", "s-2", "b.txt")
+	if code == 0 || !strings.Contains(out+errOut, "unparsed") {
+		t.Fatalf("add over unreadable ledger must fail closed: code=%d out=%q err=%q", code, out, errOut)
+	}
+}
+
 func TestClaimAddConcurrentOverlapOneWins(t *testing.T) {
 	root := claimTestRoot(t)
 	const n = 8
@@ -206,5 +235,33 @@ func TestClaimAddConcurrentOverlapOneWins(t *testing.T) {
 	}
 	if wins != 1 {
 		t.Fatalf("overlapping concurrent claims: %d succeeded, want exactly 1", wins)
+	}
+}
+
+func TestClaimAddRejectsOversizedRecord(t *testing.T) {
+	root := claimTestRoot(t)
+	ledger := filepath.Join(root, ClaimsFile)
+	reason := strings.Repeat("<", 190000)
+	code, _, errOut := runClaim(t, root, "add", "--session", "s1", "--reason", reason, "a.txt")
+	if code != 2 {
+		t.Fatalf("oversized add should exit 2, got %d stderr=%.200s", code, errOut)
+	}
+	if info, err := os.Stat(ledger); err == nil && info.Size() != 0 {
+		t.Fatalf("oversized add wrote %d bytes to the ledger", info.Size())
+	}
+	if code, _, e := runClaim(t, root, "list"); code != 0 {
+		t.Fatalf("list after refused add: %d %s", code, e)
+	}
+}
+
+func TestClaimReadNamesLedgerOnOversizedLine(t *testing.T) {
+	root := claimTestRoot(t)
+	ledger := filepath.Join(root, ClaimsFile)
+	if err := os.WriteFile(ledger, []byte(strings.Repeat("x", (1<<20)+10)+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	code, _, errOut := runClaim(t, root, "list")
+	if code != 2 || !strings.Contains(errOut, ledger) || !strings.Contains(errOut, "repair") {
+		t.Fatalf("list: code=%d stderr=%q", code, errOut)
 	}
 }

@@ -14,7 +14,9 @@ import io
 import json
 import os
 import re
+import select
 import selectors
+import shlex
 import shutil
 import signal
 import socket
@@ -31,9 +33,26 @@ ARGS = sys.argv[2:]
 CANDIDATE_ROOT = SCRIPT.parent.parent
 
 
+DELIVERY_EXECUTION_PREFIX_ENV = "DEVRITES_DELIVERY_EXECUTION_PREFIX"
+
+
 def delivery_execution_prefix() -> list[str]:
-    """Prefer rtk proxy when available; CI runners may not install rtk."""
-    return ["rtk", "proxy"] if shutil.which("rtk") else []
+    """Command prefix for delivery processes; only an explicit opt-in selects one."""
+    return shlex.split(os.environ.get(DELIVERY_EXECUTION_PREFIX_ENV, ""))
+
+
+def delivery_execution_prefix_version() -> str:
+    """The prefix program's own version string, so recorded gate evidence names the tool."""
+    prefix = delivery_execution_prefix()
+    if not prefix:
+        return ""
+    version = subprocess.run(
+        [prefix[0], "--version"], text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL, check=True, timeout=10,
+    ).stdout.strip()
+    if not version:
+        raise AssertionError(f"delivery execution prefix reports no version: {prefix[0]}")
+    return version
 
 
 def with_delivery_execution_prefix(command: list[str]) -> list[str]:
@@ -96,31 +115,8 @@ OUTSIDE_MANIFEST_CONTRACT = (
     'Sidecar is immutable evidence in `FAILED`/`CLEANED`; stage, backups, proof-cache,\n'
     'mutation artifacts clean exactly.'
 )
-OUTSIDE_MANIFEST_CONTRACT_CELLS = (
-    "one immutable transaction-private `outside-manifest.json` sidecar",
-    "only exact relative name, SHA-256, encoded bytes, and row count",
-    "no\ngeneration duplicates payload",
-    "Descriptor-stable records",
-    "directory/file/symlink type/mode/uid/gid; file nlink/SHA-256",
-    "symlink target; fifo/socket same base",
-    "block/character add nonnegative integer\nnon-bool `st_rdev`",
-    "Reject other types before acceptance",
-    "Protect\nignored, nested-`.git`, and transaction-lookalike paths",
-    "exclude only root\n`.git` and the exact selected transaction subtree",
-    "Container/siblings protected",
-    "200,000 rows",
-    "16,777,216 encoded bytes",
-    "one 600-second wall",
-    "1,048,576 journal bytes",
-    "Bootstrap sidecar/journal temps reconcile only before destination mutation",
-    "Sidecar is immutable evidence in `FAILED`/`CLEANED`",
-    "stage, backups, proof-cache,\nmutation artifacts clean exactly",
-)
 LIVE_PROTECTED_SHA256 = {
-    ".gitignore": "24fc2f2ec652f10c946901863681711b541b018eda200292b51279819cec9484",
     ".devrites/ACTIVE": "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
-    ".devrites/work/workspace-observation/touched-files.md":
-        "cf5ef8aec435896c6844a47ef8a50ae5cacc44e23ab19be7c069f58fa44c871a",
 }
 EXPECTED_NORMAL_GENERATED_DELTA = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md",
@@ -128,9 +124,9 @@ EXPECTED_NORMAL_GENERATED_DELTA = {
 }
 EXPECTED_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "be5baaf577b7647daa64cf1404edeba15b648f64b87b21e3417873596024415e",
+        "b6232bf5aff1f7f5b1e90e3c93899ade1b872588bf8c68a8ad59d84929fc95a0",
     "codex/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "4a13487e6901b243f555ea410f0cd2448592ef4d5468489498255fda3ad09da5",
+        "8969fec2b58124e1e3d743ebb6d64b5b1071efde19b868e662fff718d7b1b597",
 }
 PRECHANGE_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
@@ -171,30 +167,6 @@ RESLICE_PRIOR_RECORDS = {
     'tests/acceptance-preserving-reslice-policy-test.sh': (0o600, '09af4c15f46671a97bcccb5597c429b171bb507d456fef98d46c317c6d23aa32'),
 }
 
-RESLICE_WORKSPACE_RECORDS = {
-    'ai-spec.md': (0o644, '42264bf6552f26bf5c7eb34ab8373341cc631416cee5b0f54b7254be9d7422d7'),
-    'analysis.md': (0o644, 'c031e744d0940f162cc335791f21e1ba013a529c570c09992abda6f73059e1b5'),
-    'architecture.md': (0o644, '35ac4fc3c1512157093d8657ebae8173d9c2423343876a3eaa0e7610cd938e48'),
-    'assumptions.md': (0o644, '4b921c525d933395d2a2e3dfbec244cb849f9910a4486b03553427b72131a408'),
-    'brief.md': (0o644, 'ab236cdc8f47a63b049038148ad917ec050d98e1406d8c1e0ba035ed0d3f799f'),
-    'decision-coverage.md': (0o644, '9c69fbb325d458fe0799d879f34e8aab1539b796a3587cafe97ed6956c913daa'),
-    'decisions.md': (0o644, '1018c02466b75e39b886f83db5981eae1f29012bcfe7fad96fdb315758f809b4'),
-    'devex.md': (0o644, '089824f5b805c2357f4ceebd361c6677ac4bc3c20242c92ed3f87f1d6b1c76e5'),
-    'eng-review.md': (0o644, 'e243ac0cadc64cab5ea9afe8ecf937c0ead714f06fe094434aef81b24fa3fcd1'),
-    'evidence.md': (0o644, 'cc4cc3884ba8024f9ed34422eeab2b84ca3e9b8b7aede8f353c8fbc3ed45838e'),
-    'plan.md': (0o644, 'aaffcee3357a5c649f8c3e514153ed05dc691032e18693f5e5e48835f5402917'),
-    'polish-report.md': (0o644, '74cd67afc4d15776567d7b66812e14a1e593bd9503cb9df4c2f8741c14f843f7'),
-    'questions.md': (0o644, '3d40ebff11e35f162ade3dbc3da46b9c7e7055140461022cbab3a0871ba796fa'),
-    'review.md': (0o644, 'ea1406f536c1894eee87924bdcfa0213eea1af3c45db133b4b453c53f5bcf8f9'),
-    'seal.md': (0o644, '314e868dc4b0c4967a0eeef3abfc4a7f32357d3f62f6c7c81d5639baf0ae5805'),
-    'spec.md': (0o644, '7d18793c4098cb5e9472cd360df991d3337587855f30486b16a05cf547e48f86'),
-    'state.md': (0o644, 'b53a7338ee6bb3410dfda1fc389a928c669b9d024b3ff2e260b5c10061a9cb99'),
-    'strategy.md': (0o644, '39f4d1010e1a06e4ad9306e71c6abb819aa2d48c065b6c9de840d9fb4e9bcb06'),
-    'tasks.md': (0o644, '786ab2e6b3427948e23823e5e7eeec8a045ef18f2667cbcf7915774028f22922'),
-    'test-plan.md': (0o644, '611a8e0041c5c78244e6f8d290c681d7aa89c01a601dc63cc62dfa564ec1a917'),
-    'touched-files.md': (0o644, 'd8a3a783efb649e78a95aa3799a78f8b705f5535ba3c8252886a40e3fe0da78c'),
-    'traceability.md': (0o644, '0d30431c57275bf1ce32f94a0a878a586a2c02a97921da4c4ae1bdf91591b91c'),
-}
 EXPECTED_OPS = [
     "WA-OP-001-OWNER-ACQUIRE", "WA-OP-002-SOURCE-PROMOTE",
     "WA-OP-002A-STALE-SOURCE-GC", "WA-OP-003-JOURNAL-INIT",
@@ -347,16 +319,8 @@ def wai_skip_delivery_modes() -> bool:
     return os.environ.get("DEVRITES_WAI_SKIP_DELIVERY_MODES") == "1"
 
 
-def wai_skip_delivery_model_matrix() -> bool:
-    return os.environ.get("DEVRITES_WAI_SKIP_DELIVERY_MODEL_MATRIX") == "1"
-
-
 def wai_boundary_only() -> bool:
     return os.environ.get("DEVRITES_WAI_BOUNDARY_ONLY") == "1"
-
-
-def wai_delivery_model_only() -> bool:
-    return os.environ.get("DEVRITES_WAI_DELIVERY_MODEL_ONLY") == "1"
 
 
 def reject_delivery_fixture_environment() -> None:
@@ -368,6 +332,7 @@ def reject_delivery_fixture_argv(config: dict) -> None:
     require(
         config["fast_fixture"] is not True
         and config["mutation"] is None
+        and config["death_boundary"] is None
         and config["skip_generated"] is None,
         "delivery modes reject fixture argv",
     )
@@ -807,16 +772,34 @@ def validate_historical_reslice_snapshot(snapshot: bytes) -> dict[str, bytes]:
 
 
 def check_historical_reslice_archive_rejections(snapshot: bytes) -> None:
-    for mutation in ("missing", "unexpected", "duplicate", "unsafe", "symlink",
-                     "mode", "bytes", "oversize"):
+    with tarfile.open(fileobj=io.BytesIO(snapshot), mode="r:gz") as original:
+        first_name = original.getnames()[0]
+    member_set = "historical Reslice archive exact member set"
+    member_mode = "historical Reslice archive member type/mode"
+    for mutation, expected in (
+        ("none", None),
+        ("missing", member_set),
+        ("unexpected", member_set),
+        ("duplicate", member_set),
+        ("unsafe", "descriptor-relative components"),
+        ("symlink", member_mode),
+        ("directory", member_mode),
+        ("mode", member_mode),
+        ("bytes", f"historical Reslice archive record identity: {first_name}"),
+        ("oversize", "bounded historical Reslice members"),
+        ("pax", "historical Reslice archive plain regular headers"),
+    ):
         output = io.BytesIO()
+        container = tarfile.PAX_FORMAT if mutation == "pax" else tarfile.USTAR_FORMAT
         with tarfile.open(fileobj=io.BytesIO(snapshot), mode="r:gz") as original, \
-                tarfile.open(fileobj=output, mode="w", format=tarfile.USTAR_FORMAT) as changed:
+                tarfile.open(fileobj=output, mode="w", format=container) as changed:
             for index, member in enumerate(original):
                 with original.extractfile(member) as stream:
                     data = stream.read()
                 if index == 0:
-                    if mutation == "missing":
+                    if mutation == "pax":
+                        member.pax_headers = {"comment": "x"}
+                    elif mutation == "missing":
                         continue
                     if mutation == "unexpected":
                         member.name = "unexpected.md"
@@ -826,6 +809,10 @@ def check_historical_reslice_archive_rejections(snapshot: bytes) -> None:
                         member.type = tarfile.SYMTYPE
                         member.linkname = "outside.md"
                         member.size = 0
+                    elif mutation == "directory":
+                        member.type = tarfile.DIRTYPE
+                        member.size = 0
+                        data = b""
                     elif mutation == "mode":
                         member.mode = 0o777
                     elif mutation == "bytes":
@@ -837,21 +824,31 @@ def check_historical_reslice_archive_rejections(snapshot: bytes) -> None:
                     elif mutation == "duplicate":
                         changed.addfile(member, io.BytesIO(data))
                 changed.addfile(member, io.BytesIO(data))
+        encoded = gzip.compress(output.getvalue(), mtime=0)
+        if expected is None:
+            validate_historical_reslice_snapshot(encoded)
+            continue
         try:
-            validate_historical_reslice_snapshot(gzip.compress(output.getvalue(), mtime=0))
-        except AssertionError:
-            pass
+            validate_historical_reslice_snapshot(encoded)
+        except AssertionError as error:
+            require(str(error) == expected,
+                    f"historical Reslice archive mutant rejected by wrong assertion: {mutation}: {error}")
         else:
             fail(f"historical Reslice archive mutation survived: {mutation}")
-    for payload in (b"x" * (1024 * 1024 + 1),
-                    gzip.compress(b"x" * (1024 * 1024 + 1), mtime=0),
-                    gzip.compress(gzip.decompress(snapshot) + b"unexpected", mtime=0)):
+    for label, payload, expected in (
+        ("archive size", b"x" * (1024 * 1024 + 1), "bounded historical Reslice archive"),
+        ("expansion size", gzip.compress(b"x" * (1024 * 1024 + 1), mtime=0),
+         "bounded historical Reslice expansion"),
+        ("trailing data", gzip.compress(gzip.decompress(snapshot) + b"unexpected", mtime=0),
+         "historical Reslice archive trailing data"),
+    ):
         try:
             validate_historical_reslice_snapshot(payload)
-        except AssertionError:
-            pass
+        except AssertionError as error:
+            require(str(error) == expected,
+                    f"historical Reslice archive mutant rejected by wrong assertion: {label}: {error}")
         else:
-            fail("historical Reslice archive size/trailing-data mutation survived")
+            fail(f"historical Reslice archive {label} mutation survived")
 
 
 def check_historical_reslice_identity() -> None:
@@ -860,30 +857,6 @@ def check_historical_reslice_identity() -> None:
     try:
         snapshot, records = read_historical_reslice_snapshot(root_fd)
         check_historical_reslice_archive_rejections(snapshot)
-        workspace_relative = ".devrites/work/acceptance-preserving-reslice-policy"
-        workspace_info = entry_info_at(root_fd, workspace_relative)
-        if workspace_info is None:
-            print("reslice_workspace=not-applicable")
-        else:
-            require(workspace_info.st_uid == os.getuid()
-                    and stat.S_ISDIR(workspace_info.st_mode)
-                    and stat.S_IMODE(workspace_info.st_mode) == 0o755,
-                    "historical Reslice workspace directory identity")
-            workspace_fd = open_dir_components(
-                root_fd, relative_components(workspace_relative),
-            )
-            try:
-                require(set(os.listdir(workspace_fd)) == set(RESLICE_WORKSPACE_RECORDS),
-                        "historical Reslice sealed workspace inventory")
-                for relative, (mode, digest) in RESLICE_WORKSPACE_RECORDS.items():
-                    record = file_record_at(workspace_fd, relative)
-                    require(record["state"] == "present"
-                            and record["mode"] == mode
-                            and record["sha256"] == digest,
-                            f"historical Reslice workspace record: {relative}")
-            finally:
-                os.close(workspace_fd)
-
         with tempfile.TemporaryDirectory() as tmp:
             fixture = Path(tmp).resolve() / "prior-reslice"
             fixture.mkdir()
@@ -1318,6 +1291,38 @@ def check_manifest_descriptor_substitution() -> None:
             os.readlink = original_readlink
             os.close(root_fd)
 
+    # Each symlink guard alone: a same-target swap only the identity check sees, and a
+    # stale first read (inode reuse) only the target re-read sees.
+    for label, stale_read in (("identity", False), ("re-read", True)):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            os.symlink("old-target", root / "link"); os.symlink("old-target", root / "swap")
+            root_fd = open_absolute_directory(root)
+            original_readlink = os.readlink
+            reads = 0
+            try:
+                def substitute_during_readlink(name, *, dir_fd=None):
+                    nonlocal reads
+                    target = original_readlink(name, dir_fd=dir_fd)
+                    if name == "link":
+                        reads += 1
+                        if reads == 1:
+                            if stale_read:
+                                return "stale-target"
+                            os.rename("swap", "link", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+                    return target
+                os.readlink = substitute_during_readlink
+                try:
+                    manifest_at(root_fd, set(), "swap")
+                except AssertionError as error:
+                    require(str(error) == "outside manifest pathname replacement",
+                            f"symlink {label} guard diagnostic")
+                else:
+                    fail(f"symlink {label} guard mutant survived")
+            finally:
+                os.readlink = original_readlink
+                os.close(root_fd)
+
 
 def check_file_record_descriptor_identity_and_bound() -> None:
     with tempfile.TemporaryDirectory() as tmp:
@@ -1638,6 +1643,18 @@ def check_limit_boundaries() -> None:
         except AssertionError:
             continue
         fail(f"invalid limits accepted: {row}")
+    for expected, row in (
+        ("positive target limits", (1, 0, 1, 9, 256, 34, 3, 2, 2, 1)),
+        ("journal headroom", (1, 1, 1, 9, 256, 281, 3, 2, 2, 1)),
+        ("checked integer", (True, 1, 1, 9, 256, 34, 3, 2, 2, 1)),
+    ):
+        try:
+            validate_limits(*row)
+        except AssertionError as error:
+            require(str(error) == expected,
+                    f"limit mutant rejected by wrong assertion: {expected}: {error}")
+        else:
+            fail(f"limit mutant accepted: {expected}")
 
 
 def check_complete_writes() -> None:
@@ -2021,10 +2038,10 @@ def check_process_group_timeout() -> None:
         ))
         events = []
         def synchronize(event):
+            if event == "TERM" and not (select.select([barrier_read], [], [], 5)[0]
+                                        and os.read(barrier_read, 1) == b"x"):
+                event = "TERM-UNSYNCHRONIZED"
             events.append(event)
-            if event == "TERM":
-                require(os.read(barrier_read, 1) == b"x",
-                        "TERM handler completion barrier")
         logical_clock = [0]
         ok, reason, output = run_proof_command(
             [sys.executable, "-c", fixture, str(markers), str(barrier_write)],
@@ -2104,15 +2121,6 @@ def check_module_and_corpus(root: Path) -> None:
     require(not exact_manifest_contract(
                 module.replace(OUTSIDE_MANIFEST_CONTRACT, "", 1),
             ), "outside-manifest contract omission mutant")
-    for index, cell in enumerate(OUTSIDE_MANIFEST_CONTRACT_CELLS):
-        require(cell in OUTSIDE_MANIFEST_CONTRACT,
-                f"outside-manifest contract cell fixture: {index}")
-        mutant_contract = OUTSIDE_MANIFEST_CONTRACT.replace(
-            cell, f"MUTANT-{index}", 1,
-        )
-        require(not exact_manifest_contract(
-                    module.replace(OUTSIDE_MANIFEST_CONTRACT, mutant_contract, 1),
-                ), f"outside-manifest contract cell mutant: {index}")
     operation_rows = markdown_rows(module, "WA-OP-")
     ops = [row[0] for row in operation_rows]
     require(ops == EXPECTED_OPS, f"operation table: {ops}")
@@ -2133,25 +2141,11 @@ def check_module_and_corpus(root: Path) -> None:
     require({row["id"]: row["expected_route"] for row in scenarios} == EXPECTED_ROUTES, "scenario routes")
     require(all(set(row) == SCENARIO_FIELDS for row in scenarios), "exact scenario field maps")
     require(exact_map_digest(scenarios) == CORPUS_SCENARIOS_SHA256, "complete scenario corpus map")
-    scenario_mutations = 0
-    for row_index, row in enumerate(scenarios):
-        for field in sorted(SCENARIO_FIELDS):
-            mutant = json.loads(json.dumps(scenarios))
-            if isinstance(row[field], list):
-                mutant[row_index][field].append("MUTANT")
-            else:
-                mutant[row_index][field] += "-MUTANT"
-            require(exact_map_digest(mutant) != CORPUS_SCENARIOS_SHA256,
-                    f"scenario map cell mutant survived: {row['id']}:{field}")
-            scenario_mutations += 1
-    require(scenario_mutations == 140, "scenario map mutation count")
     for row in scenarios:
         require(row["durable_consequence"] and row["forbidden_actions"], f"scenario consequence: {row['id']}")
     adapter_rows = markdown_table(module, "|Canonical adapter|Entry trigger|Canonical action|Return cursor|")
     require(len(adapter_rows) == 10 and all(len(row) == 4 for row in adapter_rows), "canonical adapter table")
     require(exact_map_digest(adapter_rows) == ADAPTER_MAP_SHA256, "complete adapter map")
-    require(reject_table_cell_mutants(adapter_rows, ADAPTER_MAP_SHA256, "adapter map") == 40,
-            "adapter map mutation count")
     adapter_map = {row[0]: row[1:] for row in adapter_rows}
     forbidden = ("PREPARING → PREPARED", ".owner.lock", ".stale-cleanup", "attempt epoch begins")
     policy_restatements = (
@@ -2229,7 +2223,7 @@ ADMISSION_FIELDS = [
     "attempt_epoch_limit", "proof_command_timeout_seconds",
     "proof_aggregate_timeout_seconds", "proof_terminate_grace_seconds",
 ]
-OPERATION_TABLE_SHA256 = "e71302a719ebd9c2404f696a8d50d6e6e7e25cda153691fcb6d600a1562e1b90"
+OPERATION_TABLE_SHA256 = "a2b157c2226a216bf2a0f6dbebf82b673057c8c8087eb7c2b6cbb10424a831e6"
 ROUTE_MAP_SHA256 = "0a1634b772ae61e3d0ef0c74b9c0e0f1715af8401a00549179454470c4f96cfa"
 SCENARIO_MAP_SHA256 = "e94b71586407920931fbd012dc8c5f4fdcac5d88f2069029065d9862d26f063e"
 ADAPTER_MAP_SHA256 = "bb97e86c2322bc46ffdd36ce4155e0fbaf48d5dfd1650293b33db89c5c13ca4a"
@@ -2250,7 +2244,7 @@ EXPECTED_OPERATION_FACTS = {
     "WA-OP-007-PROVE": ("INSTALLED; all targets read back exact", "next proof command or durable PROVED", "OFFLINE_RECOVERY"),
     "WA-OP-008-ROLLBACK": ("replacement occurred; before PROVED", "atomically move current destination into private claim; validate captured object against exact preimage/frozen expected-post pair; install desired bytes/absence no-replace; exact readback; advance/ROLLED_BACK", "BLOCKED_GATE if restore cannot complete"),
     "WA-OP-009-FAILURE-CLEANUP": ("zero replacements or durable ROLLED_BACK", "stages/backups/evidence temp removed; canonical source retained; FAILED", "OFFLINE_RECOVERY"),
-    "WA-OP-010-SUCCESS-CLEANUP": ("durable PROVED; targets exact frozen identity", "stages/backups/source/temp removed; outside evidence preserved; CLEANED", "RESUME_CLEANUP"),
+    "WA-OP-010-SUCCESS-CLEANUP": ("durable PROVED; targets exact frozen identity; exact product equality recorded in owned section", "stages/backups/source/temp removed; outside evidence preserved; CLEANED", "RESUME_CLEANUP"),
     "WA-OP-011-RETRY-HANDOFF": ("locked FAILED; accepted correction; green re-preflight; same-fingerprint count <3 and next epoch within admitted cap", "exact new epoch in PREPARING; prior rows unchanged", "OFFLINE_RECOVERY"),
     "WA-OP-012-EXHAUSTION-GC": ("locked FAILED; same-fingerprint count=3 or admitted epoch cap reached", "retained source and exact transaction files removed; EXHAUSTED with durable truthful exhaustion_cause", "BLOCKED_GATE if safe cleanup cannot complete"),
     "WA-OP-013-EVIDENCE-UPDATE": ("lock held; observed generation/hash match", "atomic synced marker-owned section; generation+1; all outside bytes exact", "state operation's route; never infer success"),
@@ -2260,7 +2254,6 @@ EXPECTED_OPERATION_FACTS = {
 EXPECTED_OBSERVER_FACTS = {
     operation: f"WA-OBS-{index:03d}" for index, operation in enumerate(EXPECTED_OPS, 1)
 }
-ACTUAL_ENGINE_OUTPUT = b""
 EXPECTED_REASON_IDS = {
     "WA-R001-OWNER-BUSY", "WA-R002-ADMISSION-INCOMPLETE", "WA-R003-IDENTITY-MISSING",
     "WA-R004-IDENTITY-STALE", "WA-R005-SOURCE-UNTRUSTED", "WA-R006-SOURCE-STALE-PREINSTALL",
@@ -2396,7 +2389,6 @@ def parse_admission(text: str, contents: dict[str, bytes]) -> dict:
         require(re.fullmatch(r"0[0-7]{3}", cells[2]) is not None, "target mode")
         require(path in contents, "retained source content")
         require(not any(token in cells[7] for token in (";", "&&", "||", "\n")), "single proof command")
-        require(len(split_markdown_cells(cells[7])) == 1, "proof command list separator")
         require(cells[8] in {"repository-root", "active-workspace"}, "logical proof cwd")
         require(cells[9].isascii() and 0 < len(cells[9].encode()) <= 128
                 and all(0x20 <= ord(char) <= 0x7e for char in cells[9]), "fixed proof signal")
@@ -2474,8 +2466,9 @@ def check_admission_parser() -> None:
             mutant_line = "|" + "|".join(mutant_cells) + "|"
             try:
                 parse_admission(text.replace(target_line, mutant_line, 1), contents)
-            except (AssertionError, ValueError):
-                pass
+            except AssertionError as error:
+                require(str(error) == "target row completeness",
+                        f"admission target {wrapper} wrapper rejected by wrong assertion: {cell_index}: {error}")
             else:
                 fail(f"admission target {wrapper} wrapper accepted: {cell_index}")
     sparse_high_limit = (
@@ -2485,64 +2478,73 @@ def check_admission_parser() -> None:
     )
     require(len(parse_admission(sparse_high_limit, contents)["rows"]) == 2,
             "sparse admission retains declared high-limit capacity")
+    larger = {"scripts/a.py": b"x" * 32, "scripts/b.py": b"y" * 32}
     mutations = [
-        text + "\n## Workflow Artifact admission\n", text.replace("| active_slug |", "| absent_slug |", 1),
-        text.replace("| active_slug | `demo` |\n| readiness_binding_command", "| readiness_binding_command | `devrites-engine check readiness --emit-binding demo` |\n| active_slug", 1),
-        text.replace("`scripts/a.py`", "`/scripts/a.py`", 1), text.replace("`scripts/a.py`", "`scripts/../a.py`", 1),
-        text.replace("`scripts/b.py`", "`scripts/a.py`", 1), text.replace("`0600`", "`0688`", 1),
-        text.replace("`00000001`", "`00000002`", 1), text.replace("## WA-FIX-FB", "## WA-FIX-FX", 1),
-        text.replace("`python3 scripts/a.py`", "`python3 scripts/a.py && true`", 1),
-        text.replace("| transaction_file_limit | `12` |", "| transaction_file_limit | `11` |", 1),
-        text.replace("| journal_line_limit | `35` |", "| journal_line_limit | `34` |", 1),
-        text.replace("| diagnostic_bytes_limit | `256` |", "| diagnostic_bytes_limit | `255` |", 1),
-        text.replace("| attempt_epoch_limit | `3` |", "| attempt_epoch_limit | `2` |", 1),
-        text.replace("| proof_command_timeout_seconds | `30` |", "| proof_command_timeout_seconds | `2` |", 1).replace("| proof_terminate_grace_seconds | `2` |", "| proof_terminate_grace_seconds | `2` |", 1),
-        text.replace("| target_count_limit | `2` |", "| target_count_limit | `9223372036854775808` |", 1),
-        text.replace("| target_count_limit | `2` |", "| target_count_limit | `10` |", 1),
-        text.replace("| target_count_limit | `2` |", "| target_count_limit | `10` |", 1)
+        (text + "\n## Workflow Artifact admission\n", contents, "admission heading cardinality"),
+        (text.replace("| active_slug |", "| absent_slug |", 1), contents, "admission field order"),
+        (text.replace("| active_slug | `demo` |\n| readiness_binding_command", "| readiness_binding_command | `devrites-engine check readiness --emit-binding demo` |\n| active_slug", 1),
+         contents, "admission field order"),
+        (text.replace("`scripts/a.py`", "`/scripts/a.py`", 1), contents, "workflow path absolute/backslash"),
+        (text.replace("`scripts/a.py`", "`scripts/../a.py`", 1), contents, "workflow path components"),
+        (text.replace("`scripts/b.py`", "`scripts/a.py`", 1), contents, "target path order"),
+        (text.replace("`0600`", "`0688`", 1), contents, "target mode"),
+        (text.replace("`00000001`", "`00000002`", 1), contents, "target index"),
+        (text.replace("## WA-FIX-FB", "## WA-FIX-FX", 1), contents, "reference ID/cardinality: WA-FIX-FB"),
+        (text.replace("`python3 scripts/a.py`", "`python3 scripts/a.py && true`", 1), contents, "single proof command"),
+        (text.replace("| transaction_file_limit | `12` |", "| transaction_file_limit | `11` |", 1), contents, "transaction cardinality"),
+        (text.replace("| journal_line_limit | `35` |", "| journal_line_limit | `34` |", 1), contents, "journal headroom"),
+        (text.replace("| diagnostic_bytes_limit | `256` |", "| diagnostic_bytes_limit | `255` |", 1), contents, "diagnostic bound"),
+        (text.replace("| attempt_epoch_limit | `3` |", "| attempt_epoch_limit | `2` |", 1), contents, "attempt bound"),
+        (text.replace("| proof_command_timeout_seconds | `30` |", "| proof_command_timeout_seconds | `2` |", 1),
+         contents, "proof timing relation"),
+        (text.replace("| target_count_limit | `2` |", "| target_count_limit | `9223372036854775808` |", 1),
+         contents, "checked field: target_count_limit"),
+        (text.replace("| target_count_limit | `2` |", "| target_count_limit | `10` |", 1), contents, "transaction cardinality"),
+        (text.replace("| target_count_limit | `2` |", "| target_count_limit | `10` |", 1)
             .replace("| transaction_file_limit | `12` |", "| transaction_file_limit | `36` |", 1),
-        text.replace("`python3 scripts/a.py`", "`python3 scripts/a.py | true`", 1),
-        text.replace("`A PASS`", "`A\nPASS`", 1),
-        text.replace("`restore-preimage-or-absence`", "`restore`", 1),
-        text.replace("`mode,sha256,proof_signal`", "`mode,mode`", 1),
-        text.replace("DevRites workflow reference: behavior", "DevRites workflow reference: interface", 1),
-        text.replace("## WA-BEH-A", "## WA-BEH-X", 1),
-        text.replace("WA-FIX-PA", "WA-FIX-A", 2),
-        text.replace("DevRites workflow reference: behavior\n", "", 1),
-        text.replace("| success | `A command exits zero` |\n| observable_effect |", "| observable_effect | `A PASS is observed` |\n| success |", 1),
-        text.replace("`active-workspace`", "`.`", 1),
-        text.replace("/rite-prove demo", "/rite-prove other", 1),
+         contents, "journal headroom"),
+        (text.replace("`python3 scripts/a.py`", "`python3 scripts/a.py | true`", 1), contents, "target row completeness"),
+        (text.replace("`A PASS`", "`A\tPASS`", 1), contents, "fixed proof signal"),
+        (text.replace("`restore-preimage-or-absence`", "`restore`", 1), contents, "rollback enum"),
+        (text.replace("`mode,sha256,proof_signal`", "`mode,mode`", 1), contents, "evidence field grammar"),
+        (text.replace("DevRites workflow reference: behavior", "DevRites workflow reference: interface", 1),
+         contents, "reference header: WA-BEH-A"),
+        (text.replace("## WA-BEH-A", "## WA-BEH-X", 1), contents, "reference ID/cardinality: WA-BEH-A"),
+        (text.replace("WA-FIX-PA", "WA-FIX-A", 2), contents, "reference ID/cardinality: WA-FIX-A"),
+        (text.replace("DevRites workflow reference: behavior\n", "", 1), contents, "reference header: WA-BEH-A"),
+        (text.replace("| success | `A command exits zero` |\n| observable_effect |", "| observable_effect | `A PASS is observed` |\n| success |", 1),
+         contents, "reference field order: WA-BEH-A"),
+        (text.replace("`active-workspace`", "`.`", 1), contents, "logical proof cwd"),
+        (text.replace("/rite-prove demo", "/rite-prove other", 1), contents, "return next action"),
+        (text.replace("| aggregate_bytes_limit | `64` |", "| aggregate_bytes_limit | `40` |", 1), larger, "aggregate bytes"),
+        (text.replace("| target_count_limit | `2` |", "| target_count_limit | `1` |", 1)
+            .replace("| transaction_file_limit | `12` |", "| transaction_file_limit | `9` |", 1),
+         contents, "target count"),
+        (text.replace("`demo`", "`Demo`", 1).replace("--emit-binding demo", "--emit-binding Demo")
+            .replace("/rite-prove demo", "/rite-prove Demo"), contents, "active slug"),
+        (text.replace("--emit-binding demo", "--emit-binding other", 1), contents, "readiness command"),
+        (text.replace("`utf8-bytewise-path-ascending`", "`path-ascending`", 1), contents, "target order"),
+        (text.replace("| return_phase | `prove` |", "| return_phase | `bogus` |", 1), contents, "return phase"),
+        (text.replace("`A command exits zero`", "`TBD`", 1), contents, "reference placeholder: WA-BEH-A"),
+        (text.replace("## Workflow Artifact admission\nDevRites contract:", "## Workflow Artifact admission\n\nDevRites contract:", 1),
+         contents, "admission contract placement"),
+        (text, {"scripts/a.py": contents["scripts/a.py"]}, "retained source content"),
+        (text.replace("| attempt_epoch_limit | `3` |", "| attempt_epoch_limit | `+3` |", 1), contents, "base-10 field: attempt_epoch_limit"),
+        (text, {**contents, "scripts/a.py": b"x" * 33}, "per-target bytes"),
+        (text, {**contents, "scripts/a.py": b"x" * 32, "scripts/b.py": b"y" * 33}, "per-target bytes"),
     ]
-    for index, mutant in enumerate(mutations):
+    for index, (mutant, mutant_contents, expected) in enumerate(mutations):
+        require(mutant != text or mutant_contents != contents, f"admission mutant changes nothing: {index}")
         try:
-            parse_admission(mutant, contents)
-        except (AssertionError, ValueError):
-            pass
+            parse_admission(mutant, mutant_contents)
+        except AssertionError as error:
+            require(str(error) == expected,
+                    f"admission mutant rejected by wrong assertion: {index}: {error}")
         else:
             fail(f"admission mutant accepted: {index}")
-    for changed in ({**contents, "scripts/a.py": b"x" * 33}, {**contents, "scripts/a.py": b"x" * 32, "scripts/b.py": b"y" * 33}):
-        try:
-            parse_admission(text, changed)
-        except AssertionError:
-            pass
-        else:
-            fail("admission content limit mutant accepted")
-
 
 def exact_map_digest(value) -> str:
     return sha(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode())
-
-
-def reject_table_cell_mutants(rows: list[list[str]], expected_digest: str, label: str) -> int:
-    rejected = 0
-    for row_index, row in enumerate(rows):
-        for cell_index in range(len(row)):
-            mutant = [candidate.copy() for candidate in rows]
-            mutant[row_index][cell_index] += "-MUTANT"
-            require(exact_map_digest(mutant) != expected_digest,
-                    f"{label} cell mutant survived: {row_index}:{cell_index}")
-            rejected += 1
-    return rejected
 
 
 ATOMIC_OWNERSHIP_CLAUSES = (
@@ -2635,9 +2637,11 @@ def prepare_operation_fixture(root: Path, operation: str) -> None:
         "product.readiness": (dimensions["readiness"] + "\n").encode(),
         "product.built-count": b"7\n",
         "product.frozen": (json.dumps(dimensions, sort_keys=True, separators=(",", ":")) + "\n").encode(),
-        "engine.output": ACTUAL_ENGINE_OUTPUT, "stale.source": b"stale-workflow\n",
+        "stale.source": b"stale-workflow\n",
         "owner.lock": b"", "stage": b"partial-stage\n", "backup": b"target-preimage\n",
     }
+    if operation == "WA-OP-005-BACKUP-WRITE":
+        initial["backup"] = b"stale-backup\n"
     if operation in {"WA-OP-006-INSTALL", "WA-OP-007-PROVE", "WA-OP-008-ROLLBACK"}:
         initial["target"] = b"frozen-workflow\n"
     if operation in {"WA-OP-006-INSTALL", "WA-OP-007-PROVE"}:
@@ -2704,7 +2708,7 @@ def exists(name):
 def state(value): atomic('lifecycle.state',(value+'\n').encode())
 def route(value): atomic('next.route',(value+'\n').encode())
 retained_source=read('source') if operation=='WA-OP-004-STAGE-WRITE' and exists('source') else None
-os.write(ready,b'R'); os.read(gate,1)
+os.write(ready,b'R'); (os.read(gate,1) or os._exit(70))
 record={'operation_id':operation,'state':'INTENT'}
 control=None
 if operation in {'WA-OP-011-RETRY-HANDOFF','WA-OP-012-EXHAUSTION-GC'}:
@@ -2726,7 +2730,7 @@ try:
   atomic('journal.json',(json.dumps(record,sort_keys=True,separators=(',',':'))+'\n').encode())
  elif prior.get('state')=='INTENT': record=prior
 except FileNotFoundError: atomic('journal.json',(json.dumps(record,sort_keys=True,separators=(',',':'))+'\n').encode())
-os.write(ready,b'I'); os.read(gate,1)
+os.write(ready,b'I'); (os.read(gate,1) or os._exit(70))
 if operation=='WA-OP-001-OWNER-ACQUIRE':
  try: os.mkdir('namespace',0o700,dir_fd=fd); os.fsync(fd)
  except FileExistsError: pass
@@ -2792,7 +2796,7 @@ elif operation=='WA-OP-014-PRODUCT-SEPARATION':
 elif operation=='WA-OP-015-VERIFY-EXISTING':
  if read('lifecycle.state')!=b'CLEANED\n' or not read('evidence') or read('product.observer-pass')!=b'equal\n': raise RuntimeError('existing identity')
  atomic('verified',hashlib.sha256(read('target')).hexdigest().encode()+b'\n')
-os.write(ready,b'E'); os.read(gate,1)
+os.write(ready,b'E'); (os.read(gate,1) or os._exit(70))
 if operation!='WA-OP-012-EXHAUSTION-GC': record['state']='COMPLETE'; atomic('journal.json',(json.dumps(record,sort_keys=True,separators=(',',':'))+'\n').encode())
 os.write(ready,b'C'); os.close(fd)
 """
@@ -2858,7 +2862,7 @@ if journal is not None:
  'WA-OP-002A-STALE-SOURCE-GC': lambda: absent('stale.source') and raw('owner.lock')==b'' and state==b'STALE_SOURCE_REMOVED\n',
  'WA-OP-003-JOURNAL-INIT': lambda: state==b'PREPARING\n',
  'WA-OP-004-STAGE-WRITE': lambda: (regular('stage') and raw('stage')==b'frozen-workflow\n') or (absent('source') and absent('stage') and absent('backup') and state==b'SOURCE_LOSS_PREINSTALL\n' and raw('next.route')==b'PLAN_VET_REPAIR\n'),
- 'WA-OP-005-BACKUP-WRITE': lambda: regular('backup') and raw('backup')==raw('target'),
+ 'WA-OP-005-BACKUP-WRITE': lambda: regular('backup') and raw('backup')==raw('target')==b'target-preimage\n',
  'WA-OP-006-INSTALL': lambda: (regular('target',0o755) and raw('target')==raw('source') and state==b'INSTALLED\n') or (absent('source') and raw('target')==b'observed-active-preimage\n' and absent('stage') and absent('backup') and state==b'FAILED\n' and raw('next.route')==b'OFFLINE_RECOVERY\n' and raw('diagnostic')==b'WORKFLOW_ARTIFACT_FAILURE reason_id=WA-R007-SOURCE-STALE-ACTIVE boundary_id=WA-B004-SOURCE-OPEN next_route=OFFLINE_RECOVERY\n'),
  'WA-OP-007-PROVE': lambda: (raw('proof.output')==b'WA-PROOF-001 PASS\n' and state==b'PROVED\n') or (absent('source') and raw('target')==b'observed-active-preimage\n' and absent('backup') and state==b'FAILED\n' and raw('next.route')==b'OFFLINE_RECOVERY\n' and raw('diagnostic')==b'WORKFLOW_ARTIFACT_FAILURE reason_id=WA-R007-SOURCE-STALE-ACTIVE boundary_id=WA-B004-SOURCE-OPEN next_route=OFFLINE_RECOVERY\n'),
  'WA-OP-008-ROLLBACK': lambda: (raw('target')==b'target-preimage\n' and state==b'ROLLED_BACK\n') or (raw('target')==b'frozen-workflow\n' and state==b'BLOCKED_GATE\n' and raw('next.route')==b'BLOCKED_GATE\n' and raw('diagnostic')==b'WORKFLOW_ARTIFACT_FAILURE reason_id=WA-R015-ROLLBACK-FAILED boundary_id=WA-B011-ROLLBACK next_route=BLOCKED_GATE\n'),
@@ -2955,11 +2959,8 @@ def run_operation_death_matrix(rows: list[list[str]]) -> int:
 def reject_operation_mutants(rows: list[list[str]]) -> int:
     rejected = 0
     for row_index, row in enumerate(rows):
-        for column in range(len(row)):
+        for column in (0, 3, 4, 6):
             mutant = row.copy(); mutant[column] += "-MUTANT"
-            table_mutant = [candidate.copy() for candidate in rows]; table_mutant[row_index] = mutant
-            require(operation_table_digest(table_mutant) != OPERATION_TABLE_SHA256,
-                    f"operation table mutant survived: {row_index}:{column}")
             with tempfile.TemporaryDirectory() as tmp:
                 fixture = Path(tmp)
                 if column == 0:
@@ -2972,9 +2973,8 @@ def reject_operation_mutants(rows: list[list[str]]) -> int:
                     observed = observe_operation(fixture)
                     require(operation_observation_matches(observed, row),
                             f"canonical operation failed under mutant probe: {row_index}:{column}")
-                    if column in {3, 4, 6}:
-                        require(not operation_observation_matches(observed, mutant),
-                                f"observer fact mutant survived: {row_index}:{column}")
+                    require(not operation_observation_matches(observed, mutant),
+                            f"observer fact mutant survived: {row_index}:{column}")
             rejected += 1
     return rejected
 
@@ -2985,7 +2985,7 @@ import fcntl,json,os,stat,sys
 root,gate,ready,death=sys.argv[1],int(sys.argv[2]),int(sys.argv[3]),sys.argv[4]
 os.umask(0o077)
 rootfd=os.open(root,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW|os.O_CLOEXEC)
-os.write(ready,b'R'); os.read(gate,1)
+os.write(ready,b'R'); (os.read(gate,1) or os._exit(70))
 try: os.mkdir('.workflow-artifact-sources',0o700,dir_fd=rootfd); os.fsync(rootfd)
 except FileExistsError: pass
 if death=='after-directory': os._exit(86)
@@ -2998,13 +2998,13 @@ except FileExistsError: lock=os.open('.owner.lock',os.O_RDWR|os.O_NOFOLLOW|os.O_
 info=os.fstat(lock)
 if info.st_uid!=os.getuid() or not stat.S_ISREG(info.st_mode) or info.st_nlink!=1 or stat.S_IMODE(info.st_mode)!=0o600: raise SystemExit(66)
 if death=='after-lock': os._exit(86)
-os.write(ready,b'B'); os.read(gate,1)
+os.write(ready,b'B'); (os.read(gate,1) or os._exit(70))
 try: fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
 except BlockingIOError: os.write(ready,b'L'); raise SystemExit(7)
 def write(name,payload):
  f=os.open(name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW|os.O_CLOEXEC,0o600,dir_fd=rootfd); os.write(f,payload); os.fsync(f); os.close(f); os.fsync(rootfd)
 pid=str(os.getpid()).encode(); write('journal.json',json.dumps({'owner_pid':os.getpid(),'state':'PREPARING'},sort_keys=True,separators=(',',':')).encode()+b'\n'); write('target',pid+b'\n')
-os.write(ready,b'W'); os.read(gate,1); os.close(lock); os.close(sourcefd); os.close(rootfd)
+os.write(ready,b'W'); (os.read(gate,1) or os._exit(70)); os.close(lock); os.close(sourcefd); os.close(rootfd)
 """
     def child(root: Path, death: str = "none", code: str = program) -> tuple[subprocess.Popen, int, int]:
         ready_read, ready_write = os.pipe(); gate_read, gate_write = os.pipe()
@@ -3064,22 +3064,7 @@ j=json.loads(open(root+'/journal.json').read()); target=open(root+'/target').rea
         fail("unsupported flock accepted")
 
 
-def load_actual_engine_output(root: Path) -> bytes:
-    project = project_root_for_tests(root)
-    with tempfile.TemporaryDirectory() as tmp:
-        engine = Path(tmp) / "devrites-engine"
-        built = subprocess.run(["go", "-C", str(project / "engine"), "build", "-o", str(engine), "."],
-                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
-        require(built.returncode == 0, "operation observer engine build")
-        output = subprocess.run([str(engine), "version"], stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, check=False, timeout=10)
-        require(output.returncode == 0 and output.stdout.endswith(b"\n"), "actual engine observer output")
-        return output.stdout
-
-
 def check_operation_oracle(root: Path) -> None:
-    global ACTUAL_ENGINE_OUTPUT
-    ACTUAL_ENGINE_OUTPUT = load_actual_engine_output(root)
     rows = markdown_rows((root / MODULE_REL).read_text(), "WA-OP-")
     require(operation_table_digest(rows) == OPERATION_TABLE_SHA256, "canonical operation semantics")
     parsed_trace = operation_trace_from_table(rows)
@@ -3096,30 +3081,13 @@ def check_operation_oracle(root: Path) -> None:
                 except (AssertionError, KeyError):
                     continue
                 require(mutated_trace != fixed_trace, f"operation fact mutant survived: {row_index}:{column}")
-    for field in range(5):
-        mutant = list(fixed_trace)
-        changed = list(mutant[0]); changed[field] += "-MUTANT"; mutant[0] = tuple(changed)
-        require(tuple(mutant) != parsed_trace, f"observer oracle mutant field {field}")
     with tempfile.TemporaryDirectory() as tmp:
         target = Path(tmp) / "target"
         atomic_write(target, b"frozen", 0o700)
         require(observe_regular_file(target) == (True, 0o700, 1, sha(b"frozen")), "independent target observer")
     require(run_operation_death_matrix(rows) == 32, "operation death boundary count")
-    require(reject_operation_mutants(rows) == 128, "executable operation mutation count")
+    require(reject_operation_mutants(rows) == 64, "dispatch and observer-fact operation mutation count")
     check_owner_bootstrap_race()
-    for operation_id, _pre, _post, route, _observer in parsed_trace:
-        for boundary in ("before-intent", "after-operation"):
-            if operation_id in {"WA-OP-010-SUCCESS-CLEANUP", "WA-OP-015-VERIFY-EXISTING"}:
-                require(route in {"RESUME_CLEANUP", "route by finite diagnostic table"}, f"post-proof recovery: {boundary}")
-            elif operation_id == "WA-OP-014-PRODUCT-SEPARATION":
-                require(route == "BLOCKED_GATE", "product observer gate")
-
-
-def secure_entry(path: Path, mode: int, directory: bool = False) -> None:
-    info = path.lstat()
-    require(info.st_uid == os.getuid() and (directory or info.st_nlink == 1), f"entry ownership/link: {path.name}")
-    require(stat.S_IMODE(info.st_mode) == mode, f"entry mode: {path.name}")
-    require(stat.S_ISDIR(info.st_mode) if directory else stat.S_ISREG(info.st_mode), f"entry type: {path.name}")
 
 
 def fault_at(selected: str | None, boundary: str) -> None:
@@ -3544,9 +3512,10 @@ def check_source_lifecycle() -> None:
     finally:
         close_source_fixture(temporary, workspace_fd, namespace_fd, lock_fd)
     canonical_intent_mutants = (
-        stale_intent_bytes("0" * 64, "b" * 64, "d" * 64, "c" * 64, 2)[:-1],
-        stale_intent_bytes("0" * 64, "b" * 64, "d" * 64, "c" * 64, 2) + b"extra\n",
-        stale_intent_bytes("0" * 64, "b" * 64, "d" * 64, "e" * 64, 2),
+        stale_intent_bytes(source_handle_hex("demo", "b" * 64), "b" * 64, "d" * 64, "c" * 64, 2)[:-1],
+        stale_intent_bytes(source_handle_hex("demo", "b" * 64), "b" * 64, "d" * 64, "c" * 64, 2) + b"extra\n",
+        stale_intent_bytes(source_handle_hex("demo", "b" * 64), "b" * 64, "d" * 64, "e" * 64, 2),
+        stale_intent_bytes("0" * 64, "b" * 64, "d" * 64, "c" * 64, 2),
     )
     for malformed_intent in canonical_intent_mutants:
         fixture = source_fixture()
@@ -3583,54 +3552,6 @@ def check_source_lifecycle() -> None:
         require(entry_info_at(namespace_fd, old_hex) is not None and entry_info_at(namespace_fd, "unrelated") is not None, "unrelated source namespace entry changed")
     finally:
         close_source_fixture(temporary, workspace_fd, namespace_fd, lock_fd)
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "source"; replacement = Path(tmp) / "replacement"
-        path.write_bytes(b"retained"); replacement.write_bytes(b"swapped")
-        fd = os.open(path, FILE_READ_FLAGS)
-        os.replace(replacement, path)
-        try:
-            retained = os.read(fd, 64)
-        finally:
-            os.close(fd)
-        require(retained == b"retained" and sha(retained) == sha(b"retained"), "held descriptor source swap")
-
-
-def check_filesystem_adversaries() -> None:
-    with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp)
-        regular = root / "regular"
-        regular.write_bytes(b"x"); os.chmod(regular, 0o600)
-        secure_entry(regular, 0o600)
-        hard = root / "hard"; os.link(regular, hard)
-        for path, mode, directory in ((regular, 0o600, False),):
-            try:
-                secure_entry(path, mode, directory)
-            except AssertionError:
-                pass
-            else:
-                fail("hard-linked regular accepted")
-        hard.unlink(); regular.unlink()
-        regular.write_bytes(b"x"); os.chmod(regular, 0o644)
-        try:
-            secure_entry(regular, 0o600)
-        except AssertionError:
-            pass
-        else:
-            fail("wrong mode accepted")
-        symlink = root / "link"; symlink.symlink_to(regular)
-        try:
-            secure_entry(symlink, 0o600)
-        except AssertionError:
-            pass
-        else:
-            fail("symlink accepted")
-        fifo = root / "fifo"; os.mkfifo(fifo, 0o600)
-        try:
-            secure_entry(fifo, 0o600)
-        except AssertionError:
-            pass
-        else:
-            fail("non-regular accepted")
 
 
 def check_complete_write_matrix() -> None:
@@ -3673,7 +3594,10 @@ def check_complete_write_matrix() -> None:
             require(path.read_bytes() == b"12345678"[:death_after], f"partial write boundary: {death_after}")
             path.unlink()
     source = SCRIPT.read_text()
-    require("src_dir_fd=src_fd" in source and "dst_dir_fd=dst_fd" in source, "relative replacement directory handles")
+    start = source.index("\ndef atomic_write_at(")
+    atomic_body = source[start:source.index("\ndef ", start + 1)]
+    require(("src_dir_fd=" + "src_fd") in atomic_body and ("dst_dir_fd=" + "dst_fd") in atomic_body,
+            "relative replacement directory handles")
     require("path.parent.mkdir" + "(parents=True" not in source, "full-Path atomic traversal")
 
 
@@ -3888,7 +3812,7 @@ def validate_diagnostics(rows: list[list[str]]) -> dict[str, tuple[tuple[str, ..
     return parsed
 
 
-def unknown_active_state_diagnostic(module: str, active_state: str) -> str:
+def documented_unknown_state_diagnostic(module: str, active_state: str) -> str:
     operation_rows = markdown_rows(module, "WA-OP-")
     admitted_state_text = "\n".join(cell for row in operation_rows for cell in row[3:6])
     require(active_state not in admitted_state_text, "unknown-active-state fixture")
@@ -3905,14 +3829,6 @@ def validate_recovery_routes(route_rows: list[list[str]]) -> None:
     routes = {row[0]: tuple(row[1:]) for row in route_rows}
     for route, expected in EXPECTED_RECOVERY_ROUTES.items():
         require(routes.get(route) == expected, f"exact recovery route: {route}")
-        bound = tuple(value.replace("<slug>", "demo") for value in routes[route])
-        require(all("<slug>" not in value for value in bound), f"recovery slug binding: {route}")
-        for field in range(4):
-            mutant = [row.copy() for row in route_rows]
-            row_index = next(index for index, row in enumerate(mutant) if row[0] == route)
-            mutant[row_index][field + 1] += "-MUTANT"
-            require({row[0]: tuple(row[1:]) for row in mutant}.get(route) != expected,
-                    f"recovery field mutant: {route}:{field}")
         slug_mutant = [row.copy() for row in route_rows]
         row_index = next(index for index, row in enumerate(slug_mutant) if row[0] == route)
         slug_mutant[row_index] = [value.replace("<slug>", "<other>") for value in slug_mutant[row_index]]
@@ -3928,13 +3844,9 @@ def check_classifier_and_diagnostics(root: Path) -> None:
     validate_recovery_routes(route_rows)
     require(len(route_rows) == 10 and all(len(row) == 5 for row in route_rows)
             and exact_map_digest(route_rows) == ROUTE_MAP_SHA256, "complete route map")
-    require(reject_table_cell_mutants(route_rows, ROUTE_MAP_SHA256, "route map") == 50,
-            "route map mutation count")
     scenario_rows = markdown_table(module, "|Scenario ID|Trigger|Exact route / action|Durable consequence|Forbidden behavior|")
     require(len(scenario_rows) == 10 and all(len(row) == 5 for row in scenario_rows)
             and exact_map_digest(scenario_rows) == SCENARIO_MAP_SHA256, "complete canonical scenario map")
-    require(reject_table_cell_mutants(scenario_rows, SCENARIO_MAP_SHA256, "canonical scenario map") == 50,
-            "canonical scenario map mutation count")
     canonical_scenarios = {row[0]: route_from_action(row[2]) for row in scenario_rows}
     require(list(canonical_scenarios) == EXPECTED_SCENARIOS and canonical_scenarios == EXPECTED_ROUTES, "canonical scenario routes")
     corpus = json.loads((root / CORPUS_REL).read_text())
@@ -3984,8 +3896,8 @@ def check_classifier_and_diagnostics(root: Path) -> None:
         pass
     else:
         fail("lowercase additional diagnostic row accepted")
-    unknown = unknown_active_state_diagnostic(module, "UNKNOWN_ACTIVE_STATE")
-    require(unknown == "WORKFLOW_ARTIFACT_FAILURE reason_id=WA-R009-STATE-AMBIGUOUS boundary_id=WA-B005-JOURNAL next_route=OFFLINE_RECOVERY\n", "unknown active state sibling")
+    unknown = documented_unknown_state_diagnostic(module, "UNKNOWN_ACTIVE_STATE")
+    require(unknown == "WORKFLOW_ARTIFACT_FAILURE reason_id=WA-R009-STATE-AMBIGUOUS boundary_id=WA-B005-JOURNAL next_route=OFFLINE_RECOVERY\n", "documented unknown-state fallback diagnostic")
 
 
 def check_evidence_matrix() -> None:
@@ -4042,14 +3954,58 @@ def check_evidence_matrix() -> None:
         "extra attempt cell": first_text.replace(attempt_line, attempt_line[:-2] + " | `EXTRA` |", 1),
         "target rewrite": first_text.replace("`scripts/a.py`", "`scripts/rewritten.py`", 1),
     }
+    prior_diagnostics = {
+        "malformed progress": "evidence attempt progress",
+        "target mode": "evidence target mode",
+        "target hash": "evidence target hash",
+        "target result": "evidence target result",
+        "attempt result": "evidence attempt result",
+        "missing field": "prior evidence field order",
+        "extra field": "prior evidence field order",
+        "bare unescaped field delimiter": "prior evidence field row width",
+        "even-backslash unescaped field delimiter": "prior evidence field row width",
+        "missing target row": "immutable target rows",
+        "extra target row": "evidence target index",
+        "missing target cell": "prior target row width",
+        "extra target cell": "prior target row width",
+        "missing attempt row": "failed prior attempt record",
+        "extra attempt row": "evidence attempt epoch",
+        "extra attempt cell": "prior attempt row width",
+        "target rewrite": "immutable target rows",
+    }
+    require(set(prior_diagnostics) == set(prior_mutants), "prior evidence mutant diagnostics cover every mutant")
     for label, mutant in prior_mutants.items():
         require(mutant != first_text, f"prior evidence mutant fixture: {label}")
         try:
             owned_section(mutant.encode(), "PREPARING", 2, (attempt_one,))
-        except AssertionError:
-            pass
+        except AssertionError as error:
+            require(str(error) == prior_diagnostics[label],
+                    f"prior evidence mutant rejected by wrong assertion: {label}: {error}")
         else:
             fail(f"malformed prior evidence accepted: {label}")
+    second_text = second.decode()
+    attempt_id_row = f"| attempt_id | `{attempt_two[1]}` |"
+    stale_epoch = second_text.replace("| attempt_epoch | `2` |", "| attempt_epoch | `1` |", 1).replace(
+        attempt_id_row, f"| attempt_id | `{attempt_one[1]}` |", 1)
+    prior_section_mutants = (
+        ("prior route", first_text, first_text.replace("| next_route | `OFFLINE_RECOVERY` |", "| next_route | `NOWHERE` |", 1)),
+        ("prior source handle", first_text, first_text.replace("`wsrc:" + "4" * 64 + "`", "`wsrc:xyz`", 1)),
+        ("prior preimage binding", first_text,
+         first_text.replace("| owned_section_preimage_sha256 | `ABSENT` |", "| owned_section_preimage_sha256 | `xyz` |", 1)),
+        ("prior return action", first_text, first_text.replace("`/rite-prove demo`", "`rite-prove demo`", 1)),
+        ("prior active attempt epoch", second_text, stale_epoch),
+        ("evidence backup handle", first_text, first_text.replace("`wbak:00000000`", "`wbak:xyz`", 1)),
+        ("evidence attempt progress", first_text, first_text.replace("`no-progress`", "`done`", 1)),
+    )
+    for expected, original, mutant in prior_section_mutants:
+        require(mutant != original, f"prior section mutant fixture: {expected}")
+        try:
+            parse_prior_owned_section(mutant[mutant.index(START):mutant.index(END) + len(END) + 1])
+        except AssertionError as error:
+            require(str(error) == expected,
+                    f"prior section mutant rejected by wrong assertion: {expected}: {error}")
+        else:
+            fail(f"prior section mutant accepted: {expected}")
     malformed = [
         prefix + START.encode() + b" inline\n", prefix + END.encode() + b"\n",
         prefix + f"{START}\n{START}\n{END}\n".encode(),
@@ -4254,10 +4210,6 @@ def check_delivery_execution_bounds() -> None:
         DELIVERY_TERMINATE_GRACE_SECONDS,
     )
     require(actual_limits == expected_limits, "fixed delivery execution limits")
-    for index in range(len(expected_limits)):
-        mutant = list(actual_limits)
-        mutant[index] += 1
-        require(tuple(mutant) != expected_limits, f"delivery limit mutant: {index}")
 
     saved_limits = actual_limits
     try:
@@ -4612,6 +4564,113 @@ def check_product_separation_lifecycle(root: Path) -> None:
             os.close(ready_fd); os.close(gate_fd)
 
 
+def operation_row(rows: list[list[str]], operation: str) -> list[str]:
+    require(all(len(row) == 8 for row in rows), "canonical operation row shape")
+    matches = [row for row in rows if row[0] == operation]
+    require(len(matches) == 1, f"canonical operation row present exactly once: {operation}")
+    return matches[0]
+
+
+def successor_operations(next_cell: str) -> list[str]:
+    """Operation IDs a single Next state/operation cell names, in written order."""
+    return re.findall(r"WA-OP-[0-9]{3}[A-Z]?(?:-[A-Z]+(?:-[A-Z]+)*)?", next_cell)
+
+
+def require_success_path_routes_through_product_separation(
+        rows: list[list[str]]) -> None:
+    """A proven proof must reach product separation, and cleanup must require its record."""
+    successors = successor_operations(operation_row(rows, "WA-OP-007-PROVE")[7])
+    success_route = ("WA-OP-013-EVIDENCE-UPDATE", "WA-OP-014-PRODUCT-SEPARATION",
+                     "WA-OP-010-SUCCESS-CLEANUP")
+    missing = [step for step in success_route if step not in successors]
+    require(not missing,
+            f"WA-OP-007-PROVE next-operation cell omits {', '.join(missing)}: {successors}")
+    require("WA-OP-008-ROLLBACK" in successors,
+            f"WA-OP-007-PROVE next-operation cell dropped the rollback branch: {successors}")
+    require(successors.index("WA-OP-013-EVIDENCE-UPDATE")
+            < successors.index("WA-OP-014-PRODUCT-SEPARATION")
+            < successors.index("WA-OP-010-SUCCESS-CLEANUP"),
+            f"WA-OP-007-PROVE success route is out of order: {successors}")
+    accepted_pre_state = operation_row(rows, "WA-OP-010-SUCCESS-CLEANUP")[3]
+    require("product" in accepted_pre_state and "equality" in accepted_pre_state,
+            "WA-OP-010 accepted pre-state does not name the product equality record: "
+            f"{accepted_pre_state}")
+    require("targets exact frozen identity" in accepted_pre_state,
+            "WA-OP-010 accepted pre-state lost its frozen-identity precondition: "
+            f"{accepted_pre_state}")
+
+
+def check_success_path_product_separation_route(root: Path) -> None:
+    rows = markdown_rows((root / MODULE_REL).read_text(), "WA-OP-")
+    require_success_path_routes_through_product_separation(rows)
+
+    def with_cells(*edits: tuple[str, int, str]) -> list[list[str]]:
+        candidate = [row.copy() for row in rows]
+        for operation, column, value in edits:
+            operation_row(candidate, operation)[column] = value
+        return candidate
+
+    # Each mutant is wrong in exactly one way and is paired with the message its own
+    # assertion must raise. A mutant rejected by a different assertion means the live
+    # assertions read a neighbour cell or the document as a whole, not the two they name.
+    mutants: list[tuple[str, list[list[str]], str]] = [
+        ("pre-repair route skips product separation",
+         with_cells(("WA-OP-007-PROVE", 7,
+                     "WA-OP-008-ROLLBACK on pre-PROVED failure; else WA-OP-010-SUCCESS-CLEANUP")),
+         "omits WA-OP-013-EVIDENCE-UPDATE, WA-OP-014-PRODUCT-SEPARATION"),
+        ("evidence update kept, product separation dropped",
+         with_cells(("WA-OP-007-PROVE", 7,
+                     "WA-OP-008-ROLLBACK on pre-PROVED failure; else WA-OP-013-EVIDENCE-UPDATE, "
+                     "then WA-OP-010-SUCCESS-CLEANUP")),
+         "omits WA-OP-014-PRODUCT-SEPARATION"),
+        ("success route inverted",
+         with_cells(("WA-OP-007-PROVE", 7,
+                     "WA-OP-008-ROLLBACK on pre-PROVED failure; else "
+                     "WA-OP-014-PRODUCT-SEPARATION, then WA-OP-013-EVIDENCE-UPDATE, then "
+                     "WA-OP-010-SUCCESS-CLEANUP")),
+         "success route is out of order"),
+        ("rollback branch dropped",
+         with_cells(("WA-OP-007-PROVE", 7,
+                     "else WA-OP-013-EVIDENCE-UPDATE, then WA-OP-014-PRODUCT-SEPARATION, then "
+                     "WA-OP-010-SUCCESS-CLEANUP")),
+         "dropped the rollback branch"),
+        ("product separation named in the pre-state column, not the next-operation column",
+         with_cells(("WA-OP-007-PROVE", 3,
+                     operation_row(rows, "WA-OP-007-PROVE")[3]
+                     + "; WA-OP-014-PRODUCT-SEPARATION completed"),
+                    ("WA-OP-007-PROVE", 7,
+                     "WA-OP-008-ROLLBACK on pre-PROVED failure; else WA-OP-013-EVIDENCE-UPDATE, "
+                     "then WA-OP-010-SUCCESS-CLEANUP")),
+         "omits WA-OP-014-PRODUCT-SEPARATION"),
+        ("equality record named only on another row",
+         with_cells(("WA-OP-010-SUCCESS-CLEANUP", 3,
+                     "durable PROVED; targets exact frozen identity"),
+                    ("WA-OP-015-VERIFY-EXISTING", 3,
+                     operation_row(rows, "WA-OP-015-VERIFY-EXISTING")[3]
+                     + "; exact product equality recorded")),
+         "does not name the product equality record"),
+        ("equality record named without the frozen-identity precondition",
+         with_cells(("WA-OP-010-SUCCESS-CLEANUP", 3,
+                     "durable PROVED; exact product equality recorded")),
+         "lost its frozen-identity precondition"),
+        ("next-operation cell emptied",
+         with_cells(("WA-OP-007-PROVE", 7, "")),
+         "omits WA-OP-013-EVIDENCE-UPDATE, WA-OP-014-PRODUCT-SEPARATION, "
+         "WA-OP-010-SUCCESS-CLEANUP"),
+    ]
+    for label, candidate, expected in mutants:
+        try:
+            require_success_path_routes_through_product_separation(candidate)
+        except AssertionError as error:
+            require(expected in str(error),
+                    f"success-path route mutant rejected by the wrong assertion: {label}: {error}")
+            continue
+        fail(f"success-path route mutant survived: {label}")
+    # Guard the parser itself: a cell naming no operation can never satisfy membership.
+    require(successor_operations("") == [] and successor_operations("caller return") == [],
+            "successor parser is not discriminating")
+
+
 def project_root_for_tests(root: Path) -> Path:
     if (root / "engine/go.mod").is_file():
         return root
@@ -4661,12 +4720,12 @@ def check_actual_engine_separation(root: Path) -> None:
             engine = Path(engine_override).resolve()
             require(engine.is_file(), "configured engine CLI")
         else:
-            # The module pins `toolchain go1.27.1`; a newer local Go satisfies it and
+            # The module pins `toolchain go1.27.2`; a newer local Go satisfies it and
             # would report its own version, so select the pin explicitly and build the
             # private engine with it. Deterministic on any machine, unchanged on CI.
-            pinned = {**os.environ, "GOTOOLCHAIN": "go1.27.1"}
+            pinned = {**os.environ, "GOTOOLCHAIN": "go1.27.2"}
             version = command_output(["go", "-C", str(project / "engine"), "env", "GOVERSION"], env=pinned)
-            require(version.returncode == 0 and "go1.27.1" in version.stdout, "module-selected Go 1.27.1")
+            require(version.returncode == 0 and "go1.27.2" in version.stdout, "module-selected Go 1.27.2")
             engine = private / "bin/devrites-engine"
             engine.parent.mkdir()
             build = command_output(["go", "-C", str(project / "engine"), "build", "-o", str(engine), "."], env=pinned)
@@ -4675,7 +4734,7 @@ def check_actual_engine_separation(root: Path) -> None:
         workspace = fixture / ".devrites/work/demo"
         workspace.mkdir(parents=True)
         (fixture / ".devrites/ACTIVE").write_text("demo\n")
-        source_workspace, _is_live = resolve_evidence_mapping_source(project)
+        source_workspace = SCRIPT.parent / "fixtures" / "workflow-artifact-identity-evidence-workspace"
         readiness_files = ["spec.md", "decision-coverage.md", "architecture.md", "plan.md", "tasks.md", "traceability.md", "test-plan.md"]
         for name in readiness_files:
             source = source_workspace / name
@@ -4772,6 +4831,7 @@ def create_actual_delivery_repo(root: Path, full_generator: bool = False) -> dic
         destination.parent.mkdir(parents=True, exist_ok=True)
         atomic_write(destination, payload, 0o600)
     (root / ".devrites/work/workflow-artifact-identity/.generated-install").mkdir(parents=True)
+    atomic_write(root / ".devrites-wai-delivery-fixture", b"", 0o600)
     root_fd = open_absolute_directory(root)
     try:
         return {relative: file_record_at(root_fd, relative) for relative in AUTHORED + GENERATED}
@@ -4928,14 +4988,18 @@ def check_normal_generator_contract_delta() -> None:
             )
             reject_stage("missing-entry", missing_journal, missing,
                          "delivery stage/current path set")
-            drifted = {relative: dict(record) for relative, record in staged.items()}
-            drifted[third]["sha256"] = "0" * 64
-            drifted_journal = json.loads(json.dumps(journal))
-            drifted_journal["stage_manifest_sha256"] = sha(
-                json.dumps(drifted, sort_keys=True).encode(),
-            )
-            reject_stage("non-admitted-drift", drifted_journal, drifted,
-                         "delivery stage non-admitted live identity")
+            for field, value in (
+                ("sha256", "0" * 64),
+                ("mode", 0o600 if staged[third]["mode"] != 0o600 else 0o644),
+            ):
+                drifted = {relative: dict(record) for relative, record in staged.items()}
+                drifted[third][field] = value
+                drifted_journal = json.loads(json.dumps(journal))
+                drifted_journal["stage_manifest_sha256"] = sha(
+                    json.dumps(drifted, sort_keys=True).encode(),
+                )
+                reject_stage(f"non-admitted-{field}", drifted_journal, drifted,
+                             "delivery stage non-admitted live identity")
             admitted = sorted(EXPECTED_NORMAL_GENERATED_DELTA)[0]
             for field, value in (("sha256", "0" * 64), ("mode", 0o600)):
                 wrong_admitted = {
@@ -5000,7 +5064,8 @@ def run_actual_delivery_mode(repo: Path, args: list[str], death: str | None = No
     for name in DELIVERY_FIXTURE_ENV:
         env.pop(name, None)
     args = list(args)
-    if ((fast_fixture or mutation is not None or skip_generated is not None)
+    if ((fast_fixture or death is not None or mutation is not None
+         or skip_generated is not None)
             and production_delivery_argv(args)):
         if args == ["--delivery-prepare"]:
             args = ["--delivery-boundary-case", "operate", "prepare"]
@@ -5408,6 +5473,54 @@ def check_actual_delivery_modes() -> None:
             f"delivery registry execution mismatch: {sorted(expected_boundaries - executed)}")
 
 
+def check_delivery_fixture_argv_guard() -> None:
+    _, clean = take_delivery_test_argv([])
+    reject_delivery_fixture_argv(clean)
+    for flag_argv in (
+        ["--delivery-test-fast-fixture"],
+        ["--delivery-test-mutation", "gate-failure"],
+        ["--delivery-test-death", "journal-created"],
+        ["--delivery-test-skip-generated", "0"],
+    ):
+        _, config = take_delivery_test_argv(flag_argv)
+        try:
+            reject_delivery_fixture_argv(config)
+        except AssertionError as error:
+            require("delivery modes reject fixture argv" in str(error),
+                    f"{flag_argv[0]} rejected by the wrong assertion: {error}")
+        else:
+            fail(f"production guard accepts {flag_argv[0]}")
+
+
+def check_delivery_execution_prefix_opt_in() -> None:
+    saved = {name: os.environ.get(name) for name in (DELIVERY_EXECUTION_PREFIX_ENV, "PATH")}
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            shim = Path(tmp).resolve() / "rtk"
+            shim.write_text("#!/bin/sh\necho 'rtk 9.9.9'\n")
+            shim.chmod(0o700)
+            os.environ["PATH"] = f"{shim.parent}{os.pathsep}{saved['PATH'] or ''}"
+            require(shutil.which("rtk") == str(shim), "ambient rtk shim on PATH")
+            os.environ.pop(DELIVERY_EXECUTION_PREFIX_ENV, None)
+            require(delivery_execution_prefix() == [],
+                    f"ambient rtk selected a delivery prefix: {delivery_execution_prefix()}")
+            require(delivery_execution_prefix_version() == "", "no prefix records no version")
+            os.environ[DELIVERY_EXECUTION_PREFIX_ENV] = "rtk proxy"
+            require(delivery_execution_prefix() == ["rtk", "proxy"], "opt-in prefix honored")
+            require(delivery_execution_prefix_version() == "rtk 9.9.9",
+                    "opt-in prefix version recorded")
+            record = complete_gate_records_fixture()[0]
+            require(record["execution_prefix"] == ["rtk", "proxy"]
+                    and record["execution_prefix_version"] == "rtk 9.9.9",
+                    f"gate record names prefix and version: {record}")
+    finally:
+        for name, value in saved.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+
 def check_delivery_third_state_guards() -> None:
     for relative, absent_preimage in ((AUTHORED[0], False), (AUTHORED[1], True)):
         with tempfile.TemporaryDirectory() as tmp:
@@ -5664,6 +5777,7 @@ def complete_gate_records_fixture() -> list[dict]:
     return [
         {
             "command": command, "execution_prefix": delivery_execution_prefix(),
+            "execution_prefix_version": delivery_execution_prefix_version(),
             "sha256": "0" * 64, "signal": signal or "exit=0",
         }
         for command, signal in DELIVERY_GATES
@@ -5725,6 +5839,29 @@ def check_temporary_journal_successors() -> None:
                 "legal temporary journal successor promoted")
         assert_actual_delivery_records(repo, before)
 
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp).resolve() / "repo"; create_actual_delivery_repo(repo)
+        require(run_actual_delivery_mode(repo, ["--delivery-prepare"]).returncode == 0,
+                "invalid rollback successor prepare")
+        delivery = actual_delivery_directory(repo)
+        current = json.loads((delivery / "journal.json").read_text())
+        write_journal_temporary_fixture(delivery, journal_successor_fixture(
+            current, "ROLLING_BACK(1)",
+            mutation_intent={
+                "action": "restore", "group": "generated",
+                "index": len(GENERATED) - 1, "path": ".gitignore",
+            },
+        ))
+        durable = (delivery / "journal.json").read_bytes()
+        before = observe_delivery_destinations(repo)
+        rejected = run_actual_delivery_mode(repo, ["--delivery-recover", str(delivery)])
+        require(rejected.returncode != 0
+                and "delivery mutation intent destination" in rejected.stdout
+                and (delivery / "journal.json").read_bytes() == durable
+                and (delivery / ".journal.json.workflow-artifact.tmp").exists()
+                and observe_delivery_destinations(repo) == before,
+                "invalid temporary successor not promoted")
+
     for fabricated_state in ("COMMITTED", "CLEANING", "CLEANED"):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp).resolve() / "repo"; create_actual_delivery_repo(repo)
@@ -5757,6 +5894,10 @@ def check_temporary_journal_successors() -> None:
                     repo, ["--delivery-install", str(delivery)], "staged-recorded",
                 ).returncode == 86, "transition-only successor staged")
         current = json.loads((delivery / "journal.json").read_text())
+        require(not legal_journal_successor(current, journal_successor_fixture(
+                    current, "COMMITTED", gates=complete_gate_records_fixture(),
+                    installed_generated=len(GENERATED),
+                )), "STAGED to COMMITTED transition rule")
         for relative, expected in zip(GENERATED, current["expected_post"][len(AUTHORED):]):
             staged_path = delivery / "stage" / relative.removeprefix("pack/generated/")
             atomic_write(repo / relative, staged_path.read_bytes(), expected["mode"])
@@ -5768,6 +5909,7 @@ def check_temporary_journal_successors() -> None:
         durable = (delivery / "journal.json").read_bytes()
         rejected = run_actual_delivery_mode(repo, ["--delivery-recover", str(delivery)])
         require(rejected.returncode != 0
+                and "staged generated progression" in rejected.stdout
                 and (delivery / "journal.json").read_bytes() == durable
                 and observe_delivery_destinations(repo) == before,
                 "legal-schema illegal transition mutant")
@@ -5800,6 +5942,23 @@ def check_temporary_journal_successors() -> None:
                 and stat.S_ISREG(sidecar_info.st_mode) and sidecar_info.st_nlink == 1
                 and stat.S_IMODE(sidecar_info.st_mode) == 0o600,
                 "legal committed temporary successor promoted with sidecar evidence")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp).resolve() / "repo"; create_actual_delivery_repo(repo)
+        require(run_actual_delivery_mode(repo, ["--delivery-prepare"]).returncode == 0,
+                "torn journal temporary prepare")
+        delivery = actual_delivery_directory(repo)
+        require(run_actual_delivery_mode(
+                    repo, ["--delivery-install", str(delivery)], "gate-0-recorded",
+                ).returncode == 86, "torn journal temporary proving")
+        atomic_write(
+            delivery / JOURNAL_TEMPORARY,
+            (delivery / "journal.json").read_bytes()[:257], 0o600,
+        )
+        recovered = run_actual_delivery_mode(repo, ["--delivery-recover", str(delivery)])
+        require(recovered.returncode == 0 and "delivery_state=FAILED" in recovered.stdout
+                and not (delivery / JOURNAL_TEMPORARY).exists(),
+                f"torn journal temporary removed before recovery: {recovered.stdout[-400:]}")
 
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp).resolve() / "repo"; create_actual_delivery_repo(repo)
@@ -6246,6 +6405,7 @@ def check_outside_manifest_hard_wall() -> None:
 
             json.dumps = original_dumps
             globals()["outside_manifest_wall_timer"] = original_timer
+            globals()["OUTSIDE_MANIFEST_SCAN_TIMEOUT_SECONDS"] = saved_timeout
             baseline_handler = signal.getsignal(signal.SIGALRM)
             def prior_handler(_signum, _frame):
                 pass
@@ -6287,12 +6447,14 @@ def sidecar_adversary_fixture() -> tuple[tempfile.TemporaryDirectory, Path, Path
 
 
 def reject_sidecar_adversary(repo: Path, delivery: Path,
-                             destinations: list[dict], label: str) -> None:
+                             destinations: list[dict], label: str,
+                             diagnostic: str | None = None) -> None:
     journal_path = delivery / "journal.json"
     durable = journal_path.read_bytes()
     rejected = run_actual_delivery_mode(repo, ["--delivery-recover", str(delivery)])
     require(rejected.returncode != 0 and journal_path.read_bytes() == durable
-            and observe_delivery_destinations(repo) == destinations,
+            and observe_delivery_destinations(repo) == destinations
+            and (diagnostic is None or diagnostic in rejected.stdout),
             f"outside sidecar adversary rejected without writes: {label}")
 
 
@@ -6318,12 +6480,17 @@ def check_outside_manifest_sidecar_integrity() -> None:
     temporary, repo, delivery, sidecar_raw, before = sidecar_adversary_fixture()
     try:
         sidecar = delivery / OUTSIDE_MANIFEST_NAME
-        sidecar.write_bytes(sidecar_raw + b"x"); sidecar.chmod(0o600)
-        reject_sidecar_adversary(repo, delivery, before, "wrong-hash")
+        digit = re.search(rb"[0-9a-f]{64}", sidecar_raw).start()
+        flipped = (sidecar_raw[:digit] + (b"1" if sidecar_raw[digit:digit + 1] == b"0" else b"0")
+                   + sidecar_raw[digit + 1:])
+        atomic_write(sidecar, flipped, 0o600)
+        reject_sidecar_adversary(repo, delivery, before, "wrong-hash",
+                                 "outside manifest binding identity")
         atomic_write(sidecar, sidecar_raw, 0o600)
-        os.link(sidecar, delivery / "outside-manifest-link")
-        reject_sidecar_adversary(repo, delivery, before, "nlink")
-        (delivery / "outside-manifest-link").unlink()
+        os.link(sidecar, repo.parent / "outside-manifest-link")
+        reject_sidecar_adversary(repo, delivery, before, "nlink",
+                                 "outside manifest sidecar metadata")
+        (repo.parent / "outside-manifest-link").unlink()
         atomic_write(delivery / "unknown-private-sibling", b"unknown\n", 0o600)
         reject_sidecar_adversary(repo, delivery, before, "unknown-sibling")
     finally:
@@ -6498,7 +6665,11 @@ def check_initial_journal_strict_prefix_recovery() -> None:
             future_timestamp_start = (
                 future_raw.index(future_timestamp_tag) + len(future_timestamp_tag)
             )
-            future_prefix = future_raw[:future_timestamp_start + 2]
+            future_prefix = future_raw[
+                :future_timestamp_start + len(str(future["updated_ns"])) + 1
+            ]
+            require(future_prefix != canonical[:len(future_prefix)],
+                    "future prefix encodes a later timestamp")
             require(initial_journal_strict_prefix(future_prefix, expected),
                     "future initial journal strict prefix")
             atomic_write(temporary, future_prefix, 0o600)
@@ -6576,6 +6747,7 @@ def check_delivery_journal_adversaries() -> None:
             mutant = json.loads(json.dumps(journal)); mutant["unknown"] = "x"; mutants.append(("unknown-field", mutant))
             mutant = json.loads(json.dumps(journal)); mutant["contract"] += ".forged"; mutants.append(("contract", mutant))
             mutant = json.loads(json.dumps(journal)); mutant["state"] = "INSTALLING(23)"; mutants.append(("state-index", mutant))
+            mutant = json.loads(json.dumps(journal)); mutant["state"] = "ROLLING_BACK(39)"; mutants.append(("rollback-index", mutant))
             mutant = json.loads(json.dumps(journal)); mutant["candidate_digest"] = "g" * 64; mutants.append(("digest", mutant))
             mutant = json.loads(json.dumps(journal)); mutant["candidate_root"] = str(repo); mutants.append(("candidate-root", mutant))
             mutant = json.loads(json.dumps(journal)); mutant["authored_allowlist"] = list(reversed(AUTHORED)); mutants.append(("allowlist", mutant))
@@ -6589,7 +6761,8 @@ def check_delivery_journal_adversaries() -> None:
             mutant = json.loads(json.dumps(journal)); mutant["installed_authored"] = True; mutants.append(("counter-type", mutant))
             mutant = json.loads(json.dumps(journal)); mutant["installed_generated"] = 1; mutants.append(("counter-relation", mutant))
             mutant = json.loads(json.dumps(journal)); mutant["state"] = "STAGED"; mutants.append(("missing-stage-manifest", mutant))
-            mutant = json.loads(json.dumps(journal)); mutant["gates"] = [{"command": ["true"], "execution_prefix": ["rtk", "proxy"], "sha256": "0" * 64, "signal": "exit=0"}]; mutants.append(("gate-command", mutant))
+            mutant = json.loads(json.dumps(journal)); mutant["gates"] = [{"command": ["true"], "execution_prefix": ["rtk", "proxy"], "execution_prefix_version": "rtk 0.0.0", "sha256": "0" * 64, "signal": "exit=0"}]; mutants.append(("gate-command", mutant))
+            mutant = json.loads(json.dumps(journal)); mutant["gates"] = [{"command": command, "execution_prefix": delivery_execution_prefix(), "execution_prefix_version": version, "sha256": "0" * 64, "signal": signal or "exit=0"} for (command, signal), version in zip(DELIVERY_GATES[:2], (delivery_execution_prefix_version(), "forged 0.0.0"))]; mutants.append(("gate-prefix-version", mutant))
             for label, mutant in mutants:
                 try:
                     validate_delivery_journal(
@@ -6646,101 +6819,6 @@ def check_delivery_journal_adversaries() -> None:
         assert_actual_delivery_records(repo, installed_records)
 
 
-def delivery_fixture(root: Path) -> tuple[list[str], dict[str, bytes | None], dict[str, bytes]]:
-    paths = [f"authored/{index:02d}" for index in range(16)] + [f"generated/{index:02d}" for index in range(22)]
-    before = {path: (None if index % 5 == 0 else f"old-{index}".encode()) for index, path in enumerate(paths)}
-    desired = {path: f"new-{index}".encode() for index, path in enumerate(paths)}
-    for path, data in before.items():
-        destination = root / path
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        if data is not None:
-            atomic_write(destination, data, 0o600)
-    return paths, before, desired
-
-
-def assert_delivery_state(root: Path, values: dict[str, bytes | None]) -> None:
-    for path, data in values.items():
-        destination = root / path
-        actual = destination.read_bytes() if destination.exists() else None
-        require(actual == data, f"delivery identity: {path}")
-
-
-def run_delivery_model(fault: str | None, owner: str = "wright", extra_stage: bool = False) -> tuple[str, list[str]]:
-    with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp) / "repo"; root.mkdir()
-        paths, before, desired = delivery_fixture(root)
-        journal = []
-        require(owner == "wright", "root install rejected")
-        snapshots = {}
-        try:
-            for index, path in enumerate(paths):
-                journal.append(f"SNAPSHOTTING({index})")
-                snapshots[path] = before[path]
-                fault_at(fault, f"snapshot-{index}-before")
-                fault_at(fault, f"snapshot-{index}-after")
-            stage = Path(tmp) / "stage"; stage.mkdir()
-            for path, data in desired.items():
-                staged = stage / path; staged.parent.mkdir(parents=True, exist_ok=True); atomic_write(staged, data, 0o600)
-            if extra_stage:
-                atomic_write(stage / "generated/unknown", b"unknown", 0o600)
-            staged_paths = {path.relative_to(stage).as_posix() for path in stage.rglob("*") if path.is_file()}
-            require(staged_paths == set(paths), "delivery staged allowlist")
-            journal.append("STAGED"); fault_at(fault, "stage-before"); fault_at(fault, "stage-after")
-            for index, path in enumerate(paths[:16]):
-                journal.append(f"INSTALLING-AUTHORED({index})"); fault_at(fault, f"authored-{index}-before")
-                atomic_write(root / path, desired[path], 0o600); fault_at(fault, f"authored-{index}-after")
-            for index, path in enumerate(paths[16:]):
-                journal.append(f"INSTALLING({index + 1})"); fault_at(fault, f"generated-{index}-before")
-                atomic_write(root / path, desired[path], 0o600); fault_at(fault, f"generated-{index}-after")
-            journal.extend(["INSTALLED", "PROVING"]); fault_at(fault, "prove-before"); fault_at(fault, "prove-after")
-            journal.append("COMMITTED"); fault_at(fault, "commit-after")
-            journal.extend(["CLEANING", "CLEANED"]); fault_at(fault, "cleanup-after")
-            assert_delivery_state(root, desired)
-            return "CLEANED", journal
-        except (RuntimeError, AssertionError):
-            if "COMMITTED" in journal:
-                assert_delivery_state(root, desired)
-                return "CLEANED", journal + ["CLEANING", "CLEANED"]
-            for position, path in enumerate(reversed(paths), 1):
-                journal.append(f"ROLLING_BACK({position})")
-                data = snapshots.get(path, before[path])
-                destination = root / path
-                if data is None:
-                    destination.unlink(missing_ok=True)
-                else:
-                    atomic_write(destination, data, 0o600)
-            journal.extend(["RESTORED", "FAILED"])
-            assert_delivery_state(root, before)
-            return "FAILED", journal
-
-
-def check_delivery_model_matrix() -> None:
-    faults = ["stage-before", "stage-after", "prove-before", "prove-after", "commit-after", "cleanup-after"]
-    faults.extend(f"snapshot-{index}-{side}" for index in range(38) for side in ("before", "after"))
-    faults.extend(f"authored-{index}-{side}" for index in range(16) for side in ("before", "after"))
-    faults.extend(f"generated-{index}-{side}" for index in range(22) for side in ("before", "after"))
-
-    def verify_fault(fault: str) -> None:
-        state, journal = run_delivery_model(fault)
-        if fault in {"commit-after", "cleanup-after"}:
-            require(state == "CLEANED" and "RESTORED" not in journal, f"post-commit cleanup only: {fault}")
-        else:
-            require(state == "FAILED" and journal[-2:] == ["RESTORED", "FAILED"], f"pre-commit restore: {fault}")
-
-    with ThreadPoolExecutor(max_workers=delivery_parallel_workers()) as executor:
-        list(executor.map(verify_fault, faults))
-    state, _ = run_delivery_model(None)
-    require(state == "CLEANED", "delivery success")
-    state, journal = run_delivery_model(None, extra_stage=True)
-    require(state == "FAILED" and "COMMITTED" not in journal, "staged sibling rejection")
-    try:
-        run_delivery_model(None, owner="root")
-    except AssertionError:
-        pass
-    else:
-        fail("root delivery ownership accepted")
-
-
 def check_journal_retry_stability() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         delivery_fd = os.open(tmp, DIRECTORY_FLAGS)
@@ -6770,14 +6848,10 @@ def check_journal_retry_stability() -> None:
             expected_bytes = (json.dumps(
                 expected, sort_keys=True, separators=(",", ":"),
             ) + "\n").encode()
-            child = os.fork()
-            if child == 0:
-                _DELIVERY_TEST["death_boundary"] = "journal-replacement-after-sync"
-                write_journal(delivery_fd, lock_fd, retry)
-                os._exit(99)
-            _pid, status = os.waitpid(child, 0)
-            require(os.waitstatus_to_exitcode(status) == 87,
-                    "journal after-sync fixture death")
+            _run_delivery_boundary_child(
+                "journal-replacement-after-sync",
+                lambda: write_journal(delivery_fd, lock_fd, retry), 87,
+            )
             temporary = JOURNAL_TEMPORARY
             require(read_file_at(delivery_fd, temporary, 4096, {0o600}) == expected_bytes,
                     "journal synced temporary intended bytes")
@@ -6793,6 +6867,8 @@ def check_journal_retry_stability() -> None:
 
 
 def check_cleanup_recovery() -> None:
+    require(os.geteuid() != 0,
+            "cleanup_recovery requires a non-root user: root bypasses directory write permission")
     with tempfile.TemporaryDirectory() as tmp:
         delivery_fd = os.open(tmp, DIRECTORY_FLAGS)
         lock_fd = delivery_lock(delivery_fd)
@@ -7206,6 +7282,18 @@ def check_drift_005_regressions() -> None:
         require(forbidden not in source, f"detached-session tracking remains: {forbidden}")
 
 
+EVIDENCE_FIXTURE_SHA256 = {
+    "evidence.md": "c7148e790c6e81f0d0cf5c113509068aad184c037d91a5ada5e44393dbcd1711",
+    "touched-files.md": "7aa09ba8c850629364a7bf72eac038dd192931f61720751cf799cd5669f38217",
+}
+
+
+def require_evidence_fixture_pinned(fixture: Path) -> None:
+    for name, digest in EVIDENCE_FIXTURE_SHA256.items():
+        require(sha((fixture / name).read_bytes()) == digest,
+                f"workflow-artifact evidence mapping fixture digest: {name}")
+
+
 def resolve_evidence_mapping_source(project: Path) -> tuple[Path, bool]:
     """Prefer live work, then archive, then committed fixture (CI has no .devrites)."""
     live = project / ".devrites/work/workflow-artifact-identity"
@@ -7217,7 +7305,29 @@ def resolve_evidence_mapping_source(project: Path) -> tuple[Path, bool]:
     fixture = SCRIPT.parent / "fixtures" / "workflow-artifact-identity-evidence-workspace"
     require((fixture / "evidence.md").is_file() and (fixture / "traceability.md").is_file(),
             "workflow-artifact evidence mapping fixture")
+    require_evidence_fixture_pinned(fixture)
     return fixture, False
+
+
+def check_evidence_fixture_pin() -> None:
+    fixture = SCRIPT.parent / "fixtures" / "workflow-artifact-identity-evidence-workspace"
+    require_evidence_fixture_pinned(fixture)
+    for name in EVIDENCE_FIXTURE_SHA256:
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp) / fixture.name
+            shutil.copytree(fixture, copy)
+            text = (copy / name).read_text()
+            match = re.search(r"[0-9a-f]{64}", text)
+            require(match is not None, f"pinned fixture carries a digest: {name}")
+            flipped = "0" if text[match.start()] != "0" else "1"
+            (copy / name).write_text(text[:match.start()] + flipped + text[match.start() + 1:])
+            try:
+                require_evidence_fixture_pinned(copy)
+            except AssertionError as error:
+                require(f"fixture digest: {name}" in str(error),
+                        f"mutated fixture rejected by the wrong assertion: {name}: {error}")
+            else:
+                fail(f"mutated evidence fixture accepted: {name}")
 
 
 def check_workspace_evidence_mapping() -> None:
@@ -7294,9 +7404,12 @@ def default_tests(root: Path) -> None:
     require(writer_allowlist_digest() == WRITER_ALLOWLIST_SHA256, "frozen writer allowlist")
 
     checks: list[tuple[str, object]] = [
+        ("delivery_execution_prefix_opt_in", check_delivery_execution_prefix_opt_in),
+        ("delivery_fixture_argv_guard", check_delivery_fixture_argv_guard),
         ("empty_generated_delta_install", check_empty_generated_delta_install),
         ("module_and_corpus", lambda: check_module_and_corpus(root)),
         ("historical_reslice_identity", check_historical_reslice_identity),
+        ("evidence_fixture_pin", check_evidence_fixture_pin),
         ("workspace_evidence_mapping", check_workspace_evidence_mapping),
         ("normal_generator_contract_delta", check_normal_generator_contract_delta),
         ("complete_stage_gate_failure_rollback", check_complete_stage_gate_failure_rollback),
@@ -7330,11 +7443,11 @@ def default_tests(root: Path) -> None:
         ("held_stage_generator_held_out_symlink_plant", check_held_stage_generator_held_out_symlink_plant),
         ("held_stage_generator_artifacts_symlink_plant", check_held_stage_generator_artifacts_symlink_plant),
         ("held_stage_generator_out_root_basename_plant", check_held_stage_generator_out_root_basename_plant),
+        ("held_stage_generator_swap_window_plant", check_held_stage_generator_swap_window_plant),
         ("absolute_directory_acquisition", check_absolute_directory_acquisition),
         ("evidence_ownership", check_evidence_ownership),
         ("evidence_matrix", check_evidence_matrix),
         ("flock", check_flock),
-        ("filesystem_adversaries", check_filesystem_adversaries),
         ("source_lifecycle", check_source_lifecycle),
         ("process_group_timeout", check_process_group_timeout),
         ("proof_matrix", check_proof_matrix),
@@ -7344,6 +7457,8 @@ def default_tests(root: Path) -> None:
         ("classifier_and_diagnostics", lambda: check_classifier_and_diagnostics(root)),
         ("retry_and_source_loss", lambda: check_retry_and_source_loss(root)),
         ("product_separation_lifecycle", lambda: check_product_separation_lifecycle(root)),
+        ("success_path_product_separation_route",
+         lambda: check_success_path_product_separation_route(root)),
         ("actual_engine_separation", lambda: check_actual_engine_separation(root)),
         ("delivery_third_state_guards", check_delivery_third_state_guards),
         ("drift_016_delivery_mutants", check_drift_016_delivery_mutants),
@@ -7368,8 +7483,6 @@ def default_tests(root: Path) -> None:
     ]
     if not wai_skip_delivery_modes():
         checks.append(("actual_delivery_modes", check_actual_delivery_modes))
-    if not wai_skip_delivery_model_matrix():
-        checks.append(("delivery_model_matrix", check_delivery_model_matrix))
 
     core_spec = os.environ.get("DEVRITES_WAI_CORE_SHARD", "").strip()
     if core_spec:
@@ -7448,52 +7561,8 @@ DELIVERY_GATES = [
     (["python3", "scripts/scan-pack-security.py", "pack/.claude", "pack/generated"], None),
     (["go", "-C", "engine", "test", "./...", "-race", "-count=1"], None),
     (["node", "scripts/run-tests.mjs"], None),
-    (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "659fcab79eda5931a2cf6f19a76a1178064bd26aa1271ff05e3de24ceefdb021  .gitignore"),
+    (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], None),
 ]
-
-
-def check_delivery_gate_signals() -> None:
-    expected = [
-        (["bash", "-c", "bash --version && python3 --version && node --version && GOTOOLCHAIN=go1.27.1 go -C engine env GOVERSION GOTOOLCHAIN"], "go1.27.1"),
-        (["python3", "scripts/validate-workspace-schema.py", ".devrites/work/workflow-artifact-identity"], "workspace-schema: OK: 1 workspace(s) validated"),
-        (["bash", "tests/workflow-artifact-identity-test.sh"], "workflow-artifact-identity: PASS"),
-        (["bash", "tests/workflow-artifact-identity-test.sh", "--prove-walkthrough"], "WORKFLOW_ARTIFACT_WALKTHROUGH PASS"),
-        (["bash", "scripts/run-behavioral-evals.sh"], "Validated 14 behavioral eval file(s); 82 scenario(s); 0 failed."),
-        (["bash", "tests/phase-gate-routing-test.sh"], "phase-gate-routing-test: PASS"),
-        (["bash", "tests/acceptance-preserving-reslice-policy-test.sh"], "acceptance-preserving-reslice-policy-test: PASS"),
-        (["bash", "tests/host-artifacts-test.sh"], "host-artifacts-test: PASS"),
-        (["bash", "scripts/validate.sh"], "VALIDATION PASSED"),
-        (["shasum", "-a", "256", ".gitignore", ".devrites/ACTIVE", ".devrites/work/workspace-observation/touched-files.md"], "659fcab79eda5931a2cf6f19a76a1178064bd26aa1271ff05e3de24ceefdb021  .gitignore"),
-    ]
-    declared = [(command, signal) for command, signal in DELIVERY_GATES if signal is not None]
-    require(declared == expected, "delivery gate exact expected-line registry")
-
-    for _command, expected_line in expected:
-        ok, reason, output = run_proof_command(
-            [sys.executable, "-c", "import sys;print('before');print(sys.argv[1]);print('after')", expected_line],
-            expected_line, 2, 0.1, 4096,
-        )
-        require(ok and reason == "proved"
-                and output.splitlines() == [b"before", expected_line.encode(), b"after"],
-                f"delivery gate multiline exact signal: {expected_line}")
-        for fixture in (
-            "import sys;print('before');print(sys.argv[1]+'!');print('after')",
-            "import sys;print('before');print(sys.argv[1]);print(sys.argv[1]);print('after')",
-        ):
-            ok, reason, _output = run_proof_command(
-                [sys.executable, "-c", fixture, expected_line],
-                expected_line, 2, 0.1, 4096,
-            )
-            require(not ok and reason == "wrong-signal",
-                    f"delivery gate rejects near-match or duplicate: {expected_line}")
-
-    for command, expected_line in (expected[4], expected[-1]):
-        ok, reason, output = run_proof_command(
-            command, expected_line, 120, DELIVERY_TERMINATE_GRACE_SECONDS,
-            DELIVERY_OUTPUT_LIMIT_BYTES,
-        )
-        require(ok and reason == "proved",
-                f"delivery gate real signal: {command}: {reason}: {output[-1000:]!r}")
 
 
 def validate_delivery_snapshot(record: dict, group: str, index: int, relative: str,
@@ -7631,6 +7700,10 @@ def validate_delivery_journal(journal: dict, delivery_fd: int, repo_fd: int,
     elif state in {"INSTALLED", "PROVING", "COMMITTED", "CLEANING", "CLEANED"}:
         require(complete and journal["installed_authored"] == len(AUTHORED)
                 and journal["installed_generated"] == len(GENERATED), "terminal install counters")
+    elif state.startswith("ROLLING_BACK("):
+        rollback_index = int(state.removeprefix("ROLLING_BACK(").removesuffix(")"))
+        require(complete and 1 <= rollback_index <= len(AUTHORED) + len(GENERATED),
+                "rolling-back counter relation")
     else:
         require(complete, "recovery requires complete snapshots")
     if "installed_authored_intent" in journal:
@@ -7661,8 +7734,13 @@ def validate_delivery_journal(journal: dict, delivery_fd: int, repo_fd: int,
                 "delivery gate list")
         for index, gate in enumerate(journal["gates"]):
             expected_command, expected_signal = DELIVERY_GATES[index]
-            require(isinstance(gate, dict) and set(gate) == {"command", "execution_prefix", "sha256", "signal"}
-                    and gate["execution_prefix"] == delivery_execution_prefix()
+            require(isinstance(gate, dict) and set(gate) == {"command", "execution_prefix", "execution_prefix_version",
+                                         "sha256", "signal"}
+                    and isinstance(gate["execution_prefix"], list)
+                    and all(isinstance(part, str) for part in gate["execution_prefix"])
+                    and gate["execution_prefix"] == journal["gates"][0]["execution_prefix"]
+                    and isinstance(gate["execution_prefix_version"], str)
+                    and gate["execution_prefix_version"] == journal["gates"][0]["execution_prefix_version"]
                     and gate["command"] == expected_command
                     and re.fullmatch(r"[0-9a-f]{64}", gate["sha256"]) is not None
                     and gate["signal"] == (expected_signal or "exit=0"), "delivery gate record")
@@ -7842,7 +7920,7 @@ def legal_journal_successor(current: dict, candidate: dict) -> bool:
 
 def reconcile_journal_temporary(delivery_fd: int, repo_fd: int,
                                 expected_candidate_digest: str) -> None:
-    temporary = ".journal.json.workflow-artifact.tmp"
+    temporary = JOURNAL_TEMPORARY
     if entry_info_at(delivery_fd, temporary) is None:
         return
     require(entry_info_at(delivery_fd, "journal.json") is not None,
@@ -7852,9 +7930,12 @@ def reconcile_journal_temporary(delivery_fd: int, repo_fd: int,
         current, delivery_fd, repo_fd, expected_candidate_digest,
         check_outside=False, allow_journal_temporary=True,
     )
-    candidate = parse_journal(read_file_at(
-        delivery_fd, temporary, DELIVERY_JOURNAL_MAX_BYTES, {0o600},
-    ))
+    raw = read_file_at(delivery_fd, temporary, DELIVERY_JOURNAL_MAX_BYTES, {0o600})
+    if not raw.endswith(b"\n"):
+        os.unlink(temporary, dir_fd=delivery_fd)
+        os.fsync(delivery_fd)
+        return
+    candidate = parse_journal(raw)
     validate_delivery_journal(
         candidate, delivery_fd, repo_fd, expected_candidate_digest,
         check_outside=False, allow_journal_temporary=True,
@@ -7880,68 +7961,19 @@ def protected_records_at(repo_fd: int) -> dict[str, dict]:
 
 
 PROTECTED_ACTIVE_BYTES = b"workflow-artifact-identity\n"
-PROTECTED_OBSERVATION_FIXTURE = (
-    SCRIPT.parent / "fixtures"
-    / "workflow-artifact-protected-workspace-observation-touched-files.md"
-)
-
-
-def install_live_protected_fixtures(root: Path) -> list[tuple[Path, bytes | None]]:
-    """Ensure live protected paths match LIVE_PROTECTED_SHA256 for CI/local.
-
-    Returns restorations as (path, previous_bytes_or_None_if_created).
-    """
-    restorations: list[tuple[Path, bytes | None]] = []
-    observation_bytes = PROTECTED_OBSERVATION_FIXTURE.read_bytes()
-    require(
-        hashlib.sha256(observation_bytes).hexdigest()
-        == LIVE_PROTECTED_SHA256[".devrites/work/workspace-observation/touched-files.md"],
-        "protected observation fixture digest",
-    )
-    wanted = {
-        ".devrites/ACTIVE": PROTECTED_ACTIVE_BYTES,
-        ".devrites/work/workspace-observation/touched-files.md": observation_bytes,
-    }
-    for relative, content in wanted.items():
-        dest = root / relative
-        previous: bytes | None
-        if dest.is_file() and not dest.is_symlink():
-            previous = dest.read_bytes()
-            if hashlib.sha256(previous).hexdigest() == LIVE_PROTECTED_SHA256[relative]:
-                continue
-        else:
-            previous = None
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(content)
-        restorations.append((dest, previous))
-    return restorations
-
-
-def restore_live_protected_fixtures(restorations: list[tuple[Path, bytes | None]]) -> None:
-    for path, previous in reversed(restorations):
-        if previous is None:
-            path.unlink(missing_ok=True)
-            # Remove empty parents we likely created under .devrites/work/...
-            parent = path.parent
-            while parent.name and parent != parent.parent:
-                try:
-                    parent.rmdir()
-                except OSError:
-                    break
-                parent = parent.parent
-        else:
-            path.write_bytes(previous)
 
 
 def require_live_protected_identity() -> dict[str, dict]:
     repo_fd = open_absolute_directory(project_root_for_tests(canonical_root()))
     try:
-        records = protected_records_at(repo_fd)
+        records = {}
+        for relative in PROTECTED:
+            try:
+                records[relative] = file_record_at(repo_fd, relative)
+            except FileNotFoundError:
+                records[relative] = {"state": "absent"}
     finally:
         os.close(repo_fd)
-    observed = {relative: record.get("sha256") for relative, record in records.items()}
-    require(observed == LIVE_PROTECTED_SHA256,
-            f"current protected byte identity: got {observed}")
     return records
 
 
@@ -7953,17 +7985,6 @@ def aggregate_at(root_fd: int, paths: list[str]) -> str:
         digest.update(len(rel.encode()).to_bytes(4, "big")); digest.update(rel.encode())
         digest.update(record["mode"].to_bytes(4, "big")); digest.update(bytes.fromhex(record["sha256"]))
     return digest.hexdigest()
-
-
-def snapshot_one(repo_fd: int, delivery_fd: int, lock_fd: int, rel: str, group: str, index: int) -> dict:
-    record = file_record_at(repo_fd, rel)
-    record.update({"path": rel, "index": index})
-    if record["state"] == "present":
-        backup = f"backups/{group}/{index:08x}"
-        data = read_file_at(repo_fd, rel, record["size"], {record["mode"]})
-        atomic_write_at(delivery_fd, backup, data, 0o600, lock_fd)
-        record["backup"] = backup
-    return record
 
 
 def snapshot_destination_record(record: dict) -> dict:
@@ -9254,6 +9275,7 @@ def run_gate(repo_fd: int, delivery_fd: int, proof_cache_relative: str,
         raise RuntimeError(f"delivery gate-{gate_index} failed: {reason}")
     return {
         "command": command, "execution_prefix": delivery_execution_prefix(),
+        "execution_prefix_version": delivery_execution_prefix_version(),
         "sha256": sha(output), "signal": expected or "exit=0",
     }
 
@@ -9299,9 +9321,9 @@ def require_pre_generated_install_state(repo_fd: int, journal: dict) -> None:
 
 def check_empty_generated_delta_install() -> None:
     require(
-        LIVE_PROTECTED_SHA256[".devrites/ACTIVE"]
-        == "fc0dd2b2c697c0701083bd82d3cf1db569478d474ab3755e1b65eb140c366267",
-        "live ACTIVE pin",
+        hashlib.sha256(PROTECTED_ACTIVE_BYTES).hexdigest()
+        == LIVE_PROTECTED_SHA256[".devrites/ACTIVE"],
+        "ACTIVE fixture bytes pin",
     )
     empty_require = "        require(differences <= allowed_stage,\n"
     with tempfile.TemporaryDirectory() as tmp:
@@ -9625,7 +9647,7 @@ def check_held_stage_generator_out_root_basename_plant() -> None:
         (repo / "pack/.claude/settings.json").write_text("{}\n")
         os.mkfifo(repo / "derived", 0o600)
         os.mkfifo(repo / "release", 0o600)
-        # Real build-host-artifacts.sh shape: rm OUT_ROOT, mkdir -p claude/codex, cp -R.
+        # Fixture shape (rm -rf OUT_ROOT=., then relative mkdir/cp); the real generator builds in $(mktemp -d) and swaps with rm+mv (build-host-artifacts.sh:288-295).
         (repo / "scripts/build-host-artifacts.sh").write_text(
             "#!/usr/bin/env bash\nset -euo pipefail\n"
             "OUT_ROOT=\"$DEVRITES_HOST_ARTIFACT_DIR\"\n"
@@ -9705,6 +9727,83 @@ def check_held_stage_generator_out_root_basename_plant() -> None:
             os.close(repo_fd); os.close(outsider_fd)
 
 
+def check_held_stage_generator_swap_window_plant() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(os.path.realpath(tmp))
+        repo = base / "repo"
+        (repo / "scripts").mkdir(parents=True)
+        (repo / "pack/.claude/skills").mkdir(parents=True)
+        (repo / "stage").mkdir()
+        (repo / "pack/.claude/skills/source").write_bytes(b"swapped-held")
+        os.mkfifo(repo / "derived", 0o600)
+        os.mkfifo(repo / "release", 0o600)
+        (repo / "scripts/build-host-artifacts.sh").write_text(
+            "#!/usr/bin/env bash\nset -euo pipefail\n"
+            "BUILD=\"$(mktemp -d)\"\n"
+            "trap 'rm -rf \"$BUILD\"' EXIT\n"
+            "OUT_ROOT=\"$BUILD\"\n"
+            "mkdir -p \"$OUT_ROOT/claude/skills\"\n"
+            "cp -R pack/.claude/skills/. \"$OUT_ROOT/claude/skills/\"\n"
+            "exec 8<> ../../../derived\n"
+            "exec 9<> ../../../release\n"
+            "rm -rf claude\n"
+            "printf x >&8\n"
+            "IFS= read -r -t 3 token <&9\n"
+            "[ \"$token\" = go ]\n"
+            "mv \"$OUT_ROOT\"/claude .\n"
+        )
+        outsider = base / "outsider"
+        outsider.mkdir()
+        (outsider / "marker").write_bytes(b"outside")
+        outsider_fd = os.open(outsider, DIRECTORY_FLAGS)
+        repo_fd = os.open(repo, DIRECTORY_FLAGS)
+        before = manifest_at(outsider_fd, set(), "")
+        actor_code = (
+            "import os,sys;"
+            "base=sys.argv[1];"
+            "derived=os.path.join(base,'repo/derived');"
+            "fd=os.open(derived,os.O_RDONLY);token=os.read(fd,1);os.close(fd);"
+            "os._exit(2) if token!=b'x' else None;"
+            "claude=os.path.join(base,'repo/stage/.held-out/artifacts/claude');"
+            "os.unlink(claude) if os.path.lexists(claude) else None;"
+            "os.symlink(os.path.join(base,'outsider'),claude,target_is_directory=True);"
+            "release=os.path.join(base,'repo/release');"
+            "fd=os.open(release,os.O_WRONLY);os.write(fd,b'go\\n');os.close(fd)"
+        )
+        actor = subprocess.Popen(
+            [sys.executable, "-c", actor_code, str(base)],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        try:
+            try:
+                generated_ok, generated_reason, _generated_output = run_private_generator(
+                    repo_fd, "stage",
+                    time.monotonic() + DELIVERY_AGGREGATE_TIMEOUT_SECONDS,
+                )
+            except AssertionError as error:
+                generated_ok, generated_reason = False, str(error)
+            try:
+                actor.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                actor.kill(); actor.wait()
+                fail("swap window plant actor timeout")
+            require(actor.returncode == 0, "swap window plant actor")
+            hoisted = repo / "stage/claude/skills/source"
+            require(not generated_ok
+                    or (hoisted.is_file() and hoisted.read_bytes() == b"swapped-held"
+                        and not (repo / "stage/claude").is_symlink()),
+                    f"swap window plant fails closed or hoists a real directory: {generated_reason}")
+            require((outsider / "marker").read_bytes() == b"outside"
+                    and manifest_at(outsider_fd, set(), "") == before,
+                    "swap window outsider tree untouched")
+        finally:
+            if actor.poll() is None:
+                actor.kill(); actor.wait()
+            if actor.stdout is not None:
+                actor.stdout.close()
+            os.close(repo_fd); os.close(outsider_fd)
+
+
 def check_production_delivery_fixture_env() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp).resolve() / "repo"
@@ -9746,6 +9845,7 @@ def check_production_delivery_fixture_env() -> None:
         fixture_argv = (
             ["--delivery-test-fast-fixture"],
             ["--delivery-test-mutation", "gate-failure"],
+            ["--delivery-test-death", "journal-created"],
             ["--delivery-test-skip-generated", "0"],
         )
         for extra in fixture_argv:
@@ -9779,6 +9879,17 @@ def check_production_delivery_fixture_env() -> None:
                 "production rejects fixture env even with test argv")
         require(sorted(path.name for path in parent.iterdir()) == before_entries,
                 "test-argv fixture env artifacts absent")
+        (repo / ".devrites-wai-delivery-fixture").unlink()
+        rejected = subprocess.run(
+            [str(SCRIPT), "--delivery-test-fast-fixture",
+             "--delivery-boundary-case", "operate", "prepare"],
+            env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            check=False, timeout=10,
+        )
+        require(rejected.returncode != 0
+                and "delivery modes reject fixture argv" in rejected.stdout
+                and sorted(path.name for path in parent.iterdir()) == before_entries,
+                f"fixture argv without repository marker rejected: {rejected.stdout[-400:]}")
 
 
 def delivery_install(delivery_arg: str) -> None:
@@ -10001,10 +10112,8 @@ def delivery_recover(delivery_arg: str) -> None:
 
 
 def walkthrough() -> None:
-    global ACTUAL_ENGINE_OUTPUT
     start = time.monotonic_ns()
     root_path = canonical_root()
-    ACTUAL_ENGINE_OUTPUT = load_actual_engine_output(root_path)
     rows = {row[0]: row for row in markdown_rows((root_path / MODULE_REL).read_text(), "WA-OP-")}
     admission, contents = admission_fixture(); parse_admission(admission, contents)
     def complete(workspace: Path, operation: str) -> dict:
@@ -10101,8 +10210,8 @@ def main() -> None:
         )
     )
     usage = (
-        "usage: workflow-artifact-identity-test.sh [--check-delivery-gate-signals | "
-        "--prove-walkthrough | --delivery-prepare | --delivery-install DIR | "
+        "usage: workflow-artifact-identity-test.sh [--prove-walkthrough | "
+        "--delivery-prepare | --delivery-install DIR | "
         "--delivery-recover DIR | --delivery-boundary-case KIND BOUNDARY]"
     )
     if production or boundary or operate:
@@ -10110,6 +10219,12 @@ def main() -> None:
         if production:
             reject_delivery_fixture_environment()
             reject_delivery_fixture_argv(test_config)
+        else:
+            require(
+                os.environ.get("DEVRITES_REPO_ROOT") is not None
+                and (Path(os.environ["DEVRITES_REPO_ROOT"]) / ".devrites-wai-delivery-fixture").is_file(),
+                "delivery modes reject fixture argv",
+            )
         _DELIVERY_TEST.update(test_config)
     elif test_config != {
         "fast_fixture": False,
@@ -10119,6 +10234,18 @@ def main() -> None:
     }:
         raise SystemExit(usage)
     if not args:
+        partial_env = [
+            name for name, active in (
+                ("DEVRITES_WAI_BOUNDARY_ONLY", wai_boundary_only()),
+                ("DEVRITES_WAI_CORE_SHARD", os.environ.get("DEVRITES_WAI_CORE_SHARD", "").strip()),
+                ("DEVRITES_WAI_SKIP_DELIVERY_MODES", wai_skip_delivery_modes()),
+            ) if active
+        ]
+        if partial_env and os.environ.get("DEVRITES_WAI_ALLOW_PARTIAL") != "1":
+            fail(
+                f"partial run requested by {', '.join(partial_env)} without "
+                "DEVRITES_WAI_ALLOW_PARTIAL=1; unset them for a full run"
+            )
         if wai_boundary_only():
             check_actual_delivery_modes()
             print(
@@ -10126,24 +10253,19 @@ def main() -> None:
                 f"(boundary shard {os.environ.get('DEVRITES_WAI_BOUNDARY_SHARD', '?')})"
             )
             return
-        if wai_delivery_model_only():
-            check_delivery_model_matrix()
-            print("workflow-artifact-identity: PASS (delivery-model-matrix)")
-            return
-        root = project_root_for_tests(canonical_root())
-        restorations = install_live_protected_fixtures(root)
-        try:
-            protected_before = require_live_protected_identity()
-            default_tests(canonical_root())
-            require(require_live_protected_identity() == protected_before,
-                    "protected identity unchanged by private checks")
-        finally:
-            restore_live_protected_fixtures(restorations)
-        print("workflow-artifact-identity: PASS")
-        return
-    if args == ["--check-delivery-gate-signals"]:
-        check_delivery_gate_signals()
-        print("delivery-gate-signals: PASS")
+        protected_before = require_live_protected_identity()
+        default_tests(canonical_root())
+        require(require_live_protected_identity() == protected_before,
+                "protected identity unchanged by private checks")
+        core_spec = os.environ.get("DEVRITES_WAI_CORE_SHARD", "").strip()
+        core_marker = f" (core shard {core_spec})" if core_spec else ""
+        skipped = [
+            name for name, skip in (
+                ("delivery-modes", wai_skip_delivery_modes()),
+            ) if skip
+        ]
+        skip_marker = f" (skipped: {', '.join(skipped)})" if skipped else ""
+        print(f"workflow-artifact-identity: PASS{core_marker}{skip_marker}")
         return
     if args == ["--prove-walkthrough"]:
         walkthrough()

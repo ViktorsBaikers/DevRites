@@ -43,18 +43,24 @@ def load_corpus() -> dict:
         "new-activation-budget",
     }
     vocabulary = data.get("process_vocabulary")
+    jobs = data.get("job_vocabulary")
     scenarios = data.get("scenarios")
     if data.get("version") != 1 or not isinstance(vocabulary, list) or not vocabulary:
         raise ValueError("corpus must declare version 1 and a non-empty process vocabulary")
+    if not isinstance(jobs, list) or not jobs:
+        raise ValueError("corpus must declare a non-empty job vocabulary")
     if not isinstance(scenarios, list) or len(scenarios) != len(required_ids) or {item.get("id") for item in scenarios} != required_ids:
         raise ValueError("corpus must contain the required loop-control scenarios exactly once")
     known = set(vocabulary)
+    known_jobs = set(jobs)
     for item in scenarios:
         required = {"id", "title", "state", "request", "expected_process", "expected_job", "forbidden"}
         if set(item) != required:
             raise ValueError(f"{item.get('id', '<unknown>')}: invalid scenario fields")
         if not item["expected_process"] or not set(item["expected_process"]).issubset(known):
             raise ValueError(f"{item['id']}: expected_process uses an unknown value")
+        if not isinstance(item["expected_job"], str) or item["expected_job"] not in known_jobs:
+            raise ValueError(f"{item['id']}: expected_job uses an unknown value")
         if not isinstance(item["forbidden"], list):
             raise ValueError(f"{item['id']}: forbidden must be an array")
     return data
@@ -389,6 +395,9 @@ def main() -> int:
         report_path = pathlib.Path(args.report)
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(json.dumps(report, indent=2) + "\n")
+        if report["summary"]["valid_trials"] == 0:
+            print(f"native-host-loop-evals: FAIL: no valid trials; report written to {report_path}", file=sys.stderr)
+            return 1
         print(f"native-host-loop-evals: wrote sanitized report to {report_path}")
         return 0
     except (OSError, ValueError, RuntimeError) as error:

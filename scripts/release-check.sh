@@ -39,10 +39,11 @@ if compgen -G "dist/devrites-v*.tar.gz" >/dev/null; then
   done
   ok "release tarball checksums present"
 else
-  echo "skip: no dist/devrites-v*.tar.gz tarball built yet"
+  echo "missing release tarball: no dist/devrites-v*.tar.gz; build it before release-check" >&2
+  exit 1
 fi
 
-python3 - <<'PY' >/tmp/devrites-release-plugin-refs.log
+if ! python3 - <<'PY' >/tmp/devrites-release-plugin-refs.log
 from pathlib import Path
 bad = []
 for root in [Path('README.md'), Path('install.sh'), Path('update.sh'), Path('bin'), Path('package.json')]:
@@ -60,7 +61,7 @@ if bad:
     print('\n'.join(bad))
 raise SystemExit(1 if bad else 0)
 PY
-if [[ -s /tmp/devrites-release-plugin-refs.log ]]; then
+then
   echo "unexpected plugin/marketplace install language (DevRites ships by npx only):" >&2
   cat /tmp/devrites-release-plugin-refs.log >&2
   exit 1

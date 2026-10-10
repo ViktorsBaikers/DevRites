@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/devrites/devrites/internal/hostpack"
 )
@@ -28,12 +29,18 @@ func (r *runner) uninstall() error {
 		return err
 	}
 
+	// Per-path would-be content for a dry run; a nil value means the file
+	// would be removed.
+	dryTree := map[string][]byte{}
 	for _, rel := range entries {
 		merge, ok := hostpack.ManagedMergeForMarker(rel)
 		if !ok {
 			continue
 		}
 		if r.opts.DryRun {
+			if err := dryRunStripMarker(dryTree, r.target, merge); err != nil {
+				return err
+			}
 			fmt.Fprintf(r.opts.Stdout, "  [merge-remove] %s\n", merge.DryRun)
 			continue
 		}
@@ -44,7 +51,7 @@ func (r *runner) uninstall() error {
 			return err
 		}
 		if merge.MarkerRel == hostpack.LegacyCodexHooksMerge.MarkerRel {
-			if err := stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
+			if err := r.stripHooksConfined(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
 				return fmt.Errorf("strip hooks from %s: %w", merge.TargetRel, err)
 			}
 			continue
@@ -55,7 +62,7 @@ func (r *runner) uninstall() error {
 			}
 			continue
 		}
-		if err := stripMarkerPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End); err != nil {
+		if err := r.stripMarkerConfined(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End); err != nil {
 			return fmt.Errorf("strip marker block from %s: %w", merge.TargetRel, err)
 		}
 		// The Codex and pi AGENTS.md blocks share one target; record the strip
@@ -82,7 +89,7 @@ func (r *runner) uninstall() error {
 				if err := r.recheckPath(rel); err != nil {
 					return err
 				}
-				if err := os.Remove(dest); err != nil && !os.IsNotExist(err) {
+				if err := r.removeConfined(dest); err != nil && !os.IsNotExist(err) {
 					return fmt.Errorf("remove %s: %w", rel, err)
 				}
 			}
@@ -98,7 +105,7 @@ func (r *runner) uninstall() error {
 		if err := r.recheckPath(ManifestName); err != nil {
 			return err
 		}
-		_ = os.Remove(mf)
+		_ = r.removeConfined(mf)
 		dirs = append(dirs, filepath.Dir(mf))
 		for _, d := range dirs {
 			pruneEmptyDirs(d, r.target)
@@ -123,5 +130,37 @@ func (r *runner) uninstall() error {
 	if exists(filepath.Join(r.target, ".scratch", "parallel-wt")) {
 		fmt.Fprintln(r.opts.Stdout, "  kept .scratch/parallel-wt/ (live parallel worktrees — inspect before removing)")
 	}
+	return nil
+}
+
+// dryRunStripMarker runs the real marker strip against an in-memory view of
+// the target (tree), so a dry run follows the same sequence as the real
+// uninstall and reports the same errors without writing anything.
+func dryRunStripMarker(tree map[string][]byte, target string, merge hostpack.ManagedMerge) error {
+	if merge.MarkerRel == hostpack.LegacyCodexHooksMerge.MarkerRel || merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
+		return nil
+	}
+	path := filepath.Join(target, filepath.FromSlash(merge.TargetRel))
+	data, seen := tree[path]
+	if !seen {
+		var err error
+		// #nosec G304 -- managed file path from the install manifest
+		if data, err = os.ReadFile(path); err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return fmt.Errorf("strip marker block from %s: read %s: %w", merge.TargetRel, path, err)
+		}
+	} else if data == nil {
+		return nil
+	}
+	next, err := hostpack.StripMarkerBlock(data, merge.Begin, merge.End)
+	if err != nil {
+		return fmt.Errorf("strip marker block from %s: %w in %s; fix it and rerun", merge.TargetRel, err, path)
+	}
+	if strings.TrimSpace(string(next)) == "" {
+		next = nil
+	}
+	tree[path] = next
 	return nil
 }

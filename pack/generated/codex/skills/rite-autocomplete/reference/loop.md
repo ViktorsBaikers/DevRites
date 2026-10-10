@@ -63,7 +63,7 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 | --- | --- | --- |
 | 1 | `$rite-spec` | investigate and write testable intent |
 | 2 | `$rite-clarify` | topology-first scan; require `Decision coverage: CLEAR`, then arm AFK |
-| 3 | `$rite-temper` | harden, reduce, or expand; irreversible risk still pauses |
+| 3 | `$rite-temper` | harden or reduce; `expand` and extra acceptance stop for a human; irreversible risk still pauses |
 | 4 | `$rite-define` | approved plan/tasks/traceability |
 | 5 | `$rite-vet` | every plan; derive mutable budget after READY |
 | 6 | `$rite-build` batch loop | largest eligible path-disjoint set (cap: this invocation's `--parallel N`, else sentinel `max_parallel`, else 10; one-slice round when <2 eligible); recompute after each round; charge once per green built slice |

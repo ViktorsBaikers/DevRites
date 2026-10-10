@@ -1,13 +1,16 @@
 package main_test
 
 // Golden CLI harness: run `devrites-engine <args>` against a fixture and compare its
-// stdout and exit code to a recorded snapshot under testdata/golden. The snapshots
-// were captured from the commands once they were proven correct, so a later change
-// that alters observable behaviour fails here. Regenerate them deliberately with
-// UPDATE_GOLDEN=1 (e.g. `UPDATE_GOLDEN=1 go test ./...`).
+// stdout, stderr and exit code to a recorded snapshot under testdata/golden. The
+// snapshots were captured from the commands once they were proven correct, so a later
+// change that alters observable behaviour fails here. Regenerate them deliberately
+// with UPDATE_GOLDEN=1 (e.g. `UPDATE_GOLDEN=1 go test ./...`).
 //
-// stderr is not captured because it is diagnostic rather than contractual. Only
-// stdout (the output the hook/command consumer reads) and the exit code are.
+// stdout (the output the hook/command consumer reads) and the exit code are the
+// contract; stderr is the operator-facing diagnostic and is recorded too, as a
+// labelled section after the exit line, whenever the command wrote any. A refusal
+// whose explanation is dropped, reworded or moved to stdout then fails here instead
+// of passing as an exit code alone.
 
 import (
 	"bytes"
@@ -33,18 +36,30 @@ func writeFile(t *testing.T, workdir, rel, content string) {
 	testutil.WriteFile(t, filepath.Join(workdir, rel), content)
 }
 
+// lastStderr is the stderr of the most recent runArgv call, with the fixture's
+// temp workdir masked so the snapshot stays reproducible. assertGolden appends it
+// to the compared text when it is non-empty.
+var lastStderr string
+
 // assertGolden compares a command's output to the golden file for the current
 // subtest name; assertGoldenKey does the same under an explicit key (for tests
 // that snapshot more than one artifact, e.g. stdout plus a rewritten file).
 func assertGolden(t *testing.T, stdout string, code int) {
 	t.Helper()
-	assertGoldenKey(t, t.Name(), fmt.Sprintf("exit %d\n%s", code, stdout))
+	got := fmt.Sprintf("exit %d\n%s", code, stdout)
+	if lastStderr != "" {
+		if !strings.HasSuffix(got, "\n") {
+			got += "\n"
+		}
+		got += "--- stderr ---\n" + lastStderr
+	}
+	assertGoldenKey(t, t.Name(), got)
 }
 
 func assertGoldenKey(t *testing.T, key, got string) {
 	t.Helper()
 	path := filepath.Join(engineRoot, "testdata", "golden", key+".golden")
-	if os.Getenv("UPDATE_GOLDEN") != "" {
+	if os.Getenv("UPDATE_GOLDEN") == "1" {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -64,7 +79,8 @@ func assertGoldenKey(t *testing.T, key, got string) {
 }
 
 // runArgv runs one command in workdir with extra env, returning stdout and exit
-// code. A non-ExitError failure (e.g. binary not found) fails the test.
+// code. A non-ExitError failure (e.g. binary not found) fails the test. The
+// command's stderr is kept in lastStderr for assertGolden.
 func runArgv(t *testing.T, workdir string, env []string, stdin string, name string, args ...string) (stdout string, code int) {
 	t.Helper()
 	cmd := exec.Command(name, args...)
@@ -82,5 +98,16 @@ func runArgv(t *testing.T, workdir string, env []string, stdin string, name stri
 		}
 		code = ee.ExitCode()
 	}
+	// Some diagnostics embed the fixture's temp workdir (e.g. the close-out
+	// clobber refusal). Mask it, and the symlink-resolved form the engine prints
+	// instead, so the recorded snapshot stays reproducible.
+	stderr := errBuf.String()
+	if workdir != "" {
+		if resolved, err := filepath.EvalSymlinks(workdir); err == nil && resolved != workdir {
+			stderr = strings.ReplaceAll(stderr, resolved, "<workdir>")
+		}
+		stderr = strings.ReplaceAll(stderr, workdir, "<workdir>")
+	}
+	lastStderr = stderr
 	return out.String(), code
 }

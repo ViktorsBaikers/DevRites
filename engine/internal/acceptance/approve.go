@@ -21,12 +21,17 @@ type ApprovedCommand struct {
 // other section approves execution — fenced examples, prose mentions, and
 // consumptive-action rows are not re-runnable oracles. A test plan without
 // the section approves nothing, so every runnable gate stays unapproved.
+//
+// The result is never nil: an absent, unreadable, or unparsable plan yields an
+// empty surface rather than an absent one, because "approvals could not be
+// determined" must be a value the caller can refuse on, never a nil that reads
+// as "no approval is applicable".
 func ApprovedCommands(testPlan []byte) []ApprovedCommand {
+	approved := []ApprovedCommand{}
 	structural, err := markdowntext.Structural(testPlan)
 	if err != nil {
-		return nil
+		return approved
 	}
-	var approved []ApprovedCommand
 	inSection := false
 	commandCol, cwdCol := -1, -1
 	for _, line := range strings.Split(string(structural), "\n") {

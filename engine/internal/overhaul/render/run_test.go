@@ -9,8 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/overhaul/score"
 )
 
 const (
@@ -98,6 +101,8 @@ func fixture(t *testing.T, withPlan bool) (run, gen string) {
 		"thresholds": []any{
 			obj{"scope": "global", "value": obj{"exact": "1/2", "decimal": "0.5"}, "min": "97/10", "result": "FAIL"},
 			obj{"scope": "lane backend", "value": obj{"exact": "487/50", "decimal": "9.74"}, "min": "97/10", "result": "PASS"},
+			obj{"scope": "domain correctness", "value": obj{"exact": "5/2"}, "min": "9", "result": "FAIL"},
+			obj{"scope": "domain security", "value": obj{"exact": "19/2"}, "min": "9", "result": "PASS"},
 		},
 		"gates": obj{"G-THRESHOLDS": "FAIL", "G-MANDATORY": "FAIL", "G-COVERAGE": "PASS", "G-ORACLES": "UNKNOWN"},
 	})
@@ -195,6 +200,27 @@ func TestMarkdownEscapesAndHomeRedacted(t *testing.T) {
 		if strings.Contains(page, fakeHome) || !strings.Contains(page, "~/proj/a.go") {
 			t.Fatal("home path not redacted")
 		}
+	}
+}
+
+func TestMarkdownCellDropsCarriageReturns(t *testing.T) {
+	run, gen := fixture(t, true)
+	var f obj
+	b, err := os.ReadFile(filepath.Join(gen, "findings.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(b, &f); err != nil {
+		t.Fatal(err)
+	}
+	f["findings"].([]any)[0].(obj)["failing_scenario"] = "line one\r\n# HEADING\r\n```\rlone"
+	writeJSON(t, filepath.Join(gen, "findings.json"), f)
+	_, md := renderKind(t, run, gen, "report")
+	if strings.Contains(md, "\r") {
+		t.Fatal("markdown cell carries a carriage return")
+	}
+	if !strings.Contains(md, "line one # HEADING ``` lone") {
+		t.Fatal("line breaks not collapsed to single spaces")
 	}
 }
 
@@ -328,12 +354,16 @@ func TestSummaryAnswersFirst(t *testing.T) {
 		`<li class="t-warn"><span class="mark">?</span><span>Regression tests are not proven red then green<br><code>G-ORACLES · UNKNOWN</code>`,
 		`1 other gate passes.`,
 		// confirmed findings by severity (the opportunity F-2 is not a finding)
-		`<h2>1 confirmed finding</h2>`, `<a href="#findings">High</a> <strong>1</strong>`,
+		`<h2>1 open finding</h2>`, `<a href="#findings">High</a> <strong>1</strong>`,
+		`role="img" aria-label="Open findings by severity"><title>Open findings by severity</title>`,
 		`<a href="#decide">Decide on the repair plan</a> <span class="muted">2 tasks proposed</span>`,
 	} {
 		if !strings.Contains(hero, want) {
 			t.Errorf("summary lacks %s", want)
 		}
+	}
+	if strings.Contains(hero, "Confirmed findings by severity") {
+		t.Error("severity bar label still says confirmed findings")
 	}
 	if !strings.Contains(h, `<span class="pill t-bad">NOT_READY</span></header>`) {
 		t.Error("top bar verdict pill missing")
@@ -347,6 +377,16 @@ func TestSummaryAnswersFirst(t *testing.T) {
 	}
 	if !strings.Contains(h, `<details id="records" class="records">`) || strings.Index(h, `<details id="records"`) > strings.Index(h, `<section id="coverage">`) {
 		t.Error("record tables belong in the collapsed appendix")
+	}
+	// The appendix count names what it counts: sections, not tables, since a
+	// card-list section emits no <table>. It must equal the sections emitted.
+	ap := h[strings.Index(h, `<details id="records"`):]
+	m := regexp.MustCompile(`<summary>All records <span class="count">(\d+) sections</span></summary>`).FindStringSubmatch(ap)
+	if m == nil {
+		t.Fatal("appendix summary must count sections")
+	}
+	if n := strconv.Itoa(strings.Count(ap, "<section ")); m[1] != n {
+		t.Errorf("appendix states %s sections but emits %s", m[1], n)
 	}
 }
 
@@ -379,6 +419,28 @@ func TestGapCharts(t *testing.T) {
 		if !strings.Contains(gaps, want) {
 			t.Errorf("gap map lacks %s", want)
 		}
+	}
+	// A cell with no score is drawn gx and the legend names that bucket.
+	if strings.Contains(gaps, `class="cell gx"`) {
+		t.Fatal("control: every fixture cell is scored")
+	}
+	b, err := os.ReadFile(filepath.Join(gen, "scorecard.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sc obj
+	if err := json.Unmarshal(b, &sc); err != nil {
+		t.Fatal(err)
+	}
+	delete(sc["lanes"].(obj)["backend"].(obj)["domains"].(obj), "security")
+	writeJSON(t, filepath.Join(gen, "scorecard.json"), sc)
+	h, _ = renderKind(t, run, gen, "review")
+	gaps = sectionHTML(t, h, "gaps")
+	if !strings.Contains(gaps, `class="cell gx"`) {
+		t.Fatal("a lane domain without a score should be drawn gx")
+	}
+	if !strings.Contains(gaps, `<li><span class="key gx"></span>not scored</li>`) {
+		t.Error("gap map legend lacks a row for unscored cells")
 	}
 	loss := sectionHTML(t, h, "losses")
 	if !strings.Contains(loss, `1 of 1 failing</span>`) || !strings.Contains(loss, `0 of 1 failing · 1 without evidence</span>`) {
@@ -462,5 +524,405 @@ func TestThemeTokens(t *testing.T) {
 	}
 	if strings.Contains(css, "url(") || strings.Contains(css, "@import") || strings.Contains(css, "@font-face") {
 		t.Error("stylesheet references an external resource")
+	}
+}
+
+// A threshold minimum that is recorded but cannot be read must be
+// reported as unknown. Substituting the renderer's own policy constant prints a
+// number the record never held, and the hero then states "met" against it.
+func TestUnreadableMinimumIsNotSubstituted(t *testing.T) {
+	run, gen := fixture(t, true)
+
+	// Control: this run's parseable minimum still drives the hero. Without this
+	// the assertions below could pass because the page printed nothing.
+	h, _ := renderKind(t, run, gen, "review")
+	hero := heroOf(t, h)
+	if !strings.Contains(hero, `Target 9.70 · 9.20 to go`) {
+		t.Fatalf("control: a parseable minimum must still print a numeric target, got %s", hero)
+	}
+
+	// Same run, same score, recorded minimum replaced by one this renderer
+	// cannot parse ("nine point seven").
+	b, err := os.ReadFile(filepath.Join(gen, "scorecard.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sc obj
+	if err := json.Unmarshal(b, &sc); err != nil {
+		t.Fatal(err)
+	}
+	sc["thresholds"].([]any)[0].(obj)["min"] = "nine point seven"
+	writeJSON(t, filepath.Join(gen, "scorecard.json"), sc)
+
+	h, _ = renderKind(t, run, gen, "review")
+	hero = heroOf(t, h)
+
+	// The hero still reports the score: this is not a page that printed nothing.
+	if !strings.Contains(hero, `<p class="hero-num">0.50<span> / 10</span></p>`) {
+		t.Errorf("hero lost its score line: %s", hero)
+	}
+	// The unreadable minimum is reported as unknown, in the text and in the
+	// bar's text alternative.
+	for _, want := range []string{
+		`Target not recorded`,
+		`aria-label="Global score 0.50 of 10, target not recorded"`,
+	} {
+		if !strings.Contains(hero, want) {
+			t.Errorf("hero must report an unreadable minimum as unknown, lacks %s: %s", want, hero)
+		}
+	}
+	// No substituted number is printed as the target.
+	if m := regexp.MustCompile(`Target\s+[0-9]`).FindString(hero); m != "" {
+		t.Errorf("hero printed a numeric target %q for an unreadable minimum", m)
+	}
+	if m := regexp.MustCompile(`aria-label="Global score [^"]*target [0-9]`).FindString(hero); m != "" {
+		t.Errorf("global bar labelled with a numeric target %q for an unreadable minimum", m)
+	}
+	// The record still shows the raw minimum, so the reader sees what was unread.
+	if !strings.Contains(h, `nine point seven`) {
+		t.Error("the scorecard record should still print the raw minimum")
+	}
+}
+
+func heroOf(t *testing.T, h string) string {
+	t.Helper()
+	i := strings.Index(h, `<header id="summary" class="hero">`)
+	if i < 0 {
+		t.Fatal("hero missing")
+	}
+	return h[i : i+strings.Index(h[i:], "</header>")]
+}
+
+// A scope with no recorded minimum must not borrow the renderer's policy
+// constants: the view states the target is unknown and prints no number for it.
+func TestAbsentMinimumIsNotSubstituted(t *testing.T) {
+	run, gen := fixture(t, true)
+	b, err := os.ReadFile(filepath.Join(gen, "scorecard.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sc obj
+	if err := json.Unmarshal(b, &sc); err != nil {
+		t.Fatal(err)
+	}
+	// The global row loses its min, the lane row is dropped, and the domain
+	// rows are dropped, so no scope records a minimum.
+	rows := sc["thresholds"].([]any)
+	delete(rows[0].(obj), "min")
+	sc["thresholds"] = rows[:1]
+	writeJSON(t, filepath.Join(gen, "scorecard.json"), sc)
+
+	h, _ := renderKind(t, run, gen, "review")
+	hero := heroOf(t, h)
+	for _, want := range []string{
+		`<p class="hero-num">0.50<span> / 10</span></p>`,
+		`Target not recorded`,
+		`aria-label="Global score 0.50 of 10, target not recorded"`,
+	} {
+		if !strings.Contains(hero, want) {
+			t.Errorf("hero lacks %s: %s", want, hero)
+		}
+	}
+	if m := regexp.MustCompile(`Target\s+[0-9]|target [0-9]`).FindString(hero); m != "" {
+		t.Errorf("hero printed a substituted target %q: %s", m, hero)
+	}
+	gaps := sectionHTML(t, h, "gaps")
+	if m := regexp.MustCompile(`floor [0-9]`).FindString(gaps); m != "" {
+		t.Errorf("gap map printed a substituted floor %q", m)
+	}
+	if !strings.Contains(gaps, "floor not recorded") {
+		t.Error("gap map should say the floor is not recorded")
+	}
+	// A cell with no floor has no gap to colour: it must not land in a gap bucket.
+	if m := regexp.MustCompile(`<td class="cell (g[0-4])"`).FindString(gaps); m != "" {
+		t.Errorf("gap map placed a no-floor cell in a gap bucket: %s", m)
+	}
+	if !strings.Contains(gaps, `<td class="cell c-unk">`) {
+		t.Error("a no-floor cell should render with the neutral unknown class")
+	}
+}
+
+func renderWithGates(t *testing.T, withPlan bool, gates obj) string {
+	t.Helper()
+	run, gen := fixture(t, withPlan)
+	b, err := os.ReadFile(filepath.Join(gen, "scorecard.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sc obj
+	if err := json.Unmarshal(b, &sc); err != nil {
+		t.Fatal(err)
+	}
+	sc["gates"] = gates
+	writeJSON(t, filepath.Join(gen, "scorecard.json"), sc)
+	h, _ := renderKind(t, run, gen, "review")
+	return heroOf(t, h)
+}
+
+func passing(ids []string) obj {
+	g := obj{}
+	for _, id := range ids {
+		g[id] = "PASS"
+	}
+	return g
+}
+
+// A gate record that omits gates must never read as "nothing blocks": every
+// gate the run's mode requires and the record lacks is named as not recorded.
+func TestIncompleteGateRecordDoesNotClearReadiness(t *testing.T) {
+	audit, repair := score.GateIDs(false), score.GateIDs(true)
+	if len(audit) != 10 || len(repair) != 19 {
+		t.Fatalf("expected 10 audit and 19 remediation gates, got %d and %d", len(audit), len(repair))
+	}
+
+	// One gate recorded on a remediation run: the other eighteen are named.
+	hero := renderWithGates(t, true, obj{"G-THRESHOLDS": "PASS"})
+	if strings.Contains(hero, "Nothing blocks readiness") {
+		t.Errorf("a one-gate record cleared readiness: %s", hero)
+	}
+	for _, id := range repair[1:] {
+		if !strings.Contains(hero, "<code>"+id+" · NOT_RECORDED</code>") {
+			t.Errorf("hero does not name the absent gate %s: %s", id, hero)
+		}
+	}
+	if strings.Contains(hero, "<code>G-THRESHOLDS ·") {
+		t.Errorf("a recorded passing gate was listed as blocking: %s", hero)
+	}
+
+	// A complete audit scorecard on a remediation run lacks the repair gates.
+	hero = renderWithGates(t, true, passing(audit))
+	if strings.Contains(hero, "Nothing blocks readiness") {
+		t.Errorf("an audit scorecard cleared a remediation run: %s", hero)
+	}
+	for _, id := range repair[len(audit):] {
+		if !strings.Contains(hero, "<code>"+id+" · NOT_RECORDED</code>") {
+			t.Errorf("hero does not name the absent repair gate %s: %s", id, hero)
+		}
+	}
+	for _, id := range audit {
+		if strings.Contains(hero, "<code>"+id+" ·") {
+			t.Errorf("recorded audit gate %s listed as blocking: %s", id, hero)
+		}
+	}
+
+	// The same audit scorecard is complete for an assessment-only run, and a
+	// complete remediation record is complete for a remediation run.
+	for name, c := range map[string]struct {
+		plan bool
+		ids  []string
+	}{"assessment-only audit": {false, audit}, "remediation full": {true, repair}} {
+		if hero := renderWithGates(t, c.plan, passing(c.ids)); !strings.Contains(hero, "Nothing blocks readiness") {
+			t.Errorf("%s: a complete passing record should clear readiness: %s", name, hero)
+		}
+	}
+}
+
+func readObj(t *testing.T, path string) obj {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m obj
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatal(err)
+	}
+	return m
+}
+
+// setGates records every gate as PASS except the overrides, plus a verdict.
+func setGates(t *testing.T, gen string, over map[string]string, verdict string) {
+	t.Helper()
+	g := obj{}
+	for _, id := range score.GateIDs(true) {
+		g[id] = "PASS"
+	}
+	for k, v := range over {
+		g[k] = v
+	}
+	sc := readObj(t, filepath.Join(gen, "scorecard.json"))
+	sc["gates"], sc["readiness_verdict"] = g, verdict
+	writeJSON(t, filepath.Join(gen, "scorecard.json"), sc)
+	rj := readObj(t, filepath.Join(gen, "run.json"))
+	rj["readiness_verdict"] = verdict
+	writeJSON(t, filepath.Join(gen, "run.json"), rj)
+}
+
+func TestExcludedRangeCountsAsReviewed(t *testing.T) {
+	run, gen := fixture(t, true)
+	c := readObj(t, filepath.Join(gen, "coverage.json"))
+	c["files"].([]any)[0].(obj)["ranges"] = []any{obj{"start": 1, "end": 4, "state": "verified"}, obj{"start": 5, "end": 9, "state": "excluded"}}
+	writeJSON(t, filepath.Join(gen, "coverage.json"), c)
+	h, md := renderKind(t, run, gen, "report")
+	if reach := sectionHTML(t, h, "reach"); !strings.Contains(reach, "all reviewed") {
+		t.Errorf("excluded range shown as open: %s", reach)
+	}
+	if strings.Contains(md, "1 / 2") {
+		t.Errorf("lane coverage lists the excluded range as open")
+	}
+}
+
+func TestWaivedGateDoesNotBlock(t *testing.T) {
+	run, gen := fixture(t, true)
+	setGates(t, gen, map[string]string{"G-CONCURRENCY": "WAIVED_OPERATIONAL"}, "MEETS_TARGETS_WITH_APPROVED_DEGRADATION")
+	h, _ := renderKind(t, run, gen, "report")
+	hero := heroOf(t, h)
+	if strings.Contains(hero, "What blocks readiness") {
+		t.Errorf("approved waiver listed as blocking: %s", hero)
+	}
+	if !strings.Contains(hero, "waived with approval: G-CONCURRENCY") {
+		t.Errorf("waiver not named: %s", hero)
+	}
+}
+
+func TestNotApplicableGatesAreNotCountedAsPassing(t *testing.T) {
+	run, gen := fixture(t, true)
+	setGates(t, gen, map[string]string{"G-CONCURRENCY": "NOT_APPLICABLE", "G-PERF-TARGETS": "NOT_APPLICABLE", "G-ORACLES": "UNKNOWN"}, "NOT_READY")
+	h, _ := renderKind(t, run, gen, "report")
+	hero := heroOf(t, h)
+	if !strings.Contains(hero, "16 other gates pass · 2 not applicable") {
+		t.Errorf("blocked hero miscounts not-applicable gates: %s", hero)
+	}
+	run, gen = fixture(t, true)
+	setGates(t, gen, map[string]string{"G-CONCURRENCY": "NOT_APPLICABLE"}, "MEETS_TARGETS")
+	h, _ = renderKind(t, run, gen, "report")
+	hero = heroOf(t, h)
+	if strings.Contains(hero, "All 19 gates pass") || !strings.Contains(hero, "18 gates pass · 1 not applicable") {
+		t.Errorf("clear hero miscounts not-applicable gates: %s", hero)
+	}
+}
+
+func TestVerifiedFindingIsNotOpen(t *testing.T) {
+	run, gen := fixture(t, true)
+	f := readObj(t, filepath.Join(gen, "findings.json"))
+	f1 := f["findings"].([]any)[0].(obj)
+	f1["status"], f1["severity"] = "verified", "critical"
+	writeJSON(t, filepath.Join(gen, "findings.json"), f)
+	setGates(t, gen, nil, "MEETS_TARGETS")
+	h, _ := renderKind(t, run, gen, "report")
+	i := strings.Index(h, `<div class="strip">`)
+	strip := h[i : i+strings.Index(h[i:], "</div>")]
+	if strings.Contains(strip, "confirmed finding") || strings.Contains(strip, "Critical 1") {
+		t.Errorf("verified finding counted as open: %s", strip)
+	}
+	if !strings.Contains(strip, "0 open findings · 1 verified repaired") {
+		t.Errorf("verified repair not summarised: %s", strip)
+	}
+	if strings.Contains(h, `id="hotspots"`) {
+		t.Errorf("verified finding listed as a hotspot")
+	}
+}
+
+func TestHotspotAreaRedactsHome(t *testing.T) {
+	run, gen := fixture(t, true)
+	f := readObj(t, filepath.Join(gen, "findings.json"))
+	f["findings"].([]any)[0].(obj)["locations"] = []any{obj{"path": fakeHome + "/proj/a.go"}}
+	writeJSON(t, filepath.Join(gen, "findings.json"), f)
+	h, _ := renderKind(t, run, gen, "report")
+	if hs := sectionHTML(t, h, "hotspots"); strings.Contains(hs, "tester") {
+		t.Errorf("hotspots leak the home directory: %s", hs)
+	}
+}
+
+func TestHotspotSplitIsPrinted(t *testing.T) {
+	run, gen := fixture(t, true)
+	h, _ := renderKind(t, run, gen, "review")
+	if hs := sectionHTML(t, h, "hotspots"); !strings.Contains(hs, `High 1</span></li>`) {
+		t.Errorf("hotspot severity split not printed: %s", hs)
+	}
+}
+
+func TestLossChartSkipsApprovedNotApplicable(t *testing.T) {
+	run, gen := fixture(t, true)
+	p := filepath.Join(run, "revisions", "rubric-r1.json")
+	r := readObj(t, p)
+	r["controls"].([]any)[1].(obj)["na"] = obj{"reason": "r", "evidence": "e", "approved": true}
+	writeJSON(t, p, r)
+	h, _ := renderKind(t, run, gen, "review")
+	loss := sectionHTML(t, h, "losses")
+	if strings.Contains(loss, "without evidence") || strings.Contains(loss, `#controls">security`) {
+		t.Errorf("approved not-applicable control drawn as missing evidence: %s", loss)
+	}
+	if !strings.Contains(loss, `1 of 1 failing</span>`) {
+		t.Errorf("live control split lost: %s", loss)
+	}
+}
+
+func TestStylesheetRules(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		want []string
+		not  []string
+	}{
+		{"narrow summary reflow", []string{
+			"@media (max-width:40rem){.finding>summary,.task>summary{grid-template-columns:auto auto minmax(0,1fr)}.ftitle,.finding .where{grid-column:1/-1}}"}, nil},
+		{"forced colors keep the checked filter and legend swatches", []string{
+			"@media (forced-colors:active){.filter input:checked+label{forced-color-adjust:none;background:Highlight;color:HighlightText;border-color:Highlight}.key{forced-color-adjust:none}}"}, nil},
+		{"filter never hides a targeted finding", []string{
+			".finding:not(.s-critical):not(:target)", ".finding:not(.s-high):not(:target)", ".finding:not(.s-medium):not(:target)",
+			".finding:not(.s-low):not(:target)", ".finding:not(.s-informational):not(:target)"}, nil},
+		{"filter applies on screen only", []string{"@media screen{#findings:has(#sev-critical:checked)"}, nil},
+		{"gap legend key is not the unknown colour", []string{
+			".key.c-unk{--c:var(--unk)}.key.gx{--c:var(--track);box-shadow:inset 0 0 0 1px var(--muted)}"}, []string{".key.c-unk,.key.gx", ".key.gx{--c:var(--unk)}"}},
+		{"print keeps a closed appendix closed", []string{
+			"details::details-content{content-visibility:visible}", "details.records:not([open])::details-content{content-visibility:hidden}"}, nil},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			for _, s := range c.want {
+				if !strings.Contains(css, s) {
+					t.Errorf("stylesheet lacks %q", s)
+				}
+			}
+			for _, s := range c.not {
+				if strings.Contains(css, s) {
+					t.Errorf("stylesheet still has %q", s)
+				}
+			}
+		})
+	}
+}
+
+func TestDisclosureCue(t *testing.T) {
+	run, gen := fixture(t, true)
+	h, _ := renderKind(t, run, gen, "review")
+	for _, s := range []string{".finding[open]>summary .fid::before", ".task[open]>summary .fid::before", ".records[open]>summary::before"} {
+		if !strings.Contains(h, s) {
+			t.Errorf("no disclosure cue %q", s)
+		}
+	}
+}
+
+func TestHeadingsNest(t *testing.T) {
+	run, gen := fixture(t, true)
+	p := filepath.Join(gen, "findings.json")
+	f := readObj(t, p)
+	f["findings"].([]any)[0].(obj)["evidence"] = "trace"
+	f["findings"].([]any)[0].(obj)["actual"] = "panic"
+	f["findings"].([]any)[0].(obj)["smallest_fix"] = "guard"
+	writeJSON(t, p, f)
+	for _, kind := range []string{"review", "report"} {
+		h, _ := renderKind(t, run, gen, kind)
+		prev := 0
+		for _, m := range regexp.MustCompile(`<h([1-6])[ >]`).FindAllStringSubmatch(h, -1) {
+			lvl, _ := strconv.Atoi(m[1])
+			if prev > 0 && lvl > prev+1 {
+				t.Fatalf("%s: heading level jumps from h%d to h%d", kind, prev, lvl)
+			}
+			prev = lvl
+		}
+	}
+}
+
+func TestAppendixSectionsAreDisclosures(t *testing.T) {
+	run, gen := fixture(t, true)
+	h, _ := renderKind(t, run, gen, "report")
+	i := strings.Index(h, `<details id="records"`)
+	if i < 0 {
+		t.Fatal("appendix missing")
+	}
+	ap := h[i:]
+	secs, recs := strings.Count(ap, "<section "), strings.Count(ap, `<details class="rec"><summary>`)
+	if secs == 0 || secs != recs {
+		t.Errorf("%d sections, %d rec details", secs, recs)
 	}
 }

@@ -16,6 +16,8 @@ import (
 
 var doms = []string{"correctness", "security", "reliability", "performance", "tests", "architecture", "ux", "operations"}
 
+var fp = strings.Repeat("a", 64)
+
 func ctl(i int, d string, w any, lanes ...string) map[string]any {
 	if len(lanes) == 0 {
 		lanes = []string{"backend"}
@@ -34,7 +36,7 @@ func resOf(status map[string]string) map[string]any {
 	for k, v := range status {
 		r[k] = map[string]any{"status": v, "evidence": []string{"EV-1"}}
 	}
-	return map[string]any{"schema": "overhaul.results/1", "subject": "candidate", "results": r}
+	return map[string]any{"schema": "overhaul.results/1", "subject": "candidate", "fingerprint": fp, "results": r}
 }
 
 func passing() map[string]any {
@@ -258,6 +260,46 @@ func TestMonotonicity(t *testing.T) {
 	}
 }
 
+// Adding a FAIL or UNKNOWN control strictly lowers its own domain and never raises any domain.
+func TestAddedNonPassControlLowersItsDomain(t *testing.T) {
+	b := base()
+	top := mustScore(t, rubricOf(b), resOf(allPass(b)), passing())
+	for _, d := range doms {
+		for _, status := range []string{"FAIL", "UNKNOWN"} {
+			t.Run(d+"/"+status, func(t *testing.T) {
+				cs := append(base(), ctl(50, d, 1, "frontend", "backend"))
+				st := allPass(cs)
+				st["C-050"] = status
+				out := mustScore(t, rubricOf(cs), resOf(st), passing())
+				for _, o := range doms {
+					p := "global.domains." + o + ".exact"
+					cmp := exact(t, out, p).Cmp(exact(t, top, p))
+					if o == d && cmp >= 0 {
+						t.Fatalf("%s control did not lower %s: %s", status, d, get(out, p))
+					}
+					if cmp > 0 {
+						t.Fatalf("%s control in %s raised %s", status, d, o)
+					}
+				}
+			})
+		}
+	}
+}
+
+// A control shared by two lanes adds its weight to the global domain denominator once.
+func TestSharedControlWeightCountsOnceGlobally(t *testing.T) {
+	cs := []map[string]any{ctl(0, "correctness", 5, "frontend", "backend"), ctl(1, "correctness", 5, "backend")}
+	for _, d := range doms[1:] {
+		cs = append(cs, ctl(2+len(cs), d, 5, "frontend", "backend"))
+	}
+	st := allPass(cs)
+	st["C-001"] = "FAIL"
+	out := mustScore(t, rubricOf(cs), resOf(st), passing())
+	if got := get(out, "global.domains.correctness.exact"); got != "5/1" {
+		t.Fatalf("correctness = %s, want 5/1", got)
+	}
+}
+
 // 8. Duplicate control ids, weights off the 1/3/5 scale and unknown evaluations are invalid input.
 func TestInvalidCatalog(t *testing.T) {
 	zero := base()
@@ -476,6 +518,119 @@ func TestRubricDigestRequired(t *testing.T) {
 	} {
 		if code, _, stderr := runCLI(args...); code != 2 || !strings.Contains(stderr, "rubric") {
 			t.Fatalf("%s: exit %d %q", name, code, stderr)
+		}
+	}
+}
+
+// A results document that names no code state is invalid input: exit 2, one
+// diagnostic naming the absent field, and no scorecard written.
+func TestResultsMustIdentifyScoredState(t *testing.T) {
+	dir := t.TempDir()
+	b := base()
+	rp := writeJSON(t, dir, "r.json", rubricOf(b))
+	g := writeJSON(t, dir, "g.json", passing())
+	for i, tc := range []struct {
+		name   string
+		mutate func(map[string]any)
+		want   string
+	}{
+		{"fingerprint absent", func(r map[string]any) { delete(r, "fingerprint") }, "fingerprint"},
+		{"fingerprint null", func(r map[string]any) { r["fingerprint"] = nil }, "fingerprint"},
+		{"fingerprint empty", func(r map[string]any) { r["fingerprint"] = "" }, "fingerprint"},
+		{"fingerprint placeholder", func(r map[string]any) { r["fingerprint"] = "not-a-sha256" }, "fingerprint"},
+		{"fingerprint one short", func(r map[string]any) { r["fingerprint"] = fp[:len(fp)-1] }, "fingerprint"},
+		{"fingerprint non-hex", func(r map[string]any) { r["fingerprint"] = strings.Repeat("z", 64) }, "fingerprint"},
+		{"subject absent", func(r map[string]any) { delete(r, "subject") }, "subject"},
+		{"subject empty", func(r map[string]any) { r["subject"] = "" }, "subject"},
+		{"subject not a string", func(r map[string]any) { r["subject"] = 12 }, "subject"},
+	} {
+		res := pinned(t, rp, resOf(allPass(b)))
+		tc.mutate(res)
+		sp := writeJSON(t, dir, "s.json", res)
+		card := filepath.Join(dir, fmt.Sprintf("card-%d.json", i))
+		other := "fingerprint"
+		if tc.want == "fingerprint" {
+			other = "subject"
+		}
+		code, stdout, stderr := runCLI("--rubric", rp, "--results", sp, "--gates", g, "--out", card)
+		switch {
+		case code != 2:
+			t.Errorf("%s: exit %d, want 2 (stdout %q stderr %q)", tc.name, code, stdout, stderr)
+		case stdout != "":
+			t.Errorf("%s: published %q", tc.name, stdout)
+		case !strings.HasPrefix(stderr, "ERROR: "):
+			t.Errorf("%s: %q is not a tool diagnostic", tc.name, stderr)
+		case !strings.Contains(stderr, tc.want):
+			t.Errorf("%s: %q does not name %s", tc.name, stderr, tc.want)
+		case strings.Contains(stderr, other):
+			t.Errorf("%s: %q names %s, not %s", tc.name, stderr, other, tc.want)
+		case strings.Contains(stderr, "rubric_digest"):
+			t.Errorf("%s: the digest check fired, not the field check: %q", tc.name, stderr)
+		}
+		if _, err := os.Stat(card); err == nil {
+			t.Errorf("%s: wrote a scorecard for an unidentified code state", tc.name)
+		}
+	}
+}
+
+// The exit 2 above is the absent field, not scoring: identified results score,
+// and a failing control is a scorecard at exit 0 carrying the validated
+// fingerprint verbatim.
+func TestIdentifiedResultsStillScore(t *testing.T) {
+	dir := t.TempDir()
+	b := base()
+	rp := writeJSON(t, dir, "r.json", rubricOf(b))
+	g := writeJSON(t, dir, "g.json", passing())
+	card := filepath.Join(dir, "card.json")
+	code, stdout, stderr := runCLI("--rubric", rp, "--results", writeJSON(t, dir, "s.json", pinned(t, rp, resOf(allPass(b)))),
+		"--gates", g, "--out", card)
+	if code != 0 || stderr != "" {
+		t.Fatalf("identified results: exit %d stdout %q stderr %q", code, stdout, stderr)
+	}
+	c, err := ovio.LoadObject(card)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if get(c, "fingerprint") != fp || get(c, "subject") != "candidate" || get(c, "readiness_verdict") != "MEETS_TARGETS" {
+		t.Fatalf("scorecard %v", c)
+	}
+	st := allPass(b)
+	st[b[0]["id"].(string)] = "FAIL"
+	code, _, stderr = runCLI("--rubric", rp, "--results", writeJSON(t, dir, "f.json", pinned(t, rp, resOf(st))), "--gates", g)
+	if code != 0 || stderr != "" {
+		t.Fatalf("failing control: exit %d stderr %q", code, stderr)
+	}
+	out := mustScore(t, rubricOf(b), resOf(st), passing())
+	if get(out, "readiness_verdict") != "NOT_READY" || get(out, "fingerprint") != fp {
+		t.Fatalf("failing control: verdict %s fingerprint %s", get(out, "readiness_verdict"), get(out, "fingerprint"))
+	}
+}
+
+// compare scores both arms through the same check, so an arm that identifies no
+// code state is rejected with the arm named.
+func TestCompareArmsRequireScoredState(t *testing.T) {
+	dir := t.TempDir()
+	b := base()
+	rp := writeJSON(t, dir, "r.json", rubricOf(b))
+	arm := func(name string, identified bool) string {
+		res := pinned(t, rp, resOf(allPass(b)))
+		if !identified {
+			delete(res, "fingerprint")
+		}
+		return writeJSON(t, dir, name, res)
+	}
+	for _, tc := range []struct {
+		arm       string
+		baseline  string
+		candidate string
+	}{
+		{"baseline", arm("blank-baseline.json", false), arm("ok-candidate.json", true)},
+		{"candidate", arm("ok-baseline.json", true), arm("blank-candidate.json", false)},
+	} {
+		code, stdout, stderr := runCLI("compare", "--rubric", rp, "--baseline", tc.baseline, "--candidate", tc.candidate)
+		if code != 2 || stdout != "" || !strings.HasPrefix(stderr, "ERROR: "+tc.arm+": ") ||
+			!strings.Contains(stderr, "fingerprint") {
+			t.Fatalf("%s arm: exit %d stdout %q stderr %q", tc.arm, code, stdout, stderr)
 		}
 	}
 }

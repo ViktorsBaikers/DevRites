@@ -75,6 +75,33 @@ else
   fi
 fi
 
+# sync-version.sh must rewrite only the status block: everything else in the
+# README has to survive byte for byte, including when the blank line after the
+# status line is missing.
+scratch="$(mktemp -d)"
+trap 'rm -rf "$scratch"' EXIT
+mkdir "$scratch/scripts"
+cp scripts/sync-version.sh "$scratch/scripts/"
+cp package.json "$scratch/"
+sync_case() {
+  local name="$1" tail="$2" drop_blank="$3"
+  awk -v tail="$tail" -v drop="$drop_blank" '
+    /^\*\*Status:\*\*/ { print; if (tail != "") print tail; skip = (drop == "1"); next }
+    skip && /^$/ { skip = 0; next }
+    { print }
+  ' README.md > "$scratch/README.md"
+  grep -v -e '^\*\*Status:\*\*' -e '^landed on main\.$' "$scratch/README.md" > "$scratch/before"
+  (cd "$scratch" && bash scripts/sync-version.sh 9.9.9 >/dev/null)
+  grep -v '^\*\*Status:\*\*' "$scratch/README.md" > "$scratch/after"
+  if cmp -s "$scratch/before" "$scratch/after" && grep -q '^\*\*Status:\*\* \[`v9.9.9`\]' "$scratch/README.md"; then
+    ok "sync-version.sh rewrites only the status block ($name)"
+  else
+    no "sync-version.sh altered README text outside the status block ($name)"
+  fi
+}
+sync_case "no blank line after status" "" 1
+sync_case "wrapped two-line status" "landed on main." 0
+
 if [[ "$fail" -ne 0 ]]; then
   echo "published-version-identity-test: FAIL" >&2
   exit 1

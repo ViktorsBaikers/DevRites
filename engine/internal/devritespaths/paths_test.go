@@ -1,6 +1,7 @@
 package devritespaths
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -106,5 +107,22 @@ func TestActiveSlugRejectsPathTraversal(t *testing.T) {
 	}
 	if _, err := ActiveSlug(root); err == nil || !strings.Contains(err.Error(), "DRV-ACTIVE-SYMLINK") {
 		t.Fatalf("ActiveSlug symlink error = %v, want stable pointer diagnostic", err)
+	}
+}
+
+func TestExistingFeatureDirCheckedMissingNamesSlugAndMatchesNotExist(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "work"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	_, err := ExistingFeatureDirChecked(root, "nosuch")
+	if err == nil {
+		t.Fatal("want error for missing workspace")
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("err = %v, want errors.Is os.ErrNotExist", err)
+	}
+	if !strings.Contains(err.Error(), "nosuch") {
+		t.Fatalf("err = %q, want it to name the slug", err.Error())
 	}
 }

@@ -262,12 +262,19 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 
 	case "status":
 		if wave == "" {
+			var incomplete []string
 			for _, name := range sortedKeys(f.Waves) {
 				w := f.Waves[name]
 				fmt.Fprintf(stdout, "dispatch: wave %s state=%s roles=%d\n", name, w.State, len(w.Roles))
+				if w.State != "complete" {
+					incomplete = append(incomplete, name)
+				}
 			}
 			if len(f.Waves) == 0 {
 				fmt.Fprintln(stdout, "dispatch: no waves")
+			}
+			if len(incomplete) > 0 {
+				return fail("waves not complete: %s", strings.Join(incomplete, ","))
 			}
 			return 0
 		}

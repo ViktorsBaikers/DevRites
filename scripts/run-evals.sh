@@ -3,6 +3,9 @@
 #
 # Schema check + summary. CI runs this script to catch broken JSON, missing
 # skills, and empty/one-sided corpora. Native hosts own actual skill routing.
+# Two offline routing rules are also enforced: an explicit /name or $name
+# query must route to that skill, and a natural-language negative must not name
+# an explicit-only owner. The jq fallback checks shape only.
 #
 # Usage:
 #   scripts/run-evals.sh                         # validate every evals/*.json
@@ -50,8 +53,9 @@ for file in "${FILES[@]}"; do
   printf '== %s ==\n' "$file"
 
   if [[ "$PARSER" == "python3" ]]; then
-    if OUT=$(python3 - "$file" <<'PY'
-import json, sys, pathlib
+    if OUT=$(python3 - "$file" "$ROOT/pack/.claude/skills" <<'PY'
+import json, re, sys, pathlib
+skills_dir = pathlib.Path(sys.argv[2])
 path = pathlib.Path(sys.argv[1])
 try:
     data = json.loads(path.read_text())
@@ -83,8 +87,43 @@ for i, q in enumerate(queries if isinstance(queries, list) else []):
         trig += 1
     elif q.get("expected") == "should_not_trigger":
         noTrig += 1
+        owner = q.get("owner")
+        if "owner" not in q:
+            errors.append(f"query[{i}] missing key: owner")
+        elif owner is None:
+            if not str(q.get("owner_rationale") or "").strip():
+                errors.append(f"query[{i}] owner is null without owner_rationale")
+        elif not (
+            isinstance(owner, str)
+            and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", owner)
+            and (skills_dir / owner / "SKILL.md").is_file()
+        ):
+            errors.append(f"query[{i}] owner {owner!r} is not a skill in pack/.claude/skills")
     else:
         errors.append(f"query[{i}] invalid expected: {q.get('expected')!r}")
+        continue
+    text = str(q.get("text", ""))
+    owner = q.get("owner")
+    m = re.match(r"\s*[/$]([a-z0-9][a-z0-9-]*)(?:\s+([a-z0-9][a-z0-9-]*))?", text)
+    target = None
+    if m:
+        for cand in ([f"rite-{m.group(2)}"] if m.group(1) == "rite" and m.group(2) else []) + [m.group(1)]:
+            if (skills_dir / cand / "SKILL.md").is_file():
+                target = cand
+                break
+    if target:
+        if q["expected"] == "should_trigger" and target != data.get("skill"):
+            errors.append(f"query[{i}] explicitly invokes {target}, not {data.get('skill')}")
+        elif q["expected"] == "should_not_trigger" and owner != target:
+            errors.append(f"query[{i}] explicitly invokes {target}; owner must be {target}")
+    elif q["expected"] == "should_not_trigger" and isinstance(owner, str):
+        owner_md = skills_dir / owner / "SKILL.md"
+        if owner_md.is_file() and re.search(
+            r"^disable-model-invocation:\s*true", owner_md.read_text(), re.M
+        ):
+            errors.append(
+                f"query[{i}] owner {owner} is explicit-only; natural language has no implicit owner"
+            )
 
 if isinstance(queries, list) and queries:
     if trig == 0:

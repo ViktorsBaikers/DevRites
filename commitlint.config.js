@@ -35,7 +35,7 @@ module.exports = {
     'scope-enum': [
       2,
       'always',
-      ['skills', 'rite', 'devrites', 'agents', 'rules', 'installer', 'uninstall', 'scripts', 'docs', 'tests', 'deps', 'release', 'repo', 'ci'],
+      ['skills', 'rite', 'devrites', 'agents', 'rules', 'installer', 'uninstall', 'scripts', 'docs', 'tests', 'deps', 'deps-dev', 'release', 'repo', 'ci', 'no-release', 'readme'],
     ],
     'scope-empty': [2, 'never'],
     'scope-case': [2, 'always', 'lower-case'],

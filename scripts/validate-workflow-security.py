@@ -7,10 +7,16 @@ apply to every workflow. The check rejects workflows that:
   - use a non-local action without a full 40-character commit SHA, because a
     moving tag can change upstream code;
   - omit an explicit `permissions:` scope or use `permissions: write-all`;
-  - use `pull_request_target` outside a Dependabot-only workflow that does not
-    check out pull-request code;
+  - use `pull_request_target` (detected from the parsed `on` key) outside a workflow whose jobs (read from the parsed
+    YAML, not line-matched) are each gated on the pull-request author at job
+    level (exactly
+    `github.event.pull_request.user.login == 'dependabot[bot]'`, never
+    `github.actor`, which a re-trigger can change) and that does not check out
+    pull-request code;
   - interpolate workflow_dispatch inputs directly into a shell `run:` block;
-  - leave `: ` unquoted inside a workflow or step name, producing invalid YAML.
+  - leave `: ` unquoted inside a workflow or step name, producing invalid YAML;
+  - run commitlint without linting the pull-request title (via env) or without
+    re-running when the title is edited, because the squash subject drives releases.
 
 Usage: validate-workflow-security.py [DIR]   (default: .github/workflows)
 Exit: 0 clean; 1 on any finding.
@@ -19,95 +25,117 @@ import os
 import re
 import sys
 
+try:
+    import yaml  # type: ignore
+except ImportError:
+    sys.exit("PyYAML required: pip install -r scripts/requirements-ci.txt")
+
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 USES_RE = re.compile(r"^\s*-?\s*uses\s*:\s*([^\s#]+)")
-DEPENDABOT_ONLY_RE = re.compile(
-    r"^\s*if\s*:\s*(?:\$\{\{\s*)?"
-    r"(?:github\.actor|github\.event\.pull_request\.user\.login)\s*==\s*"
-    r"['\"]dependabot\[bot\]['\"]",
-    re.MULTILINE,
-)
+DEPENDABOT_GATE = "github.event.pull_request.user.login == 'dependabot[bot]'"
 UNQUOTED_NAME_COLON_RE = re.compile(r"^\s*(?:-\s*)?name:\s+[^'\"].*:\s+\S")
 RUN_RE = re.compile(r"^(\s*)(?:-\s*)?run\s*:\s*(.*)$")
 DISPATCH_EXPRESSION_RE = re.compile(r"\$\{\{[^}]*\binputs\b", re.IGNORECASE)
-KEY_RE = re.compile(r"^(\s*)([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*(.*)$")
+COMMITLINT_RUN_RE = re.compile(r"^\s*(?:-\s*)?(?:run\s*:\s*)?.*\bnpx\b.*\bcommitlint\b", re.MULTILINE)
+TITLE_ENV_RE = re.compile(r"^\s*\w+\s*:\s*\$\{\{\s*github\.event\.pull_request\.title\s*\}\}", re.MULTILINE)
 
 
-def jobs_without_permissions(lines):
+def trigger_configs(doc):
+    """Return the parsed `on` values. YAML 1.1 loads an unquoted `on` key as
+    boolean True, so read both spellings."""
+    return [doc[k] for k in ("on", True) if k in doc]
+
+
+def trigger_names(doc):
+    """Return the event names the workflow listens to (string, list or mapping)."""
+    names = set()
+    for on in trigger_configs(doc):
+        if isinstance(on, str):
+            names.add(on)
+        elif isinstance(on, (list, dict)):
+            names.update(k for k in on if isinstance(k, str))
+    return names
+
+
+def edited_pull_request(doc):
+    """True when the pull_request trigger lists the 'edited' type."""
+    for on in trigger_configs(doc):
+        cfg = on.get("pull_request") if isinstance(on, dict) else None
+        types = cfg.get("types") if isinstance(cfg, dict) else None
+        if isinstance(types, str):
+            types = [types]
+        if isinstance(types, list) and "edited" in types:
+            return True
+    return False
+
+
+def jobs_without_permissions(doc):
     """Return job IDs missing direct permissions, or None with a global scope."""
-    for line in lines:
-        match = KEY_RE.match(line)
-        if match and not match.group(1) and match.group(2) == "permissions":
-            return None
-
-    jobs_line = None
-    for i, line in enumerate(lines):
-        match = KEY_RE.match(line)
-        if match and not match.group(1) and match.group(2) == "jobs":
-            jobs_line = i
-            break
-    if jobs_line is None:
+    if "permissions" in doc:
+        return None
+    jobs = doc.get("jobs")
+    if not isinstance(jobs, dict) or not jobs:
         return ["<workflow>"]
-
-    job_indent = None
-    job_starts = []
-    for i in range(jobs_line + 1, len(lines)):
-        line = lines[i]
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        match = KEY_RE.match(line)
-        if not match:
-            continue
-        indent = len(match.group(1))
-        if indent == 0:
-            break
-        if job_indent is None:
-            job_indent = indent
-        if indent == job_indent:
-            job_starts.append((i, match.group(2)))
-    if not job_starts:
-        return ["<workflow>"]
-
-    missing = []
-    for position, (start, job_id) in enumerate(job_starts):
-        end = job_starts[position + 1][0] if position + 1 < len(job_starts) else len(lines)
-        property_indents = []
-        properties = []
-        for line in lines[start + 1:end]:
-            match = KEY_RE.match(line)
-            if not match:
-                continue
-            indent = len(match.group(1))
-            if indent > job_indent:
-                property_indents.append(indent)
-                properties.append((indent, match.group(2)))
-        direct_indent = min(property_indents) if property_indents else None
-        if direct_indent is None or not any(
-                indent == direct_indent and key == "permissions"
-                for indent, key in properties):
-            missing.append(job_id)
-    return missing
+    return [str(job_id) for job_id, job in jobs.items()
+            if not isinstance(job, dict) or "permissions" not in job]
 
 
-def safe_dependabot_target(text):
-    if re.search(r"^\s*-?\s*uses\s*:\s*actions/checkout@", text, re.MULTILINE):
+def safe_dependabot_target(doc):
+    """True when every job is gated exactly on the Dependabot PR author and no
+    step checks out code."""
+    jobs = doc.get("jobs")
+    if not isinstance(jobs, dict) or not jobs:
         return False
-    jobs = re.split(r"(?m)^jobs\s*:\s*(?:#.*)?$", text, maxsplit=1)
-    if len(jobs) != 2:
-        return False
-    blocks = re.split(r"(?m)^  [A-Za-z0-9_-]+\s*:\s*(?:#.*)?$", jobs[1])[1:]
-    return bool(blocks) and all(DEPENDABOT_ONLY_RE.search(block) for block in blocks)
+    for job in jobs.values():
+        if not isinstance(job, dict):
+            return False
+        gate = job.get("if")
+        if not isinstance(gate, str):
+            return False
+        gate = gate.strip()
+        if gate.startswith("${{") and gate.endswith("}}"):
+            gate = gate[3:-2].strip()
+        if gate != DEPENDABOT_GATE:
+            return False
+        steps = job.get("steps")
+        for step in steps if isinstance(steps, list) else []:
+            uses = step.get("uses") if isinstance(step, dict) else None
+            if isinstance(uses, str) and uses.strip().lower().startswith("actions/checkout"):
+                return False
+    return True
 
 
 def scan_text(path, text):
     findings = []
     lines = text.splitlines()
-    dependabot_target_is_safe = safe_dependabot_target(text)
-    unscoped_jobs = jobs_without_permissions(lines)
+    doc = None
+    try:
+        doc = yaml.safe_load(text)
+    except yaml.YAMLError as err:
+        findings.append("%s: not valid YAML (%s)" % (path, str(err).splitlines()[0]))
+    if not isinstance(doc, dict):
+        if not findings:
+            findings.append("%s: workflow is not a YAML mapping" % path)
+        doc = {}
+    dependabot_target_is_safe = safe_dependabot_target(doc)
+    unscoped_jobs = jobs_without_permissions(doc)
+    # The parsed trigger set decides; the raw-text match stays as an extra
+    # fail-closed signal for spellings the parser may resolve differently.
+    target_trigger = "pull_request_target" in trigger_names(doc)
+    target_lines = [i for i, line in enumerate(lines, 1) if "pull_request_target" in line]
+    if target_trigger and not target_lines and not dependabot_target_is_safe:
+        findings.append("%s: pull_request_target exposes secrets to untrusted PR "
+                        "code. Only a Dependabot-only workflow without checkout is allowed"
+                        % path)
     if unscoped_jobs:
         findings.append("%s: jobs without explicit permissions: %s. Add a global "
                         "least-privilege block or scope every job"
                         % (path, ", ".join(unscoped_jobs)))
+    if COMMITLINT_RUN_RE.search(text) and not (
+            edited_pull_request(doc) and TITLE_ENV_RE.search(text)):
+        findings.append("%s: commitlint must lint github.event.pull_request.title (passed "
+                        "through env) and trigger on pull_request type 'edited'. The PR "
+                        "title is the squash subject that drives releases" % path)
     for i, line in enumerate(lines, 1):
         if UNQUOTED_NAME_COLON_RE.match(line):
             findings.append("%s:%d: name has an unquoted colon. Quote the complete "
@@ -115,7 +143,7 @@ def scan_text(path, text):
         if "write-all" in line:
             findings.append("%s:%d: permissions: write-all grants too much access. "
                             "Limit it to the permissions this workflow needs" % (path, i))
-        if "pull_request_target" in line and not dependabot_target_is_safe:
+        if i in target_lines and not dependabot_target_is_safe:
             findings.append("%s:%d: pull_request_target exposes secrets to untrusted PR "
                             "code. Only a Dependabot-only workflow without checkout is allowed"
                             % (path, i))

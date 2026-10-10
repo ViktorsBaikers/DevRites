@@ -18,8 +18,9 @@ environment, credentials/approvals, and evidence limits.
 - `not-applicable`: evidence shows the dimension does not apply.
 - `deferred-nonblocking`: pre-code evidence is impossible or the item is an explicit
   non-goal; owner and validation gate are named.
+- `open`: the decision is unresolved.
 
-`Partial`, `Missing`, open, unknown, or ownerless rows never produce `CLEAR`.
+`open`, unknown, or ownerless rows never produce `CLEAR`.
 
 ## Artifact shape
 
@@ -45,7 +46,7 @@ Decision coverage: <CLEAR | NEEDS CLARIFICATION>
 | --- | --- | --- | --- |
 
 ## Readiness verdict
-No Partial, Missing, unowned material assumption, or unresolved blocking/escalating
+No `open` row, unowned material assumption, or unresolved blocking/escalating
 question remains.
 ```
 

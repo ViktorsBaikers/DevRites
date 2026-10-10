@@ -3,11 +3,13 @@ package render
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/big"
 	"sort"
 	"strings"
 
 	"github.com/devrites/devrites/internal/overhaul/ovio"
+	"github.com/devrites/devrites/internal/overhaul/score"
 )
 
 // The HTML view leads with pictures of the gaps: a score answer, a domain ×
@@ -97,20 +99,20 @@ func laneDomain(sc map[string]any, lane, domain string) *big.Rat {
 	return ratOf(ovio.Obj(ovio.Obj(ovio.Obj(ovio.Obj(sc["lanes"])[lane])["domains"])[domain]))
 }
 
-// floorFor is the scope's recorded minimum, else the skill's default.
+// floorFor is the scope's recorded minimum. It is nil when none was recorded
+// or the recorded one cannot be read, so the view says the minimum is unknown
+// instead of printing a number the record never held.
 func floorFor(sc map[string]any, scope string) *big.Rat {
-	if _, least, _ := threshold(sc, scope); least != nil {
-		return least
-	}
-	if strings.HasPrefix(scope, "domain ") {
-		return big.NewRat(9, 1)
-	}
-	return big.NewRat(97, 10)
+	_, least, _ := threshold(sc, scope)
+	return least
 }
 
 func gapClass(val, floor *big.Rat) string {
 	if val == nil {
 		return "gx"
+	}
+	if floor == nil {
+		return "c-unk" // no floor was read, so no gap can be stated
 	}
 	gap := new(big.Rat).Sub(floor, val)
 	for _, s := range gapSteps {
@@ -126,6 +128,14 @@ func f2(r *big.Rat) string {
 		return "–"
 	}
 	return floor2(r)
+}
+
+// floorText names a floor in prose: the recorded minimum, or that none was.
+func floorText(f *big.Rat) string {
+	if f == nil {
+		return "not recorded"
+	}
+	return f2(f)
 }
 
 // frac maps r/of onto 0..100 for SVG geometry.
@@ -149,8 +159,10 @@ func bullet(val, floor, base *big.Rat, cls, label string) string {
 	if base != nil && (val == nil || base.Cmp(val) != 0) {
 		fmt.Fprintf(&w, `<rect class="was" x="%.2f" y="0" width="0.8" height="10"/>`, max(0, frac(base, ten)-0.4))
 	}
-	fmt.Fprintf(&w, `<rect class="tgt" x="%.2f" y="0" width="0.6" height="10"/></svg>`, max(0, frac(floor, ten)-0.3))
-	return w.String()
+	if floor != nil {
+		fmt.Fprintf(&w, `<rect class="tgt" x="%.2f" y="0" width="0.6" height="10"/>`, max(0, frac(floor, ten)-0.3))
+	}
+	return w.String() + "</svg>"
 }
 
 // stack draws one horizontal stacked bar: segments are (class, value, label)
@@ -216,13 +228,14 @@ func (v view) summaryBlock(b *built, summary string, decide bool) string {
 	fmt.Fprintf(&w, `<h1 class="verdict %s">%s</h1>`, tone(verdict), esc(v.redact(text)))
 	if q != nil {
 		fmt.Fprintf(&w, `<p class="hero-num">%s<span> / 10</span></p>`, f2(q))
-		gap := new(big.Rat).Sub(qf, q)
-		if gap.Sign() > 0 {
+		if qf == nil {
+			w.WriteString(`<p class="muted">Target not recorded</p>`)
+		} else if gap := new(big.Rat).Sub(qf, q); gap.Sign() > 0 {
 			fmt.Fprintf(&w, `<p class="muted">Target %s · %s to go</p>`, f2(qf), f2(gap))
 		} else {
 			fmt.Fprintf(&w, `<p class="muted">Target %s · met</p>`, f2(qf))
 		}
-		w.WriteString(bullet(q, qf, scoreFor(base, "global"), gapClass(q, qf), "Global score "+f2(q)+" of 10, target "+f2(qf)))
+		w.WriteString(bullet(q, qf, scoreFor(base, "global"), gapClass(q, qf), "Global score "+f2(q)+" of 10, target "+floorText(qf)))
 	} else {
 		w.WriteString(`<p class="hero-num muted">No score yet</p>`)
 	}
@@ -232,7 +245,7 @@ func (v view) summaryBlock(b *built, summary string, decide bool) string {
 		for _, l := range lanes {
 			s, fl := scoreFor(cur, "lane "+l), floorFor(cur, "lane "+l)
 			fmt.Fprintf(&w, `<li><span class="lbl">%s</span>%s<span class="val">%s</span></li>`, esc(v.redact(l)),
-				bullet(s, fl, scoreFor(base, "lane "+l), gapClass(s, fl), l+" lane "+f2(s)+" of 10, target "+f2(fl)), f2(s))
+				bullet(s, fl, scoreFor(base, "lane "+l), gapClass(s, fl), l+" lane "+f2(s)+" of 10, target "+floorText(fl)), f2(s))
 		}
 		w.WriteString(`</ul>`)
 	}
@@ -241,18 +254,41 @@ func (v view) summaryBlock(b *built, summary string, decide bool) string {
 	}
 	w.WriteString(`</div><div class="blockers">`)
 	gates := ovio.Obj(cur["gates"])
-	var open []string
-	passing := 0
+	var open, waived []string
+	passing, na := 0, 0
 	for _, g := range sortedKeys(gates) {
 		switch pyStr(gates[g]) {
-		case "PASS", "NOT_APPLICABLE":
+		case "PASS":
 			passing++
+		case "NOT_APPLICABLE":
+			na++
+		case "WAIVED_OPERATIONAL": // score admits it only on G-CONCURRENCY with an approval
+			waived = append(waived, g)
 		default:
 			open = append(open, g)
 		}
 	}
+	// A scorecard that omits a gate its run requires has not cleared it.
+	if len(cur) > 0 {
+		absent := map[string]string{}
+		for _, g := range score.GateIDs(!ovio.Truthy(b.rj["assessment_only"])) {
+			if _, ok := gates[g]; !ok {
+				open = append(open, g)
+				absent[g] = absentGate
+			}
+		}
+		if len(absent) > 0 {
+			gates = maps.Clone(gates)
+			if gates == nil {
+				gates = map[string]any{}
+			}
+			for g, st := range absent {
+				gates[g] = st
+			}
+		}
+	}
 	if len(open) == 0 && len(gates) > 0 {
-		w.WriteString(`<h2>Nothing blocks readiness</h2><p class="muted">All ` + plural(passing, "gate passes", "gates pass") + `.</p>`)
+		w.WriteString(`<h2>Nothing blocks readiness</h2><p class="muted">` + plural(passing, "gate passes", "gates pass") + v.gateRest(na, waived) + `.</p>`)
 	} else if len(open) > 0 {
 		w.WriteString(`<h2>What blocks readiness</h2><ul class="gates">`)
 		for _, g := range open {
@@ -270,8 +306,8 @@ func (v view) summaryBlock(b *built, summary string, decide bool) string {
 				tone(st), gateMark(st), esc(v.redact(name)), esc(v.redact(g)), esc(v.redact(st)))
 		}
 		w.WriteString(`</ul>`)
-		if passing > 0 {
-			w.WriteString(`<p class="muted">` + plural(passing, "other gate passes", "other gates pass") + `.</p>`)
+		if passing+na+len(waived) > 0 {
+			w.WriteString(`<p class="muted">` + plural(passing, "other gate passes", "other gates pass") + v.gateRest(na, waived) + `.</p>`)
 		}
 	}
 	w.WriteString(`</div></div>`)
@@ -284,8 +320,24 @@ func (v view) summaryBlock(b *built, summary string, decide bool) string {
 	return w.String() + `</header>`
 }
 
+// gateRest names the gates that neither pass nor block: not applicable, or
+// waived under an approved degradation.
+func (v view) gateRest(na int, waived []string) string {
+	s := ""
+	if na > 0 {
+		s += fmt.Sprintf(" · %d not applicable", na)
+	}
+	if len(waived) > 0 {
+		s += " · waived with approval: " + esc(v.redact(strings.Join(waived, ", ")))
+	}
+	return s
+}
+
+// absentGate is the status shown for a required gate the scorecard omits.
+const absentGate = "NOT_RECORDED"
+
 func gateMark(status string) string {
-	if status == "UNKNOWN" {
+	if status == "UNKNOWN" || status == absentGate {
 		return "?"
 	}
 	return "✕"
@@ -305,14 +357,24 @@ func (b *built) scoreLanes(sc map[string]any) []string {
 	return out
 }
 
+// openFindings drops findings whose repair was independently verified.
+func openFindings(fs []map[string]any) []map[string]any {
+	return filter(fs, func(f map[string]any) bool { return ovio.Str(f["status"]) != "verified" })
+}
+
 func (v view) severityStrip(b *built) string {
 	n := map[string]int{}
-	for _, f := range b.cards["findings"] {
+	live := openFindings(b.cards["findings"])
+	for _, f := range live {
 		n[sevKey(f)]++
 	}
-	total := len(b.cards["findings"])
+	total := len(live)
+	head := plural(total, "open finding", "open findings")
+	if done := len(b.cards["findings"]) - total; done > 0 {
+		head += fmt.Sprintf(" · %d verified repaired", done)
+	}
 	var w strings.Builder
-	fmt.Fprintf(&w, `<div class="strip"><h2>%s</h2>`, plural(total, "confirmed finding", "confirmed findings"))
+	fmt.Fprintf(&w, `<div class="strip"><h2>%s</h2>`, head)
 	if total == 0 {
 		return w.String() + `<p class="muted">None recorded.</p></div>`
 	}
@@ -326,7 +388,7 @@ func (v view) severityStrip(b *built) string {
 		segs = append(segs, [3]any{"s-" + s, float64(n[s]), label})
 		keys = append(keys, [2]string{"s-" + s, fmt.Sprintf(`<a href="#findings">%s</a> <strong>%d</strong>`, sevLabel[s], n[s])})
 	}
-	w.WriteString(stack(segs, float64(total), "Confirmed findings by severity"))
+	w.WriteString(stack(segs, float64(total), "Open findings by severity"))
 	return w.String() + legend(keys...) + `</div>`
 }
 
@@ -363,7 +425,7 @@ func (v view) gapMap(b *built) string {
 		cell := func(s *big.Rat, who string) string {
 			cls := gapClass(s, fl)
 			return fmt.Sprintf(`<td class="cell %s"><span class="val">%s</span>%s</td>`, cls, f2(s),
-				bullet(s, fl, nil, cls, d+" · "+who+": "+f2(s)+" of 10, floor "+f2(fl)))
+				bullet(s, fl, nil, cls, d+" · "+who+": "+f2(s)+" of 10, floor "+floorText(fl)))
 		}
 		w.WriteString(`<tr><th scope="row"><a href="#controls">` + esc(v.redact(d)) + `</a></th>` + cell(scoreFor(cur, "domain "+d), "all lanes"))
 		for _, l := range lanes {
@@ -376,7 +438,7 @@ func (v view) gapMap(b *built) string {
 	for _, s := range gapSteps {
 		keys = append(keys, [2]string{s.cls, s.label})
 	}
-	keys = append(keys, [2]string{"tgt", "floor"})
+	keys = append(keys, [2]string{"c-unk", "floor not recorded"}, [2]string{"gx", "not scored"}, [2]string{"tgt", "floor"})
 	return w.String() + legend(keys...) + `</section>`
 }
 
@@ -394,7 +456,7 @@ func (v view) controlLoss(b *built) string {
 	for _, c := range objs(b.rubric["controls"]) {
 		d := pyStr(c["domain"])
 		st := pyStr(status[pyStr(c["id"])])
-		if st == "NOT_APPLICABLE" {
+		if c["na"] != nil || st == "NOT_APPLICABLE" {
 			continue
 		}
 		wt := 1.0
@@ -461,11 +523,11 @@ func (v view) hotspots(b *built) string {
 		score int
 	}
 	by := map[string]*spot{}
-	for _, f := range b.cards["findings"] {
+	for _, f := range openFindings(b.cards["findings"]) {
 		p := "(no location)"
 		if l := ovio.List(f["locations"]); len(l) > 0 {
 			if s := ovio.Str(ovio.Obj(l[0])["path"]); s != "" {
-				p = area(s)
+				p = area(v.redact(s))
 			}
 		}
 		s := by[p]
@@ -507,7 +569,7 @@ func (v view) hotspots(b *built) string {
 		most = max(most, s.total)
 	}
 	var w strings.Builder
-	w.WriteString(`<section id="hotspots"><h2>Where in the code</h2><p class="lede">Confirmed findings by code area, ranked by severity.</p><ul class="rows">`)
+	w.WriteString(`<section id="hotspots"><h2>Where in the code</h2><p class="lede">Open findings by code area, ranked by severity.</p><ul class="rows">`)
 	for _, s := range spots {
 		var segs [][3]any
 		var parts []string
@@ -517,8 +579,8 @@ func (v view) hotspots(b *built) string {
 				parts = append(parts, fmt.Sprintf("%s %d", sevLabel[k], s.n[k]))
 			}
 		}
-		fmt.Fprintf(&w, `<li><span class="lbl"><code>%s</code></span>%s<span class="val">%d</span></li>`, esc(v.redact(s.name)),
-			stack(segs, float64(most), s.name+": "+strings.Join(parts, ", ")), s.total)
+		fmt.Fprintf(&w, `<li><span class="lbl"><code>%s</code></span>%s<span class="val wide">%d · %s</span></li>`, esc(v.redact(s.name)),
+			stack(segs, float64(most), s.name+": "+strings.Join(parts, ", ")), s.total, esc(strings.Join(parts, ", ")))
 	}
 	w.WriteString(`</ul>`)
 	var keys [][2]string

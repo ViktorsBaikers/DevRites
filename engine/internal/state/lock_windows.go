@@ -26,6 +26,12 @@ func acquireLock(path string) (*fileLock, error) {
 	if err != nil {
 		return nil, fmt.Errorf("acquire lock: %w", err)
 	}
+	return lockOpened(f, path)
+}
+
+// lockOpened takes the LockFileEx lock on f, an already-open handle on path, and
+// confirms the lock is still the file at path.
+func lockOpened(f *os.File, path string) (*fileLock, error) {
 	l := &fileLock{f: f}
 	if ok, _, callErr := lockFileEx.Call(
 		f.Fd(),
@@ -38,7 +44,7 @@ func acquireLock(path string) (*fileLock, error) {
 		_ = f.Close()
 		return nil, fmt.Errorf("lock file %s: %w", path, callErr)
 	}
-	return l, nil
+	return confirmLock(l, path)
 }
 
 func (l *fileLock) release() error {

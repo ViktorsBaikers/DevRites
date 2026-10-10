@@ -50,16 +50,136 @@ add_problem() {
   problems+=("$2")
 }
 
+# One recogniser for "## Acceptance criteria" sections, shared by the
+# unchecked-item rule (check 2) and the ID rule (check 8); repeated sections are
+# concatenated so an item cannot hide in a later one. The unchecked rule also
+# counts sections whose heading merely starts with the title (a suffix such as
+# "(continued)" must not hide an item); the ID rule needs the exact heading.
+# Headings are matched on text with fenced code masked, so a heading inside a
+# fence does not end the section; unchecked items are counted on the raw lines so fenced text is not
+# silently ignored. Up to three leading spaces are allowed on the heading
+# (CommonMark); four or more is code, not a heading. Heading whitespace is only
+# space or tab, so other Unicode whitespace after "##" does not make a heading.
+read -r -d '' ACCEPT_PY <<'PY' || true
+from pathlib import Path
+import re
+import sys
+
+from workflow_schema import structural_markdown
+
+canonical = re.compile(r"\bAC-\d{3}\b")
+any_ac = re.compile(r"\bAC(?:-\d+|\d+)\b", re.IGNORECASE)
+heading = re.compile(r"^ {0,3}##[ \t]+Acceptance criteria[ \t]*#*[ \t]*$", re.IGNORECASE)
+heading_prefix = re.compile(r"^ {0,3}##[ \t]+Acceptance criteria", re.IGNORECASE)
+h2 = re.compile(r"^ {0,3}##[ \t]+")
+unchecked = re.compile(r"^\s*(?:[-*+]|\d{1,9}[.)])\s+\[ \]")
+
+
+def acceptance(path: Path, opening=heading) -> tuple[list[str], list[str]]:
+    if not path.is_file():
+        raise ValueError(f"{path.name} missing")
+    raw = path.read_text(encoding="utf-8")
+    masked = structural_markdown(raw, path).split("\n")
+    rows, found, inside = [], False, False
+    for i, line in enumerate(masked):
+        if opening.match(line.rstrip("\r")):
+            found = inside = True
+        elif h2.match(line):
+            inside = False
+        elif inside:
+            rows.append(i)
+    if not found:
+        raise ValueError(f'{path.name} has no "## Acceptance criteria" section')
+    raw_lines = raw.split("\n")
+    return [raw_lines[i] for i in rows], [masked[i] for i in rows]
+
+
+def sections(*paths: str, opening=heading) -> list[tuple[list[str], list[str]]]:
+    try:
+        return [acceptance(Path(p), opening) for p in paths]
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise SystemExit(str(exc))
+
+
+mode, *paths = sys.argv[1:]
+if mode == "unchecked":
+    print(sum(1 for line in sections(*paths, opening=heading_prefix)[0][0] if unchecked.match(line)))
+    raise SystemExit(0)
+
+spec, sealed = ("\n".join(masked) for _, masked in sections(*paths))
+spec_ids = canonical.findall(spec)
+seal_ids = canonical.findall(sealed)
+for name, body, ids in (("spec.md", spec, spec_ids), ("seal.md", sealed, seal_ids)):
+    invalid = sorted({token for token in any_ac.findall(body) if not canonical.fullmatch(token)})
+    if invalid:
+        raise SystemExit(f"{name} has noncanonical acceptance IDs: {' '.join(invalid)}")
+    if not ids:
+        raise SystemExit(f"{name} acceptance IDs are empty")
+    duplicates = sorted({item for item in ids if ids.count(item) > 1})
+    if duplicates:
+        raise SystemExit(f"{name} has duplicate acceptance IDs: {' '.join(duplicates)}")
+
+missing = sorted(set(spec_ids) - set(seal_ids))
+extra = sorted(set(seal_ids) - set(spec_ids))
+if missing or extra:
+    raise SystemExit(
+        "acceptance ID mismatch: missing={} extra={}".format(
+            " ".join(missing) or "none", " ".join(extra) or "none"
+        )
+    )
+PY
+acceptance_py() {
+  PYTHONPATH="$ROOT/scripts${PYTHONPATH:+:$PYTHONPATH}" python3 -c "$ACCEPT_PY" "$@"
+}
+
 # Checks 1 through 3: seal verdict, acceptance, and blockers.
 if [ ! -f "$seal" ]; then
   add_problem "final.seal.missing" "seal.md missing: feature never sealed"
 else
-  grep -qiE '^[[:space:]]*Verdict:[[:space:]]*GO[[:space:]]*$' "$seal" \
-    || add_problem "final.verdict.not-go" "seal.md Verdict is not GO"
-  unchecked=$(awk '/^## /{insec=($0 ~ /^## Acceptance Criteria/)} insec && /^- \[ \]/{c++} END{print c+0}' "$seal")
-  if [ "${unchecked:-0}" -gt 0 ]; then
-    add_problem "final.acceptance.unchecked" "seal.md has ${unchecked} unchecked acceptance criterion(s)"
+  # GO needs at least one Verdict field and every one of them GO; any other
+  # value, or a failure to read the file, is NO-GO. The field itself is read by
+  # cursor_values from validate-workspace-schema.py, so this grader and the
+  # schema validator share one rule. Quote, heading, list, checkbox and
+  # emphasis markers are removed first because a reader still sees those lines
+  # as verdicts. Fenced text is not masked, so a NO-GO inside a fence counts.
+  if ! PYTHONPATH="$ROOT/scripts${PYTHONPATH:+:$PYTHONPATH}" python3 - "$seal" "$ROOT/scripts/validate-workspace-schema.py" <<'PY'
+import importlib.util
+import re
+import sys
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("validate_workspace_schema", sys.argv[2])
+schema = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = schema
+spec.loader.exec_module(schema)
+
+marker = re.compile(r"^\s*(?:>|#{1,6}(?=\s)|\d{1,9}[.)](?=\s)|[-*+](?=\s)|\[[ xX]\](?=\s))")
+lines = []
+for line in Path(sys.argv[1]).read_text(encoding="utf-8-sig").splitlines():
+    while (found := marker.match(line)):
+        line = line[found.end():]
+    lines.append(re.sub(r"[*_]", "", line))
+values = schema.cursor_values("\n".join(lines), "Verdict")
+raise SystemExit(0 if values and all(value.lower() == "go" for value in values) else 1)
+PY
+  then
+    add_problem "final.verdict.not-go" "seal.md Verdict is not GO"
+  fi
+  # stdout is the count and nothing else; stderr is kept apart so interpreter
+  # noise cannot corrupt it, and any failure or non-numeric count is NO-GO. The
+  # digit cap keeps the integer comparisons below from overflowing into a pass.
+  accept_err="$(mktemp)"
+  if unchecked=$(acceptance_py unchecked "$seal" 2>"$accept_err") && [[ "$unchecked" =~ ^[0-9]{1,9}$ ]]; then
+    :
   else
+    accept_msg="$(tail -n 1 "$accept_err")"
+    add_problem "final.acceptance.ids" "acceptance: ${accept_msg:-unreadable count '${unchecked:-}'}"
+    unchecked=-1
+  fi
+  rm -f "$accept_err"
+  if [ "$unchecked" -gt 0 ]; then
+    add_problem "final.acceptance.unchecked" "seal.md has ${unchecked} unchecked acceptance criterion(s)"
+  elif [ "$unchecked" -eq 0 ]; then
     acceptance_ready=1
   fi
   if awk '
@@ -141,58 +261,7 @@ fi
 # spec.md and seal.md. The unchecked rule above separately proves every seal row
 # is checked.
 run_acceptance_check() {
-  PYTHONPATH="$ROOT/scripts${PYTHONPATH:+:$PYTHONPATH}" python3 - "$ws/spec.md" "$seal" <<'PY'
-from pathlib import Path
-import re
-import sys
-
-from workflow_schema import structural_markdown
-
-canonical = re.compile(r"\bAC-\d{3}\b")
-any_ac = re.compile(r"\bAC(?:-\d+|\d+)\b", re.IGNORECASE)
-heading = re.compile(r"^##\s+Acceptance criteria\s*#*\s*$", re.IGNORECASE)
-h2 = re.compile(r"^##\s+")
-
-
-def acceptance(path: Path) -> str:
-    if not path.is_file():
-        raise ValueError(f"{path.name} missing")
-    text = structural_markdown(path.read_text(encoding="utf-8"), path)
-    lines = text.splitlines()
-    start = next((i + 1 for i, line in enumerate(lines) if heading.match(line.strip())), None)
-    if start is None:
-        raise ValueError(f'{path.name} has no "## Acceptance criteria" section')
-    end = next((i for i in range(start, len(lines)) if h2.match(lines[i].strip())), len(lines))
-    return "\n".join(lines[start:end])
-
-
-try:
-    spec = acceptance(Path(sys.argv[1]))
-    sealed = acceptance(Path(sys.argv[2]))
-except (OSError, UnicodeError, ValueError) as exc:
-    raise SystemExit(str(exc))
-
-spec_ids = canonical.findall(spec)
-seal_ids = canonical.findall(sealed)
-for name, body, ids in (("spec.md", spec, spec_ids), ("seal.md", sealed, seal_ids)):
-    invalid = sorted({token for token in any_ac.findall(body) if not canonical.fullmatch(token)})
-    if invalid:
-        raise SystemExit(f"{name} has noncanonical acceptance IDs: {' '.join(invalid)}")
-    if not ids:
-        raise SystemExit(f"{name} acceptance IDs are empty")
-    duplicates = sorted({item for item in ids if ids.count(item) > 1})
-    if duplicates:
-        raise SystemExit(f"{name} has duplicate acceptance IDs: {' '.join(duplicates)}")
-
-missing = sorted(set(spec_ids) - set(seal_ids))
-extra = sorted(set(seal_ids) - set(spec_ids))
-if missing or extra:
-    raise SystemExit(
-        "acceptance ID mismatch: missing={} extra={}".format(
-            " ".join(missing) or "none", " ".join(extra) or "none"
-        )
-    )
-PY
+  acceptance_py ids "$ws/spec.md" "$seal"
 }
 
 if [ "$acceptance_ready" -eq 1 ] && ! acout=$(run_acceptance_check 2>&1); then

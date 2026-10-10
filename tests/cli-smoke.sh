@@ -25,6 +25,16 @@ printf '\n<!-- cli-smoke-generated-sentinel -->\n' >> "$GEN/codex/skills/rite/SK
 
 echo "== cli-smoke (target: $T) =="
 
+# Existence plus content of the guarded global paths, so a pre-existing
+# ~/.claude or ~/.codex does not fail the run; only a change during it does.
+snap_global() {
+  for p in "$HOME/.claude/skills/rite" "$HOME/.codex/agents/devrites-code-reviewer.toml"; do
+    if [ -e "$p" ]; then printf '%s present %s\n' "$p" "$(find -L "$p" -type f -exec cksum {} + 2>/dev/null | sort | cksum)"
+    else printf '%s absent\n' "$p"; fi
+  done
+}
+global_before="$(snap_global)"
+
 command -v node >/dev/null 2>&1 || { echo "  FAIL: node not on PATH"; exit 1; }
 [ -f "$CLI" ] || { echo "  FAIL: missing $CLI"; exit 1; }
 
@@ -91,8 +101,9 @@ done
 grep -q 'cli-smoke-generated-sentinel' "$T/.agents/skills/rite/SKILL.md" && ok "CLI install consumes generated Codex skill payload" || no "CLI install did not use generated Codex skill payload"
 
 # 6) no global write
-[ -e "$HOME/.claude/skills/rite" ] && no "wrote to ~/.claude !!" || ok "~/.claude untouched"
-[ -e "$HOME/.codex/agents/devrites-code-reviewer.toml" ] && no "wrote to ~/.codex !!" || ok "~/.codex untouched"
+global_after="$(snap_global)"
+[ "$(printf '%s\n' "$global_before" | sed -n 1p)" = "$(printf '%s\n' "$global_after" | sed -n 1p)" ] && ok "~/.claude untouched" || no "wrote to ~/.claude !!"
+[ "$(printf '%s\n' "$global_before" | sed -n 2p)" = "$(printf '%s\n' "$global_after" | sed -n 2p)" ] && ok "~/.codex untouched" || no "wrote to ~/.codex !!"
 
 # 7) uninstall via the CLI removes manifest files, preserves runtime state
 node "$CLI" uninstall --target "$T" >/dev/null 2>&1 || no "uninstall exited non-zero"
@@ -105,7 +116,12 @@ node "$CLI" uninstall --target "$T" >/dev/null 2>&1 || no "uninstall exited non-
 [ -f "$T/.devrites/ACTIVE" ] && ok "uninstall preserved .devrites/ACTIVE" || no "uninstall dropped runtime state"
 
 # 8) unknown flag is passed through and rejected by the installer (non-zero)
-node "$CLI" --target "$T" --bogus-flag >/dev/null 2>&1 && no "unknown flag did not fail" || ok "unknown flag passed through + rejected"
+bogus_out="$(node "$CLI" --target "$T" --bogus-flag 2>&1)"; bogus_status=$?
+if [ "$bogus_status" -ne 0 ] && printf '%s' "$bogus_out" | grep -qF 'flag provided but not defined: -bogus-flag'; then
+  ok "unknown flag passed through + rejected"
+else
+  no "unknown flag was not rejected as an undefined flag (exit $bogus_status): $bogus_out"
+fi
 
 echo ""
 [ "$fail" -eq 0 ] && echo "cli-smoke: PASS" || echo "cli-smoke: FAIL"

@@ -137,6 +137,8 @@ Before reporting "clean" or recommending `/rite-prove`, confirm:
 
 - [ ] Every buildable AC/REQ in the assessment inventory has a built/partial/absent
       classification with live-code citation
+- [ ] Every plan touch-point and existing-slice Produces is classified with live-code citation
+- [ ] Every declared principle is checked; violations are recorded as top-severity gaps
 - [ ] `tasks.md` is byte-for-byte unchanged when clean, or append-only when gaps exist
 - [ ] `traceability.md` updated only for appended slices
 - [ ] No narrative "done" without the checklist above

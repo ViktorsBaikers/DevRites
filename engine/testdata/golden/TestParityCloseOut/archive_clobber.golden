@@ -1,1 +1,3 @@
 exit 5
+--- stderr ---
+state close: archive already exists at <workdir>/.devrites/archive/feat-z: refusing to clobber

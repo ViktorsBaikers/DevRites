@@ -155,5 +155,6 @@ Run before stamping `spec_gate`; it is an authoring check, never written into `s
 - [ ] Every applicability row is `applies` with affected IDs or has a specific
       evidence-backed `not applicable` reason.
 - [ ] AI has `ai-spec.md` and UI has `design-brief.md`; out-of-scope work states not applicable.
+- [ ] Every emitted `checklists/<domain>.md` has `Verdict: pass` (zero CRITICAL fails); minor fails are logged.
 - [ ] Non-goals/scope are explicit; capability impact is singular/specific and matches ledger deltas.
 - [ ] Architecture/flows/decisions are linked, not duplicated; Coverage seed names Clarify surfaces.

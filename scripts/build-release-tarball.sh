@@ -34,7 +34,7 @@ fi
 mkdir -p "$DIST"
 DIST="$(cd "$DIST" && pwd -P)"
 case "$DIST/" in
-  "$ROOT/pack/"* | "$ROOT/engine/"* | "$ROOT/scripts/"* | "$ROOT/mcp/"* | "$ROOT/docs/"*)
+  "$ROOT/pack/"* | "$ROOT/engine/"* | "$ROOT/scripts/"* | "$ROOT/docs/"*)
     echo "error: release output directory overlaps the release payload" >&2
     exit 1
     ;;
@@ -61,7 +61,6 @@ PAYLOAD=(
   pack
   engine
   scripts
-  mcp
   docs
   install.sh
   uninstall.sh
@@ -74,6 +73,38 @@ PAYLOAD=(
   CODE_OF_CONDUCT.md
   CODEOWNERS
   package.json
+)
+
+# Materialize blobs from the index through one `cat-file --batch` process;
+# like `cat-file blob`, --batch applies no smudge or eol filters.
+WRITE_BLOBS=$(cat <<'PY'
+import os, subprocess, sys
+stage = sys.argv[1]
+fields = sys.stdin.buffer.read().split(b"\0")[:-1]
+with subprocess.Popen(
+    ["git", "--no-replace-objects", "cat-file", "--batch"],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+) as batch:
+    for i in range(0, len(fields), 3):
+        mode, obj, path = fields[i:i + 3]
+        batch.stdin.write(obj + b"\n")
+        batch.stdin.flush()
+        header = batch.stdout.readline().split()
+        if len(header) != 3 or header[1] != b"blob":
+            sys.exit("error: release payload object is not a readable blob: " + path.decode(errors="replace"))
+        size = int(header[2])
+        data = batch.stdout.read(size)
+        if len(data) != size or batch.stdout.read(1) != b"\n":
+            sys.exit("error: git cat-file ended before the release payload object was fully read: " + path.decode(errors="replace"))
+        dest = os.path.join(stage, os.fsdecode(path))
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        with open(dest, "wb") as f:
+            f.write(data)
+        os.chmod(dest, int(mode, 8))
+    batch.stdin.close()
+    if batch.wait() != 0:
+        sys.exit("error: git cat-file --batch exited with status %d" % batch.returncode)
+PY
 )
 
 git ls-files --stage -z -- "${PAYLOAD[@]}" \
@@ -104,11 +135,9 @@ git ls-files --stage -z -- "${PAYLOAD[@]}" \
           exit 1
           ;;
       esac
-      destination="$STAGE/$path"
-      mkdir -p "$(dirname "$destination")"
-      git --no-replace-objects cat-file blob "$object" > "$destination"
-      chmod "$permissions" "$destination"
-    done
+      printf '%s\0%s\0%s\0' "$permissions" "$object" "$path"
+    done \
+  | python3 -c "$WRITE_BLOBS" "$STAGE"
 
 [[ -f "$STAGE/install.sh" ]] || {
   echo "error: Git index release payload is missing install.sh" >&2

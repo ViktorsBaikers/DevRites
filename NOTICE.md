@@ -13,10 +13,12 @@ distributing it, distributing modified versions, or commercial/organizational us
 requires **approval on request**. See [`LICENSE`](LICENSE).
 
 ## Host runtimes
-DevRites integrates with **Claude Code** and **Codex** and follows each host's
-project-local skill, agent, and instruction conventions. "Claude" and "Claude
-Code" are products of Anthropic; "Codex" is a product of OpenAI. DevRites is
-independent and unaffiliated with Anthropic and OpenAI.
+DevRites integrates with **Claude Code**, **Codex**, **omp**, **pi**, and
+**Devin CLI** and follows each host's project-local skill, agent, and instruction
+conventions. "Claude" and "Claude Code" are products of Anthropic; "Codex" is a
+product of OpenAI; omp, pi, and Devin CLI are products of their respective
+owners. DevRites is independent of, and not affiliated with or endorsed by, any
+of these hosts or their makers.
 
 ## Framework identifiers
 

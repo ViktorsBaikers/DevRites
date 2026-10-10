@@ -1,11 +1,13 @@
 name: commitlint
 
-# PR-only by design: commit messages are linted when a PR is opened/updated,
+# PR-only by design: commit messages and the PR title (the squash subject that
+# drives semantic-release) are linted when a PR is opened/edited/updated,
 # never on push to main (semantic-release's own `chore(release):` commits and
 # already-merged history must not be re-linted).
 on:
   pull_request:
     branches: [main]
+    types: [opened, edited, synchronize, reopened]
 
 permissions:
   contents: read
@@ -36,8 +38,10 @@ jobs:
       - name: Install npm deps
         run: npm ci --no-audit --no-fund
 
-      - name: Lint commit messages
+      - name: Lint commit messages and PR title
         id: lint
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
           set +e
           OUT="$(npx --no-install commitlint \
@@ -45,6 +49,10 @@ jobs:
             --to   "${{ github.event.pull_request.head.sha }}" \
             --verbose 2>&1)"
           STATUS=$?
+          TITLE_OUT="$(printf '%s\n' "$TITLE" | npx --no-install commitlint --verbose 2>&1)"
+          TITLE_STATUS=$?
+          OUT="$(printf '%s\n\nPR title:\n%s' "$OUT" "$TITLE_OUT")"
+          if [ "$TITLE_STATUS" -ne 0 ]; then STATUS=$TITLE_STATUS; fi
           printf '%s\n' "$OUT"
           {
             echo 'output<<COMMITLINT_EOF'
@@ -68,11 +76,11 @@ jobs:
           {
             echo 'body<<COMMENT_EOF'
             if [ "$LINT_STATUS" = "0" ]; then
-              echo '### commitlint: all commits valid'
+              echo '### commitlint: all commits and the PR title valid'
               echo ''
-              echo 'Every commit in this PR matches the DevRites Conventional Commit policy.'
+              echo 'Every commit and the PR title match the DevRites Conventional Commit policy.'
             else
-              echo '### commitlint: one or more commits need a rewrite'
+              echo '### commitlint: one or more commits or the PR title need a rewrite'
               echo ''
               echo 'Raw output:'
               echo ''
@@ -88,8 +96,8 @@ jobs:
               echo '<optional body, wrapped at 100 chars>'
               echo '```'
               echo ''
-              echo '- `type` ∈ feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert'
-              echo '- `scope` ∈ skills, rite, devrites, agents, rules, installer, uninstall, scripts, docs, tests, deps, release, repo, ci'
+              echo '- `type` ∈ feat, fix, remove, docs, style, refactor, perf, test, build, ci, chore, revert'
+              echo '- `scope` ∈ skills, rite, devrites, agents, rules, installer, uninstall, scripts, docs, tests, deps, deps-dev, release, repo, ci, no-release, readme'
               echo '- `subject` imperative, lower-case, no trailing period; header 12-72 chars'
               echo '- body lines ≤ 100 chars, leading blank line'
               echo ''
@@ -104,6 +112,8 @@ jobs:
               echo ''
               echo '# then'
               echo 'git push --force-with-lease'
+              echo ''
+              echo '# PR title: edit it on the PR page (it becomes the squash subject)'
               echo '```'
             fi
             echo 'COMMENT_EOF'
@@ -111,6 +121,7 @@ jobs:
 
       - name: Post / update sticky PR comment
         if: always()
+        continue-on-error: true
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           header: commitlint

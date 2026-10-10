@@ -69,7 +69,7 @@ If the candidate diff has no matching surfaces, record
    Findings later withdrawn at reconciliation stay visible: the account records
    `withdrawn: <n> (<reason>)` rather than silently dropping them.
 6. Apply [[`agents.md`](standards/agents.md) § Result admission](standards/agents.md#result-admission)
-   and dedupe by evidence/root cause. Account for all seven in
+   and dedupe by evidence/root cause. Account for all seven (and, in `seal.md`, `devrites-proof-runner` and `devrites-doubt-reviewer`) in
    `review.md`/`seal.md`, each [engineering lane](#engineering-lanes) separately:
    `Outcome:` plus admitted account, or
    `Not-applicable: <inspected-scope reason>`. Spec/Code may cite valid unchanged

@@ -143,6 +143,9 @@ func TestDispatchWaveBarrier(t *testing.T) {
 	if c, _, _ := run("feat", "open", "--phase", "review", "--wave", "w1", "--role", "a", "--role", "b"); c != 0 {
 		t.Fatal("open failed")
 	}
+	if c, _, e := run("feat", "status"); c == 0 {
+		t.Fatalf("bare status should fail while a wave is open: %s", e)
+	}
 	if c, _, e := run("feat", "seal", "--wave", "w1"); c == 0 {
 		t.Fatalf("seal before all starts should fail: %s", e)
 	}
@@ -172,6 +175,9 @@ func TestDispatchWaveBarrier(t *testing.T) {
 	}
 	if c, o, _ := run("feat", "status", "--wave", "w1"); c != 0 || !strings.Contains(o.String(), "complete") {
 		t.Fatalf("status should report complete: %d %s", c, o)
+	}
+	if c, _, e := run("feat", "status"); c != 0 {
+		t.Fatalf("bare status should pass once every wave is complete: %s", e)
 	}
 	// metrics auto-recorded for start+return
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
@@ -519,6 +525,72 @@ func TestDiffScopeAllowlist(t *testing.T) {
 	if code != 0 || !strings.Contains(stdout.String(), "2 changed") {
 		t.Fatalf("code=%d\n%s", code, stdout.String())
 	}
+
+	// A changed path whose own name contains the porcelain rename separator
+	// is checked as that full path, never as a fragment of it.
+	sepRepo := t.TempDir()
+	initGitRepository(t, sepRepo)
+	runDiffScopeGit(t, sepRepo, "config", "user.email", "tests@example.invalid")
+	runDiffScopeGit(t, sepRepo, "config", "user.name", "DevRites Tests")
+	writeFile(t, filepath.Join(sepRepo, "docs", "secret -> notes.md"), "v1\n")
+	writeFile(t, filepath.Join(sepRepo, "docs", "secret"), "v1\n")
+	runDiffScopeGit(t, sepRepo, "add", "-A")
+	runDiffScopeGit(t, sepRepo, "commit", "-qm", "base")
+	writeFile(t, filepath.Join(sepRepo, "docs", "secret -> notes.md"), "changed out of contract\n")
+
+	stdout.Reset()
+	stderr.Reset()
+	code = RunCheckDiffScope(root, []string{"feat", "--allow", "notes.md", "--cwd", sepRepo}, stdout, stderr)
+	if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: docs/secret -> notes.md outside allowlist") {
+		t.Fatalf("separator-named path checked as its tail: code=%d want 3 with the full path\n%s", code, stdout.String())
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code = RunCheckDiffScope(root, []string{"feat", "--allow", "docs/secret -> notes.md", "--cwd", sepRepo}, stdout, stderr)
+	if code != 0 {
+		t.Fatalf("declared path rejected: code=%d\n%s", code, stdout.String())
+	}
+
+	// A rename reports its new name and a separator-named file reports its
+	// full name, even when both end in the same tail.
+	runDiffScopeGit(t, sepRepo, "mv", "docs/secret", "notes.md")
+	stdout.Reset()
+	stderr.Reset()
+	code = RunCheckDiffScope(root, []string{"feat", "--allow", "notes.md", "--cwd", sepRepo}, stdout, stderr)
+	if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: docs/secret -> notes.md outside allowlist") ||
+		!strings.Contains(stdout.String(), "BLOCKED: docs/secret outside allowlist") {
+		t.Fatalf("rename and separator-named file not distinguishable: code=%d\n%s", code, stdout.String())
+	}
+
+	// An ordinary rename is reported by its new name, and its old name is
+	// checked against the allowlist too.
+	renameRepo := t.TempDir()
+	initGitRepository(t, renameRepo)
+	runDiffScopeGit(t, renameRepo, "config", "user.email", "tests@example.invalid")
+	runDiffScopeGit(t, renameRepo, "config", "user.name", "DevRites Tests")
+	writeFile(t, filepath.Join(renameRepo, "old.go"), "package old\n")
+	runDiffScopeGit(t, renameRepo, "add", "-A")
+	runDiffScopeGit(t, renameRepo, "commit", "-qm", "base")
+	runDiffScopeGit(t, renameRepo, "mv", "old.go", "new.go")
+	stdout.Reset()
+	stderr.Reset()
+	code = RunCheckDiffScope(root, []string{"feat", "--allow", "old.go", "--cwd", renameRepo}, stdout, stderr)
+	if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: new.go outside allowlist") {
+		t.Fatalf("rename not reported by its new name: code=%d\n%s", code, stdout.String())
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code = RunCheckDiffScope(root, []string{"feat", "--allow", "new.go", "--cwd", renameRepo}, stdout, stderr)
+	if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: old.go outside allowlist") {
+		t.Fatalf("rename old name not checked: code=%d\n%s", code, stdout.String())
+	}
+}
+
+func runDiffScopeGit(t *testing.T, repo string, args ...string) {
+	t.Helper()
+	if out, err := runGitCommand(repo, nil, args...); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
 }
 
 func TestDispatchConcurrentReturnsCompleteWave(t *testing.T) {
@@ -570,5 +642,29 @@ func TestDispatchAbandonRecordsReason(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(featureDir, "dispatch.json"))
 	if err != nil || !strings.Contains(string(data), `"reason": "host limit"`) {
 		t.Fatalf("abandon reason not persisted: %v\n%s", err, data)
+	}
+}
+
+func TestContextWorkspaceIncludeMarkerStaysLiteral(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	marker := "<!-- include:../../outside.txt -->"
+	writeFile(t, filepath.Join(featureDir, "spec.md"), marker+"\n")
+	writeFile(t, filepath.Join(root, "outside.txt"), "SENTINEL-OUTSIDE\n")
+	skills := newSkillsRoot(t)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	code := RunContext(root, []string{"feat", "--phase", "build", "--skills-root", skills}, stdout, stderr)
+	if code != 0 {
+		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+	}
+	bundle, err := os.ReadFile(filepath.Join(featureDir, "ctx", "build.bundle.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(bundle)
+	if strings.Contains(text, "SENTINEL-OUTSIDE") {
+		t.Fatalf("workspace include marker was expanded:\n%s", text)
+	}
+	if !strings.Contains(text, marker) {
+		t.Fatalf("workspace include marker not kept literal:\n%s", text)
 	}
 }

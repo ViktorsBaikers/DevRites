@@ -109,3 +109,21 @@ Tests/proof: none needed
 		t.Fatalf("code=%d out:\n%s%s", code, stdout, stderr)
 	}
 }
+
+func TestCheckAllowlistPathsNormalizesBeforeRules(t *testing.T) {
+	if got := checkAllowlistPaths([]string{"./.devrites/state.md"}); len(got) != 1 || !strings.Contains(got[0], ".devrites") {
+		t.Fatalf("./.devrites path not rejected as workflow state: %v", got)
+	}
+	if got := checkAllowlistPaths([]string{"src/a.go", "./src/a.go"}); len(got) != 1 || !strings.Contains(got[0], "duplicated") {
+		t.Fatalf("./src/a.go not detected as duplicate of src/a.go: %v", got)
+	}
+}
+
+func TestCheckSliceTouchedComparesNormalizedPaths(t *testing.T) {
+	tasks := strings.Replace(goodSliceTasks, "Files likely touched: src/a.go; src/a_test.go", "Files likely touched: ./src/a.go; src/a_test.go", 1)
+	root := sliceWorkspace(t, tasks, sliceSpec)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunCheckSlice(root, []string{"feat", "SLICE-001"}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d want 0\n%s%s", code, stdout, stderr)
+	}
+}

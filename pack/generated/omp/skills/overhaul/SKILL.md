@@ -1,6 +1,6 @@
 ---
 name: overhaul
-description: Approval-gated overhaul of a project, PR, or branch: concurrent frontend and backend review, one approved repair plan, test-driven fixes, independent verification, evidence-backed scores.
+description: "Approval-gated overhaul of a project, PR, or branch: concurrent frontend and backend review, one approved repair plan, test-driven fixes, independent verification, evidence-backed scores."
 argument-hint: "[full | pr <number|url> | branch <head> --base <base> | audit <full|pr <n>|branch <head> --base <base>> | apply <run-id> --plan <rev> | status <run-id> | resume <run-id>] [--isolate]"
 user-invocable: true
 disable-model-invocation: true

@@ -65,7 +65,7 @@ Follow [`reference/phase-contract.md`](reference/phase-contract.md)
    `../devrites-lib/reference/parallel-dispatch.md` on the same frozen candidate,
    code review through its § Engineering lanes;
 4. reconcile their read-only verdicts against source and immutable evidence;
-5. draft GO/NO-GO `seal.md` with acceptance, tests, decisions, and seven accounts
+5. draft GO/NO-GO `seal.md` with acceptance, tests, decisions, and seven roster accounts plus proof-runner and doubt-reviewer
    (each engineering lane its own account);
 6. write exactly one candidate binding, then run
    `devrites-engine check seal <slug>` for structure and identity, never semantics,
@@ -74,8 +74,9 @@ Follow [`reference/phase-contract.md`](reference/phase-contract.md)
    starts at the named changed, missing, or added input,
    and `devrites-engine check regression <slug>` to confirm no recorded progress
    fact was lost since the last checkpoint — `BLOCKED` is NO-GO; `unproven`
-   (no baseline) does not block — plus `devrites-engine check windows <slug>
-   --base <release-base>` so each deferral marker the feature diff introduced
+   (no baseline) does not block — plus two separate runs of `devrites-engine check windows <slug>`,
+   one with `--base <release-base>` and one with `--worktree` (the only mode that scans
+   untracked files; never pass both flags in one command, the last one wins) so each deferral marker the feature diff introduced
    carries a `windows.md` waiver row ([`windows.md`](../devrites-lib/reference/standards/windows.md));
    unwaived hits are NO-GO. The engine already refuses a `gates.md` ledger
    that is malformed, unmet,

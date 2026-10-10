@@ -100,13 +100,27 @@ dr_verify_checksum() {
   [ "$_dr_got" = "$_dr_want" ]
 }
 
+# Runs a command for at most $1 seconds with output discarded; a timeout is a failure.
+dr_run_bounded() {
+  _dr_limit="$1"; shift
+  "$@" >/dev/null 2>&1 </dev/null &
+  _dr_job=$!
+  { trap 'kill "$_dr_nap"; exit 0' TERM; sleep "$_dr_limit" & _dr_nap=$!; wait "$_dr_nap" && kill "$_dr_job"; } >/dev/null 2>&1 </dev/null &
+  _dr_watch=$!
+  wait "$_dr_job" 2>/dev/null
+  _dr_rc=$?
+  kill "$_dr_watch" >/dev/null 2>&1
+  wait "$_dr_watch" 2>/dev/null
+  return "$_dr_rc"
+}
+
 dr_download_engine() {
   _dr_source_dir="$1"
   _dr_repo="$2"
-  _dr_out="$3"
-  dr_valid_repo "$_dr_repo" || { DR_ACQUIRE_FAILURE="repository name validation failed"; rm -f "$_dr_out" "$_dr_out.sha256"; return 1; }
+  _dr_engine_out="$3"
+  dr_valid_repo "$_dr_repo" || { DR_ACQUIRE_FAILURE="repository name validation failed"; rm -f "$_dr_engine_out" "$_dr_engine_out.sha256"; return 1; }
   _dr_tag="$(dr_release_tag "$_dr_source_dir")"
-  [ -n "$_dr_tag" ] || { DR_ACQUIRE_FAILURE="release tag validation failed"; rm -f "$_dr_out" "$_dr_out.sha256"; return 1; }
+  [ -n "$_dr_tag" ] || { DR_ACQUIRE_FAILURE="release tag validation failed"; rm -f "$_dr_engine_out" "$_dr_engine_out.sha256"; return 1; }
   _dr_os="$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')"
   _dr_arch="$(uname -m 2>/dev/null)"
   case "$_dr_arch" in
@@ -121,10 +135,12 @@ dr_download_engine() {
 
   _dr_asset="devrites-$_dr_os-$_dr_arch"
   _dr_url="https://github.com/$_dr_repo/releases/download/$_dr_tag/$_dr_asset"
-  dr_bounded_download "$_dr_url" "$_dr_out" 67108864 || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: ${DR_DOWNLOAD_FAILURE:-download} failed"; return 1; }
-  dr_bounded_download "$_dr_url.sha256" "$_dr_out.sha256" 4096 || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset.sha256: ${DR_DOWNLOAD_FAILURE:-download} failed"; rm -f "$_dr_out"; return 1; }
-  dr_verify_checksum "$_dr_out" "$_dr_out.sha256" "$_dr_asset" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: checksum failed"; rm -f "$_dr_out" "$_dr_out.sha256"; return 1; }
-  chmod +x "$_dr_out" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: executable preparation failed"; rm -f "$_dr_out" "$_dr_out.sha256"; return 1; }
+  dr_bounded_download "$_dr_url" "$_dr_engine_out" 67108864 || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: ${DR_DOWNLOAD_FAILURE:-download} failed"; return 1; }
+  dr_bounded_download "$_dr_url.sha256" "$_dr_engine_out.sha256" 4096 || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset.sha256: ${DR_DOWNLOAD_FAILURE:-download} failed"; rm -f "$_dr_engine_out"; return 1; }
+  dr_verify_checksum "$_dr_engine_out" "$_dr_engine_out.sha256" "$_dr_asset" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: checksum failed"; rm -f "$_dr_engine_out" "$_dr_engine_out.sha256"; return 1; }
+  _dr_signer="$_dr_repo/.github/workflows/ci.yml@refs/heads/main"
+  command -v gh >/dev/null 2>&1 && dr_run_bounded "${DR_ATTEST_TIMEOUT:-120}" gh attestation verify "$_dr_engine_out" --repo "$_dr_repo" --signer-workflow "$_dr_signer" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: attestation verification failed (gh must be installed and authenticated)"; rm -f "$_dr_engine_out" "$_dr_engine_out.sha256"; return 1; }
+  chmod +x "$_dr_engine_out" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: executable preparation failed"; rm -f "$_dr_engine_out" "$_dr_engine_out.sha256"; return 1; }
 }
 
 dr_build_engine() {
@@ -208,6 +224,25 @@ dr_acquire_engine() {
   rm -rf "$DR_ENGINE_TMP"
   DR_ENGINE_TMP=""
   return 1
+}
+
+# True when $1 holds every file the engine requires from a host payload: the
+# union of hostpack.RequiredPayload for all hosts plus each host's standards.
+dr_payload_complete() {
+  _dr_p="$1"
+  for _dr_rel in \
+    claude/skills claude/agents claude/workflows claude/settings.json \
+    codex/skills codex/agents codex/AGENTS.md codex/config.toml \
+    omp/skills omp/agents omp/commands omp/.omp-plugin/plugin.json \
+    pi/skills pi/agents pi/prompts pi/AGENTS.md \
+    devin/skills devin/agents devin/AGENTS.md \
+    claude/skills/devrites-lib/reference/standards/agents.md \
+    codex/skills/devrites-lib/reference/standards/agents.md \
+    omp/skills/devrites-lib/reference/standards/agents.md \
+    pi/skills/devrites-lib/reference/standards/agents.md \
+    devin/skills/devrites-lib/reference/standards/agents.md; do
+    [ -e "$_dr_p/$_dr_rel" ] || return 1
+  done
 }
 
 dr_cleanup_engine() {

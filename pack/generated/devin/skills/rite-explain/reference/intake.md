@@ -10,7 +10,7 @@ source for classification; the SKILL improvises none of it.
 | --- | --- | --- | --- | --- |
 | **concept** | a named idea / pattern / technology ("explain optimistic locking", "how does our gate engine work") | this repo's footprint of the concept (codegraph first) + external sources only if they sharpen it | build the mental model from a known part of *this* codebase outward | **checked exercise** |
 | **diff** | a specific change: a ref, a slice, a PR, "this diff" | `git diff` / the hunks + `decisions.md` + `seal.md` for the *why* + `touched-files.md` `Review trail` when present | explainer, or **walkthrough** when the user asks to review/approve/checkpoint the change | **predict-then-reveal** |
-| **idea** | a hypothesis or "what if" with no code yet | the user's framing + prior art (external, date-weighted; year is 2026) | steelman the idea, name its hinge and its failure mode | **checked exercise** |
+| **idea** | a hypothesis or "what if" with no code yet | the user's framing + prior art (external, date-weighted) | steelman the idea, name its hinge and its failure mode | **checked exercise** |
 | **recap** | a time window of the user's own work ("what did I ship this week") | the shipped archive + `git log`/`git diff` over the window + `evidence.md` | narrate what changed and what was learned, ranked by leverage | **predict-then-reveal** |
 
 ## Token overrides: explicit beats inferred
