@@ -189,6 +189,9 @@ func summaryFiles(t *testing.T, out []byte, key string) []string {
 // One canonical artifact that exists but cannot be read must not take the
 // task graph, the artifact budgets and the bulk-file list down with it.
 func TestObserveSummaryNamesUnreadableArtifactAndKeepsReadableBudgets(t *testing.T) {
+	if os.Geteuid() == 0 || runtime.GOOS == "windows" {
+		t.Skip("file permissions do not bind root or windows")
+	}
 	root, workspace := writeBudgetWorkspace(t, map[string]string{
 		"state.md":                "| phase | build |\n| schema | 4 |\n",
 		"tasks.md":                budgetTasks,
@@ -284,6 +287,9 @@ func TestObserveSummaryOmitsUnreadableWhenTasksAbsent(t *testing.T) {
 
 // A tasks.md that fails both the task-graph read and the budget read is named once.
 func TestObserveSummaryNamesUnreadableTasksOnce(t *testing.T) {
+	if os.Geteuid() == 0 || runtime.GOOS == "windows" {
+		t.Skip("file permissions do not bind root or windows")
+	}
 	root, workspace := writeBudgetWorkspace(t, map[string]string{
 		"state.md": "| phase | build |\n| schema | 4 |\n",
 		"tasks.md": budgetTasks,

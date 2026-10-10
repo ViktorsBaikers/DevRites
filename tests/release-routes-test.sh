@@ -78,9 +78,11 @@ echo 'install-lib ARM1 OK: marker=success, exit 23; ARM2 OK: refused before exec
 NOGH_BIN="$TMP/nogh-bin"
 mkdir -p "$NOGH_BIN"
 cp "$MOCKBIN/curl" "$NOGH_BIN/curl"
+# Every system tool except gh, so a runner that ships gh in /usr/bin still has none on PATH.
+for f in /usr/bin/* /bin/*; do n="${f##*/}"; [ "$n" = gh ] || [ -e "$NOGH_BIN/$n" ] || ln -s "$f" "$NOGH_BIN/$n"; done
 printf '%s  %s\n' "$(sha256 "$TMP/trusted")" "$asset" > "$TMP/nogh.sha256"
-if PATH="$NOGH_BIN:/usr/bin:/bin" command -v gh >/dev/null 2>&1; then echo "FAIL install-lib missing-gh harness: gh still resolvable" >&2; exit 1; fi
-nogh_msg="$(PATH="$NOGH_BIN:/usr/bin:/bin" MOCK_ASSET="$TMP/trusted" MOCK_SIDECAR="$TMP/nogh.sha256"; if dr_download_engine "$SHELL_SOURCE" owner/repo "$TMP/nogh.engine"; then echo ACCEPTED; else echo "$DR_ACQUIRE_FAILURE"; fi)"
+if PATH="$NOGH_BIN" command -v gh >/dev/null 2>&1; then echo "FAIL install-lib missing-gh harness: gh still resolvable" >&2; exit 1; fi
+nogh_msg="$(PATH="$NOGH_BIN" MOCK_ASSET="$TMP/trusted" MOCK_SIDECAR="$TMP/nogh.sha256"; if dr_download_engine "$SHELL_SOURCE" owner/repo "$TMP/nogh.engine"; then echo ACCEPTED; else echo "$DR_ACQUIRE_FAILURE"; fi)"
 case "$nogh_msg" in
   *'attestation verification failed'*) [ ! -e "$TMP/nogh.engine" ] || { echo "FAIL install-lib missing gh left the engine staged" >&2; exit 1; } ;;
   *) echo "FAIL install-lib accepted or mis-reported a missing gh: $nogh_msg" >&2; exit 1 ;;

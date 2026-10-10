@@ -669,6 +669,8 @@ func TestCaptureClassifiesSymlinks(t *testing.T) {
 		{"out.lnk", otherOutside, "tracked", true},
 		{"new.lnk", "src/clean.py", "untracked", true},
 	} {
+		// Windows stores link targets with its own separator.
+		c.target = filepath.FromSlash(c.target)
 		sum := sha256.Sum256([]byte(c.target))
 		want := entry{SHA256: "link:" + hex.EncodeToString(sum[:]), Mode: 0o120000, Source: c.source, Copied: c.copied}
 		if g := m.Files[c.name]; g == nil || *g != want {

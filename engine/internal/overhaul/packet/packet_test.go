@@ -2,11 +2,17 @@ package packet
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func jsonString(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
 
 func runArea(t *testing.T) string {
 	t.Helper()
@@ -196,7 +202,8 @@ func TestLoadRejectsReceiptPathOutsideRunArea(t *testing.T) {
 	b, _ := os.ReadFile(path)
 	good := filepath.Join(run, "receipts", "full-1__TASK-1__a1__implementer.json")
 	for _, bad := range []string{"/etc/evil.json", "../../outside/evil.json", filepath.Join(run, "receipts", "..", "x.json")} {
-		edited := strings.Replace(string(b), good, bad, 1)
+		// The packet is JSON, so match the encoded form (Windows paths carry escaped separators).
+		edited := strings.Replace(string(b), jsonString(good), jsonString(bad), 1)
 		if edited == string(b) {
 			t.Fatal("receipt_path not found in packet")
 		}

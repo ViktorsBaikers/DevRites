@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -209,6 +210,9 @@ func TestAcquireRejectsSingleAssetSubstitution(t *testing.T) {
 
 func installAttestationStandIn(t *testing.T, trusted ...[]byte) {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("attestation stand-in and positive-control engine are shell scripts")
+	}
 	dir := t.TempDir()
 	var hashes strings.Builder
 	for _, data := range trusted {

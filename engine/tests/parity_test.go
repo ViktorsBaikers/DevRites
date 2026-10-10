@@ -107,6 +107,8 @@ func runArgv(t *testing.T, workdir string, env []string, stdin string, name stri
 			stderr = strings.ReplaceAll(stderr, resolved, "<workdir>")
 		}
 		stderr = strings.ReplaceAll(stderr, workdir, "<workdir>")
+		// Record paths with forward slashes so one snapshot holds on every OS.
+		stderr = filepath.ToSlash(stderr)
 	}
 	lastStderr = stderr
 	return out.String(), code

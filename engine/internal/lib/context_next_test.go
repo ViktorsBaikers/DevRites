@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -527,39 +528,42 @@ func TestDiffScopeAllowlist(t *testing.T) {
 	}
 
 	// A changed path whose own name contains the porcelain rename separator
-	// is checked as that full path, never as a fragment of it.
-	sepRepo := t.TempDir()
-	initGitRepository(t, sepRepo)
-	runDiffScopeGit(t, sepRepo, "config", "user.email", "tests@example.invalid")
-	runDiffScopeGit(t, sepRepo, "config", "user.name", "DevRites Tests")
-	writeFile(t, filepath.Join(sepRepo, "docs", "secret -> notes.md"), "v1\n")
-	writeFile(t, filepath.Join(sepRepo, "docs", "secret"), "v1\n")
-	runDiffScopeGit(t, sepRepo, "add", "-A")
-	runDiffScopeGit(t, sepRepo, "commit", "-qm", "base")
-	writeFile(t, filepath.Join(sepRepo, "docs", "secret -> notes.md"), "changed out of contract\n")
+	// is checked as that full path, never as a fragment of it. Windows forbids
+	// '>' in file names, so the case cannot exist there.
+	if runtime.GOOS != "windows" {
+		sepRepo := t.TempDir()
+		initGitRepository(t, sepRepo)
+		runDiffScopeGit(t, sepRepo, "config", "user.email", "tests@example.invalid")
+		runDiffScopeGit(t, sepRepo, "config", "user.name", "DevRites Tests")
+		writeFile(t, filepath.Join(sepRepo, "docs", "secret -> notes.md"), "v1\n")
+		writeFile(t, filepath.Join(sepRepo, "docs", "secret"), "v1\n")
+		runDiffScopeGit(t, sepRepo, "add", "-A")
+		runDiffScopeGit(t, sepRepo, "commit", "-qm", "base")
+		writeFile(t, filepath.Join(sepRepo, "docs", "secret -> notes.md"), "changed out of contract\n")
 
-	stdout.Reset()
-	stderr.Reset()
-	code = RunCheckDiffScope(root, []string{"feat", "--allow", "notes.md", "--cwd", sepRepo}, stdout, stderr)
-	if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: docs/secret -> notes.md outside allowlist") {
-		t.Fatalf("separator-named path checked as its tail: code=%d want 3 with the full path\n%s", code, stdout.String())
-	}
-	stdout.Reset()
-	stderr.Reset()
-	code = RunCheckDiffScope(root, []string{"feat", "--allow", "docs/secret -> notes.md", "--cwd", sepRepo}, stdout, stderr)
-	if code != 0 {
-		t.Fatalf("declared path rejected: code=%d\n%s", code, stdout.String())
-	}
+		stdout.Reset()
+		stderr.Reset()
+		code = RunCheckDiffScope(root, []string{"feat", "--allow", "notes.md", "--cwd", sepRepo}, stdout, stderr)
+		if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: docs/secret -> notes.md outside allowlist") {
+			t.Fatalf("separator-named path checked as its tail: code=%d want 3 with the full path\n%s", code, stdout.String())
+		}
+		stdout.Reset()
+		stderr.Reset()
+		code = RunCheckDiffScope(root, []string{"feat", "--allow", "docs/secret -> notes.md", "--cwd", sepRepo}, stdout, stderr)
+		if code != 0 {
+			t.Fatalf("declared path rejected: code=%d\n%s", code, stdout.String())
+		}
 
-	// A rename reports its new name and a separator-named file reports its
-	// full name, even when both end in the same tail.
-	runDiffScopeGit(t, sepRepo, "mv", "docs/secret", "notes.md")
-	stdout.Reset()
-	stderr.Reset()
-	code = RunCheckDiffScope(root, []string{"feat", "--allow", "notes.md", "--cwd", sepRepo}, stdout, stderr)
-	if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: docs/secret -> notes.md outside allowlist") ||
-		!strings.Contains(stdout.String(), "BLOCKED: docs/secret outside allowlist") {
-		t.Fatalf("rename and separator-named file not distinguishable: code=%d\n%s", code, stdout.String())
+		// A rename reports its new name and a separator-named file reports its
+		// full name, even when both end in the same tail.
+		runDiffScopeGit(t, sepRepo, "mv", "docs/secret", "notes.md")
+		stdout.Reset()
+		stderr.Reset()
+		code = RunCheckDiffScope(root, []string{"feat", "--allow", "notes.md", "--cwd", sepRepo}, stdout, stderr)
+		if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: docs/secret -> notes.md outside allowlist") ||
+			!strings.Contains(stdout.String(), "BLOCKED: docs/secret outside allowlist") {
+			t.Fatalf("rename and separator-named file not distinguishable: code=%d\n%s", code, stdout.String())
+		}
 	}
 
 	// An ordinary rename is reported by its new name, and its old name is
