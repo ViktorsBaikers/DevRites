@@ -2,6 +2,23 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.14.4...v6.0.0) (2026-10-10)
+
+### ⚠ BREAKING CHANGES
+
+* **repo:** install.sh and `npx devrites` verify the release's
+  build-provenance attestation with `gh` and refuse to install when `gh`
+  is missing or verification fails; `npx devrites` uses a devrites-engine
+  found on PATH only when its version matches the release; the npm
+  package no longer runs a prepack script and ships the committed
+  pack/generated; frontmatter validation requires PyYAML; overhaul
+  records reject malformed task ids; the engine toolchain is go1.27.2.
+
+### Fixed
+
+* **no-release:** keep spec-phase gate verdicts out of spec.md ([#98](https://github.com/ViktorsBaikers/DevRites/issues/98)) ([5c62af3](https://github.com/ViktorsBaikers/DevRites/commit/5c62af3993945adc6d8035c86a7cf8436e696ebb))
+* **repo:** apply verified audit repairs across engine, pack and tests ([#99](https://github.com/ViktorsBaikers/DevRites/issues/99)) ([f056b5e](https://github.com/ViktorsBaikers/DevRites/commit/f056b5e76d276e57e469ac288efd16c91d3fd7b1))
+
 ## [5.14.4](https://github.com/ViktorsBaikers/DevRites/compare/v5.14.3...v5.14.4) (2026-10-03)
 
 ### Fixed
