@@ -93,6 +93,80 @@ Apply zanzibar handling when the plan crosses services.
 EOF
 expect_ok "prose-mentioned trigger"
 
+# --- trigger named only inside a non-loads HTML comment is dead ------------
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"triggers":{"zanzibar":["devrites-lib/reference/extra.md"]}} -->
+# build
+<!-- zanzibar handling lives elsewhere -->
+EOF
+expect_fail "comment-only mention" "trigger 'zanzibar' is dead"
+
+# --- trigger named only inside a multi-line HTML comment is dead -----------
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"triggers":{"zanzibar":["devrites-lib/reference/extra.md"]}} -->
+# build
+<!--
+zanzibar handling lives elsewhere
+-->
+EOF
+expect_fail "multi-line comment-only mention" "trigger 'zanzibar' is dead"
+
+# --- trigger named only inside a backtick fence is dead --------------------
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"triggers":{"zanzibar":["devrites-lib/reference/extra.md"]}} -->
+# build
+```text
+zanzibar handling
+```
+EOF
+expect_fail "backtick-fence-only mention" "trigger 'zanzibar' is dead"
+
+# --- trigger named only inside a tilde fence is dead -----------------------
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"triggers":{"zanzibar":["devrites-lib/reference/extra.md"]}} -->
+# build
+~~~
+zanzibar handling
+~~~
+EOF
+expect_fail "tilde-fence-only mention" "trigger 'zanzibar' is dead"
+
+# --- only a matching, long-enough marker closes a fence --------------------
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"triggers":{"zanzibar":["devrites-lib/reference/extra.md"]}} -->
+# build
+````
+~~~
+```
+zanzibar handling
+````
+EOF
+expect_fail "fence closed only by matching marker" "trigger 'zanzibar' is dead"
+
+# --- unclosed fence fails instead of hiding or blessing the rest -----------
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"triggers":{"zanzibar":["devrites-lib/reference/extra.md"]}} -->
+# build
+```text
+zanzibar handling
+EOF
+expect_fail "unclosed fence" "unclosed code fence"
+
+# --- prose outside comments and fences still makes a trigger live ----------
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"triggers":{"zanzibar":["devrites-lib/reference/extra.md"]}} -->
+# build
+~~~text
+code
+~~~
+<!-- note -->
+Apply zanzibar handling when the plan crosses services.
+EOF
+expect_ok "prose after comment and fences"
+
+# --- control: the real pack passes the gate --------------------------------
+python3 "$CHECK" >"$T/real.txt" 2>&1 || { echo "FAIL: real tree rejected:"; cat "$T/real.txt"; exit 1; }
+
 # --- live trigger via annotation elsewhere in the pack ---------------------
 cat > "$SK/devrites-lib/reference/core.md" <<'EOF'
 # core
@@ -112,7 +186,7 @@ cat > "$SK/rite-build/SKILL.md" <<'EOF'
 <!-- loads: {"triggers":{"security":["devrites-lib/reference/ghost.md"]}} -->
 # build
 EOF
-expect_fail "missing trigger path" "path missing"
+expect_fail "missing trigger path" "trigger 'security' path missing"
 
 # --- workspaceByRole role with no agent file --------------------------------
 cat > "$SK/rite-build/SKILL.md" <<'EOF'

@@ -87,10 +87,24 @@ case_customized() {
   exit "$fail"
 }
 
+case_partial_payload() {
+  local d="$T/partial" rel p; mkdir -p "$d"; fail=0
+  bash "$ROOT/install.sh" --target "$d" >/dev/null 2>&1 || no "partial: install failed"
+  for rel in omp pi claude/workflows; do
+    p="$T/partial-payload-${rel//\//-}"
+    mkdir -p "$p" && cp -R "$DEVRITES_HOST_ARTIFACT_DIR"/. "$p"/ && rm -rf "${p:?}/$rel"
+    DEVRITES_HOST_ARTIFACT_DIR="$p" bash "$ROOT/update.sh" --target "$d" --force >/dev/null 2>&1 \
+      && ok "partial: payload without $rel regenerates and updates" || no "partial: update failed without $rel"
+    [ -e "$p/$rel" ] && ok "partial: payload without $rel restored" || no "partial: payload without $rel not regenerated"
+  done
+  exit "$fail"
+}
+
 pids=()
 case_default & pids+=("$!")
 case_rules_only & pids+=("$!")
 case_customized & pids+=("$!")
+case_partial_payload & pids+=("$!")
 for pid in "${pids[@]}"; do
   wait "$pid" || fail=1
 done

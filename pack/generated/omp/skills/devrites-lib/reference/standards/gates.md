@@ -68,16 +68,17 @@ the three renders prior evidence `stale-unmet` — a stale pass cannot hide
 behind an edited oracle. Prose evidence on a runnable gate is also stale:
 only automatic evidence bound to the current definition counts.
 
-Manual gates are met when checked with non-empty human evidence (anything
-except `pending`); honesty of that evidence stays with the Prove/Seal
+Manual gates are met when checked with non-placeholder human evidence;
+`gates attest` refuses a placeholder note, and one hand-written into the ledger
+stays unmet. A note is a placeholder when every word is a placeholder word
+(`n/a`, `tbd`, `ok`, `done`, `yes`, `pending`, …), the gate ID, or a title word;
+a trailing `(…)` with no nested parentheses is ignored when text precedes it. Honesty of that evidence stays with the Prove/Seal
 reviewers. The engine cannot see who attests, so the note must cite the human's
 own words or source (a `q-…` id the human resolved, or their message in this
 session) and name what was observed and where. An agent's own inspection, or a
 question resolved by AFK or autocomplete auto-pick, is not human evidence: an AFK
 run leaves the gate unmet behind an open `gate: validating` question and never
-self-attests. Placeholder or tautological notes (`n/a`, `tbd`, `-`, `ok`, `done`,
-`yes`, the restated gate title) are unmet at Prove and Seal. **Failing case:**
-`gates attest <slug> AC-004 "done"` passes the engine and Seal reaches GO.
+self-attests.
 
 ## Commands
 

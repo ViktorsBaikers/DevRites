@@ -155,14 +155,12 @@ func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdCleanup(rest, stdout, stderr)
 	case "status":
 		return cmdStatus(rest, stdout, stderr)
-	case "lease-write", "write-lease":
+	case "lease-write":
 		return cmdLeaseWrite(rest, stdin, stdout, stderr)
-	case "lease-read", "read-lease":
+	case "lease-read":
 		return cmdLeaseRead(rest, stdout, stderr)
-	case "lease-clear", "clear-lease":
+	case "lease-clear":
 		return cmdLeaseClear(rest, stdout, stderr)
-	case "check-disjoint", "path-disjoint":
-		return runPathDisjoint(rest, stdin, stdout, stderr)
 	case "select":
 		return cmdSelect(rest, stdin, stdout, stderr)
 	case "-h", "-help", "--help", "help":
@@ -201,7 +199,6 @@ Subcommands:
   lease-write     --root --slug --json
   lease-read      --root --slug [--field name]
   lease-clear     --root --slug
-  check-disjoint  [--root] [<json-file>|-]
   select          --cap <1-10> [--root] [<json-file>|-]
 
 Exit codes: 0 ok, 2 usage, 3 blocked`)
@@ -223,13 +220,13 @@ func CommandUsage(name string) string {
 		return usageCleanup
 	case "status":
 		return usageStatus
-	case "lease-write", "write-lease":
+	case "lease-write":
 		return usageLeaseWrite
-	case "lease-read", "read-lease":
+	case "lease-read":
 		return usageLeaseRead
-	case "lease-clear", "clear-lease":
+	case "lease-clear":
 		return usageLeaseClear
-	case "check-disjoint", "path-disjoint":
+	case "path-disjoint":
 		return usagePathDisjoint
 	case "select":
 		return usageSelect
@@ -349,15 +346,31 @@ func requireRootSlug(f flagSet, stderr io.Writer) int {
 	return ExitOK
 }
 
+// maxJSONInput caps how much JSON a parallel subcommand will read.
+const maxJSONInput = 8 << 20
+
 func readJSONInput(path string, stdin io.Reader) ([]byte, error) {
-	if path == "" || path == "-" {
-		return io.ReadAll(stdin)
+	r := stdin
+	if path != "" && path != "-" {
+		if strings.Contains(path, "..") {
+			return nil, fmt.Errorf("json path must not contain '..'")
+		}
+		// #nosec G304 -- path traversal refused just above
+		f, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		defer func() { _ = f.Close() }()
+		r = f
 	}
-	if strings.Contains(path, "..") {
-		return nil, fmt.Errorf("json path must not contain '..'")
+	data, err := io.ReadAll(io.LimitReader(r, maxJSONInput+1))
+	if err != nil {
+		return nil, err
 	}
-	// #nosec G304 -- path traversal refused just above
-	return os.ReadFile(path)
+	if len(data) > maxJSONInput {
+		return nil, fmt.Errorf("json input too large (limit %d bytes)", maxJSONInput)
+	}
+	return data, nil
 }
 
 func cmdCreate(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -496,16 +509,16 @@ func cmdCleanup(args []string, stdout, stderr io.Writer) int {
 		return code
 	}
 	salvaged, err := Cleanup(f.Root, f.Slug, f.Force)
-	if err != nil {
-		fmt.Fprintf(stderr, "parallel cleanup: %v\n", err)
-		return ExitBlocked
-	}
 	for _, s := range salvaged {
 		fmt.Fprintf(stdout, "salvaged: slice=%s branch=%s commit=%s", s.SliceID, s.Branch, s.Commit)
 		if s.Worktree != "" {
 			fmt.Fprintf(stdout, " worktree=%s(kept)", s.Worktree)
 		}
 		fmt.Fprintln(stdout)
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel cleanup: %v\n", err)
+		return ExitBlocked
 	}
 	fmt.Fprintln(stdout, "cleanup: done")
 	return ExitOK

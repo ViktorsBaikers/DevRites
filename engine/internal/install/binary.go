@@ -17,7 +17,11 @@ import (
 )
 
 func (r *runner) installBinary() error {
-	if !r.opts.WithBinary || os.Getenv("DEVRITES_NO_BINARY") == "1" {
+	if os.Getenv("DEVRITES_NO_BINARY") == "1" {
+		fmt.Fprintln(r.opts.Stdout, "  engine binary: skipped (DEVRITES_NO_BINARY=1).")
+		return nil
+	}
+	if !r.opts.WithBinary {
 		fmt.Fprintln(r.opts.Stdout, "  engine binary: skipped (--no-binary).")
 		return nil
 	}
@@ -147,6 +151,11 @@ func (r *runner) binaryInstallFailure(err error) error {
 		return err
 	}
 	fmt.Fprintf(r.opts.Stderr, "warning: engine binary: %v; continuing without it.\n", err)
+	consequence := "the devrites-engine command will not be on PATH"
+	if exists(binaryDest()) {
+		consequence = "the existing devrites-engine binary was kept"
+	}
+	fmt.Fprintf(r.opts.Stdout, "  engine binary: skipped (%v); %s.\n", err, consequence)
 	return nil
 }
 

@@ -1,6 +1,6 @@
 // Package overhaul dispatches the deterministic tools behind the standalone
 // /overhaul skill: run-record generations and validation, worker-output
-// admission, baseline snapshots, readiness scoring, benchmark statistics and
+// admission, dispatch packets, baseline snapshots, readiness scoring, benchmark statistics and
 // escaped offline views. It never calls a model or the network.
 package overhaul
 
@@ -10,6 +10,7 @@ import (
 
 	"github.com/devrites/devrites/internal/overhaul/admit"
 	"github.com/devrites/devrites/internal/overhaul/bench"
+	"github.com/devrites/devrites/internal/overhaul/packet"
 	"github.com/devrites/devrites/internal/overhaul/records"
 	"github.com/devrites/devrites/internal/overhaul/render"
 	"github.com/devrites/devrites/internal/overhaul/score"
@@ -25,7 +26,9 @@ const Usage = `usage: devrites-engine overhaul <tool> ...
   overhaul records publish <run>
   overhaul records validate <run>
   overhaul admit receipt <run> <receipt.json> [--observed <paths.txt>]
+  overhaul admit packet <run> <packet.json>
   overhaul admit anchor <tree> <proposals.json>
+  overhaul packet write <run> <task> <attempt> <role> [--from <fields.json>] [--phase P] [--wave W] [--lane L] [--snapshot S] [--authorized-by A] [--brief PATH] [--write-path PATH]...
   overhaul snapshot capture <repo> <out>
   overhaul snapshot fingerprint <repo>
   overhaul snapshot verify <repo> <out> [--agent-paths <file>]
@@ -50,6 +53,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return records.Run(rest, stdout, stderr)
 	case "admit":
 		return admit.Run(rest, stdout, stderr)
+	case "packet":
+		return packet.Run(rest, stdout, stderr)
 	case "snapshot":
 		return snapshot.Run(rest, stdout, stderr)
 	case "score":

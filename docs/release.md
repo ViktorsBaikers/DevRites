@@ -4,7 +4,7 @@
 each push to `main`, the `release` job in
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) checks the merged
 commit messages. A `feat:`, `fix:`, `perf:`, `refactor:`, `build:`,
-`remove:`, `docs(README):`, or `BREAKING CHANGE:` tells it to choose the next SemVer
+`remove:`, `docs(readme):`, or `BREAKING CHANGE:` tells it to choose the next SemVer
 version and run these steps:
 
 1. Waits for the workflow's validation, full shell suite, strict Go-engine checks, Linux cross-compile smoke, Windows and macOS Go tests.
@@ -17,12 +17,12 @@ version and run these steps:
    future npm Trusted Publisher can take over, and today authenticates with
    `secrets.NPM_TOKEN` because npm's OIDC exchange still returns
    "package not found" until that Trusted Publisher is configured for
-   `devrites`. This is what `npx devrites@latest` resolves. `npm pack`
-   regenerates the same `pack/generated/` artifacts during `prepack`; there
-   is no `postpack` cleanup step.
+   `devrites`. This is what `npx devrites@latest` resolves. `npm publish`
+   ships the committed, validate-checked `pack/generated/` (the repo `.npmrc`
+   sets `ignore-scripts=true`, so no lifecycle script runs).
 7. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates tag `v<version>`, and publishes a GitHub Release with the tarball, verified installer, binaries, and every checksum sidecar attached. The release job then attests the artifacts with build provenance (`actions/attest-build-provenance`), independent of npm provenance.
 
-Package prepack normally owns host artifact generation; the release archive
+The release archive
 consumes the validated generated files from the same Git index as the rest of
 its payload. Package and release installs validate and copy
 `pack/generated/{claude,codex}`. When a shell install or update shim runs from a
@@ -31,13 +31,15 @@ the missing host payload before handing that local candidate to the engine. The
 engine itself only validates and copies host payloads; it never generates them.
 The npm entrypoint, verified release installer, and direct engine updater acquire
 only an exact-SemVer release bundle or platform binary with its mandatory
-exact-filename SHA-256 sidecar.
+exact-filename SHA-256 sidecar, and each such asset must also pass
+`gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`;
+`gh` must be installed and authenticated, with no bypass).
 
 Verify a downloaded engine binary from a GitHub Release:
 
 ```bash
-curl -LO "https://github.com/ViktorsBaikers/DevRites/releases/download/v<version>/devrites-<os>-<arch>[.exe]"
-curl -LO "https://github.com/ViktorsBaikers/DevRites/releases/download/v<version>/devrites-<os>-<arch>[.exe].sha256"
+curl -q -LO "https://github.com/ViktorsBaikers/DevRites/releases/download/v<version>/devrites-<os>-<arch>[.exe]"
+curl -q -LO "https://github.com/ViktorsBaikers/DevRites/releases/download/v<version>/devrites-<os>-<arch>[.exe].sha256"
 ( cd "$(dirname "$0")" && shasum -a 256 -c devrites-<os>-<arch>[.exe].sha256 )
 ```
 
@@ -78,7 +80,8 @@ or path breach before extraction (at most 10,000 members, 4,096-byte paths, and
 256 MiB expanded files). Metadata is capped at 1 MiB, sidecars at 4 KiB,
 archives/binaries at 64 MiB, and the Node adapter follows at most five redirects.
 There is no raw, source-archive, tag, or default-branch acquisition fallback;
-exact-release guarantees begin at the checksummed release `install.sh` asset.
+exact-release guarantees begin at the checksummed release `install.sh` asset that
+also passes `gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`).
 The Go release boundary may acquire the latest stable candidate; the downloaded
 engine then supplies local paths to the manifest-owned update core. Engine
 `update --check` resolves release metadata but downloads no assets. `--to` and
@@ -120,9 +123,10 @@ remove the exception.
 | --- | --- |
 | `feat:` | **minor** (`0.1.0` → `0.2.0`) |
 | `remove:` | **minor**; grouped under Removed in release notes |
-| `fix:` / `perf:` / `refactor:` / `build:` / `docs(README):` | **patch** (`0.1.0` → `0.1.1`) |
+| `fix:` / `perf:` / `refactor:` / `build:` / `docs(readme):` | **patch** (`0.1.0` → `0.1.1`) |
 | Any type with `BREAKING CHANGE:` footer or `!` after type (e.g. `feat!:`) | **major** (`0.1.0` → `1.0.0`) |
-| `chore:` / `ci:` / `test:` / `docs:` (non-README) | no release |
+| `revert:` | **patch** |
+| `build(deps-dev):` / `chore:` / `ci:` / `test:` / `style:` / `docs:` (non-README) | no release |
 | Any scope `(no-release)` (e.g. `feat(no-release): …`) | no release |
 
 Husky + commitlint reject non-conventional messages at commit time, so you can't accidentally bypass the rules.

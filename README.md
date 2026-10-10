@@ -47,7 +47,15 @@ This is the latest published release; `main` may contain unreleased work.
 
 ## Quick start
 
-**1. Install** from the root of your project. Node.js 18 or later is required.
+**1. Install** from the root of your project. Node.js 18 or later is required to
+install and run DevRites. Development in this repository (`npm ci`, which
+`.npmrc` runs with `engine-strict=true`) needs Node.js 22.22.2 or later within
+22.x, or 24.15 or later; Node 23.x and 24.0 through 24.14 fail with `EBADENGINE`.
+`gh` (GitHub CLI) must also be installed and authenticated, not merely
+installed, because DevRites verifies the build-provenance attestation of every
+release asset it downloads. Run `gh auth login` once, then `gh auth status` to
+confirm. See [Install, update, and remove](#install-update-and-remove) for
+which routes fail without it and which fall back to a local build.
 
 ```bash
 npx devrites@latest
@@ -307,20 +315,22 @@ Run `npx devrites@latest --help` for common flags and
 <br>
 
 Download the release-owned installer and its checksum before executing it. It
-needs `curl`, `gzip`, and `tar`.
+needs `curl`, `gzip`, and `tar`, plus `gh` (GitHub CLI) installed and
+authenticated (`gh auth login`).
 
 ```bash
 bootstrap_dir="$(mktemp -d)"
+project_dir="$PWD"
 (
   set -e
   trap 'rm -rf "$bootstrap_dir"' EXIT HUP INT TERM
   cd "$bootstrap_dir"
   release=https://github.com/ViktorsBaikers/DevRites/releases/latest/download
-  curl -fL --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 60 --max-filesize 1048576 "$release/install.sh" | head -c 1048577 > install.sh
+  curl -q -fL --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 60 --max-filesize 1048576 "$release/install.sh" | head -c 1048577 > install.sh
   install_status="${PIPESTATUS[0]}"
   [ "$(wc -c < install.sh)" -le 1048576 ] || { echo 'error: install.sh exceeds 1 MiB' >&2; exit 1; }
   [ "$install_status" -eq 0 ] || { echo 'error: install.sh download failed' >&2; exit 1; }
-  curl -fL --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 30 --max-filesize 4096 "$release/install.sh.sha256" | head -c 4097 > install.sh.sha256
+  curl -q -fL --proto '=https' --proto-redir '=https' --connect-timeout 10 --max-time 30 --max-filesize 4096 "$release/install.sh.sha256" | head -c 4097 > install.sh.sha256
   sidecar_status="${PIPESTATUS[0]}"
   [ "$(wc -c < install.sh.sha256)" -le 4096 ] || { echo 'error: install.sh.sha256 exceeds 4 KiB' >&2; exit 1; }
   [ "$sidecar_status" -eq 0 ] || { echo 'error: install.sh.sha256 download failed' >&2; exit 1; }
@@ -339,13 +349,14 @@ bootstrap_dir="$(mktemp -d)"
     exit 1
   fi
   [ "$got" = "$want" ] || { echo 'error: install.sh checksum mismatch' >&2; exit 1; }
+  command -v gh >/dev/null 2>&1 || { echo 'error: gh (GitHub CLI) is required and was not found' >&2; exit 1; }
+  gh attestation verify install.sh --repo ViktorsBaikers/DevRites --signer-workflow ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main || { if gh auth status >/dev/null 2>&1; then echo 'error: install.sh attestation verification failed: no build provenance from ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main' >&2; else echo 'error: gh is not authenticated; run gh auth login' >&2; fi; exit 1; }
 
   # Choose one Node-free operation:
-  bash ./install.sh                         # install here
-  # bash ./install.sh --target /path/to/project
-  # bash ./install.sh --dry-run
-  # bash ./install.sh update
-  # bash ./install.sh uninstall
+  bash ./install.sh --target "$project_dir"  # install into the directory you ran this from
+  # bash ./install.sh --dry-run --target "$project_dir"
+  # bash ./install.sh update --target "$project_dir"
+  # bash ./install.sh uninstall --target "$project_dir"
 )
 ```
 
@@ -392,13 +403,58 @@ proof. `devrites-engine migrate` owns deterministic v5 schema normalization.
 See the [CLI contract](docs/cli.md) and
 [ADR-0029](docs/adr/0029-v5-workspace-schema-and-native-migration.md).
 
+Every release asset is verified with `gh attestation verify` before it is
+decompressed, extracted, or executed, so `gh` must be installed and
+authenticated (`gh auth login`). Without that, the Bash bootstrap (`install.sh`
+fetched with `curl`) and `devrites-engine update` are fatal: they stop with no
+fallback. `npx devrites@latest` instead falls back to compiling the shipped
+`engine/` with `go build` when Go is installed, and the engine acquisition in
+`scripts/install-lib.sh` (used by `install.sh` from a clone or an extracted
+bundle) has its own fallback of the same kind.
+
 Release binaries and installers ship with SHA-256 sidecars and
-build-provenance attestations. Verify a download with
-`shasum -a 256 -c <file>.sha256` or
-`gh attestation verify <file> -R ViktorsBaikers/DevRites --signer-workflow ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`.
+build-provenance attestations. Verify a download with both
+`shasum -a 256 -c <file>.sha256` and
+`gh attestation verify <file> -R ViktorsBaikers/DevRites --signer-workflow ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`
+before it runs; the checksum alone is not enough (see the verified Bash
+bootstrap above).
 Pin the signer workflow, because valid provenance shows where a build ran
 but does not show that the intended publishing step produced it. See
 [docs/release.md](docs/release.md).
+
+Read a failure as "prove provenance or stop", not as a verdict about your
+build. The bootstrap checks `gh` itself, exits 1 before `install.sh` runs, and
+prints the cause. It says `error: gh (GitHub CLI) is required and was not
+found` when `gh` is absent. When `gh` is present but logged out (`gh auth
+status` fails) it says `error: gh is not authenticated; run gh auth login`.
+Only when `gh` is logged in and still rejects the attestation does it say
+`error: install.sh attestation verification failed: no build provenance from
+ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`. After that,
+`install.sh` verifies the release bundle `devrites-<tag>.tar.gz` and reports the
+same three causes as `attestation verification failed: gh (GitHub CLI) is
+required and was not found`, `attestation verification failed: gh is not
+authenticated ...; run 'gh auth login' and retry`, and `attestation verification
+failed: no build provenance from <signer>`. The engine binary is acquired
+separately: the bundled installer (`scripts/install-lib.sh`) and the npm route
+report `attestation verification failed (gh must be installed and
+authenticated)` for any of these causes, discard the downloaded binary, and
+fall back to other sources. The bundled installer builds from the bundle's
+`engine/` source when `go` is available, then tries an already-installed
+`devrites-engine`, and only when none works does `install.sh` exit 1 with
+`could not acquire devrites-engine` followed by that cause. `npx devrites@latest` repeats the combined message
+before exiting 127 when no other engine is available. `devrites-engine update` reports `gh (GitHub CLI) is
+required and must be authenticated for attestation verification` when `gh` is
+absent, and `attestation verification failed for <asset>` whenever a present
+`gh` rejects the asset, logged out or not.
+
+There is no flag to skip, disable, or bypass attestation verification. The
+`.sha256` sidecar is fetched from the same origin as the artifact, so a
+substituted origin supplies a digest that matches its own payload, which is why
+the sidecar is a corruption check and not a provenance one. If you cannot run
+`gh auth login`, install Go and use `npx devrites@latest`, or clone this
+repository and run `bash install.sh`: both compile `engine/` locally when the
+download is refused, with `cd engine && go build -o devrites-engine .` as the
+manual equivalent.
 
 </details>
 
@@ -412,8 +468,10 @@ but does not show that the intended publishing step produced it. See
 | **pi** | `.pi/skills/` | `.pi/agents/` | Prompt commands in `.pi/prompts/`, marked block in `AGENTS.md` | `/rite-spec` or `/skill:rite-spec` |
 | **Devin CLI** | `.devin/skills/` | `.devin/agents/` | Marked block in `AGENTS.md` | `/rite-spec` |
 
-On every host, `devrites-slice-wright` is the only writable specialist, and
-every other specialist is read-only and hook-free. Existing
+On every host, among the lifecycle `devrites-*` specialists only
+`devrites-slice-wright` is writable and the rest are read-only and hook-free;
+the shipped profiles are the full role-to-permission map, and `/rite-doctor`
+step 3 checks them. Existing
 settings and user content stay in place. On Devin CLI, dispatch goes through
 `run_subagent` with the exact `devrites-<role>` profile, and a missing profile
 stops for HITL instead of substituting `subagent_general`. Profiles load when a
@@ -470,7 +528,10 @@ traces. DevRites detects these tools but does not install them.
 - Installed host artifacts stay in the project. Use `--no-binary` or
   `DEVRITES_NO_BINARY=1` to avoid keeping a shared binary outside it.
 - npm, Bash, and `devrites-engine update` all require checksummed release
-  assets. Remote fetches use HTTPS at every redirect hop, are bounded in size,
+  assets that also pass `gh attestation verify`, pinned to
+  `ViktorsBaikers/DevRites` and signer workflow
+  `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main` (see
+  [Install, update, and remove](#install-update-and-remove)). Remote fetches use HTTPS at every redirect hop, are bounded in size,
   and never fall back to an unchecked raw file, source archive, tag, or default
   branch.
 - Install, update, and uninstall do not inspect target-project Git. Retained

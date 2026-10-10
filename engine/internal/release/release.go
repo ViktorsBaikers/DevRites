@@ -16,6 +16,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -97,7 +98,7 @@ func Acquire(ctx context.Context, repository, tag string) (Candidate, func(), er
 	bundleName := "devrites-" + tag + ".tar.gz"
 	bundleURL := base + "/" + bundleName
 	bundlePath := filepath.Join(tmp, bundleName)
-	if err := downloadVerified(ctx, bundleURL, bundlePath, bundleName, 0o644); err != nil {
+	if err := downloadVerified(ctx, bundleURL, bundlePath, bundleName, 0o644, repository); err != nil {
 		return fail(fmt.Errorf("download release bundle: %w", err))
 	}
 	source, err := extractBundle(bundlePath, tmp, tag)
@@ -107,7 +108,7 @@ func Acquire(ctx context.Context, repository, tag string) (Candidate, func(), er
 
 	engineURL := base + "/" + binaryName
 	enginePath := filepath.Join(tmp, binaryName)
-	if err := downloadVerified(ctx, engineURL, enginePath, binaryName, 0o755); err != nil {
+	if err := downloadVerified(ctx, engineURL, enginePath, binaryName, 0o755, repository); err != nil {
 		return fail(fmt.Errorf("download engine binary: %w", err))
 	}
 	return Candidate{
@@ -184,7 +185,7 @@ func fetchJSON(ctx context.Context, rawURL string, out any) error {
 	return nil
 }
 
-func downloadVerified(ctx context.Context, rawURL, destination, filename string, mode fs.FileMode) error {
+func downloadVerified(ctx context.Context, rawURL, destination, filename string, mode fs.FileMode, repository string) error {
 	if err := download(ctx, rawURL, destination, maxAssetBytes, mode); err != nil {
 		return err
 	}
@@ -221,6 +222,15 @@ func downloadVerified(ctx context.Context, rawURL, destination, filename string,
 	}
 	if !strings.EqualFold(hex.EncodeToString(hash.Sum(nil)), hex.EncodeToString(want)) {
 		return fmt.Errorf("checksum mismatch for %s", filename)
+	}
+	signer := repository + "/.github/workflows/ci.yml@refs/heads/main"
+	// #nosec G204 -- fixed gh argv; repository is matched by repositoryPattern (leading alphanumeric, so never a flag) in Acquire and destination is an absolute path under the engine-created temp dir
+	cmd := exec.CommandContext(ctx, "gh", "attestation", "verify", destination, "--repo", repository, "--signer-workflow", signer)
+	if _, err := cmd.CombinedOutput(); err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return errors.New("gh (GitHub CLI) is required and must be authenticated for attestation verification")
+		}
+		return fmt.Errorf("attestation verification failed for %s: %w", filename, err)
 	}
 	return nil
 }

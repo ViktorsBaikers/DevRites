@@ -77,7 +77,7 @@ func WorkspaceOverrideChecked(root, slug string) (string, error) {
 	})
 	canonicalWorkspace := relErr == nil && len(parts) == 2 &&
 		parts[0] == "work"
-	if sameRoot || !canonicalWorkspace || !validSlug(filepath.Base(path)) {
+	if sameRoot || !canonicalWorkspace || !ValidSlug(filepath.Base(path)) {
 		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: DEVRITES_WORKSPACE %q is not a feature workspace; run `unset DEVRITES_WORKSPACE`", raw)
 	}
 	if slug != "" && filepath.Base(path) != slug {
@@ -99,7 +99,7 @@ func FeatureDir(root, slug string) string {
 // control-plane commands use this instead of FeatureDir so an attacker cannot
 // redirect archive/removal operations outside the selected DevRites root.
 func ExistingFeatureDirChecked(root, slug string) (string, error) {
-	if !validSlug(slug) {
+	if !ValidSlug(slug) {
 		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: %q is not a feature slug", slug)
 	}
 	if ws, err := WorkspaceOverrideChecked(root, slug); err != nil {
@@ -113,7 +113,7 @@ func ExistingFeatureDirChecked(root, slug string) (string, error) {
 		return resolved, nil
 	}
 	if errors.Is(err, os.ErrNotExist) {
-		return "", os.ErrNotExist
+		return "", fmt.Errorf("no workspace for feature %q at %s: %w", slug, candidate, os.ErrNotExist)
 	}
 	return "", err
 }
@@ -129,7 +129,7 @@ func ArchiveDirChecked(root string) (string, error) {
 // must already exist. A live workspace never satisfies this lookup; callers
 // that accept either location try ExistingFeatureDirChecked first.
 func ExistingArchivedFeatureDirChecked(root, slug string) (string, error) {
-	if !validSlug(slug) {
+	if !ValidSlug(slug) {
 		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: %q is not a feature slug", slug)
 	}
 	candidate := filepath.Join(root, "archive", slug)
@@ -208,13 +208,14 @@ func ActiveSlug(root string) (string, error) {
 		return "", fmt.Errorf("read active feature: %w", err)
 	}
 	slug := strings.TrimSpace(string(raw))
-	if slug != "" && !validSlug(slug) {
+	if slug != "" && !ValidSlug(slug) {
 		return "", fmt.Errorf("DRV-ACTIVE-INVALID: ACTIVE value %q is not a feature slug; run `rm -f %q`", slug, activePath)
 	}
 	return slug, nil
 }
 
-func validSlug(slug string) bool {
+// ValidSlug reports whether slug is a single, non-empty path element.
+func ValidSlug(slug string) bool {
 	return slug != "" && slug != "." && slug != ".." &&
 		filepath.Base(slug) == slug &&
 		!strings.ContainsAny(slug, `/\`)

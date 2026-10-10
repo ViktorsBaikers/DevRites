@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -210,5 +211,41 @@ func TestMergeManifestRejectsParentMismatchAndMissingPredecessor(t *testing.T) {
 	}
 	if code := RunMergeManifest(root, []string{}, &stdout, &stderr); code != 2 {
 		t.Fatalf("missing args: code=%d", code)
+	}
+}
+
+func TestSequenceChainBeyondBoundRefusesInsteadOfTruncating(t *testing.T) {
+	root := unionRoot(t)
+	n := maxSequenceChain + 6
+	for i := 0; i < n; i++ {
+		slug := fmt.Sprintf("feat-%03d", i)
+		unionWorkspace(t, root, slug, manifestBody(fmt.Sprintf("| present | `src/f%03d.ts` | SLICE-001 | Added. |", i)), false)
+	}
+	unionWorkspace(t, root, "release", manifestBody("| present | `src/r.ts` | SLICE-001 | Release. |"), false)
+	link := func(slug, parent string) {
+		statePath := filepath.Join(root, "work", slug, "state.md")
+		raw, _ := os.ReadFile(statePath)
+		raw = append(raw, []byte("| sequence_parent | "+parent+" |\n")...)
+		if err := os.WriteFile(statePath, raw, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 1; i < n; i++ {
+		link(fmt.Sprintf("feat-%03d", i), fmt.Sprintf("feat-%03d", i-1))
+	}
+	link("release", fmt.Sprintf("feat-%03d", n-1))
+	statePath := filepath.Join(root, "work", "release", "state.md")
+	raw, _ := os.ReadFile(statePath)
+	raw = append(raw, []byte("| sequence_role | release |\n")...)
+	if err := os.WriteFile(statePath, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	if code := RunMergeManifest(root, []string{"release"}, &stdout, &stderr); code == 0 {
+		t.Fatalf("merge over an over-long chain succeeded: stdout=%s", stdout.String())
+	}
+	if err := VerifyReleaseUnion(root, "release"); err == nil {
+		t.Fatal("release union passed over an over-long chain")
 	}
 }

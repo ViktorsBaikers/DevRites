@@ -5,8 +5,9 @@ import (
 	"strings"
 )
 
-// htmlIDAttrRE matches id="..." or id='...' attributes without a full HTML parser.
-var htmlIDAttrRE = regexp.MustCompile(`(?i)\bid\s*=\s*(?:"([^"]*)"|'([^']*)')`)
+// htmlIDAttrRE matches quoted and unquoted id attributes without a full HTML
+// parser. The attribute name is anchored so data-id and similar do not match.
+var htmlIDAttrRE = regexp.MustCompile(`(?i)(?:^|[\s"'/])id\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>` + "`" + `]+))`)
 
 // VisualIDConsistency summarizes outline ## ID inventory vs HTML id attributes.
 //
@@ -29,7 +30,7 @@ func ParseOutlineInventoryIDs(outline string) []string {
 	return parseMarkdownFirstColumnIDs(section)
 }
 
-// ScanHTMLIDs returns unique id="..." / id='...' attribute values in document order.
+// ScanHTMLIDs returns unique id="..." / id='...' / id=value attribute values in document order.
 func ScanHTMLIDs(html string) []string {
 	matches := htmlIDAttrRE.FindAllStringSubmatch(html, -1)
 	if len(matches) == 0 {
@@ -41,6 +42,9 @@ func ScanHTMLIDs(html string) []string {
 		id := m[1]
 		if id == "" {
 			id = m[2]
+		}
+		if id == "" {
+			id = m[3]
 		}
 		id = strings.TrimSpace(id)
 		if id == "" {

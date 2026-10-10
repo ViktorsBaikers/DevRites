@@ -37,7 +37,7 @@ amended by [ADR-0028](docs/adr/0028-self-contained-engine-update.md).
   completeness uses six logical **sections** (`spec`, `plan`, `decisions`,
   `tasks`, `proof`, `status`); the canonical live map/cursor/proof files are
   `README.md`, `state.md`, and `evidence.md` (ADR-0007). The current state schema
-  is v3. Readers support official older cursor encodings; state mutations require
+  is v4. Readers support official older cursor encodings; state mutations require
   the current schema. Deterministic normalization uses `devrites-engine migrate`;
   semantic readiness remains phase-owned ([ADR-0029](docs/adr/0029-v5-workspace-schema-and-native-migration.md)).
 
@@ -81,7 +81,7 @@ is a native, preservation-first workflow edit. See
 | **Phase Policy** | The deterministic requirements and applicability rules for a target phase, including required artifacts, open-question blocking, and proof requirements. |
 | **Acceptance-preserving Reslice** | A change to plan or task topology that leaves acceptance criteria and product behavior unchanged. |
 | **Workflow Artifact** | An executable file used only to plan, isolate, or prove an active workflow; it has separate identity and evidence and is excluded from the product candidate and readiness binding. |
-| **Harness** | Per-host edge adapter. Two hosts: Claude + Codex. See [ADR-0002](docs/adr/0002-dual-host-harness.md). |
+| **Harness** | Per-host edge adapter. Hosts are generated under `pack/generated/` (claude, codex, omp, pi, devin); [ADR-0002](docs/adr/0002-dual-host-harness.md) is historical for the original two-host adapter. |
 | **Pack** | The installed bundle under `pack/.claude/`: reviewer/writer agents, `rite-*` skills, and native host configuration. |
 
 ## Repository map

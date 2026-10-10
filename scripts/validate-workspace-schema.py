@@ -167,8 +167,16 @@ def line_count(text: str) -> int:
     return len(text.splitlines())
 
 
+# Go unicode.IsSpace minus "\n": the engine trims each line with these, so Python's
+# \s (which also takes U+001C-U+001F) would disagree.
+_GO_SPACE = "\t\v\f\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000"
+_BUDGET_OVERRIDE = re.compile(
+    rf"(?m)^[{_GO_SPACE}]*Budget override:[{_GO_SPACE}]*[^{_GO_SPACE}\n]"
+)
+
+
 def has_budget_override(text: str) -> bool:
-    return re.search(r"(?im)^Budget override:\s*\S", text) is not None
+    return _BUDGET_OVERRIDE.search(text) is not None
 
 
 def phase_for(workspace: Path) -> str:

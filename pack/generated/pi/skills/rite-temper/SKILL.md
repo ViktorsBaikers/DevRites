@@ -1,7 +1,7 @@
 ---
 name: rite-temper
 description: Temper a readied spec before planning. Use when the user says "temper this", "strategy review", "pre-mortem the spec", or asks if we are over/under-building. Not for code review or final seal.
-argument-hint: "[feature-slug] [--mode expand|selective|hold|reduce]"
+argument-hint: "[feature-slug] [--mode expand|selective|hold-rigor|reduce-to-MVP]"
 user-invocable: true
 ---
 
@@ -31,8 +31,9 @@ the spec applicability map triggers that risk family.
 - **Raise outcome ambition without expanding the solution unnecessarily.** Solve the
   underlying problem without adding speculative capability or abstraction.
 - **Route every scope change through the Spec Drift Guard.** A scope change takes effect
-  only when `spec.md` records the confirmed decision. HITL confirms expand;
-  autocomplete auto-applies it. Irreversible-risk still pauses.
+  only when `spec.md` records the confirmed decision. Growth (`expand`, extra
+  acceptance) needs a resolved human `questions.md` qid, so an unattended run holds it
+  open. Irreversible-risk still pauses.
 - **Apply maximum caution to hard-to-reverse changes.** Auth, migration, public API, and
   data-model changes always pause under the irreversible-risk list.
 - **Honest verdict.** Never round "needs work" up to "ready"; record every scope call's *why*.
@@ -91,10 +92,12 @@ the spec applicability map triggers that risk family.
 5. **Review human-owned findings with the human; do not batch them.** `strategy.md`
    records the interactive review but does not replace it. Present each material scope decision through
    `AskUserQuestion`, one at a time, best-guess + **why**. Each material scope call ends as a
-   **recorded decision**: a resolved `questions.md` qid (HITL) or a `decisions.md` ADR (AFK):
+   **recorded decision**: a resolved `questions.md` qid (HITL) or a `decisions.md` ADR (AFK;
+   never for `expand` or extra acceptance, which need a human-resolved qid):
    so the review leaves an auditable record outside chat. (AFK gate policy —
    [`reference/significance.md`](reference/significance.md) — autocomplete applies
-   the recommended mode including `expand`; irreversible-risk always pauses.)
+   `hold-rigor`, `reduce-to-MVP` and a skip, but holds `expand` and extra acceptance for a human
+   qid; irreversible-risk always pauses.)
    Apply objective clarity, mitigation, and assumption fixes directly.
 6. **Write `strategy.md` + fold back:** [`reference/strategy-template.md`](reference/strategy-template.md).
    **Choose the drift path based on whether a plan exists:** *no `plan.md` yet* (the normal pre-define
@@ -110,12 +113,12 @@ the spec applicability map triggers that risk family.
    any folded scope delta lacks its decision or leaves a foreseeable human build choice).
    After any edit to `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or
    `questions.md`, re-scan the affected coverage rows, assumption audit, residual uncertainty,
-   and closed gates. Partial/Missing, an unowned material assumption, or an open
+   and closed gates. `open` rows, an unowned material assumption, or an open
    blocking/escalating question routes `/rite-clarify`/HITL. Only after the
    matrix is re-closed may the phase advance.
    Set `Phase: temper`; `Next step: /rite-define` only after verification.
-   Unapproved irreversible choices set `Awaiting human`. Autocomplete expand does
-   not. Objective below-bar findings continue correction.
+   Unapproved irreversible choices and unresolved growth qids set `Awaiting human`.
+   Objective below-bar findings continue correction.
 7. **Adversarial verification loop:** ask the exact
    [`devrites-strategy-reviewer`](.pi/agents/devrites-strategy-reviewer.md)
    through the native fresh-context contract in

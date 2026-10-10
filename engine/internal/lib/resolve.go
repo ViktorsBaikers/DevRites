@@ -39,6 +39,10 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 		return fail(stderr, err.Error(), 3)
 	}
 
+	human := argAt(args, 0) == "--human"
+	if human {
+		args = args[1:]
+	}
 	var mode, qid, payload string
 	switch first := argAt(args, 0); first {
 	case "--drop":
@@ -55,7 +59,7 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 			return fail(stderr, "Batch file not found: "+payload, 5)
 		}
 	case "":
-		return fail(stderr, `Usage: devrites-engine state resolve <qid> "<answer>"  |  state resolve --drop <qid> ["<reason>"]  |  state resolve --batch <file>`, 5)
+		return fail(stderr, `Usage: devrites-engine state resolve [--human] <qid> "<answer>"  |  state resolve [--human] --drop <qid> ["<reason>"]  |  state resolve [--human] --batch <file>`, 5)
 	default:
 		mode = "answer"
 		qid = first
@@ -67,7 +71,7 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 
 	code := 0
 	if err := state.WithFeatureLock(root, slug, func() error {
-		code = resolveMutation(mode, qid, payload, qfile, sfile, stdout, stderr)
+		code = resolveMutation(mode, qid, payload, qfile, sfile, human, stdout, stderr)
 		return nil
 	}); err != nil {
 		return fail(stderr, err.Error(), 1)
@@ -75,10 +79,10 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func resolveMutation(mode, qid, payload, qfile, sfile string, stdout, stderr io.Writer) int {
+func resolveMutation(mode, qid, payload, qfile, sfile string, human bool, stdout, stderr io.Writer) int {
 	switch mode {
 	case "answer":
-		if code := resolveQuestion(qfile, qid, "answered", payload, stderr); code != 0 {
+		if code := resolveQuestion(qfile, qid, "answered", payload, human, stderr); code != 0 {
 			return code
 		}
 		if err := clearAwaiting(sfile, qid); err != nil {
@@ -88,7 +92,7 @@ func resolveMutation(mode, qid, payload, qfile, sfile string, stdout, stderr io.
 		fmt.Fprintf(stdout, "Status:   answered\n")
 		fmt.Fprintf(stdout, "Workspace: questions.md + state.md updated.\n")
 	case "drop":
-		if code := resolveQuestion(qfile, qid, "dropped", payload, stderr); code != 0 {
+		if code := resolveQuestion(qfile, qid, "dropped", payload, human, stderr); code != 0 {
 			return code
 		}
 		if err := clearAwaiting(sfile, qid); err != nil {
@@ -111,7 +115,7 @@ func resolveMutation(mode, qid, payload, qfile, sfile string, stdout, stderr io.
 				rest := strings.TrimPrefix(line, "--drop ")
 				bid, reason := splitColon(rest)
 				reason = strings.TrimPrefix(reason, " ")
-				if code := resolveQuestion(qfile, bid, "dropped", reason, stderr); code != 0 {
+				if code := resolveQuestion(qfile, bid, "dropped", reason, human, stderr); code != 0 {
 					return code
 				}
 				if err := clearAwaiting(sfile, bid); err != nil {
@@ -121,7 +125,7 @@ func resolveMutation(mode, qid, payload, qfile, sfile string, stdout, stderr io.
 			} else {
 				bid, ans := splitColon(line)
 				ans = strings.TrimPrefix(ans, " ")
-				if code := resolveQuestion(qfile, bid, "answered", ans, stderr); code != 0 {
+				if code := resolveQuestion(qfile, bid, "answered", ans, human, stderr); code != 0 {
 					return code
 				}
 				if err := clearAwaiting(sfile, bid); err != nil {
@@ -156,12 +160,15 @@ func isFile(path string) bool {
 	return err == nil && info.Mode().IsRegular()
 }
 
-// batchLines returns the newline-terminated lines of a batch file. An unterminated
-// final line is dropped, matching a shell `read` loop, so a partial trailing line
-// is never applied as an entry.
+// batchLines returns the lines of a batch file. A final line without a
+// terminating newline is kept; only the empty element after a trailing newline
+// is dropped.
 func batchLines(data []byte) []string {
 	lines := strings.Split(string(data), "\n")
-	return lines[:len(lines)-1]
+	if lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return lines
 }
 
 // splitColon splits s at the first ':', returning the parts before and after it
@@ -192,9 +199,12 @@ func clockNow() time.Time {
 func nowUTC() string { return clockNow().UTC().Format("2006-01-02T15:04:05Z") }
 
 // resolveQuestion rewrites the <qid> block in questions.md so it records the new
-// status, answer, and answered-at time in one pass. Returns 0, or 3 (qid
+// status, answer, and answered-at time in one pass. With human set it also records
+// answered_by: human; without it any answered_by line in the block, whatever its
+// indentation or case, is removed, so
+// an identity written before the resolve cannot survive it. Returns 0, or 3 (qid
 // not found) / 4 (qid not open), writing the message on failure.
-func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
+func resolveQuestion(qfile, qid, status, answer string, human bool, stderr io.Writer) int {
 	// #nosec G304 -- questions.md path inside the feature workspace
 	data, err := os.ReadFile(qfile)
 	if err != nil {
@@ -204,7 +214,7 @@ func resolveQuestion(qfile, qid, status, answer string, stderr io.Writer) int {
 	answer = oneLine(answer)
 	target := regexp.MustCompile(`^## ` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)
 
-	updated, found, notOpen := rewriteQuestionFields(splitLinesNoTrailing(data), target, status, answer, ts)
+	updated, found, notOpen := rewriteQuestionFields(splitLinesNoTrailing(data), target, status, answer, ts, human)
 	if !found {
 		return fail(stderr, "qid not found: "+qid, 3)
 	}
@@ -224,6 +234,7 @@ var (
 	statusStrip  = regexp.MustCompile(`^status:[[:space:]]*`)
 	answeredAtRe = regexp.MustCompile(`^answered_at:`)
 	answerRe     = regexp.MustCompile(`^answer:`)
+	answeredByRe = regexp.MustCompile(`(?i)^[[:space:]]*answered_by:`)
 )
 
 // rewriteQuestionFields walks questions.md and, inside the target question's
@@ -231,9 +242,9 @@ var (
 // reports whether the block was found and whether it was already not open (an
 // attempt to re-answer). A target block with no status line at all gets a full set
 // of closing fields appended.
-func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer, ts string) (out []string, found, notOpen bool) {
+func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer, ts string, human bool) (out []string, found, notOpen bool) {
 	inQ := false
-	statusSeen, answeredAtSeen, answerSeen := false, false, false
+	statusSeen, answeredAtSeen, answerSeen, answeredBySeen := false, false, false, false
 	closeBlock := func() {
 		if !inQ {
 			return
@@ -247,13 +258,16 @@ func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer
 		if !answerSeen {
 			out = append(out, "answer: "+answer)
 		}
+		if human && !answeredBySeen {
+			out = append(out, "answered_by: human")
+		}
 	}
 	for _, line := range lines {
 		switch {
 		case qHeaderRe.MatchString(line):
 			closeBlock()
 			inQ = target.MatchString(line)
-			statusSeen, answeredAtSeen, answerSeen = false, false, false
+			statusSeen, answeredAtSeen, answerSeen, answeredBySeen = false, false, false, false
 			if inQ {
 				found = true
 			}
@@ -274,6 +288,11 @@ func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer
 		case inQ && answerRe.MatchString(line):
 			answerSeen = true
 			out = append(out, "answer: "+answer)
+		case inQ && answeredByRe.MatchString(line):
+			if human && !answeredBySeen {
+				answeredBySeen = true
+				out = append(out, "answered_by: human")
+			}
 		default:
 			out = append(out, line)
 		}

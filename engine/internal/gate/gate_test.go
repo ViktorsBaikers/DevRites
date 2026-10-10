@@ -436,6 +436,47 @@ func TestOpenBlockingQuestionGates(t *testing.T) {
 	}
 }
 
+func TestOpenBlockingQuestionGatesFieldPrefixesAreCaseInsensitive(t *testing.T) {
+	got := OpenBlockingQuestionGates([]byte("## Q-2026-01-001-003\nStatus: open\nGate: blocking\n"))
+	if strings.Join(got, ",") != "blocking" {
+		t.Fatalf("OpenBlockingQuestionGates=%v, want [blocking]", got)
+	}
+}
+
+func TestOpenBlockingQuestionGatesIgnoresFencedExamples(t *testing.T) {
+	const live = "## q-1\nstatus: open\ngate: blocking\n"
+	for _, tc := range []struct {
+		name string
+		data string
+		want string
+	}{
+		{"fenced only is documentation", "# Questions\n\n```markdown\n" + live + "```\n", ""},
+		{"tilde fenced only is documentation", "~~~markdown\n" + live + "~~~\n", ""},
+		{"unfenced control still blocks", live, "blocking"},
+		{"live question beside a fenced example", "```markdown\n" + live + "```\n\n## q-2\nstatus: open\ngate: escalating\n", "escalating"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := strings.Join(OpenBlockingQuestionGates([]byte(tc.data)), ","); got != tc.want {
+				t.Fatalf("OpenBlockingQuestionGates=%q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestOpenBlockingQuestionGatesRejectsUnmaskableInput(t *testing.T) {
+	gates, err := openBlockingQuestionGates([]byte("## q-1\nstatus: open\ngate: blocking\n\xff\n"))
+	if err == nil || len(gates) != 0 {
+		t.Fatalf("unmaskable input gates=%v err=%v, want no gates and an error", gates, err)
+	}
+}
+
+func TestOpenBlockingQuestionGatesFailsClosedOnUnmaskableInput(t *testing.T) {
+	got := OpenBlockingQuestionGates([]byte("## q-1\nstatus: open\ngate: blocking\n\xff\n"))
+	if len(got) == 0 {
+		t.Fatalf("OpenBlockingQuestionGates=%v for unparseable input, want a non-empty fail-closed result", got)
+	}
+}
+
 func TestCheckObservationUsesRetainedPhaseQuestionsReadinessAndReview(t *testing.T) {
 	root := t.TempDir()
 	workspace := writeReadinessFixture(t, root, "retained", "build")
@@ -760,5 +801,65 @@ func TestCheckLeavesProofLedgerOvershootAdvisory(t *testing.T) {
 	}
 	if joined := strings.Join(res.StateProblems, "\n"); strings.Contains(joined, "budget:") {
 		t.Fatalf("proof ledgers must stay advisory: %v", res.StateProblems)
+	}
+}
+
+func TestAcceptanceMapBlocksSpecsItCannotParse(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		spec string
+		want string
+	}{
+		{"canonical control", "# Spec\n\n## Acceptance criteria\n- AC-001: a.\n- AC-002: b.\n", "acceptance AC-001 is not referenced in test-plan.md"},
+		{"trailing colon", "# Spec\n\n## Acceptance criteria:\n- AC-001: a.\n", "## Acceptance criteria"},
+		{"h3 heading", "# Spec\n\n### Acceptance criteria\n- AC-001: a.\n", "## Acceptance criteria"},
+		{"suffixed heading", "# Spec\n\n## Acceptance criteria (draft)\n- AC-001: a.\n", "## Acceptance criteria"},
+		{"two digit id", "# Spec\n\n## Acceptance criteria\n- AC-01: a.\n", "AC-###"},
+		{"four digit id", "# Spec\n\n## Acceptance criteria\n- AC-0001: a.\n", "AC-###"},
+		{"one digit id", "# Spec\n\n## Acceptance criteria\n- AC-1: a.\n", "AC-###"},
+		{"trailing heading whitespace", "# Spec\n\n## Acceptance criteria   \n- AC-001: a.\n", "acceptance AC-001 is not referenced in test-plan.md"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			workspace := writeReadinessFixture(t, root, "unparsed", "build")
+			testutil.WriteFile(t, filepath.Join(workspace, "spec.md"), tc.spec)
+			testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+mustReadinessBinding(t, root, "unparsed")+"\n")
+			result, err := Check(Readiness, root, "unparsed")
+			if err != nil {
+				t.Fatal(err)
+			}
+			joined := strings.Join(result.StateProblems, "\n")
+			if !result.Blocked || !strings.Contains(joined, "acceptance-map: ") || !strings.Contains(joined, tc.want) {
+				t.Fatalf("blocked=%v want acceptance-map problem containing %q, got %q", result.Blocked, tc.want, joined)
+			}
+		})
+	}
+}
+
+func TestAcceptanceMapBlocksPartiallyParsedSpecs(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		spec string
+		want string
+	}{
+		{"canonical id beside two digit id", "# Spec\n\n## Acceptance criteria\n- AC-001: a.\n- AC-02: b.\n", "AC-02"},
+		{"second acceptance heading", "# Spec\n\n## Acceptance criteria\n- AC-001: a.\n\n## Acceptance criteria (phase 2)\n- AC-002: b.\n", "## Acceptance criteria (phase 2)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			workspace := writeReadinessFixture(t, root, "partial", "build")
+			testutil.WriteFile(t, filepath.Join(workspace, "spec.md"), tc.spec)
+			testutil.AppendFile(t, filepath.Join(workspace, "tasks.md"), "\nAC-001 AC-002\n")
+			testutil.AppendFile(t, filepath.Join(workspace, "test-plan.md"), "\nAC-001 AC-002\n")
+			testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+mustReadinessBinding(t, root, "partial")+"\n")
+			result, err := Check(Readiness, root, "partial")
+			if err != nil {
+				t.Fatal(err)
+			}
+			joined := strings.Join(result.StateProblems, "\n")
+			if !result.Blocked || !strings.Contains(joined, "acceptance-map: ") || !strings.Contains(joined, tc.want) {
+				t.Fatalf("blocked=%v want acceptance-map problem containing %q, got %q", result.Blocked, tc.want, joined)
+			}
+		})
 	}
 }

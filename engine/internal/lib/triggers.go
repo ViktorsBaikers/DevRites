@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -103,11 +104,16 @@ func gatherTriggerFacts(root, featureDir, role string) triggerFacts {
 		for _, name := range triggerEvidenceFiles {
 			path := filepath.Join(featureDir, name)
 			info, err := os.Stat(path)
-			if err != nil || !info.Mode().IsRegular() || info.Size() > triggerEvidenceFileCap {
+			if err != nil || !info.Mode().IsRegular() {
 				continue
 			}
-			// #nosec G304 -- workspace artifact; size cap checked above
-			if data, err := os.ReadFile(path); err == nil {
+			f, err := os.Open(path) // #nosec G304 -- workspace artifact; read is capped below
+			if err != nil {
+				continue
+			}
+			data, err := io.ReadAll(io.LimitReader(f, triggerEvidenceFileCap))
+			_ = f.Close()
+			if err == nil {
 				corpus.Write(data)
 				corpus.WriteByte('\n')
 			}

@@ -7,15 +7,24 @@ Codex or Claude or claim to measure model behavior.
 ## Evaluation boundaries
 
 - `*.json` contains trigger examples for native provider evaluation. CI validates
-  JSON shape and corpus completeness with `scripts/run-evals.sh`.
+  JSON shape and corpus completeness with `scripts/run-evals.sh`, which also
+  enforces two offline routing rules: a query that explicitly invokes a skill
+  (`/name`, `$name`, `/rite <verb>`) must be `should_trigger` only in that
+  skill's own corpus, and a `should_not_trigger` explicit query must name that
+  skill as `owner`; a natural-language `should_not_trigger` query must not name
+  an explicit-only owner (`disable-model-invocation: true`). The `expected` and
+  `owner` values of natural-language queries are not executed in CI; they are
+  inputs for native-host evaluation. The `jq` fallback checks shape only.
 - `golden/` contains shippable and blocked workspaces graded by
   `scripts/run-outcome-evals.sh`.
 - `behavioral/` contains pressure scenarios for gating skills. CI validates their
   shape with `scripts/run-behavioral-evals.sh`.
 - `coverage.json` lists gating skills and P0 agents that must have behavioral
   corpora. CI runs `scripts/check-gating-eval-ledger.sh` blocking for
-  `require_behavioral` and `require_behavioral_agents`. `--advisory` still
-  prints the full scoreboard with exit 0. Agent-owned files (filename prefix or
+  `require_behavioral` and `require_behavioral_agents`. `require_trigger`
+  (`gating_skills` or `all_public_skills_except_devrites-lib`) makes a missing
+  trigger corpus for that set blocking too. `--advisory` still prints the full
+  scoreboard with exit 0. Agent-owned files (filename prefix or
   `"agent"`) count for that agent only; they do not satisfy a skill's ledger row.
 
 Use Codex or Claude's native evaluation/session facilities to measure routing or
@@ -170,7 +179,11 @@ command positives and negative cases for implicit invocation.
 
 Every corpus must be non-empty and contain both verdicts. A
 `should_not_trigger` query names the better owner; when no DevRites skill owns
-it, use `owner: null` plus `owner_rationale`.
+it, use `owner: null` plus `owner_rationale`. An explicit-only skill never owns
+a natural-language query, so use `owner: null` for those. `scripts/run-evals.sh`
+enforces the owner of explicit `/name` queries and this explicit-only rule; the
+`expected` and `owner` values of other natural-language queries remain unexecuted
+native-host inputs.
 
 ## Deterministic outcome evals
 

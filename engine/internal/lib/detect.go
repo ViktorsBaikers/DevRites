@@ -293,7 +293,7 @@ func manifestFallback(root string, slot string) (detectedCommand, bool) {
 		}
 		cmd, ok := m.cmds[slot]
 		if !ok {
-			return detectedCommand{}, false
+			continue
 		}
 		out := detectedCommand{Name: slot, Command: cmd, Source: m.source}
 		binary := strings.Fields(cmd)[0]

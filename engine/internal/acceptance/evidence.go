@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // Evidence state vocabulary. A runnable gate is met only when its recorded
@@ -55,9 +56,8 @@ func GateState(gate *Gate, doc *Document) string {
 		return StateAbandoned
 	}
 	if gate.Check == "" {
-		// Manual gate: met when checked with any non-empty human evidence.
-		evidence := strings.TrimSpace(gate.Evidence)
-		if gate.Checked && evidence != "" && evidence != "pending" {
+		// Manual gate: met when checked with substantive human evidence.
+		if gate.Checked && !placeholderEvidence(gate.Evidence, gate.ID, gate.Title) {
 			return StateMet
 		}
 		return StateUnmet
@@ -71,6 +71,68 @@ func GateState(gate *Gate, doc *Document) string {
 		return StateStaleUnmet
 	}
 	return StateMet
+}
+
+// placeholderWords is the tautological vocabulary a manual attestation may not
+// consist of (gates.md), as normalised words. A note whose every word comes
+// from it, from the gate title, or is the gate ID is a placeholder.
+var placeholderWords = map[string]bool{
+	"n": true, "a": true, "na": true, "tbd": true, "todo": true, "later": true,
+	"ok": true, "okay": true, "done": true, "yes": true, "pass": true, "passed": true,
+	"true": true, "0": true, "pending": true, "none": true, "verified": true,
+	"not": true, "applicable": true, "see": true, "above": true,
+}
+
+var trailingParenRE = regexp.MustCompile(`\s*\([^()]*\)$`)
+
+// splitWords lowercases text and splits on every run of non-alphanumeric
+// characters (markdown marks, quotes, punctuation, dash variants).
+func splitWords(text string) []string {
+	return strings.FieldsFunc(strings.ToLower(text), func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
+}
+
+// noteWords is splitWords after dropping one trailing parenthetical when text
+// remains before it. Gate titles use splitWords: their parenthetical is title
+// text a note may not merely repeat.
+func noteWords(text string) []string {
+	text = strings.TrimSpace(text)
+	if stripped := trailingParenRE.ReplaceAllString(text, ""); strings.TrimSpace(stripped) != "" {
+		text = stripped
+	}
+	return splitWords(text)
+}
+
+// placeholderEvidence reports whether a manual note is only a placeholder, so
+// `N/A (see notes)`, `**done**`, `TODO: later` and `AC-004 - done` count while
+// real prose does not. The gate ID is recognised in any spacing (`AC004`,
+// `AC 004`, `AC-004`), and restating the gate title is also a placeholder.
+func placeholderEvidence(evidence, id, title string) bool {
+	titleWords := map[string]bool{}
+	for _, w := range splitWords(title) {
+		titleWords[w] = true
+	}
+	compactID := strings.Join(noteWords(id), "")
+	words := noteWords(evidence)
+	for i := 0; i < len(words); {
+		if compactID != "" {
+			skip := 0
+			for k, joined := 1, ""; i+k <= len(words) && len(joined) < len(compactID); k++ {
+				joined += words[i+k-1]
+				if joined == compactID {
+					skip = k
+				}
+			}
+			if skip > 0 {
+				i += skip
+				continue
+			}
+		}
+		if !placeholderWords[words[i]] && !titleWords[words[i]] {
+			return false
+		}
+		i++
+	}
+	return true
 }
 
 // Reduction is the non-executing ledger verdict shared by `gates status` and
@@ -102,7 +164,9 @@ func (r Reduction) HandoffRequired() bool {
 
 // Reduce computes the ledger reduction. approved is the vetted (command, cwd)
 // surface from test-plan.md; a runnable gate whose CHECK is absent also
-// records an unapproved diagnostic but always counts as unmet.
+// records an unapproved diagnostic but always counts as unmet. A nil or empty
+// approved surface approves nothing, so every unmet runnable gate is reported
+// unapproved rather than silently counted as approved.
 func (d *Document) Reduce(approved []ApprovedCommand) Reduction {
 	r := Reduction{Total: len(d.Gates)}
 	for _, gate := range d.Gates {
@@ -122,7 +186,7 @@ func (d *Document) Reduce(approved []ApprovedCommand) Reduction {
 				r.Stale++
 				r.StaleIDs = append(r.StaleIDs, gate.ID)
 			}
-			if approved != nil && !Approved(gate.Check, gate.Cwd, approved) {
+			if !Approved(gate.Check, gate.Cwd, approved) {
 				r.Unapproved++
 				r.UnapprIDs = append(r.UnapprIDs, gate.ID)
 			}

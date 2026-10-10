@@ -18,7 +18,9 @@ every retired top-level semantic command is unknown.
 `blocked-feature/` and `near-miss-unproven-ac/` remain compatibility examples.
 They must stay NO-GO, but their overlapping failures are not matrix proof.
 
-`out-of-scope-writer-diff/` adds `src/utils/format.ts` to the candidate without
-naming it in `tasks.md`. `unauthorized-spec-drift/` adds `AC-004` to `spec.md`
+`out-of-scope-writer-diff/` adds `src/utils/format.ts` to the candidate and to
+SLICE-001 `Files likely touched`, outside that slice's `Writer allowlist`; the
+runner asserts `check slice` rejects it for that path while accepting
+`shippable-feature/`. `unauthorized-spec-drift/` adds `AC-004` to `spec.md`
 without mapping it into `tasks.md`, `test-plan.md`, or `seal.md`. The runner
 must fail both.

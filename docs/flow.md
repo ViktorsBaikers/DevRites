@@ -346,7 +346,7 @@ erDiagram
     }
     WORKSPACE {
         string slug PK ".devrites/work/<slug>/"
-        int schemaVersion "3; mutations require current schema; older cursors remain readable"
+        int schemaVersion "4; mutations require current schema; older cursors remain readable"
     }
     state {
         string phase "frame | spec | clarify | temper | define | plan | vet | build | converge | prove | polish | review | seal | ship | done"

@@ -27,6 +27,18 @@
     "stop_unobservable_cap",
     "continue_dispatch"
   ],
+  "job_vocabulary": [
+    "resumed",
+    "built_all_pending",
+    "proof_repaired",
+    "blocked",
+    "new_recovery_started",
+    "paused",
+    "no_go",
+    "awaiting_go",
+    "reconcile_only",
+    "cannot_verify"
+  ],
   "scenarios": [
     {
       "id": "cold-resume",

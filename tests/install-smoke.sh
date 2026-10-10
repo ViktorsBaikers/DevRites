@@ -32,6 +32,55 @@ if [ -f "$GEN/claude/skills/devrites-lib/reference/standards/agents.md" ] \
 else
   no "partial payload accepted without shared agent standard"
 fi
+# A payload missing a whole host tree the engine requires must also rebuild.
+mkdir -p "$T/partial-target"
+for rel in omp pi claude/workflows; do
+  P="$T/partial-${rel//\//-}"
+  mkdir -p "$P" && cp -R "$GEN"/. "$P"/ && rm -rf "${P:?}/$rel"
+  DEVRITES_HOST_ARTIFACT_DIR="$P" bash "$ROOT/install.sh" --target "$T/partial-target" --dry-run >/dev/null 2>&1 \
+    && ok "payload without $rel: install regenerates and exits 0" || no "payload without $rel: install failed"
+  [ -e "$P/$rel" ] && ok "payload without $rel: restored" || no "payload without $rel: not regenerated"
+done
+
+# The shell completeness predicate must demand exactly the engine's required
+# payload (every host) plus each host's standards file.
+mkdir -p "$T/dump"
+cat > "$T/dump/main.go" <<'GO'
+package main
+
+import (
+	"fmt"
+
+	"github.com/devrites/devrites/internal/hostpack"
+)
+
+func main() {
+	for _, p := range hostpack.RequiredPayload(true, true, true, true) {
+		fmt.Println(p)
+	}
+}
+GO
+printf '{"Replace":{"%s":"%s"}}\n' "$ROOT/engine/internal/hostpack/zzdump/main.go" "$T/dump/main.go" > "$T/dump/overlay.json"
+req="$(cd "$ROOT/engine" && go run -overlay "$T/dump/overlay.json" ./internal/hostpack/zzdump 2>/dev/null)"
+if [ -z "$req" ]; then
+  no "could not read hostpack.RequiredPayload"
+else
+  . "$ROOT/scripts/install-lib.sh"
+  std=""
+  for h in claude codex omp pi devin; do std="$std $h/skills/devrites-lib/reference/standards/agents.md"; done
+  M="$T/minimal"
+  for r in $req $std; do
+    mkdir -p "$M/$(dirname "$r")"
+    if [ -d "$GEN/$r" ]; then cp -R "$GEN/$r" "$M/$r"; else cp "$GEN/$r" "$M/$r"; fi
+  done
+  dr_payload_complete "$M" && ok "payload predicate accepts exactly the engine's required paths" || no "payload predicate demands paths the engine does not"
+  for r in $req $std; do
+    mv "$M/$r" "$T/aside"
+    dr_payload_complete "$M" && no "payload predicate accepts a payload without $r"
+    mv "$T/aside" "$M/$r"
+  done
+fi
+
 printf '\n<!-- install-smoke-generated-sentinel -->\n' >> "$GEN/codex/skills/rite/SKILL.md"
 
 echo "== install-smoke (target: $T) =="
@@ -140,8 +189,8 @@ else
   no "AGENTS bridge missing fresh-context mapping"
 fi
 grep -q 'Read `.agents/skills/devrites-lib/reference/standards/core.md`' "$T/.agents/skills/rite-build/SKILL.md" && ok "Codex skill mirror loads DevRites rules mirror" || no "Codex skill mirror missing rules instruction"
-grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$T/AGENTS.md" && ok "installed AGENTS bridge recovers from ignored mirror refusals" || no "installed AGENTS bridge can return an ignored mirror refusal"
-grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' "$T/AGENTS.md" && ok "installed AGENTS bridge preserves exact Engram identifiers" || no "installed AGENTS bridge can invent Engram identifiers"
+tr -s '[:space:]' ' ' <"$T/AGENTS.md" | grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' && ok "installed AGENTS bridge recovers from ignored mirror refusals" || no "installed AGENTS bridge can return an ignored mirror refusal"
+tr -s '[:space:]' ' ' <"$T/AGENTS.md" | grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' && ok "installed AGENTS bridge preserves exact Engram identifiers" || no "installed AGENTS bridge can invent Engram identifiers"
 grep -q 'Codex custom-agent version\|repository-aware file tool refuses an ignored path\|For automatic Engram calls' "$T/.codex/agents/devrites-code-reviewer.toml" && no "installed Codex agent duplicates project-wide guidance" || ok "installed Codex agent contains only its role contract"
 grep -q '\.claude/agents' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/agents" || ok "Codex skill mirror does not point at .claude/agents"
 grep -q '\.claude/skills/devrites-lib/reference/standards' "$T/.agents/skills/rite-build/SKILL.md" && no "Codex skill mirror still points at .claude/skills/devrites-lib/reference/standards" || ok "Codex skill mirror does not point at .claude/skills/devrites-lib/reference/standards"
@@ -179,13 +228,13 @@ grep -q '\.devin/agents/devrites-slice-wright.md' "$T/.devin/skills/rite-build/S
   && ok "Devin skill root points at Devin agent markdown" \
   || no "Devin skill root missing Devin agent path"
 if grep -R -nE '\.claude/skills|\.claude/agents|\.codex/|\.agents/skills|\.omp/|\.pi/' \
-  "$T/.devin/skills" "$T/.devin/agents" >/tmp/dr_install_devin_paths 2>/dev/null; then
+  "$T/.devin/skills" "$T/.devin/agents" >"$T/dr_install_devin_paths" 2>/dev/null; then
   no "Devin installed tree retains foreign host paths"
-  sed -n '1,20p' /tmp/dr_install_devin_paths
+  sed -n '1,20p' "$T/dr_install_devin_paths"
 elif grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' \
-  "$T/.devin/skills" "$T/.devin/agents" >/tmp/dr_install_devin_paths 2>/dev/null; then
+  "$T/.devin/skills" "$T/.devin/agents" >"$T/dr_install_devin_paths" 2>/dev/null; then
   no "Devin installed tree retains pack/.claude paths"
-  sed -n '1,20p' /tmp/dr_install_devin_paths
+  sed -n '1,20p' "$T/dr_install_devin_paths"
 else
   ok "Devin installed tree has no foreign host paths"
 fi
@@ -209,9 +258,9 @@ grep -q 'exact project-relative source/test path list directly in the task' "$T/
   || no "Codex build contract assigns deterministic gates inconsistently"
 if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out)([[:space:]`]|$)' \
   "$T/.claude/skills" "$T/.claude/agents" "$T/.agents/skills" "$T/.codex/agents" "$T/.devin/skills" "$T/.devin/agents" \
-  >/tmp/dr_install_retired_engine 2>/dev/null; then
+  >"$T/dr_install_retired_engine" 2>/dev/null; then
   no "installed guidance retains retired engine commands"
-  sed -n '1,20p' /tmp/dr_install_retired_engine
+  sed -n '1,20p' "$T/dr_install_retired_engine"
 else
   ok "installed guidance uses only nested thin-engine commands"
 fi
@@ -232,9 +281,9 @@ elif grep -q 'root-produced test, build, lint, typecheck, and browser evidence' 
 else
   no "Codex proof ownership contract is incomplete"
 fi
-if grep -R -nE '(^|[^A-Za-z0-9_./-])/rite(-[a-z0-9-]+)?([^A-Za-z0-9_-]|$)' "$T/.agents/skills" "$T/.codex/agents" >/tmp/dr_codex_slash_rite 2>/dev/null; then
+if grep -R -nE '(^|[^A-Za-z0-9_./-])/rite(-[a-z0-9-]+)?([^A-Za-z0-9_-]|$)' "$T/.agents/skills" "$T/.codex/agents" >"$T/dr_codex_slash_rite" 2>/dev/null; then
   no "Codex mirrors still contain slash rite invocations"
-  sed -n '1,20p' /tmp/dr_codex_slash_rite
+  sed -n '1,20p' "$T/dr_codex_slash_rite"
 else
   ok "Codex mirrors contain no slash rite invocations"
 fi
@@ -297,6 +346,24 @@ echo "$out" | grep -q '\[overwrite(force-customized)\] .claude/skills/rite/SKILL
 [ "$(cat "$managed")" = "local customization" ] && ok "forced dry-run preserved customization" || no "forced dry-run wrote customization"
 bash "$ROOT/install.sh" --target "$T" --force >/dev/null 2>&1 || no "forced reinstall failed"
 cmp -s "$managed" "$GEN/claude/skills/rite/SKILL.md" && ok "forced reinstall replaced customization" || no "forced reinstall did not replace customization"
+
+# 6) A local install.sh hands update and uninstall to their own scripts.
+. "$ROOT/scripts/install-lib.sh"
+if dr_build_engine "$ROOT" "$GEN/devrites-engine"; then
+  export DEVRITES_ENGINE_CLI="$GEN/devrites-engine"
+  for sub in update uninstall; do
+    case "$sub" in update) banner='^DevRites update$' ;; *) banner='^DevRites uninstaller$' ;; esac
+    out="$(bash "$ROOT/install.sh" "$sub" --target "$T" --dry-run 2>&1)" \
+      && ok "install.sh $sub --dry-run exits 0" || no "install.sh $sub --dry-run did not exit 0"
+    echo "$out" | grep -q "$banner" && ok "install.sh $sub ran the $sub flow" || no "install.sh $sub did not run the $sub flow"
+  done
+  bash "$ROOT/install.sh" uninstall --target "$T" >/dev/null 2>&1 || no "install.sh uninstall exited non-zero"
+  [ ! -e "$T/.claude/devrites.manifest" ] && [ ! -e "$T/.claude/skills/rite/SKILL.md" ] \
+    && ok "install.sh uninstall removed the install" || no "install.sh uninstall left the install in place"
+  unset DEVRITES_ENGINE_CLI
+else
+  no "could not build a version-matching engine"
+fi
 
 echo ""
 [ "$fail" -eq 0 ] && echo "install-smoke: PASS" || echo "install-smoke: FAIL"

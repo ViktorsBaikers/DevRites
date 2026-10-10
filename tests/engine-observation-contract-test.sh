@@ -54,6 +54,10 @@ if summary["slug"] != "add-csv-export":
     raise SystemExit(f"slug={summary['slug']!r}")
 if summary["phase"] != "done":
     raise SystemExit(f"phase={summary['phase']!r}")
+if summary["status"] != "done":
+    raise SystemExit(f"status={summary['status']!r}")
+if summary["next_action"] != "archived":
+    raise SystemExit(f"next_action={summary['next_action']!r}")
 PY
 
 mkdir -p "$PROJECT/.claude" "$PROJECT/.codegraph"
@@ -61,13 +65,14 @@ printf 'devrites\n' >"$PROJECT/.claude/devrites.manifest"
 indexes="$(
   DEVRITES_ROOT="$PROJECT" "$ENGINE" check indexes --root "$PROJECT" 2>/dev/null
 )"
-python3 - "$indexes" <<'PY'
+engine_version="$("$ENGINE" version)"
+python3 - "$indexes" "$engine_version" <<'PY'
 import json
 import sys
 
 report = json.loads(sys.argv[1])
-if not report.get("engine_version"):
-    raise SystemExit("missing engine_version")
+if report.get("engine_version") != sys.argv[2]:
+    raise SystemExit(f"engine_version={report.get('engine_version')!r}, want {sys.argv[2]!r}")
 manifest = report.get("manifest") or {}
 if not manifest.get("present"):
     raise SystemExit("manifest not present")

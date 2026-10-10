@@ -209,7 +209,7 @@ Vet hardens the plan. Use the marked action before fold-back.
 - Finish `test-plan.md`, fold-back, and rechecks first. Changes to `brief.md`, `spec.md`,
   `decisions.md`, `assumptions.md`, or `questions.md` require revalidating the
   affected decision-coverage rows, assumption audit, residual uncertainty, and closed gates.
-  Partial/Missing, an unowned material assumption, or an open blocking/escalating question routes
+  `open` rows, an unowned material assumption, or an open blocking/escalating question routes
   `/rite-clarify`/HITL. Re-read affected rows with current evidence; repeat the exact
   plan-reviewer and applicable strategy/DevEx after edits. Root writes READY only after
   the checklist. Normal readiness rejects missing/stale bindings; empty tables,

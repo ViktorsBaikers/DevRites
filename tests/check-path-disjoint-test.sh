@@ -6,12 +6,10 @@ CHECK="$ROOT/scripts/check-path-disjoint.py"
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 
-# Wrapper shells to Go SSOT. Prefer shared test engine; else build engine/devrites.
+# Wrapper shells to Go SSOT. Prefer shared test engine; else build from the tree under test.
 if [ -z "${DEVRITES_ENGINE_CLI:-}" ]; then
-  if [ ! -x "$ROOT/engine/devrites" ] || ! "$ROOT/engine/devrites" check path-disjoint -h >/dev/null 2>&1; then
-    (cd "$ROOT/engine" && CGO_ENABLED=0 go build -o devrites .)
-  fi
-  export DEVRITES_ENGINE_CLI="$ROOT/engine/devrites"
+  (cd "$ROOT/engine" && CGO_ENABLED=0 go build -o "$T/devrites" .)
+  export DEVRITES_ENGINE_CLI="$T/devrites"
 fi
 
 run() {
@@ -21,11 +19,11 @@ run() {
 assert_ok() {
   local label="$1"
   shift
-  if run "$@" >/tmp/devrites-path-disjoint-ok.txt; then
-    grep -q "path-disjoint: ok" /tmp/devrites-path-disjoint-ok.txt
+  if run "$@" >$T/devrites-path-disjoint-ok.txt; then
+    grep -q "path-disjoint: ok" $T/devrites-path-disjoint-ok.txt
   else
     echo "FAIL: $label should pass"
-    cat /tmp/devrites-path-disjoint-ok.txt
+    cat $T/devrites-path-disjoint-ok.txt
     exit 1
   fi
 }
@@ -34,12 +32,12 @@ assert_fail() {
   local label="$1"
   local pattern="$2"
   shift 2
-  if run "$@" >/tmp/devrites-path-disjoint-bad.txt; then
+  if run "$@" >$T/devrites-path-disjoint-bad.txt; then
     echo "FAIL: $label should fail"
-    cat /tmp/devrites-path-disjoint-bad.txt
+    cat $T/devrites-path-disjoint-bad.txt
     exit 1
   fi
-  grep -q "$pattern" /tmp/devrites-path-disjoint-bad.txt
+  grep -q "$pattern" $T/devrites-path-disjoint-bad.txt
 }
 
 cat >"$T/disjoint.json" <<'JSON'

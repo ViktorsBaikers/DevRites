@@ -117,8 +117,17 @@ func TestRemovedOutputFlagsAreRejected(t *testing.T) {
 	}
 }
 
+func setEmptyWorkRoot(t *testing.T) {
+	t.Helper()
+	root := filepath.Join(t.TempDir(), ".devrites")
+	if err := os.MkdirAll(filepath.Join(root, "work"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DEVRITES_ROOT", root)
+}
+
 func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
-	t.Setenv("DEVRITES_ROOT", t.TempDir())
+	setEmptyWorkRoot(t)
 	for _, args := range [][]string{
 		{"check", "candidate"},
 		{"check", "readiness"},
@@ -314,5 +323,18 @@ func removeBasename(t *testing.T, dir, name string) {
 	dst := filepath.Join(t.TempDir(), filepath.Base(name))
 	if err := os.Rename(src, dst); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestMissingRootErrorNamesRemediation(t *testing.T) {
+	t.Setenv("DEVRITES_ROOT", "")
+	t.Setenv("DEVRITES_WORKSPACE", "")
+	t.Chdir(t.TempDir())
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"next"}, strings.NewReader(""), &stdout, &stderr); code != exitUsage {
+		t.Fatalf("run(next) = %d, want %d; stderr = %q", code, exitUsage, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "DEVRITES_ROOT") {
+		t.Fatalf("stderr = %q, want remediation naming DEVRITES_ROOT", stderr.String())
 	}
 }

@@ -32,6 +32,7 @@ jobs:
       run_full: ${{ steps.scope.outputs.run_full }}
       run_tests: ${{ steps.scope.outputs.run_tests }}
       run_deps: ${{ steps.scope.outputs.run_deps }}
+      run_docs: ${{ steps.scope.outputs.run_docs }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -45,10 +46,11 @@ jobs:
   validate:
     name: validate pack
     needs: detect-changes
-    # Docs-only PRs (README/CHANGELOG/LICENSE/docs//.scratch/ exclusively)
-    # skip the pack validators; the job-level skip still reports success for
-    # required checks.
-    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_full == 'true'
+    # Only PRs that change nothing but LICENSE and .scratch/ skip this job.
+    # Any README.md, CHANGELOG.md, CONTRIBUTING.md or docs/ change sets
+    # run_docs=true and still runs it, because validate.sh checks those files
+    # (links, published-version identity). A job-level skip reports success.
+    if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_full == 'true' || needs.detect-changes.outputs.run_docs == 'true'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
     steps:
@@ -63,6 +65,10 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
+
+      # scripts/validate-frontmatter.py refuses to run without PyYAML.
+      - name: Install PyYAML (hash-locked)
+        run: python -m pip install --require-hashes -r scripts/requirements-ci.txt
 
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -154,8 +160,9 @@ jobs:
   tests:
     name: shell test suite (shard ${{ matrix.shard }}/14)
     needs: detect-changes
-    # Docs-only skip via run_full; engine-only PRs skip shards via run_tests
-    # (validate still runs). Job-level skip reports success for required checks.
+    # Docs-only PRs skip the shards via run_tests; `validate` still runs for
+    # README/CHANGELOG/CONTRIBUTING/docs/ edits. A job-level skip reports
+    # success.
     if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_tests == 'true'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
@@ -177,6 +184,10 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
+
+      # scripts/validate-frontmatter.py refuses to run without PyYAML.
+      - name: Install PyYAML (hash-locked)
+        run: python -m pip install --require-hashes -r scripts/requirements-ci.txt
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -200,6 +211,9 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
 
       - name: Run shell test shard (tests/*.sh)
         # One test per vCPU (4 on this runner): more jobs than cores made
@@ -262,6 +276,28 @@ jobs:
 
       - name: Cross-compile matrix smoke (all release targets build)
         run: bash scripts/build-binaries.sh 0.0.0-ci
+
+      - name: Verify release assets match the npx consumer enumeration
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const src = fs.readFileSync('bin/devrites.mjs', 'utf8');
+          const pick = (re) => [...src.matchAll(re)].map((m) => m[1]);
+          const oses = pick(/process\.platform === '\w+' \? '(\w+)'/g);
+          const arches = pick(/process\.arch === '\w+' \? '(\w+)'/g);
+          const want = oses.flatMap((o) => arches.flatMap((a) => {
+            const n = `devrites-${o}-${a}${o === 'windows' ? '.exe' : ''}`;
+            return [n, `${n}.sha256`];
+          })).sort();
+          const got = fs.readdirSync('dist/bin').filter((f) => f.startsWith('devrites-')).sort();
+          if (!want.length || JSON.stringify(want) !== JSON.stringify(got)) {
+            console.error('release asset set differs from npx consumer enumeration');
+            console.error('consumer:', want.join(' '));
+            console.error('built:   ', got.join(' '));
+            process.exit(1);
+          }
+          console.log(`asset parity ok (${got.length} files)`);
+          JS
 
       - name: Verify release binary checksum sidecars
         run: |
@@ -432,8 +468,8 @@ jobs:
           # that breaks @semantic-release/npm auth verification.
           package-manager-cache: false
 
-      # prepack (npm publish path) regenerates pack/generated via
-      # scripts/build-host-artifacts.sh, which needs python3 on PATH.
+      # scripts/build-release-tarball.sh pipes blobs through python3, so it
+      # must be on PATH.
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:

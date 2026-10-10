@@ -7,6 +7,11 @@ Only when that loop is green does the orchestrator land the local unpushed
 `$rite-review`, and `$rite-autocomplete`. Never push. `.devrites/CHECKPOINT` is
 not a gate.
 
+The checkpoint stays local, unpushed scratch folded at `$rite-ship`; where the
+host repository's own agent contract requires approval before commits — an
+ask-first rule such as this repository's `AGENTS.md` — that contract wins, and
+the orchestrator pauses for approval before landing it.
+
 ## When (and when not)
 
 - **Do:** after Independent Build review (or the phase's independent validators)

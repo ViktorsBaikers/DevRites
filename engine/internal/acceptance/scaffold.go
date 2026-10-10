@@ -2,8 +2,9 @@ package acceptance
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
+
+	"github.com/devrites/devrites/internal/state"
 )
 
 // ScaffoldLedger emits a template ledger: one pending gate per canonical
@@ -36,20 +37,8 @@ func ScaffoldLedger(slug string, spec []byte) string {
 	return b.String()
 }
 
-var scaffoldACRE = regexp.MustCompile(`\bAC-\d{3}\b`)
-
-// specACIDs returns the unique AC-### ids declared anywhere in the spec; the
-// scaffold does not restrict to one section because the gate contract is the
-// same set the acceptance map already enforces onto tasks.md/test-plan.md.
+// specACIDs returns the unique AC-### ids in the spec's Acceptance criteria
+// section, the same set the acceptance map enforces onto tasks.md/test-plan.md.
 func specACIDs(spec []byte) []string {
-	found := scaffoldACRE.FindAllString(string(spec), -1)
-	seen := map[string]bool{}
-	var ids []string
-	for _, id := range found {
-		if !seen[id] {
-			seen[id] = true
-			ids = append(ids, id)
-		}
-	}
-	return ids
+	return state.ParseAcceptanceMap(spec, nil, nil, false, false).SpecIDs
 }

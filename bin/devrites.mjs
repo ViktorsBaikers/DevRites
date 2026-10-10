@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // devrites - npx entry point for the engine-owned DevRites installer.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { chmodSync, createReadStream, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { open } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { constants as osConstants, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,6 +16,7 @@ const MAX_REDIRECTS = 5;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const temporaryDirs = new Set();
 let acquisitionFailure = null;
+let engineChild = null;
 
 class DownloadError extends Error {}
 
@@ -31,6 +32,9 @@ function cleanupTemporaryDirs() {
 }
 
 process.on('exit', cleanupTemporaryDirs);
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(signal, () => (engineChild ? engineChild.kill(signal) : process.exit(128 + osConstants.signals[signal])));
+}
 
 const SUBCOMMAND_ALIASES = new Map([
   ['install', 'install'],
@@ -81,15 +85,26 @@ function run(command, args, options = {}) {
   return spawnSync(command, args, { stdio: options.stdio || 'inherit', cwd: options.cwd || process.cwd(), env: options.env || process.env });
 }
 
-function firstWorking(candidates, args, env = process.env) {
-  let lastError = null;
-  for (const candidate of candidates.filter(Boolean)) {
-    const res = run(candidate, args, { env });
-    if (!res.error) process.exit(res.status === null ? 1 : res.status);
-    lastError = res.error;
-    if (res.error.code !== 'ENOENT') break;
-  }
-  return lastError;
+function runEngine(command, args, env) {
+  return new Promise((resolve) => {
+    let launchFailed = false;
+    const failLaunch = (error) => {
+      launchFailed = true;
+      engineChild = null;
+      resolve(error);
+    };
+    try {
+      engineChild = spawn(command, args, { stdio: 'inherit', env });
+    } catch (error) {
+      error.message = `${error.message} ${command}`;
+      failLaunch(error);
+      return;
+    }
+    engineChild.once('error', failLaunch);
+    engineChild.once('close', (code, signal) => {
+      if (!launchFailed) process.exit(signal ? 128 + osConstants.signals[signal] : code);
+    });
+  });
 }
 
 async function acquireEngine() {
@@ -98,6 +113,7 @@ async function acquireEngine() {
   if (!validRepository(repo) || !tag) throw new Error('DevRites repository and release tag must identify an exact release');
   const envEngine = process.env.DEVRITES_ENGINE_CLI || process.env.DEVRITES_CLI;
   if (envEngine && existsSync(envEngine)) return envEngine;
+  if (command === 'uninstall' && spawnSync('devrites-engine', ['uninstall', '-h'], { stdio: 'ignore' }).status === 0) return 'devrites-engine';
 
   const downloaded = await downloadEngine();
   if (downloaded) return downloaded;
@@ -121,7 +137,10 @@ async function acquireEngine() {
     }
   }
 
-  return 'devrites-engine';
+  if (command === 'uninstall') return 'devrites-engine';
+  const probe = spawnSync('devrites-engine', ['version'], { encoding: 'utf8' });
+  if (!probe.error && probe.status === 0 && String(probe.stdout).trim().replace(/^v/, '') === tag.slice(1)) return 'devrites-engine';
+  return null;
 }
 
 function findGo() {
@@ -167,6 +186,14 @@ async function downloadEngine() {
   }
   if (!want || got !== want) {
     acquisitionFailure = `release ${tag} asset ${name}: checksum failed`;
+    rmSync(out, { force: true });
+    rmSync(`${out}.sha256`, { force: true });
+    return null;
+  }
+  const signer = `${repo}/.github/workflows/ci.yml@refs/heads/main`;
+  const attestation = spawnSync('gh', ['attestation', 'verify', out, '--repo', repo, '--signer-workflow', signer], { stdio: 'ignore', timeout: 120_000 });
+  if (attestation.error || attestation.status !== 0) {
+    acquisitionFailure = `release ${tag} asset ${name}: attestation verification failed (gh must be installed and authenticated)`;
     rmSync(out, { force: true });
     rmSync(`${out}.sha256`, { force: true });
     return null;
@@ -282,6 +309,10 @@ try {
   console.error(`devrites: ${error.message}`);
   process.exit(1);
 }
+if (!engine) {
+  console.error(`devrites: devrites-engine was not found and could not be acquired${acquisitionFailure ? ` (${acquisitionFailure})` : ''}.`);
+  process.exit(127);
+}
 const payloadDir = process.env.DEVRITES_HOST_ARTIFACT_DIR || join(root, 'pack', 'generated');
 const installerCommand = command === 'install' || command === 'update' || command === 'uninstall';
 const engineEnv = { ...process.env, DEVRITES_ENGINE_CLI: engine };
@@ -294,9 +325,12 @@ if (command === 'install' || command === 'update') {
 }
 args.push(...rest);
 
-const candidates = [engine, 'devrites-engine'];
-const lastError = firstWorking(candidates, args, engineEnv);
-if (lastError && lastError.code !== 'ENOENT') {
+let lastError = null;
+for (const candidate of [engine, 'devrites-engine']) {
+  lastError = await runEngine(candidate, args, engineEnv);
+  if (lastError.code !== 'ENOENT') break;
+}
+if (lastError.code !== 'ENOENT') {
   console.error('devrites: failed to launch devrites-engine:', lastError.message);
 } else {
   console.error(`devrites: devrites-engine was not found and could not be acquired${acquisitionFailure ? ` (${acquisitionFailure})` : ''}.`);

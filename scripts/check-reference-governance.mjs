@@ -25,8 +25,6 @@ function markdownFiles(dir) {
 
 const files = markdownFiles(skillsDir);
 const fileSet = new Set(files);
-const byBase = new Map();
-for (const file of files) byBase.set(basename(file), [...(byBase.get(basename(file)) || []), file]);
 const entries = files.filter((file) => basename(file) === 'SKILL.md');
 const reachable = new Set(entries);
 const queue = [...entries];
@@ -38,7 +36,10 @@ function candidates(from, token) {
   if (/^(?:https?:|mailto:)/.test(token)) return [];
   if (token.startsWith('.claude/skills/')) return [join(skillsDir, token.slice('.claude/skills/'.length))];
   if (token.includes('/')) return [resolve(dirname(from), token)];
-  return byBase.get(token) || [];
+  // A bare name resolves the way a host opener does: beside the file, at the
+  // skill root, or under the skill's reference/ directory.
+  const skillRoot = join(skillsDir, skillOwner(from));
+  return [resolve(dirname(from), token), join(skillRoot, token), join(skillRoot, 'reference', token)];
 }
 
 function refsFrom(from) {

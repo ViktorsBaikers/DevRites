@@ -32,7 +32,8 @@ Execute [`reference/phase-contract.md`](reference/phase-contract.md)
 Read `.devin/skills/devrites-lib/reference/standards/core.md` first. Load only triggered rules:
 coding/error/testing/[`tdd.md`](reference/tdd.md)/patterns/DoD; binding
 `.devrites/principles.md`; security; topology; data integrity; integration reliability.
-Wright applies anti-slop; root verifies returns and never patches source.
+Wright applies anti-slop; root verifies returns and never patches source. Refuse the rationalizations in
+[`anti-patterns`](reference/anti-patterns.md).
 
 ## Invariants
 

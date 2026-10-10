@@ -1,5 +1,7 @@
 # Built binary (default `go build` output) and cross-compile artifacts
 /devrites
+/devrites-engine
+/devrites-engine.exe
 /dist/
 
 # Derived SQLite index. It is disposable and rebuilt by `devrites reindex`. Never

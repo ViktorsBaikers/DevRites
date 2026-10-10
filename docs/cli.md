@@ -11,7 +11,8 @@ cross-host primitives; it never dispatches an agent or grades reviewer prose.
 `help`, `-h`, `--help`, `version`, and `--version` forms also remain supported.
 Each operational command and subcommand accepts `-h` / `--help` and prints that
 command's usage to stdout (exit 0) without requiring a workspace. Missing
-required arguments still print usage to stderr and exit 2.
+required arguments still print usage to stderr and exit 2, except `state close`,
+which exits 4 (see Output and exits).
 
 ```text
 devrites-engine install [flags]
@@ -48,15 +49,20 @@ devrites-engine gates <subcommand> <slug>
 devrites-engine claim <add|release|list|check>
 devrites-engine note <add|list|check|rm> <slug>
 
-devrites-engine state resolve <qid> "<answer>"
+devrites-engine state resolve [--human] <qid> "<answer>"
 devrites-engine state merge-manifest <slug> [pred...]
 devrites-engine state close <slug>
 devrites-engine migrate <slug> [--dry-run] [--answer id=choice]
 
 devrites-engine secret-scan [--staged] [--stdin] [slug]
 devrites-engine open-visual <path-or-name> [--slug <slug>] [--no-open]
+devrites-engine overhaul <tool> ...
 devrites-engine version
 ```
+
+`overhaul <tool>` provides the run-record, admission, snapshot, scoring,
+benchmark, and view tools used by the `/overhaul` skill; run
+`devrites-engine overhaul --help` for its tools.
 
 Commands outside this operational list and the standard help/version forms are
 unsupported. There are no legacy engine aliases, tombstones, agent-protocol
@@ -70,8 +76,11 @@ Run `devrites-engine update` in an installed project to resolve the latest
 stable release and update the project pack plus shared engine binary. The
 command downloads the release bundle and platform engine, verifies both exact
 filenames against their SHA-256 sidecars, then hands the extracted candidate to
-the downloaded engine. This avoids asking an old engine to validate a newer
-payload schema.
+the downloaded engine. Each release asset must also pass `gh attestation verify`,
+pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`,
+so `gh` must be installed and authenticated, with no bypass (see
+[Install, update, and remove](../README.md#install-update-and-remove)). This
+avoids asking an old engine to validate a newer payload schema.
 
 `devrites-engine update --check` resolves and compares release metadata without
 downloading assets. `--source-dir` and `--payload-dir` remain the advanced local
@@ -91,9 +100,12 @@ comparison without changing the installation. Use
 retaining the shared `devrites-engine` binary.
 
 If an older direct engine reports `missing codex/hooks.json` or asks for
-`--source-dir`, run `npx devrites@latest update`, or use a checksum-verified
-release `install.sh` and run `bash ./install.sh update` once to install a release
-with the self-contained updater.
+`--source-dir`, run `npx devrites@latest update`, or use a release `install.sh` that is both
+checksum-verified and attestation-verified (pinned repo and signer workflow, see
+the verified Bash bootstrap under
+[README Install, update, and remove](../README.md#install-update-and-remove))
+and run `bash ./install.sh update` once to install a release with the
+self-contained updater.
 
 ## Checks
 
@@ -190,6 +202,9 @@ ledger blocks the phase exit.
 ## Atomic state operations
 
 `state resolve` also supports `--drop <qid> ["<reason>"]` and `--batch <file>`.
+A leading `--human` (for the answer, `--drop` and `--batch` forms:
+`state resolve --human --drop <qid>`, `state resolve --human --batch <file>`) also writes `answered_by: human`;
+without it any `answered_by:` line in the resolved block, whatever its indentation or case, is removed.
 `state close` transactionally archives a shipped workspace and clears matching
 `ACTIVE`.
 
@@ -237,10 +252,15 @@ selection exits `2`; a malformed/unsafe manifest or candidate mismatch prints
 `candidate: BLOCKED: <reason>` to stderr and exits `3`.
 
 - `0`: passed or completed.
+- `1`: runtime or I/O failure.
 - `2`: common invalid request or unreadable-state result.
 - `3`: common deterministic lifecycle or safety block.
 - Atomic state operations retain their documented operation-specific nonzero
   results.
+- `state close` exits `4` for usage or a missing workspace.
+- `state close` exits `3` for a schema refusal.
+- `state close` exits `5` when an archive already exists.
+- `state close` exits `1` for an invalid workspace, archive directory, or ACTIVE cursor.
 
 ## Root safety
 
@@ -251,8 +271,11 @@ commands refuse ambiguous, escaped, symlinked, or otherwise unsafe roots.
 Install, update application, and uninstall remain manifest-owned local
 operations. Direct engine update, shell, and npm may acquire a release candidate;
 all remote acquisition uses exact SemVer, HTTPS-only redirect hops, mandatory
-exact-filename SHA-256 sidecars, private temporary directories, and byte/archive
-bounds, with no unchecked raw/source/default-branch fallback. Update accepts
+exact-filename SHA-256 sidecars, a `gh attestation verify` check of every release
+asset (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`;
+`gh` must be installed and authenticated, with no bypass), private temporary
+directories, and byte/archive bounds, with no unchecked raw/source/default-branch
+fallback. Update accepts
 `--check` to compare the installed manifest version with the latest stable
 release without downloading assets. Remote-selector flags such as `--to` and
 `--pre` are unsupported.

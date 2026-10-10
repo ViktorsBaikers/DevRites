@@ -6,6 +6,7 @@
 //	stage RUN       copy current generation to RUN/g<N+1>.tmp (prints path)
 //	publish RUN     validate staged generation, write manifest, swap CURRENT last
 //	validate RUN    verify CURRENT generation integrity + cross-record rules
+//	prune RUN [--keep K]  delete generations older than the newest K (default 2, minimum 2)
 //
 // Exit: 0 ok, 1 rule violations (listed), 2 usage/IO error.
 package records
@@ -31,6 +32,7 @@ const usage = `usage: overhaul records <command> ...
   stage RUN       copy current generation to RUN/g<N+1>.tmp (prints path)
   publish RUN     validate staged generation, write manifest, swap CURRENT last
   validate RUN    verify CURRENT generation integrity + cross-record rules
+  prune RUN [--keep K]  delete generations older than the newest K (default 2, minimum 2)
 Exit: 0 ok, 1 rule violations (listed), 2 usage/IO error.
 `
 
@@ -60,6 +62,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		code, err = publish(args[1], stdout, stderr)
 	case "validate":
 		code, err = validate(args[1], stdout)
+	case "prune":
+		code, err = prune(args[1:], stdout, stderr)
 	default:
 		fmt.Fprint(stderr, usage)
 		return 2
@@ -396,5 +400,67 @@ func validate(run string, stdout io.Writer) (int, error) {
 		return 1, nil
 	}
 	fmt.Fprintln(stdout, "valid "+gen)
+	return 0, nil
+}
+
+var generationName = regexp.MustCompile(`^g[0-9]{4}$`)
+
+// prune deletes published generations outside the newest keep, never touching
+// CURRENT, its manifest.previous, newer or staged generations.
+func prune(args []string, stdout, stderr io.Writer) (int, error) {
+	run, keep := args[0], 2
+	if len(args) == 3 && args[1] == "--keep" {
+		k, err := strconv.Atoi(args[2])
+		if err != nil || k < 2 {
+			fmt.Fprint(stderr, "--keep must be an integer of at least 2\n")
+			return 2, nil
+		}
+		keep = k
+	} else if len(args) != 1 {
+		fmt.Fprint(stderr, usage)
+		return 2, nil
+	}
+	cur, has, err := current(run)
+	if err != nil {
+		return 0, err
+	}
+	if !has {
+		return 0, fmt.Errorf("no CURRENT in %s", run)
+	}
+	n, err := genNumber(cur)
+	if err != nil {
+		return 0, err
+	}
+	m, err := ovio.LoadObject(join(run, cur, "manifest.json"))
+	if err != nil {
+		return 0, err
+	}
+	prev := ""
+	if p := m["previous"]; ovio.Truthy(p) {
+		prev = PyStr(p)
+	}
+	entries, err := os.ReadDir(run)
+	if err != nil {
+		return 0, err
+	}
+	var removed []string
+	for _, e := range entries {
+		name := e.Name()
+		if !generationName.MatchString(name) || name == cur || name == prev {
+			continue
+		}
+		g, err := genNumber(name)
+		if err != nil {
+			return 0, err
+		}
+		if g > n-keep {
+			continue
+		}
+		if err := os.RemoveAll(join(run, name)); err != nil {
+			return 0, err
+		}
+		removed = append(removed, name)
+	}
+	fmt.Fprintf(stdout, "pruned %d: %s\n", len(removed), strings.Join(removed, " "))
 	return 0, nil
 }

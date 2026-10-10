@@ -74,8 +74,8 @@ Pull these via `Read` when shaping the resolve:
    user's explicit consent for this local workspace mutation. Echo the qid, answer/drop,
    and slice being unblocked, then continue immediately; do not ask the user to confirm the
    command they just typed.
-4. **Mutate.** Run `devrites-engine state resolve` with those arguments. It:
-   - flips the qid's `status` to `answered` / `dropped` and stamps `answered_at` + `answer`;
+4. **Mutate.** Run `devrites-engine state resolve --human` with those arguments (a human is resolving). It:
+   - flips the qid's `status` to `answered` / `dropped` and stamps `answered_at` + `answer` + `answered_by: human`;
    - if the qid is in `state.md`'s `Awaiting human` block (single-question pause), clears
      that block and sets `Status: running`;
    - appends a `Log` line to `state.md`.
@@ -96,7 +96,7 @@ Pull these via `Read` when shaping the resolve:
    **Completion:** the resolved state contains exactly one next command.
 6. **STOP.** User-invoked `/rite-resolve` does not run `/rite-build` itself: the
    user re-enters the workflow explicitly. A controlling `/rite-autocomplete`
-   caller invokes the same `devrites-engine state resolve` writer internally and
+   caller invokes the same `devrites-engine state resolve` writer internally (never with `--human`) and
    continues; it must not emit this skill as a user handoff for a question that
    already names a ranked recommended option.
 

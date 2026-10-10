@@ -12,8 +12,13 @@ MANIFEST="$ROOT/engine/internal/state/workflow_manifest.json"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-ENGINE="$tmp/devrites-engine"
-(cd "$ROOT/engine" && GOCACHE="$tmp/go-cache" CGO_ENABLED=0 go build -trimpath -o "$ENGINE" .)
+. "$ROOT/scripts/install-lib.sh"
+if [ -n "${DEVRITES_ENGINE_CLI:-}" ] && [ -x "$DEVRITES_ENGINE_CLI" ] && dr_engine_compatible "$DEVRITES_ENGINE_CLI" "$ROOT" install; then
+  ENGINE="$DEVRITES_ENGINE_CLI"
+else
+  ENGINE="$tmp/devrites-engine"
+  (cd "$ROOT/engine" && CGO_ENABLED=0 go build -trimpath -o "$ENGINE" .)
+fi
 
 CAPTURED=""
 CAPTURE_CODE=0
@@ -449,14 +454,21 @@ ws = Path(sys.argv[1])
 extra = "src/utils/format.ts"
 if f"`{extra}`" not in (ws / "touched-files.md").read_text():
     raise SystemExit("out-of-scope-writer-diff candidate missing extra path")
-if extra in (ws / "tasks.md").read_text():
-    raise SystemExit("tasks.md unexpectedly names the extra writer path")
 PY
 writer_project="$tmp/out-of-scope-writer-diff"
 stage_workspace_from "$ROOT/evals/golden/out-of-scope-writer-diff" "$writer_project" "out-of-scope-writer-diff"
+run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" check slice "$base_slug" SLICE-001
+[ "$CAPTURE_CODE" -eq 0 ] || fail "shippable-feature check slice should accept: $CAPTURED"
+run_capture env DEVRITES_ROOT="$writer_project" "$ENGINE" check slice "out-of-scope-writer-diff" SLICE-001
+[ "$CAPTURE_CODE" -eq 3 ] || fail "out-of-scope-writer-diff check slice exit=$CAPTURE_CODE, want 3: $CAPTURED"
+printf '%s\n' "$CAPTURED" | grep -Fq '"src/utils/format.ts" is outside the Writer allowlist' \
+  || fail "out-of-scope-writer-diff check slice did not reject the extra path: $CAPTURED"
+if printf '%s\n' "$CAPTURED" | grep -Fq "Writer allowlist missing or empty"; then
+  fail "out-of-scope-writer-diff check slice rejected for a missing allowlist: $CAPTURED"
+fi
 run_capture env DEVRITES_ROOT="$writer_project" "$ENGINE" check candidate "out-of-scope-writer-diff"
 [ "$CAPTURE_CODE" -eq 0 ] || fail "out-of-scope-writer-diff candidate should hash: $CAPTURED"
 [ -f "$writer_project/src/utils/format.ts" ] || fail "out-of-scope-writer-diff extra product file missing"
-printf '  PASS: out-of-scope-writer-diff extra candidate path is not in tasks.md\n'
+printf '  PASS: out-of-scope-writer-diff extra candidate path is not in tasks.md Writer allowlist (check slice rejects; shippable-feature accepts)\n'
 
 printf '\nOutcome evals passed: native boundary + 15 isolated final-outcome negatives + candidate/readiness content binding + removed-command rejections + 2 adversarial fixtures.\n'

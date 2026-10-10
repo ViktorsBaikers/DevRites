@@ -324,3 +324,41 @@ func runGit(t *testing.T, dir string, args ...string) string {
 	}
 	return strings.TrimSpace(string(out))
 }
+
+func TestResolveRefusesUnreadableWorkDirectory(t *testing.T) {
+	for _, mode := range []os.FileMode{0o111, 0o000} {
+		project := filepath.Join(t.TempDir(), "project")
+		work := filepath.Join(project, ".devrites", "work")
+		outside := filepath.Join(t.TempDir(), "outside")
+		for _, dir := range []string{work, outside} {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := os.Symlink(outside, filepath.Join(work, "escaped")); err != nil {
+			t.Skipf("symlinks unavailable: %v", err)
+		}
+		if err := os.Chmod(work, mode); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chmod(work, 0o755) })
+		if _, err := os.ReadDir(work); err == nil {
+			t.Skip("work stays readable (running as root?)")
+		}
+		facts, err := ResolveFrom(project, project)
+		if !errors.Is(err, ErrUnsafeRoot) || hazard(facts, "DRV-WORKSPACE-SCAN-FAILED") == nil {
+			t.Fatalf("mode %o: unreadable work facts=%+v err=%v", mode, facts, err)
+		}
+	}
+}
+
+func TestResolveAcceptsRootWithoutWorkDirectory(t *testing.T) {
+	project := filepath.Join(t.TempDir(), "project")
+	if err := os.MkdirAll(filepath.Join(project, ".devrites"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	facts, err := ResolveFrom(project, project)
+	if err != nil || len(facts.Hazards) != 0 {
+		t.Fatalf("missing work facts=%+v err=%v", facts, err)
+	}
+}

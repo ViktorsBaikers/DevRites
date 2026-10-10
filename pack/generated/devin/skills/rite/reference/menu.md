@@ -9,7 +9,7 @@ Phase-ordered `/rite` reference. Load only for command detail or phase connectio
 | Spec | `/rite-spec <feature>` | **New feature.** Investigate → write spec.md. Asks with options; gathers attached design references (optional). |
 | Adopt | `/rite-adopt` | Onboard an existing codebase instead of starting fresh: reverse-derive spec.md and propose project guidance. |
 | Clarify | `/rite-clarify` | _Required after spec._ Topology-first decision-coverage scan; zero-question fast path when already clear. |
-| Temper | `/rite-temper` | _Optional, before define._ Strategic review of the spec: scope mode (expand/selective/hold-rigor/reduce) + pre-mortem; hardens the spec. Best on big/risky features; mandatory in `/rite-autocomplete`. |
+| Temper | `/rite-temper` | _Optional, before define._ Strategic review of the spec: scope mode (expand/selective/hold-rigor/reduce-to-MVP) + pre-mortem; hardens the spec. Best on big/risky features; mandatory in `/rite-autocomplete`. |
 | Plan | `/rite-define` | Turn the approved spec into plan + vertical task slices + state. |
 | Vet | `/rite-vet` | _Required before build._ Review every plan: scope · architecture · tests · perf; light for simple/reversible, full for high stakes. |
 | Re-plan | `/rite-plan` | The active plan is too big, wrong, stale, ambiguous, or blocked. |

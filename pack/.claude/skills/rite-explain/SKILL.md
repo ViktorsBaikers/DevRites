@@ -65,7 +65,7 @@ free: prefer it over re-deriving:
   [`tooling.md`](../devrites-lib/reference/standards/tooling.md) (one named-predicate cross-check only when needed), plus any
   `.devrites/principles.md` or ADRs that already take a position on it.
 - An **idea** or a concept with no repo footprint → the user's framing plus, only if it sharpens
-  the teaching, current external sources (weight by date; the year is 2026).
+  the teaching, current external sources (weight by date).
 
 Create the run directory before composing so the durable artifact has a home:
 

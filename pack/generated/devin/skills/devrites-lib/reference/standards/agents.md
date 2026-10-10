@@ -63,7 +63,8 @@ starts, it records an advisory claim — `devrites-engine claim add --session
 <id> <paths>` — retains the returned `<claim-id>`, then checks the same paths
 with `devrites-engine claim check --session <id> <paths>`; a held claim from a
 live foreign session is a stop-and-report, not a merge-later problem. On every
-terminal path after `add` — success, gap, stop, or launch failure — run
+host-confirmed terminal path after `add` ([unknown outcomes keep it](../parallel-dispatch.md#cancellation-and-terminal-reconciliation)) — return,
+rejected result, stop, or a launch refused with no handle — run
 `devrites-engine claim release --session <id> --id <claim-id>`. Claims expire
 by TTL only as crash recovery; `claim list` shows who holds what. Claims are
 advisory coordination, never a substitute for the one-writer-per-worktree rule.

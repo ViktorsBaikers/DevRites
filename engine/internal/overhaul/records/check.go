@@ -8,12 +8,15 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/devrites/devrites/internal/overhaul/ovio"
 	"github.com/devrites/devrites/internal/overhaul/snapshot"
 )
+
+var taskID = regexp.MustCompile(`^[A-Z][A-Z0-9]*-[A-Za-z0-9._-]+$`)
 
 func set(vals ...string) map[string]bool {
 	m := map[string]bool{}
@@ -528,6 +531,9 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 		}
 		for _, tid := range order {
 			t, ts := tasks[Repr(tid)], PyStr(tid)
+			if !taskID.MatchString(ts) {
+				add("task %s: id must match %s", Repr(tid), taskID)
+			}
 			for _, d := range ovio.List(t["deps"]) {
 				if _, ok := tasks[Repr(d)]; !ok {
 					add("task %s: unknown dependency %s", ts, PyStr(d))

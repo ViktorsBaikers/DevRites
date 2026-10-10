@@ -64,36 +64,31 @@
       "text": "/rite doctor",
       "expected": "should_not_trigger",
       "rationale": "Doctor validates health; it does not author customizations.",
-      "owner": null,
-      "owner_rationale": "Doctor validates health; it does not author customizations."
+      "owner": "rite-doctor"
     },
     {
       "text": "/rite learn",
       "expected": "should_not_trigger",
       "rationale": "Learning promotes lessons, not overrides/extensions.",
-      "owner": null,
-      "owner_rationale": "Learning promotes lessons, not overrides/extensions."
+      "owner": "rite-learn"
     },
     {
       "text": "/rite explain overrides",
       "expected": "should_not_trigger",
       "rationale": "Explain teaches; customize writes.",
-      "owner": null,
-      "owner_rationale": "Explain teaches; customize writes."
+      "owner": "rite-explain"
     },
     {
       "text": "/rite-spec custom extension support",
       "expected": "should_not_trigger",
       "rationale": "Spec starts feature work, not operator customization.",
-      "owner": null,
-      "owner_rationale": "Spec starts feature work, not operator customization."
+      "owner": "rite-spec"
     },
     {
       "text": "/rite-review",
       "expected": "should_not_trigger",
       "rationale": "Review audits a feature diff.",
-      "owner": null,
-      "owner_rationale": "Review audits a feature diff."
+      "owner": "rite-review"
     },
     {
       "text": "is there a way to tune the security auditor?",
@@ -113,8 +108,7 @@
       "text": "$rite doctor extensions",
       "expected": "should_not_trigger",
       "rationale": "Still routes to doctor.",
-      "owner": null,
-      "owner_rationale": "Still routes to doctor."
+      "owner": "rite-doctor"
     },
     {
       "text": "$rite-customize",

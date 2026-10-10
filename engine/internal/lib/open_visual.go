@@ -1,8 +1,10 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -227,8 +229,8 @@ func resolveOpenVisualFeatureDir(root, slug string) (string, error) {
 	}
 	dir, err := devritespaths.ExistingFeatureDirChecked(root, slug)
 	if err != nil {
-		if os.IsNotExist(err) {
-			retErr := fmt.Errorf("no workspace for slug %q", slug)
+		if errors.Is(err, fs.ErrNotExist) {
+			retErr := fmt.Errorf("no workspace for slug %q at %s", slug, filepath.Join(root, "work", slug))
 			return "", retErr
 		}
 		return "", err

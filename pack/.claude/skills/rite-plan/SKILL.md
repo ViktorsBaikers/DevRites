@@ -71,8 +71,9 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    - **course-correct:** mid-build user pivot; apply the marked action, choose
      rollback/forward-fix, and update permitted artifacts atomically (`MVP cut` is the named retreat).
    - **revise:** reconcile a requested artifact revision; propose/confirm its file set and
-     **never edit source**. Only explicit `/rite-upgrade` with a `repairable` assessment naming
-     rule, evidence, gate, paths, and delta can authorize its neutral workspace edit—not source/history.
+     **never edit source**. A neutral workspace edit is authorized by explicit `/rite-upgrade` with a
+     `repairable` assessment naming rule, evidence, gate, paths, and delta, or, for budget relocation
+     only, by the phase owner when `orient` reports `over: true`—never source or history rewording.
      **Revise or new?** Same intent? >50% scope survives? Original not completable without it?
      Two “no” answers mean new work: seal/ship current scope (`MVP cut` if named), then
      `/rite-spec`, and stop.
@@ -158,7 +159,7 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    mark the `drift.md` entry resolved. Never remove or overwrite a valid caller
    return cursor while writing the Plan checkpoint.
 6. After editing `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`,
-   re-scan affected coverage, assumptions, uncertainty, and gates. Partial/Missing, unowned
+   re-scan affected coverage, assumptions, uncertainty, and gates. `open` rows, unowned
    material assumption, or open blocking/escalating question routes `/rite-clarify`/HITL.
    Restore `CLEAR` only from current evidence.
 7. **Done when:** every slice is sized (builds + proves in one cycle; no slice scoring >3

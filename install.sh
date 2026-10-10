@@ -13,6 +13,8 @@ DEVRITES_REPO="${DEVRITES_REPO:-ViktorsBaikers/DevRites}"
 DEVRITES_REF="${DEVRITES_REF:-}"
 
 BOOTSTRAP_DIR=""
+RUN_JOB=""
+RUN_WATCH=""
 BOOTSTRAP_MAX_METADATA=1048576
 BOOTSTRAP_MAX_SIDECAR=4096
 BOOTSTRAP_MAX_ARCHIVE=67108864
@@ -138,6 +140,114 @@ verify_sha256() {
   [ -n "$want" ] && [ -n "$got" ] && [ "$got" = "$want" ]
 }
 
+# Runs a command for at most $1 seconds with output discarded. Past the limit it
+# is sent SIGTERM and, if it is still alive two seconds later, SIGKILL. A command
+# stopped this way sets RUN_TIMED_OUT=1 and returns 124; any other failure keeps
+# the command's own status, so a crash is never mistaken for a timeout. Same
+# watchdog idea as scripts/install-lib.sh dr_run_bounded, which is not available
+# until the bundle is verified and extracted. The timeout marker lives in
+# $BOOTSTRAP_DIR, which the EXIT trap removes, so a run without that directory
+# fails closed; stop_bounded ends a command and watchdog still in flight when the
+# bootstrap is interrupted.
+run_bounded() {
+  limit="$1"; shift
+  RUN_TIMED_OUT=0
+  [ -n "$BOOTSTRAP_DIR" ] || return 125
+  fired="$(mktemp "$BOOTSTRAP_DIR/bound.XXXXXX" 2>/dev/null)" || return 125
+  "$@" >/dev/null 2>&1 </dev/null &
+  job=$!
+  RUN_JOB=$job
+  {
+    trap 'kill "$nap"; exit 0' TERM
+    sleep "$limit" & nap=$!; wait "$nap"
+    kill -0 "$job" || exit 0
+    echo 1 >"$fired"
+    kill "$job"
+    sleep 2 & nap=$!; wait "$nap"
+    kill -9 "$job"
+  } >/dev/null 2>&1 </dev/null &
+  watch=$!
+  RUN_WATCH=$watch
+  wait "$job" 2>/dev/null
+  rc=$?
+  kill "$watch" >/dev/null 2>&1
+  wait "$watch" 2>/dev/null
+  RUN_JOB=""; RUN_WATCH=""
+  if [ "$rc" -ne 0 ] && [ -s "$fired" ]; then
+    RUN_TIMED_OUT=1
+    rc=124
+  fi
+  rm -f "$fired"
+  return "$rc"
+}
+
+stop_bounded() {
+  # A signal can land after a job is forked but before its PID is recorded, so
+  # every background job is ended, not only the recorded ones. run_bounded is the
+  # only place this script backgrounds anything.
+  for pid in $(jobs -p); do
+    [ "$pid" = "$RUN_WATCH" ] || kill -9 "$pid" >/dev/null 2>&1
+  done
+  [ -z "$RUN_WATCH" ] || kill "$RUN_WATCH" >/dev/null 2>&1
+  RUN_JOB=""; RUN_WATCH=""
+}
+
+# The checksum sidecar above travels with the tarball it vouches for: it is
+# fetched from "$url.sha256", one suffix away from the artifact's own origin. An
+# attacker who substitutes the release origin therefore supplies both the
+# payload and a digest that matches it, and the digest check passes. The
+# release job already mints the proof that does not travel with the artifact --
+# a build-provenance attestation signed by that job's OIDC identity and bound to
+# the artifact digest (.github/workflows/ci.yml, 'Attest release artifacts').
+# Verify it here, pinned to the repository and to the signer workflow, so an
+# attestation minted by any other workflow in this repository is rejected too.
+#
+# There is deliberately no bypass for a missing verifier: without gh there is no
+# proof of origin, and the sidecar is not a substitute for one.
+#
+# The lookup is bounded: DEVRITES_ATTEST_TIMEOUT is a whole number of seconds
+# (1 to 99999, default 120). Anything else is ignored with a warning and the
+# default applies, so a bad value can never remove the bound. The follow-up
+# `gh auth status` is bounded by 30 seconds or that limit, whichever is shorter.
+# A timeout, a crash and a plain rejection each fail closed and are reported as
+# what they are.
+verify_attestation() {
+  file="$1"
+  signer="$DEVRITES_REPO/.github/workflows/ci.yml@refs/heads/main"
+  ATTESTATION_FAILURE=""
+  if ! command -v gh >/dev/null 2>&1; then
+    ATTESTATION_FAILURE="attestation verification failed: gh (GitHub CLI) is required and was not found"
+    return 1
+  fi
+  attest_limit=120
+  case "${DEVRITES_ATTEST_TIMEOUT:-}" in
+  "") ;;
+  *[!0-9]* | 0* | [0-9][0-9][0-9][0-9][0-9][0-9]*)
+    echo "warning: ignoring invalid DEVRITES_ATTEST_TIMEOUT '$DEVRITES_ATTEST_TIMEOUT' (expected whole seconds, 1 to 99999); using $attest_limit" >&2
+    ;;
+  *) attest_limit="$DEVRITES_ATTEST_TIMEOUT" ;;
+  esac
+  auth_limit=30
+  [ "$attest_limit" -lt "$auth_limit" ] && auth_limit="$attest_limit"
+  verify_rc=0
+  run_bounded "$attest_limit" gh attestation verify "$file" --repo "$DEVRITES_REPO" \
+    --signer-workflow "$signer" || verify_rc=$?
+  if [ "$verify_rc" -ne 0 ]; then
+    if [ "$RUN_TIMED_OUT" -eq 1 ]; then
+      ATTESTATION_FAILURE="attestation verification timed out after ${attest_limit}s; check connectivity or raise DEVRITES_ATTEST_TIMEOUT and retry"
+    elif [ "$verify_rc" -ge 128 ]; then
+      ATTESTATION_FAILURE="attestation verification failed: gh exited with status $verify_rc"
+    elif run_bounded "$auth_limit" gh auth status; then
+      ATTESTATION_FAILURE="attestation verification failed: no build provenance from $signer"
+    elif [ "$RUN_TIMED_OUT" -eq 1 ]; then
+      ATTESTATION_FAILURE="attestation verification timed out: gh auth status did not answer within ${auth_limit}s; check connectivity or raise DEVRITES_ATTEST_TIMEOUT and retry"
+    else
+      ATTESTATION_FAILURE="attestation verification failed: gh is not authenticated (attestation lookup requires a GitHub login); run 'gh auth login' and retry"
+    fi
+    return 1
+  fi
+}
+
 preflight_archive() {
   archive_path="$1"
   tag="$2"
@@ -214,7 +324,7 @@ bootstrap_bundle() {
     exit 1
   }
   umask "$old_umask"
-  trap 'exit 1' HUP INT TERM
+  trap 'stop_bounded; exit 1' HUP INT TERM
   trap 'rm -rf "$BOOTSTRAP_DIR"' EXIT
   if [ -n "$DEVRITES_REF" ]; then
     tag="$(normalize_release_tag "$DEVRITES_REF")" || {
@@ -251,6 +361,11 @@ bootstrap_bundle() {
     echo "error: release $tag asset $asset: checksum failed." >&2
     exit 1
   }
+  verify_attestation "$archive" || {
+    rm -f "$archive" "$sidecar"
+    echo "error: release $tag asset $asset: ${ATTESTATION_FAILURE:-attestation verification failed}." >&2
+    exit 1
+  }
   uncompressed="$BOOTSTRAP_DIR/devrites-$tag.tar"
   bounded_decompress "$archive" "$uncompressed" "$BOOTSTRAP_MAX_UNCOMPRESSED" || {
     rm -f "$archive" "$sidecar"
@@ -283,9 +398,23 @@ bootstrap_bundle() {
   exit "$rc"
 }
 
+SUBCOMMAND="install"
+case "${1:-}" in
+install | update | uninstall)
+  SUBCOMMAND="$1"
+  shift
+  ;;
+esac
+
 if [ -z "$SELF_DIR" ] || [ ! -d "$SELF_DIR/pack" ]; then
-  bootstrap_bundle "$@"
+  bootstrap_bundle "$SUBCOMMAND" "$@"
 fi
+
+case "$SUBCOMMAND" in
+update | uninstall)
+  exec bash "$SELF_DIR/$SUBCOMMAND.sh" "$@"
+  ;;
+esac
 
 INSTALL_LIB="$SELF_DIR/scripts/install-lib.sh"
 [ -f "$INSTALL_LIB" ] || {
@@ -304,16 +433,7 @@ dr_acquire_engine "$SELF_DIR" install "$DEVRITES_REPO" || {
 }
 ENGINE="$DR_ENGINE_PATH"
 PAYLOAD="${DEVRITES_HOST_ARTIFACT_DIR:-$SELF_DIR/pack/generated}"
-if [ ! -d "$PAYLOAD/claude/skills" ] || [ ! -d "$PAYLOAD/codex/skills" ] ||
-  [ ! -d "$PAYLOAD/pi/skills" ] || [ ! -d "$PAYLOAD/pi/agents" ] ||
-  [ ! -d "$PAYLOAD/pi/prompts" ] ||
-  [ ! -d "$PAYLOAD/devin/skills" ] || [ ! -d "$PAYLOAD/devin/agents" ] ||
-  [ ! -f "$PAYLOAD/claude/skills/devrites-lib/reference/standards/agents.md" ] ||
-  [ ! -f "$PAYLOAD/codex/skills/devrites-lib/reference/standards/agents.md" ] ||
-  [ ! -f "$PAYLOAD/pi/skills/devrites-lib/reference/standards/agents.md" ] ||
-  [ ! -f "$PAYLOAD/devin/skills/devrites-lib/reference/standards/agents.md" ] ||
-  [ ! -f "$PAYLOAD/codex/config.toml" ] || [ ! -f "$PAYLOAD/pi/AGENTS.md" ] ||
-  [ ! -f "$PAYLOAD/devin/AGENTS.md" ]; then
+if ! dr_payload_complete "$PAYLOAD"; then
   BUILDER="$SELF_DIR/scripts/build-host-artifacts.sh"
   [ -f "$BUILDER" ] || {
     echo "error: generated install payload missing at $PAYLOAD and builder missing at $BUILDER" >&2

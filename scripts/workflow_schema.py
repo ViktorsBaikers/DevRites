@@ -47,6 +47,8 @@ def structural_markdown(text: str, source: str | Path = "markdown text") -> str:
     masked = bytearray(data)
     marker = 0
     width = 0
+    anchor = anchor_start = -1
+    after_blank = True
     start = 0
     while start < len(data):
         line_end = data.find(b"\n", start)
@@ -58,13 +60,36 @@ def structural_markdown(text: str, source: str | Path = "markdown text") -> str:
         line = data[start:content_end]
 
         if marker == 0:
-            opened = _opening_fence(line)
-            if opened is not None:
+            opened = _opening_fence(line, 3)
+            listed = _opening_fence(line, anchor + 3) if anchor >= 0 else None
+            if _blank(line):
+                after_blank = True
+            elif opened is not None:
                 marker, width = opened
                 _mask(masked, start, line_end)
+                anchor, after_blank = -1, False
+            elif listed is not None and _indent_columns(line) >= anchor:
+                anchored, anchor, after_blank = anchor, -1, False
+                close_end = _list_fence_end(
+                    data, line_end, listed, _indent_columns(line), anchored
+                )
+                if close_end >= 0:
+                    if not _lone_cr(data[anchor_start:close_end]):
+                        _mask(masked, start, close_end)
+                    if close_end == len(data):
+                        break
+                    start = close_end + 1
+                    continue
+            else:
+                column = _top_level_item(line)
+                if column is not None and (after_blank or anchor >= 0):
+                    anchor, anchor_start = column, start
+                else:
+                    anchor = -1
+                after_blank = False
         else:
             _mask(masked, start, line_end)
-            if _closing_fence(line, marker, width):
+            if _closing_fence(line, marker, width, 3):
                 marker = width = 0
 
         if line_end == len(data):
@@ -73,12 +98,86 @@ def structural_markdown(text: str, source: str | Path = "markdown text") -> str:
     return masked.decode("utf-8")
 
 
-def _fence_start(line: bytes) -> int | None:
-    start = 0
-    while start < len(line) and line[start] == ord(" "):
-        start += 1
+def _leading_width(line: bytes) -> tuple[int, int]:
+    columns = size = 0
+    while size < len(line) and line[size] in b" \t":
+        columns += 4 - columns % 4 if line[size] == ord("\t") else 1
+        size += 1
+    return columns, size
+
+
+def _top_level_item(line: bytes) -> int | None:
+    if len(line) < 2 or _is_thematic_break(line):
+        return None
+    marker_end = 1
+    if line[0] in b"-*+":
+        pass
+    elif 49 <= line[0] <= 57 and line[1] == ord("."):
+        marker_end = 2
+    else:
+        return None
+    if marker_end >= len(line) or line[marker_end] not in b" \t":
+        return None
+    column = nxt = marker_end
+    while nxt < len(line) and line[nxt] in b" \t":
+        column += 4 - column % 4 if line[nxt] == ord("\t") else 1
+        nxt += 1
+    if nxt == len(line) or column - marker_end > 4 or _starts_block(line[nxt:]):
+        return None
+    return column
+
+
+def _starts_block(content: bytes) -> bool:
+    first = content[0]
+    if first in b"-*+":
+        end = 1
+    elif 48 <= first <= 57:
+        end = 1
+        while end < len(content) and end < 9 and 48 <= content[end] <= 57:
+            end += 1
+        if end == len(content) or content[end] not in b".)":
+            return False
+        end += 1
+    elif first == ord("#"):
+        end = len(content) - len(content.lstrip(b"#"))
+        if end > 6:
+            return False
+    elif first in b"`~":
+        return content[:3] == bytes([first]) * 3
+    else:
+        return False
+    return end == len(content) or content[end] in b" \t"
+
+
+def _blank(line: bytes) -> bool:
+    return not line.strip(b" \t")
+
+
+def _indent_columns(line: bytes) -> int:
+    column = 0
+    for char in line:
+        if char == ord(" "):
+            column += 1
+        elif char == ord("\t"):
+            column += 4 - column % 4
+        else:
+            break
+    return column
+
+
+def _is_thematic_break(line: bytes) -> bool:
+    trimmed = line.strip(b" \t")
+    if len(trimmed) < 3 or trimmed[0] not in b"-*_":
+        return False
+    return all(char in (trimmed[0], ord(" "), ord("\t")) for char in trimmed) and (
+        trimmed.count(bytes([trimmed[0]])) >= 3
+    )
+
+
+def _fence_start(line: bytes, limit: int) -> int | None:
+    columns, start = _leading_width(line)
     if (
-        start <= 3
+        columns <= limit
         and start < len(line)
         and line[start] in (ord("`"), ord("~"))
     ):
@@ -86,8 +185,8 @@ def _fence_start(line: bytes) -> int | None:
     return None
 
 
-def _opening_fence(line: bytes) -> tuple[int, int] | None:
-    start = _fence_start(line)
+def _opening_fence(line: bytes, limit: int) -> tuple[int, int] | None:
+    start = _fence_start(line, limit)
     if start is None:
         return None
     marker = line[start]
@@ -100,8 +199,39 @@ def _opening_fence(line: bytes) -> tuple[int, int] | None:
     return marker, width
 
 
-def _closing_fence(line: bytes, marker: int, width: int) -> bool:
-    start = _fence_start(line)
+def _list_fence_end(
+    data: bytes, open_end: int, opened: tuple[int, int], indent: int, container: int
+) -> int:
+    marker, width = opened
+    start = open_end + 1
+    while start < len(data):
+        line_end = data.find(b"\n", start)
+        if line_end < 0:
+            line_end = len(data)
+        content_end = line_end
+        if content_end > start and data[content_end - 1] == ord("\r"):
+            content_end -= 1
+        line = data[start:content_end]
+        if not _blank(line):
+            columns = _indent_columns(line)
+            if columns < indent:
+                return -1
+            if _closing_fence(line, marker, width, container + 3):
+                return line_end if columns == indent else -1
+        start = line_end + 1
+    return -1
+
+
+def _lone_cr(data: bytes) -> bool:
+    """Report a carriage return that is not the final byte of its line."""
+    return any(
+        char == ord("\r") and index + 1 < len(data) and data[index + 1] != ord("\n")
+        for index, char in enumerate(data)
+    )
+
+
+def _closing_fence(line: bytes, marker: int, width: int, limit: int) -> bool:
+    start = _fence_start(line, limit)
     if start is None or line[start] != marker:
         return False
     end = start

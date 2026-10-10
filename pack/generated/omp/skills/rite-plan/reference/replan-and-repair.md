@@ -84,15 +84,15 @@ Record the sequence once in `decisions.md`.
 ## revise
 
 Artifact-only reconciliation of `spec.md`, `architecture.md`, `plan.md`, `tasks.md`,
-or `traceability.md` — never source. Propose/confirm the file set first. Only explicit
-`/rite-upgrade` with a `repairable` assessment may authorize neutral workspace edits.
+or `traceability.md` — never source. Propose/confirm the file set first. A neutral workspace
+edit is authorized by explicit `/rite-upgrade` with a `repairable` assessment, or, for budget
+relocation only, by the phase owner when `orient` reports `over: true`.
 
 Unchanged acceptance/behavior with non-equivalent `proposed_coverage` is a
 contradictory input: the canonical classifier blocks it — there is no fourth
 route (see [`acceptance-preserving-reslice.md`](../../devrites-lib/reference/standards/acceptance-preserving-reslice.md)).
 
-**Budget relocation** (admitted by `/rite-upgrade`, or by the phase owner when
-`orient` reports `over: true`): move checkpoint narrative, historical fold text and
+**Budget relocation** (authorized as above): move checkpoint narrative, historical fold text and
 closed-round accounts verbatim from `state.md`/`tasks.md`/`plan.md`/`architecture.md`/
 `eng-review.md` into `history/<file>-<YYYYMMDD>.md`, packets/accounts from the root
 into `packets/`, leaving a one-line pointer. Cursor, live slices, open findings, IDs,

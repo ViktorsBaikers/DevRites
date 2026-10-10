@@ -3,6 +3,8 @@ package state
 import (
 	"bytes"
 	"strings"
+
+	"github.com/devrites/devrites/internal/markdowntext"
 )
 
 // Artifact budgets mirror workspace-artifact-schema.md "What each file owns".
@@ -150,17 +152,16 @@ func CountLines(raw []byte) int {
 	return lines
 }
 
-// HasBudgetOverride reports a structural `Budget override:` line outside fenced
-// code blocks; a fenced example never counts.
+// HasBudgetOverride reports a structural `Budget override:` line with a reason
+// outside fenced code blocks; a fenced example never counts. Malformed Markdown carries no
+// structural override.
 func HasBudgetOverride(raw []byte) bool {
-	fenced := false
-	for _, line := range strings.Split(string(raw), "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "```") {
-			fenced = !fenced
-			continue
-		}
-		if !fenced && strings.HasPrefix(trimmed, "Budget override:") {
+	structural, err := markdowntext.Structural(raw)
+	if err != nil {
+		return false
+	}
+	for _, line := range strings.Split(string(structural), "\n") {
+		if reason, ok := strings.CutPrefix(strings.TrimSpace(line), "Budget override:"); ok && strings.TrimSpace(reason) != "" {
 			return true
 		}
 	}

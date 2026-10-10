@@ -278,3 +278,14 @@ func swapOpenVisualOpener(fn func(string) error) func() {
 	openVisualOpener = fn
 	return func() { openVisualOpener = prev }
 }
+
+func TestOpenVisualMissingWorkspaceNamesResolvedPath(t *testing.T) {
+	root := t.TempDir()
+	var stdout, stderr bytes.Buffer
+
+	code := OpenVisual(root, []string{"demo", "--slug", "ghost"}, &stdout, &stderr)
+	want := filepath.Join(root, "work", "ghost")
+	if code != 2 || !strings.Contains(stderr.String(), `"ghost"`) || !strings.Contains(stderr.String(), want) {
+		t.Fatalf("open-visual missing workspace = %d, want exit 2 naming %q\n%s", code, want, stderr.String())
+	}
+}

@@ -41,6 +41,13 @@ seal can see the call was made deliberately.
 
 ## In `/rite-autocomplete`
 Autocomplete runs the significance test every feature. On skip → straight to `/rite-define`
-(no pause). On fire → run the full review and auto-apply the recommended mode, including
-`expand` and extra acceptance (record the ADR; fold via Spec Drift Guard).
-Irreversible-risk findings always pause.
+(no pause). On fire → run the full review, then apply the mode under the AFK rule in
+[`scope-modes.md`](scope-modes.md): `hold-rigor`, `reduce-to-MVP`, and a skip apply unattended.
+`expand` and any extra acceptance **do not** apply unattended — acceptance is never auto-grown.
+When the review lands on `expand` or any acceptance growth, the agent presents the scope call as a
+ranked `AskUserQuestion` option set per the HITL rule, records the open `questions.md` qid, and
+**holds the fold**: do not write *Success metrics* or *Acceptance criteria* rows, do not fold via
+Spec Drift Guard, and do not recommend `/rite-define` until a human answers the qid. A self-written
+`decisions.md` ADR is not that human answer (see [`strategy-template.md`](strategy-template.md)
+§ Write discipline); the growth stays blocked until the qid resolves. Irreversible-risk findings
+always pause.

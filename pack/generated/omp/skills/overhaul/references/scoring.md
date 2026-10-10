@@ -241,11 +241,21 @@ frontend `Q_l = 9.0` → `NOT_READY`.
 <rubric.json> --baseline <a.json> --candidate <b.json>` labels control transitions.
 Inputs: the immutable rubric, a results file (`overhaul.results/1`: `rubric_digest`
 (required; the SHA-256 of the rubric file, checked by `score` and by both arms of
-`compare`), `subject`, `fingerprint`, `results{control_id: {status, evidence[],
-verified_by}}`)
+`compare`), `subject` (required), `fingerprint` (required),
+`results{control_id: {status, evidence[], verified_by}}`)
 and a gates file (`overhaul.gates/1`: `mode` `audit|remediation`, `gates{id: {status,
-evidence[], reason, approval}}`). Exit 2 means invalid input: nothing may be treated
-as scored. `G-THRESHOLDS` and `G-MANDATORY` are computed; `validate` rejects a
+evidence[], reason, approval}}`). `subject` must be a non-empty string, and
+`fingerprint` exactly 64 hexadecimal characters — the SHA-256 candidate fingerprint
+that `overhaul snapshot fingerprint` prints, never a placeholder. `score` validates
+both immediately after the results schema check, and `compare` reaches the same check
+through both arms, so a field that is missing, empty, null or malformed is refused
+outright: `ERROR: results: subject must be a non-empty string` or `ERROR: results:
+fingerprint must be 64 hex characters`. Records validation checks neither field, so a
+green `validate` does not mean the results are scoreable. Both are copied verbatim into
+the scorecard, which every consumer reads them from, so a wrong value propagates into
+the published record — which is why they are validated rather than passed through.
+Exit 2 means invalid input: nothing may be treated as scored, and no scorecard is
+written. `G-THRESHOLDS` and `G-MANDATORY` are computed; `validate` rejects a
 scorecard whose `G-NO-CRITICAL-HIGH`, `G-NO-OPEN-SERIOUS-LEAD` or `G-COVERAGE` PASS
 contradicts `findings.json` or `coverage.json`, and a control recorded PASS while a
 linked finding is still open ([`records.md`](records.md#enforced-versus-review-only)).

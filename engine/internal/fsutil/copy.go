@@ -1,18 +1,33 @@
 package fsutil
 
 import (
+	"crypto/rand"
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"syscall"
 )
 
-// PermissionsMatch compares POSIX permission bits where the platform exposes
-// them. Windows os.FileMode synthesizes 0666/0777 from file attributes, so its
-// inherited ACL remains the security boundary instead.
-func PermissionsMatch(mode, want fs.FileMode) bool {
-	return runtime.GOOS == "windows" || mode.Perm() == want.Perm()
+// syncDir flushes a directory's entries so a completed rename survives a crash.
+// It is a variable so tests can observe the call.
+var syncDir = func(dir string) error {
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+	d, err := os.Open(dir) // #nosec G304 -- dir is the parent of an engine-managed path
+	if err != nil {
+		return err
+	}
+	err = d.Sync()
+	_ = d.Close()
+	if errors.Is(err, syscall.EINVAL) || errors.Is(err, errors.ErrUnsupported) {
+		return nil
+	}
+	return err
 }
 
 // WriteFileAtomic writes path by first writing a sibling temp file and then
@@ -51,61 +66,80 @@ func WriteFileAtomic(path string, data []byte, perm fs.FileMode) error {
 		return fmt.Errorf("atomic write %s: %w", path, err)
 	}
 	cleanup = false
+	if err := syncDir(filepath.Dir(path)); err != nil {
+		return fmt.Errorf("atomic write %s: %w", path, err)
+	}
 	return nil
 }
 
-// FileModTime returns a regular file's modification time in whole seconds.
-func FileModTime(path string) (int64, bool) {
-	info, err := os.Stat(path)
-	if err != nil || !info.Mode().IsRegular() {
-		return 0, false
+// WriteFileAtomicIn is WriteFileAtomic confined to root: every directory
+// component of rel is resolved relative to the open root, so a component
+// swapped for a symlink that leaves the root fails instead of redirecting
+// the write.
+func WriteFileAtomicIn(root *os.Root, rel string, data []byte, perm fs.FileMode) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("atomic write %s: %w", filepath.Join(root.Name(), rel), err)
+		}
+	}()
+	dir := filepath.Dir(rel)
+	if err := root.MkdirAll(dir, 0o755); err != nil {
+		return err
 	}
-	return info.ModTime().Unix(), true
-}
-
-// NewestModTime returns the newest modification time among regular files.
-func NewestModTime(paths ...string) (newest int64, ok bool) {
-	for _, path := range paths {
-		if modified, exists := FileModTime(path); exists && (!ok || modified > newest) {
-			newest, ok = modified, true
+	var tmpName string
+	var tmp *os.File
+	for range 100 {
+		var nonce [8]byte
+		_, _ = rand.Read(nonce[:]) // never fails since go 1.24
+		tmpName = filepath.Join(dir, fmt.Sprintf(".%s.tmp-%d", filepath.Base(rel), binary.BigEndian.Uint64(nonce[:])))
+		tmp, err = root.OpenFile(tmpName, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o600)
+		if !errors.Is(err, fs.ErrExist) {
+			break
 		}
 	}
-	return newest, ok
+	if err != nil {
+		return err
+	}
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = root.Remove(tmpName)
+		}
+	}()
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(perm); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := root.Rename(tmpName, rel); err != nil {
+		return err
+	}
+	cleanup = false
+	return syncDirIn(root, dir)
 }
 
-// CopyTree recursively copies src to dst, creating parent directories and
-// overwriting files. A missing src is not an error.
-func CopyTree(src, dst string) error {
-	info, err := os.Stat(src)
-	if os.IsNotExist(err) {
+func syncDirIn(root *os.Root, dir string) error {
+	if runtime.GOOS == "windows" {
 		return nil
 	}
+	d, err := root.Open(dir)
 	if err != nil {
-		return fmt.Errorf("copy %s: %w", src, err)
+		return err
 	}
-	if !info.IsDir() {
-		// #nosec G304 -- src is an engine-managed path inside the operator-supplied root
-		data, err := os.ReadFile(src)
-		if err != nil {
-			return fmt.Errorf("copy %s: %w", src, err)
-		}
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			return fmt.Errorf("copy to %s: %w", dst, err)
-		}
-		// #nosec G703 -- dst mirrors src within the same managed tree
-		return os.WriteFile(dst, data, 0o644)
+	err = d.Sync()
+	_ = d.Close()
+	if errors.Is(err, syscall.EINVAL) || errors.Is(err, errors.ErrUnsupported) {
+		return nil
 	}
-	entries, err := os.ReadDir(src)
-	if err != nil {
-		return fmt.Errorf("copy %s: %w", src, err)
-	}
-	if err := os.MkdirAll(dst, 0o755); err != nil {
-		return fmt.Errorf("copy to %s: %w", dst, err)
-	}
-	for _, e := range entries {
-		if err := CopyTree(filepath.Join(src, e.Name()), filepath.Join(dst, e.Name())); err != nil {
-			return err
-		}
-	}
-	return nil
+	return err
 }

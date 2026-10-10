@@ -142,6 +142,52 @@ func TestBench(t *testing.T) {
 	})
 }
 
+func assertFinite(t *testing.T, v any, path string) {
+	t.Helper()
+	switch x := v.(type) {
+	case float64:
+		if math.IsInf(x, 0) || math.IsNaN(x) {
+			t.Fatalf("%s is not finite: %v", path, x)
+		}
+	case []any:
+		for i, e := range x {
+			assertFinite(t, e, fmt.Sprintf("%s[%d]", path, i))
+		}
+	case map[string]any:
+		for k, e := range x {
+			assertFinite(t, e, path+"."+k)
+		}
+	}
+}
+
+func TestBenchNonFiniteInputs(t *testing.T) {
+	fast, _ := fixture()
+	someZeros := append(make([]float64, 8), gauss(rand.New(rand.NewPCG(3, 0)), 10, 0.4, 12)...)
+
+	t.Run("zero-valued resamples give a finite verdict", func(t *testing.T) {
+		for name, d := range map[string]map[string]any{
+			"lower is better":  with(fast, "candidate", someZeros),
+			"higher is better": with(fast, "direction", "higher_is_better", "baseline", someZeros, "candidate", fast["baseline"]),
+		} {
+			v, res := verdict(t, d)
+			if v != "NO_RATIO" && v != "INCONCLUSIVE" {
+				t.Fatalf("%s: got %v", name, res)
+			}
+			assertFinite(t, res, name)
+		}
+	})
+	t.Run("negative resolution is an error", func(t *testing.T) {
+		code, _, stderr := run(t, with(fast, "resolution", -1))
+		if code != 2 || !strings.Contains(stderr, "resolution") {
+			t.Fatalf("exit %d %q", code, stderr)
+		}
+	})
+	t.Run("every float of a normal result is finite", func(t *testing.T) {
+		_, res := verdict(t, fast)
+		assertFinite(t, res, "result")
+	})
+}
+
 func TestStats(t *testing.T) {
 	if k := tailCount(10, 10, 0.05); k != 24 {
 		t.Fatalf("n=m=10 alpha .05: k=%d, want 24 (Hollander-Wolfe D_(24), D_(77))", k)

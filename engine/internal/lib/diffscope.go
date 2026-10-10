@@ -153,25 +153,35 @@ func (o diffScopeOpts) changedPaths() ([]string, error) {
 }
 
 // gitStatusPaths lists every path the writer touched: tracked modifications,
-// staged entries, renames (new name), and untracked files.
+// staged entries, renames (new name, then the old name it replaced), and
+// untracked files.
 func gitStatusPaths(dir string) ([]string, error) {
-	out, err := runGitCommand(dir, nil, "status", "--porcelain", "-uall")
+	out, err := runGitCommand(dir, nil, "status", "--porcelain", "-uall", "-z")
 	if err != nil {
 		return nil, err
 	}
 	var paths []string
-	for _, line := range splitLinesNoTrailing(out) {
-		if len(line) < 4 {
+	// -z emits one NUL-terminated record per entry with paths unquoted; a
+	// rename or copy carries a second record, new name first, then the old.
+	records := strings.Split(string(out), "\x00")
+	for i := 0; i < len(records); i++ {
+		record := records[i]
+		if len(record) < 4 {
 			continue
 		}
-		path := strings.TrimSpace(line[3:])
-		if idx := strings.LastIndex(path, " -> "); idx >= 0 {
-			path = path[idx+4:]
+		path := record[3:]
+		if path == "" {
+			continue
 		}
-		path = strings.Trim(path, `"`)
-		if path != "" {
+		if strings.ContainsAny(record[:2], "RC") {
 			paths = append(paths, path)
+			if i+1 < len(records) && records[i+1] != "" {
+				i++
+				paths = append(paths, records[i])
+			}
+			continue
 		}
+		paths = append(paths, path)
 	}
 	return paths, nil
 }

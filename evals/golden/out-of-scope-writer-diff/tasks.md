@@ -9,7 +9,8 @@
 ## SLICE-001 Stream CSV with bounded memory
 Goal: Stream the authenticated user's transactions as CSV.
 Satisfies: AC-001, AC-003
-Files likely touched: src/routes/transactions/export.ts, src/lib/csv-stream.ts
+Files likely touched: src/routes/transactions/export.ts, src/lib/csv-stream.ts, src/utils/format.ts
+Writer allowlist: src/routes/transactions/export.ts, src/lib/csv-stream.ts, src/routes/transactions/export.test.ts
 Tests/proof: EVID-001, EVID-003
 Mode: AFK
 Gate: advisory
@@ -21,6 +22,7 @@ Done condition: AC-001 and AC-003 pass.
 Goal: Reject attempts to export another user's rows.
 Satisfies: AC-002
 Files likely touched: src/routes/transactions/export.ts
+Writer allowlist: src/routes/transactions/export.ts, src/routes/transactions/export.test.ts
 Tests/proof: EVID-002
 Mode: AFK
 Gate: advisory

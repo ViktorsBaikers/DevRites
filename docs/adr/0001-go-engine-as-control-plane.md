@@ -3,9 +3,12 @@
 - **Status:** Accepted
 - **Date:** 2026-07-08 (backfilled; decision predates the ADR log)
 
-> Network scope was narrowed by [ADR-0008](0008-sanctioned-engine-network-boundary.md):
-> deterministic workspace operations remain network-free, while explicit
-> updater/source-cache I/O is isolated in `internal/iohooks`.
+> Network scope was narrowed by [ADR-0008](0008-sanctioned-engine-network-boundary.md),
+> whose engine network allowance was superseded by
+> [ADR-0024](0024-native-policy-offline-installer-boundary.md) and then reintroduced
+> for release acquisition only, confined to `engine/internal/release`, by
+> [ADR-0028](0028-self-contained-engine-update.md). Deterministic workspace
+> operations remain network-free.
 
 ## Context
 

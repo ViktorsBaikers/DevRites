@@ -62,7 +62,7 @@ if (affected > 0 && concrete.size === 0) fail('blocking audit findings have no c
 
 const exceptions = load(exceptionsPath);
 if (!Array.isArray(exceptions)) fail('npm audit exceptions must be a JSON array');
-const today = process.env.DEVRITES_TODAY || new Date().toISOString().slice(0, 10);
+const today = (args.includes('--test') && process.env.DEVRITES_TEST_TODAY) || new Date().toISOString().slice(0, 10);
 const horizonDays = 7;
 const horizon = (() => {
   const d = new Date(`${today}T00:00:00Z`);

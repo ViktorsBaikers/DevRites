@@ -161,7 +161,7 @@ func TestCheckIndexesJSONContract(t *testing.T) {
 }
 
 func TestOrientRoutesLikeObserveSummary(t *testing.T) {
-	t.Setenv("DEVRITES_ROOT", t.TempDir())
+	setEmptyWorkRoot(t)
 	for _, args := range [][]string{{"orient", "missing"}, {"observe", "summary", "missing"}} {
 		t.Run(strings.Join(args, "-"), func(t *testing.T) {
 			var stdout, stderr bytes.Buffer

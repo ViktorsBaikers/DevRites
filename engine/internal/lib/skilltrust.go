@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"unicode"
 )
 
 // SkillTrustFinding is one deterministic trust scan result.
@@ -184,14 +183,4 @@ func FormatSkillTrust(result SkillTrustResult) string {
 		fmt.Fprintf(&b, "%s %s line=%d %s\n", finding.Severity, finding.Rule, finding.Line, finding.Detail)
 	}
 	return b.String()
-}
-
-// ContainsOnlyASCII returns false when non-ASCII control or bidi characters appear.
-func ContainsOnlyASCII(text string) bool {
-	for _, r := range text {
-		if r > unicode.MaxASCII && isSuspiciousUnicode(r) {
-			return false
-		}
-	}
-	return true
 }

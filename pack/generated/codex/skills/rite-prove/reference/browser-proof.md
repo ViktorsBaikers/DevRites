@@ -12,11 +12,9 @@ What `browser-evidence.md` must capture for a UI slice. Delegates to
 | EVID-003 | <route> | empty/keyboard | 375 | brief Proof targets + target reference 1 | playwright-mcp | <observed result> | AC-002, SLICE-002 | <none / exact gap> |
 
 ## Visual Verdict
-| State | Result | Notes |
-| --- | --- | --- |
-| default | PASS / FAIL | <what is visible> |
-| loading | PASS / FAIL | <what is visible> |
-| error | PASS / FAIL | <what is visible> |
+| Criterion (source, class) | Expected | Observed (screenshot) | Verdict | Severity |
+|---|---|---|---|---|
+| <state / delta / anti-slop criterion> (<brief / reference / anti-slop / acceptance>, <ENG / A11Y / DS / AES>) | <expected> | <what is visible> | PASS / PARTIAL / FAIL / n/a | <Critical / Important / Suggestion> |
 
 ## Comparison deltas
 | State / viewport | Target | Material delta observed | Disposition | Result |
@@ -33,6 +31,8 @@ What `browser-evidence.md` must capture for a UI slice. Delegates to
 ```
 
 ## Rules
+- The `## Visual Verdict` table follows [visual-verdict.md](../../devrites-browser-proof/reference/visual-verdict.md),
+  which owns its rows, verdict values and severity mapping.
 - Open every screenshot path and describe it: never assert from the filename.
 - Read `design-brief.md` + `references.md` first. Compare fidelity only with references
   classified **target**; check constraints as rules and never pixel-match inspiration.

@@ -6,6 +6,8 @@
 package score
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,6 +21,16 @@ import (
 )
 
 const calc = "overhaul-score/1"
+
+// GateIDs lists every gate a complete scorecard records: G-THRESHOLDS plus the
+// audit gates, and the repair gates for a remediation run.
+func GateIDs(remediation bool) []string {
+	ids := append([]string{"G-THRESHOLDS"}, auditGates...)
+	if remediation {
+		ids = append(ids, repairGates...)
+	}
+	return ids
+}
 
 const usage = `usage: overhaul score --rubric <r.json> --results <s.json> --gates <g.json> [--out <scorecard.json>]
        overhaul score compare --rubric <r.json> --baseline <a.json> --candidate <b.json>`
@@ -437,6 +449,14 @@ func score(rubric, results, gates map[string]any) (map[string]any, error) {
 	}
 	if results["schema"] != "overhaul.results/1" {
 		return nil, fmt.Errorf("results schema must be overhaul.results/1")
+	}
+	// The scorecard copies both fields verbatim and every consumer reads them
+	// from there, so an absent one publishes a scorecard bound to no code state.
+	if ovio.Str(results["subject"]) == "" {
+		return nil, fmt.Errorf("results: subject must be a non-empty string")
+	}
+	if sum, err := hex.DecodeString(ovio.Str(results["fingerprint"])); err != nil || len(sum) != sha256.Size {
+		return nil, fmt.Errorf("results: fingerprint must be 64 hex characters")
 	}
 	rres := ovio.Obj(results["results"])
 	if rres == nil && ovio.Truthy(results["results"]) {

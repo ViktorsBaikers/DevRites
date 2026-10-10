@@ -66,6 +66,51 @@ def prose_annotated_triggers(skills_root):
     return found
 
 
+FENCE_OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+
+
+def prose_body(text):
+    """Return (prose, unclosed_fence): text minus HTML comments and fenced
+    code blocks. Text inside either is not a stated condition for a trigger.
+    An unterminated fence runs to end of file (CommonMark) and is reported so
+    the caller can fail instead of silently accepting the file."""
+    out = []
+    fence = None  # (char, length) while inside a fenced block
+    in_comment = False
+    for line in text.splitlines():
+        if fence:
+            m = re.match(r"^ {0,3}(`+|~+)\s*$", line)
+            if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= fence[1]:
+                fence = None
+            continue
+        if not in_comment:
+            m = FENCE_OPEN.match(line)
+            if m and not (m.group(1)[0] == "`" and "`" in m.group(2)):
+                fence = (m.group(1)[0], len(m.group(1)))
+                continue
+        kept = []
+        pos = 0
+        while pos < len(line):
+            if in_comment:
+                end = line.find("-->", pos)
+                if end < 0:
+                    pos = len(line)
+                else:
+                    in_comment = False
+                    pos = end + 3
+            else:
+                start = line.find("<!--", pos)
+                if start < 0:
+                    kept.append(line[pos:])
+                    pos = len(line)
+                else:
+                    kept.append(line[pos:start])
+                    in_comment = True
+                    pos = start + 4
+        out.append("".join(kept))
+    return "\n".join(out), fence is not None
+
+
 def schema_artifacts(schema_doc):
     return set(re.findall(r"\b[a-z][a-z0-9_-]*\.md\b",
                           open(schema_doc, encoding="utf-8").read()))
@@ -119,8 +164,12 @@ def main():
 
         # every trigger name needs a fire path: engine signal, prose
         # annotation, reserved auto-fire name, or a mention in the skill's
-        # own prose outside the loads: manifest comment
-        body = re.sub(r"<!--\s*loads:.*?-->", "", text, flags=re.DOTALL)
+        # own prose outside HTML comments and fenced code blocks
+        body, unclosed_fence = prose_body(text)
+        if unclosed_fence:
+            problems.append(
+                f"{rel}: unclosed code fence — prose after it cannot be "
+                "classified")
         for trigger in manifest.get("triggers", {}):
             if trigger in RESERVED_TRIGGERS:
                 continue

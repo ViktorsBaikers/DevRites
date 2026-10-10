@@ -1,6 +1,6 @@
 # `ship.md` template
 
-Write before close-out; it moves to `.devrites/archive/<slug>/ship.md`.
+Write Commit(s)/Push at git-ship step 7a; complete before close-out; it moves to `.devrites/archive/<slug>/ship.md`.
 
 ```markdown
 # Ship: <slug>
@@ -10,6 +10,7 @@ Write before close-out; it moves to `.devrites/archive/<slug>/ship.md`.
 - Branch: <branch>
 - Commit(s): <sha> [<sha> …]
 - Tag/PR: <value|none>
+- Push: <pushed|pending|failed|unknown>
 
 ## What shipped
 <project-vocabulary paragraph>

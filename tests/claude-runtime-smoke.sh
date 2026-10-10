@@ -10,11 +10,6 @@ fail=0
 ok() { printf '  ok: %s\n' "$*"; }
 no() { printf '  FAIL: %s\n' "$*"; fail=1; }
 
-command -v claude >/dev/null 2>&1 || {
-  echo "claude-runtime-smoke: SKIP (claude CLI not found)"
-  exit 0
-}
-
 T="$(mktemp -d)"
 GEN=""
 trap 'rm -rf "$T"; [ -n "$GEN" ] && rm -rf "$GEN"' EXIT
@@ -51,20 +46,27 @@ else
   no "Claude read-only workflow pilot missing"
 fi
 
-version="$(
-  cd "$PROJECT" &&
-    env -i \
-      "PATH=$PATH" "LANG=C" "LC_ALL=C" \
-      "HOME=$T/home" "CLAUDE_CONFIG_DIR=$T/claude-config" \
-      claude --safe-mode --version 2>/dev/null
-)"
-if [ -n "$version" ]; then
-  ok "Claude CLI starts with isolated config"
+have_claude=0
+command -v claude >/dev/null 2>&1 && have_claude=1
+if [ "$have_claude" -eq 1 ]; then
+  version="$(
+    cd "$PROJECT" &&
+      env -i \
+        "PATH=$PATH" "LANG=C" "LC_ALL=C" \
+        "HOME=$T/home" "CLAUDE_CONFIG_DIR=$T/claude-config" \
+        claude --safe-mode --version 2>/dev/null
+  )"
+  case "$version" in
+    [0-9]*.[0-9]*.[0-9]*" (Claude Code)") ok "Claude CLI starts with isolated config" ;;
+    *) no "Claude CLI isolated startup failed (got: ${version:-<empty>})" ;;
+  esac
 else
-  no "Claude CLI isolated startup failed"
+  echo "  SKIP: Claude CLI startup check (claude CLI not found)"
 fi
 
-if [ "${DEVRITES_CLAUDE_MODEL_SMOKE:-0}" = "1" ]; then
+if [ "${DEVRITES_CLAUDE_MODEL_SMOKE:-0}" = "1" ] && [ "$have_claude" -eq 0 ]; then
+  no "live Claude smoke requires the claude CLI"
+elif [ "${DEVRITES_CLAUDE_MODEL_SMOKE:-0}" = "1" ]; then
   AUTH_FILE="${DEVRITES_CLAUDE_API_KEY_FILE:-}"
   MODEL="${DEVRITES_CLAUDE_MODEL:-}"
   MAX_COST="${DEVRITES_CLAUDE_MAX_COST_USD:-}"
@@ -94,7 +96,7 @@ if [ "${DEVRITES_CLAUDE_MODEL_SMOKE:-0}" = "1" ]; then
     fi
   fi
 else
-  ok "model-backed Claude smoke skipped (set DEVRITES_CLAUDE_MODEL_SMOKE=1 to run)"
+  echo "  SKIP: model-backed Claude smoke (set DEVRITES_CLAUDE_MODEL_SMOKE=1 to run)"
 fi
 
 echo ""

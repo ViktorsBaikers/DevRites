@@ -11,7 +11,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/hostpack"
 )
 
@@ -85,11 +84,20 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 		return fmt.Errorf("read payload %s: %w", merge.PayloadRel, err)
 	}
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
+	// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
+	if current, readErr := os.ReadFile(dest); readErr == nil {
+		if err := hostpack.ValidateMarkerBlocks(current, r.sharedMarkerMerges(merge)...); err != nil {
+			return fmt.Errorf("%w in %s; fix it and rerun", err, merge.TargetRel)
+		}
+	}
 	if r.opts.DryRun {
 		verb := "create DevRites block"
 		// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
 		current, readErr := os.ReadFile(dest)
 		if readErr == nil {
+			if _, mergeErr := hostpack.MergeMarkerBlock(current, block, merge.Begin, merge.End); mergeErr != nil {
+				return fmt.Errorf("%w in %s; fix it and rerun", mergeErr, merge.TargetRel)
+			}
 			if bytes.Contains(current, []byte(merge.Begin)) {
 				verb = "refresh DevRites block"
 			} else {
@@ -107,11 +115,15 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 		// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
 		current, readErr := os.ReadFile(dest)
 		if readErr == nil {
-			next = hostpack.MergeMarkerBlock(current, block, merge.Begin, merge.End)
+			var mergeErr error
+			next, mergeErr = hostpack.MergeMarkerBlock(current, block, merge.Begin, merge.End)
+			if mergeErr != nil {
+				return fmt.Errorf("%w in %s; fix it and rerun", mergeErr, merge.TargetRel)
+			}
 		} else if !errors.Is(readErr, fs.ErrNotExist) {
 			return fmt.Errorf("cannot read %s: %w", merge.TargetRel, readErr)
 		}
-		if err := fsutil.WriteFileAtomic(dest, next, 0o644); err != nil {
+		if err := r.writeConfined(dest, next, 0o644); err != nil {
 			return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 		}
 		// Multiple marker blocks can share one target (AGENTS.md carries both
@@ -123,6 +135,23 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 	return r.installMarker(merge.MarkerRel, merge.MarkerText)
 }
 
+func (r *runner) sharedMarkerMerges(merge hostpack.MarkerMerge) []hostpack.MarkerMerge {
+	merges := []hostpack.MarkerMerge{merge}
+	for _, other := range []struct {
+		enabled bool
+		merge   hostpack.MarkerMerge
+	}{
+		{r.opts.WithCodex, hostpack.CodexAgentsMerge},
+		{r.opts.WithPi, hostpack.PiAgentsMerge},
+		{r.opts.WithDevin, hostpack.DevinAgentsMerge},
+	} {
+		if other.enabled && other.merge.TargetRel == merge.TargetRel && other.merge.Begin != merge.Begin {
+			merges = append(merges, other.merge)
+		}
+	}
+	return merges
+}
+
 func (r *runner) mergeCodexConfig() error {
 	merge := hostpack.CodexConfigMerge
 	block, err := fs.ReadFile(r.payloadFS, merge.PayloadRel)
@@ -131,6 +160,12 @@ func (r *runner) mergeCodexConfig() error {
 	}
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
 	if r.opts.DryRun {
+		// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
+		if data, readErr := os.ReadFile(dest); readErr == nil {
+			if _, stripErr := hostpack.StripCodexConfigBlocks(data); stripErr != nil {
+				return fmt.Errorf("%w in %s; fix it and rerun", stripErr, merge.TargetRel)
+			}
+		}
 		fmt.Fprintf(r.opts.Stdout, "  [merge] %s (prepend DevRites permission block)\n", merge.TargetRel)
 		return r.installMarker(merge.MarkerRel, merge.MarkerText)
 	}
@@ -140,9 +175,11 @@ func (r *runner) mergeCodexConfig() error {
 	var current []byte
 	// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
 	if data, readErr := os.ReadFile(dest); readErr == nil {
-		current = stripMarkerBlock(data, merge.Begin, merge.End)
-		current = stripMarkerBlock(current, "# BEGIN DEVRITES CODEX MCP", "# END DEVRITES CODEX MCP")
-		current = stripMarkerBlock(current, "### BEGIN DEVRITES CODEX MCP", "### END DEVRITES CODEX MCP")
+		var stripErr error
+		if data, stripErr = hostpack.StripCodexConfigBlocks(data); stripErr != nil {
+			return fmt.Errorf("%w in %s; fix it and rerun", stripErr, merge.TargetRel)
+		}
+		current = data
 		if hasTopLevelTOMLKey(current, "default_permissions") {
 			return fmt.Errorf("%s already sets top-level default_permissions; remove that project override before installing the DevRites read-only-root profile", merge.TargetRel)
 		}
@@ -157,7 +194,7 @@ func (r *runner) mergeCodexConfig() error {
 		next = append(next, '\n')
 		next = append(next, current...)
 	}
-	if err := fsutil.WriteFileAtomic(dest, next, 0o644); err != nil {
+	if err := r.writeConfined(dest, next, 0o644); err != nil {
 		return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 	}
 	return r.installMarker(merge.MarkerRel, merge.MarkerText)
@@ -191,7 +228,7 @@ func (r *runner) mergeClaudeSettings(merge hostpack.JSONMerge) error {
 		return fmt.Errorf("encode merged Claude settings: %w", err)
 	}
 	data = append(data, '\n')
-	if err := fsutil.WriteFileAtomic(dest, data, 0o644); err != nil {
+	if err := r.writeConfined(dest, data, 0o644); err != nil {
 		return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 	}
 	return r.installClaudeSettingsMarker(ownsDefaultMode, managedRulesFromPayload(devrites))
@@ -201,7 +238,13 @@ func (r *runner) seedClaudeSettings() error {
 	return r.mergeClaudeSettings(hostpack.ClaudeSettingsMerge)
 }
 
-func stripHooksPath(path string) error {
+func (r *runner) stripHooksConfined(path string) error {
+	return stripHooksWith(path, func(data []byte) error {
+		return r.writeConfined(path, data, 0o644)
+	}, func() error { return r.removeConfined(path) })
+}
+
+func stripHooksWith(path string, write func([]byte) error, remove func() error) error {
 	current, err := readJSON(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -211,14 +254,14 @@ func stripHooksPath(path string) error {
 	}
 	next := stripDevritesHooks(current)
 	if len(next) == 0 {
-		return os.Remove(path)
+		return remove()
 	}
 	data, err := json.MarshalIndent(next, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode hooks config: %w", err)
 	}
 	data = append(data, '\n')
-	return fsutil.WriteFileAtomic(path, data, 0o644)
+	return write(data)
 }
 
 func (r *runner) stripClaudeSettings(path string, preserveEmpty bool) error {
@@ -231,17 +274,23 @@ func (r *runner) stripClaudeSettings(path string, preserveEmpty bool) error {
 	}
 	next := stripDevritesSettings(current, r.claudeDefaultModeOwned(), r.managedClaudePermissionRules())
 	if len(next) == 0 && !preserveEmpty {
-		return os.Remove(path)
+		return r.removeConfined(path)
 	}
 	data, err := json.MarshalIndent(next, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode Claude settings: %w", err)
 	}
 	data = append(data, '\n')
-	return fsutil.WriteFileAtomic(path, data, 0o644)
+	return r.writeConfined(path, data, 0o644)
 }
 
-func stripMarkerPath(path, begin, end string) error {
+func (r *runner) stripMarkerConfined(path, begin, end string) error {
+	return stripMarkerWith(path, begin, end, func(data []byte) error {
+		return r.writeConfined(path, data, 0o644)
+	}, func() error { return r.removeConfined(path) })
+}
+
+func stripMarkerWith(path, begin, end string, write func([]byte) error, remove func() error) error {
 	// #nosec G304 -- managed file path from the install manifest
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -250,32 +299,14 @@ func stripMarkerPath(path, begin, end string) error {
 		}
 		return fmt.Errorf("read %s: %w", path, err)
 	}
-	next := stripMarkerBlock(data, begin, end)
+	next, err := hostpack.StripMarkerBlock(data, begin, end)
+	if err != nil {
+		return fmt.Errorf("%w in %s; fix it and rerun", err, path)
+	}
 	if strings.TrimSpace(string(next)) == "" {
-		return os.Remove(path)
+		return remove()
 	}
-	return fsutil.WriteFileAtomic(path, next, 0o644)
-}
-
-func stripMarkerBlock(data []byte, begin, end string) []byte {
-	var out strings.Builder
-	inBlock := false
-	for _, line := range strings.SplitAfter(string(data), "\n") {
-		trim := strings.TrimSuffix(line, "\n")
-		trim = strings.TrimSuffix(trim, "\r")
-		switch trim {
-		case begin:
-			inBlock = true
-			continue
-		case end:
-			inBlock = false
-			continue
-		}
-		if !inBlock {
-			out.WriteString(line)
-		}
-	}
-	return []byte(out.String())
+	return write(next)
 }
 
 func hasTopLevelTOMLKey(data []byte, key string) bool {

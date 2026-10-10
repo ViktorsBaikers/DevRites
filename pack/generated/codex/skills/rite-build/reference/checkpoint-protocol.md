@@ -75,7 +75,7 @@ rewrite; do not claim cross-file atomicity):
    sh -c "$notify_cmd"
    ```
 
-   Fire after workspace write. Hook failure does **not** roll back the pause (best-effort).
+   Fire after workspace write under a bounded tool timeout (e.g. 30 s). Hook failure does **not** roll back the pause (best-effort); append the exit code to `evidence.md`.
 
 ## qid generation
 

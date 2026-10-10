@@ -362,6 +362,9 @@ func cmdAttest(root string, args []string, stdout, stderr io.Writer) int {
 		if gate.Check != "" {
 			return fmt.Errorf("gate %s is runnable; evidence comes from `gates run`, not attestation", gateID)
 		}
+		if placeholderEvidence(note, gate.ID, gate.Title) {
+			return fmt.Errorf("evidence note %q is a placeholder: a note needs a word beyond done/n/a/ok/pending-style words, the gate ID or its title, and a trailing (…) after such words is ignored; say who observed what and where", note)
+		}
 		return writeResult(ledgerPath, gate, note, true)
 	})
 	if lockErr != nil {

@@ -20,6 +20,9 @@ fi
 
 echo "== install-pin-no-global-smoke =="
 
+export HOME="$T/home"
+mkdir -p "$HOME"
+
 bash "$ROOT/install.sh" --target "$T" >/dev/null 2>&1 || no "install failed"
 [ -e "$HOME/.claude/skills/rite" ] && no "wrote to ~/.claude !!" || ok "~/.claude untouched"
 [ -e "$HOME/.codex/agents/devrites-code-reviewer.toml" ] && no "wrote to ~/.codex !!" || ok "~/.codex untouched"

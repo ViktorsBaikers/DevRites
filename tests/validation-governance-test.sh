@@ -112,6 +112,27 @@ description: Route this model-visible demo skill.
 MD
 run_fail_contains "model-visible routing budget is blocking" "shorten name/description frontmatter" env DEVRITES_SKILL_ROUTING_BUDGET=1 node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/routing"
 
+# Agent descriptions are model-visible routing text with their own budget.
+mkdir -p "$T/agent-routing/skills/demo" "$T/agent-routing/agents"
+cp "$T/routing/demo/SKILL.md" "$T/agent-routing/skills/demo/SKILL.md"
+cat > "$T/agent-routing/agents/reviewer.md" <<'MD'
+---
+name: reviewer
+description: Reviews one diff from a fresh context.
+tools: Read
+---
+# Reviewer
+MD
+run_ok "agent routing budget accepts the default" node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/agent-routing/skills"
+run_fail_contains "agent routing budget is blocking" "agent routing metadata" env DEVRITES_AGENT_ROUTING_BUDGET=1 node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/agent-routing/skills"
+
+# Devin skills express invocation through triggers, not disable-model-invocation.
+mkdir -p "$T/triggers-user/user-only" "$T/triggers-model/model-visible"
+printf -- '---\nname: user-only\ndescription: Slash-only skill.\ntriggers:\n  - user\n---\n# Demo\n' > "$T/triggers-user/user-only/SKILL.md"
+printf -- '---\nname: model-visible\ndescription: Model skill.\ntriggers:\n  - user\n  - model\n---\n# Demo\n' > "$T/triggers-model/model-visible/SKILL.md"
+run_ok "user-only triggers do not count toward routing" env DEVRITES_SKILL_ROUTING_BUDGET=20 node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/triggers-user"
+run_fail_contains "model triggers count toward routing" "model-visible skill routing metadata" env DEVRITES_SKILL_ROUTING_BUDGET=20 node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/triggers-model"
+
 # Module URLs must be decoded before they are used as filesystem paths.
 SPACE_ROOT="$T/repository with spaces"
 mkdir -p "$SPACE_ROOT/scripts" "$SPACE_ROOT/tests" "$SPACE_ROOT/pack/.claude/skills/demo" "$T/shared-artifacts"
@@ -123,6 +144,14 @@ SH
 printf '# demo\npayload\n' > "$SPACE_ROOT/pack/.claude/skills/demo/SKILL.md"
 run_ok "test runner decodes module URL paths" env DEVRITES_HOST_ARTIFACT_DIR="$T/shared-artifacts" node "$SPACE_ROOT/scripts/run-tests.mjs" --serial path-smoke
 run_fail_contains "default skill path survives spaces" "SKILL.md" env DEVRITES_SKILL_FILE_BUDGET=1 node "$SPACE_ROOT/scripts/check-generated-skill-budget.mjs"
+
+# A budget guard that cannot measure its tree or parse its limits must fail
+# closed instead of passing vacuously.
+run_ok "skill budget accepts a valid tree" node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/routing"
+run_fail_contains "skill budget rejects a nonexistent path" "missing" node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/no-such-skills"
+for budget in DEVRITES_SKILL_TOTAL_BUDGET DEVRITES_SKILL_ROUTING_BUDGET DEVRITES_SKILL_FILE_BUDGET DEVRITES_REFERENCE_FILE_BUDGET; do
+  run_fail_contains "skill budget rejects non-numeric $budget" "not a finite number" env "$budget=abc" node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/routing"
+done
 
 # Reachability is blocking unless an orphan has an owned, expiring exception.
 mkdir -p "$T/refs/demo/reference"
@@ -179,13 +208,14 @@ JSON
 cat > "$T/npm-audit-exceptions.json" <<'JSON'
 [{"id":"GHSA-r292-9mhp-454m","package":"tar","range":"<=7.5.20","nodes":["node_modules/npm/node_modules/tar"],"source":"https://github.com/advisories/GHSA-r292-9mhp-454m","owner":"security","reason":"fixture","expires":"2099-01-01"}]
 JSON
-run_ok "npm audit accepts one exact temporary exception" env DEVRITES_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-exceptions.json"
+run_ok "npm audit accepts one exact temporary exception" env DEVRITES_TEST_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --test --input "$T/npm-audit.json" --exceptions "$T/npm-audit-exceptions.json"
 node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p[0].expires="2000-01-01";fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit-exceptions.json" "$T/npm-audit-expired.json"
-run_fail_contains "npm audit rejects an expired exception" "expired" env DEVRITES_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-expired.json"
+run_fail_contains "npm audit rejects an expired exception" "expired" env DEVRITES_TEST_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --test --input "$T/npm-audit.json" --exceptions "$T/npm-audit-expired.json"
 node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p[0].expires="2026-09-08";fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit-exceptions.json" "$T/npm-audit-soon.json"
-run_fail_contains "npm audit rejects an exception inside the 7-day refresh horizon" "refresh or remove" env DEVRITES_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-soon.json"
+run_fail_contains "npm audit rejects an exception inside the 7-day refresh horizon" "refresh or remove" env DEVRITES_TEST_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --test --input "$T/npm-audit.json" --exceptions "$T/npm-audit-soon.json"
 node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p[0].expires="2026-09-12";fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit-exceptions.json" "$T/npm-audit-horizon-ok.json"
-run_ok "npm audit accepts an exception outside the 7-day refresh horizon" env DEVRITES_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-horizon-ok.json"
+run_ok "npm audit accepts an exception outside the 7-day refresh horizon" env DEVRITES_TEST_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --test --input "$T/npm-audit.json" --exceptions "$T/npm-audit-horizon-ok.json"
+run_fail_contains "npm audit ignores DEVRITES_TODAY without the test gate" "expired" env DEVRITES_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit.json" --exceptions "$T/npm-audit-horizon-ok.json"
 printf '[]\n' > "$T/npm-audit-empty.json"
 printf '{"auditReportVersion":2,"vulnerabilities":{}}\n' > "$T/npm-audit-clean.json"
 run_ok "npm audit accepts an empty exception list on a clean graph" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit-clean.json" --exceptions "$T/npm-audit-empty.json"
@@ -241,6 +271,151 @@ for t in tools:
         raise SystemExit(f"{t}: make quality {sorted(make[t])} != ci.yml {sorted(ci[t])}")
 PY
 if [ $? -eq 0 ]; then ok "make quality and CI pin the same analyzer versions"; else no "make quality and CI analyzer versions differ"; fi
+
+# The validate-tools installer runs in CI with the job's GITHUB_TOKEN, so the
+# osv-scanner release asset must be checksum-verified before it is made executable.
+# A stand-in curl plus pre-satisfied actionlint/zizmor isolate that fetch: a
+# matching checksum must install, a tampered payload must abort with nothing
+# installed, and no fetched file may reach an install without verification.
+ci_stub="$T/ci-stub"
+ci_assets="$T/ci-assets"
+mkdir -p "$ci_stub" "$ci_assets"
+case "$(uname -m)" in
+  x86_64|amd64) ci_goarch=amd64 ;;
+  aarch64|arm64) ci_goarch=arm64 ;;
+  *) ci_goarch=unknown ;;
+esac
+case "$(uname -s)" in
+  Linux) ci_goos=linux ;;
+  Darwin) ci_goos=darwin ;;
+  *) ci_goos=unknown ;;
+esac
+ci_asset="osv-scanner_${ci_goos}_${ci_goarch}"
+printf '#!/usr/bin/env bash\necho "osv-scanner stub"\n' > "$ci_assets/good"
+shasum -a 256 "$ci_assets/good" | awk -v f="$ci_asset" '{ print $1 "  " f }' > "$ci_assets/SHA256SUMS"
+cp "$ci_assets/good" "$ci_assets/tampered"
+printf '# substituted payload\n' >> "$ci_assets/tampered"
+cat > "$ci_stub/curl" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+out=""
+url=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o) out="$2"; shift 2 ;;
+    -*) shift ;;
+    *) url="$1"; shift ;;
+  esac
+done
+case "$url" in
+  */osv-scanner_SHA256SUMS) cp "$CI_STUB_ASSETS/SHA256SUMS" "$out" ;;
+  */osv-scanner_*) cp "$CI_STUB_ASSETS/${CI_STUB_PAYLOAD}" "$out" ;;
+  *) echo "stub curl: unexpected URL: $url" >&2; exit 22 ;;
+esac
+SH
+chmod +x "$ci_stub/curl"
+ci_prepare_dest() {
+  local dest="$1"
+  rm -rf "$dest"
+  mkdir -p "$dest/tools" "$dest/venv/bin"
+  printf '#!/usr/bin/env bash\necho "actionlint ci-stub"\n' > "$dest/tools/actionlint"
+  printf '#!/usr/bin/env bash\necho "zizmor ci-stub"\n' > "$dest/venv/bin/zizmor"
+  chmod +x "$dest/tools/actionlint" "$dest/venv/bin/zizmor"
+}
+ci_run() {
+  env ACTIONLINT_VERSION=ci-stub OSV_SCANNER_VERSION=ci-stub \
+    CI_VALIDATE_TOOLS_DIR="$1" CI_STUB_ASSETS="$ci_assets" CI_STUB_PAYLOAD="$2" \
+    PATH="$ci_stub:$PATH" bash "$ROOT/scripts/ci-install-validate-tools.sh"
+}
+ci_prepare_dest "$T/ci-verified"
+if ci_run "$T/ci-verified" good >"$T/out" 2>&1; then
+  if [ -x "$T/ci-verified/tools/osv-scanner" ] && "$T/ci-verified/tools/osv-scanner" --version >/dev/null 2>&1; then
+    ok "ci-install-validate-tools installs a checksum-verified osv-scanner"
+  else
+    no "ci-install-validate-tools exited 0 without installing osv-scanner"; sed -n '1,80p' "$T/out"
+  fi
+else
+  no "ci-install-validate-tools rejected the published checksum"; sed -n '1,80p' "$T/out"
+fi
+ci_prepare_dest "$T/ci-tampered"
+if ci_run "$T/ci-tampered" tampered >"$T/out" 2>&1; then
+  no "ci-install-validate-tools installed a tampered osv-scanner"
+else
+  if [ -e "$T/ci-tampered/tools/osv-scanner" ]; then
+    no "ci-install-validate-tools aborted after installing the tampered osv-scanner"
+  else
+    ok "ci-install-validate-tools refuses a tampered osv-scanner before install"
+  fi
+fi
+if python3 - "$ROOT/scripts/ci-install-validate-tools.sh" >"$T/out" 2>&1 <<'PY'
+import re, sys
+from pathlib import Path
+
+checksum = re.compile(r"\bshasum\b[^\n]*\s-c\b|\bsha256sum\b[^\n]*\s-c\b|\bopenssl\s+dgst\b|\bcosign\s+verify\b")
+fetch = re.compile(r"\bcurl\b[^\n]*\s-o\s+\S")
+install = re.compile(r"^\s*install\s+-m\b")
+pending = False
+verified = False
+for number, line in enumerate(Path(sys.argv[1]).read_text().splitlines(), 1):
+    if fetch.search(line):
+        pending, verified = True, False
+    elif pending and checksum.search(line):
+        verified = True
+    elif pending and install.search(line):
+        if not verified:
+            raise SystemExit(f"line {number}: fetched file reaches install with no checksum verification: {line.strip()}")
+        pending = False
+PY
+then
+  ok "remote fetches are checksum-verified before install"
+else
+  no "remote fetch reaches install without verification"; sed -n '1,80p' "$T/out"
+fi
+
+# Every row of the tool-coverage table maps a tool state onto both fields the
+# standard requires per row: a status and a result, taken from the enums it defines.
+if python3 - "$ROOT/pack/.claude/skills/devrites-lib/reference/standards/verification-methods.md" >"$T/out" 2>&1 <<'PY'
+import re, sys
+from pathlib import Path
+
+text = Path(sys.argv[1]).read_text()
+def enum(field):
+    m = re.search(r"^- \*\*" + field + r"\*\* [^\n]*(?:\n  [^\n]*)*", text, re.M)
+    return set(re.findall(r"`(\w+)`", m.group(0))) if m else set()
+statuses, results = enum("status"), enum("result")
+if len(statuses) != 5 or len(results) != 3:
+    raise SystemExit(f"status/result enums not found: {sorted(statuses)} {sorted(results)}")
+section = text.split("### Tool coverage states", 1)[1]
+rows = section.split("\n\n", 3)[2].splitlines()[2:]
+bad = []
+for row in rows:
+    cell = row.split("|")[2]
+    ticks = set(re.findall(r"`(\w+)`", cell))
+    if not (ticks & statuses and ticks & results):
+        bad.append(row)
+if not rows or bad:
+    raise SystemExit("rows missing a status or a result:\n" + "\n".join(bad))
+PY
+then
+  ok "every tool-coverage row names a status and a result"
+else
+  no "a tool-coverage row lacks a status or a result"; sed -n '1,80p' "$T/out"
+fi
+
+# The test runner documents its flags and reports a bad --shard as a one-line
+# usage error instead of an uncaught stack trace.
+run_ok "test runner --help exits 0 with usage" node "$ROOT/scripts/run-tests.mjs" --help
+if grep -qi '^usage' "$T/out"; then ok "test runner --help prints usage"; else no "test runner --help prints usage"; fi
+for shard in 0/3 4/3 x 1/0 15/14 ''; do
+  node "$ROOT/scripts/run-tests.mjs" --shard "$shard" >"$T/out" 2>&1; rc=$?
+  if [ "$rc" -eq 2 ] && [ "$(wc -l <"$T/out" | tr -d ' ')" -eq 1 ] && ! grep -q ' at ' "$T/out"; then
+    ok "test runner rejects --shard '$shard' with exit 2 and one line"
+  else
+    no "test runner rejects --shard '$shard' (exit $rc)"; sed -n '1,10p' "$T/out"
+  fi
+done
+node "$ROOT/scripts/run-tests.mjs" --shard >"$T/out" 2>&1; rc=$?
+if [ "$rc" -eq 2 ]; then ok "test runner rejects --shard without a value"; else no "test runner rejects --shard without a value (exit $rc)"; fi
 
 echo ""
 [ "$fail" -eq 0 ] && echo "validation-governance-test: PASS" || echo "validation-governance-test: FAIL"

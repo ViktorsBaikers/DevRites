@@ -25,7 +25,8 @@
     {
       "text": "Fix every review comment, push, reply, and resolve the threads.",
       "expected": "should_not_trigger",
-      "owner": "rite-pr-feedback",
+      "owner": null,
+      "owner_rationale": "/rite-pr-feedback. The functional owner is explicit-only, so natural language has no implicit owner.",
       "rationale": "Mutating feedback resolution belongs to the explicit-only PR utility."
     },
     {

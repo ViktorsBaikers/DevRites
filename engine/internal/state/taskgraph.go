@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/devrites/devrites/internal/markdowntext"
 )
 
 // TaskSlice is one SLICE-### block parsed from tasks.md.
@@ -37,11 +39,12 @@ func ValidSliceID(id string) bool { return sliceIDValidRE.MatchString(id) }
 // one slice instead of the whole file.
 func ExtractTaskSlice(tasksMarkdown []byte, id string) (string, bool) {
 	text := string(tasksMarkdown)
-	for _, match := range sliceHeaderRE.FindAllStringSubmatchIndex(text, -1) {
-		if text[match[2]:match[3]] != id {
+	masked := structuralTaskText(tasksMarkdown)
+	for _, match := range sliceHeaderRE.FindAllStringSubmatchIndex(masked, -1) {
+		if masked[match[2]:match[3]] != id {
 			continue
 		}
-		rest := text[match[1]:]
+		rest := masked[match[1]:]
 		end := len(text)
 		if next := anyH2HeaderRE.FindStringIndex(rest); next != nil {
 			end = match[1] + next[0]
@@ -53,7 +56,7 @@ func ExtractTaskSlice(tasksMarkdown []byte, id string) (string, bool) {
 
 // ParseTaskGraph reads tasks.md content and validates the slice dependency DAG.
 func ParseTaskGraph(tasksMarkdown []byte) TaskGraphResult {
-	text := string(tasksMarkdown)
+	text := structuralTaskText(tasksMarkdown)
 	result := TaskGraphResult{}
 	if strings.TrimSpace(text) == "" {
 		result.Problems = append(result.Problems, "tasks.md is empty")
@@ -105,6 +108,17 @@ func ParseTaskGraph(tasksMarkdown []byte) TaskGraphResult {
 		result.Problems = append(result.Problems, "dependency cycle: "+strings.Join(cycle, " -> "))
 	}
 	return result
+}
+
+// structuralTaskText blanks fenced code blocks, keeping byte offsets aligned, so
+// an example inside a fence is never read as slice structure. Input that cannot
+// be masked (malformed UTF-8, NUL) is parsed as written.
+func structuralTaskText(tasksMarkdown []byte) string {
+	masked, err := markdowntext.Structural(tasksMarkdown)
+	if err != nil {
+		return string(tasksMarkdown)
+	}
+	return string(masked)
 }
 
 func parseSliceGraph(id, block string) ([]string, []string) {

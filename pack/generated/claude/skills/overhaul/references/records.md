@@ -8,6 +8,7 @@
 - [Finding lifecycle](#finding-lifecycle)
 - [Enforced versus review-only](#enforced-versus-review-only)
 - [Validator tool](#validator-tool)
+- [Dispatch packet schema](#dispatch-packet-schema)
 
 ## Run area
 
@@ -157,3 +158,41 @@ checks when installed; its absence is a recorded limitation, not a pass.
 `devrites-engine overhaul records digest <file>` prints the SHA-256 of exact bytes; `stage <run>`,
 `publish <run>` and `validate <run>` implement the generation protocol above. Exit
 codes: 0 ok, 1 violations (each printed as `VIOLATION: …`), 2 usage or I/O error.
+
+## Dispatch packet schema
+
+`devrites-engine overhaul packet write <run> <task> <attempt> <role> [--from <fields.json>]
+[--phase P] [--wave W] [--lane L] [--snapshot S] [--authorized-by A] [--brief PATH]
+[--write-path PATH]...` creates `<run>/packets/<run>__<task>__<attempt>__<role>.json`
+(mode 0600; `packets/` is created with mode 0700 when absent) and prints its path. `<run>` is the run-area path;
+`run_id` is its last component. `--from` supplies any further fields; flags override
+it. Exit codes: 0 written, 1 invalid packet or the packet already exists (never
+overwritten), 2 usage or I/O error, including an extra positional argument or a
+run area or `packets/` directory that is a symlink.
+
+| Field | Rule |
+| --- | --- |
+| `run_id`, `task_id`, `attempt_id`, `role` | required plain names: no path separators, `.`/`..` or `__`; the tool does not check that `role` is unprefixed (`implementer`, not `overhaul-implementer`), so callers keep it so |
+| `phase`, `lane`, `snapshot`, `authorized_by`, `brief` | required non-empty strings |
+| `receipt_path` | must resolve, in clean form (relative or absolute), to `<run>/receipts/<run>__<task>__<attempt>__<role>.json`; a value naming any other location is rejected; an absent, empty or non-string value is replaced by that default |
+| `write_paths` | array of exact paths; empty for read-only roles |
+| `plan` | optional object; when present it needs `file`; `rev` and `digest` are carried through unchecked |
+| `wave` and anything else in `--from` | optional, not validated, carried through unchanged (task definition, read paths, budgets, stop conditions) |
+
+The Go package `engine/internal/overhaul/packet` exports `Validate(run, packet)` and `Load(path)`
+(which also checks that the file name matches the packet's identifiers) for tools
+that read packets.
+
+`devrites-engine overhaul admit packet <run> <packet.json>` admits a packet before its worker
+starts. It runs `packet.Validate` with the explicit `<run>`, then requires that the file is a
+plain (not symlinked) file named `<run_id>__<task_id>__<attempt_id>__<role>.json` directly in
+`<run>/packets/`, that `run_id` equals the working generation's `run.json` `run_id`, and that a
+`dispatch.json` attempt in the working generation has the same `task_id` and `attempt_id` and
+agrees on `role`, on `snapshot` when the attempt records one, and on `receipt` and `packet`
+(run-relative) when it records them. A relative `receipt_path` is resolved from the working directory,
+exactly as `packet write` resolves it, so a bare file name or `receipts/<name>.json` is rejected
+unless the working directory makes it name the run's receipt file; a packet carrying an absolute
+`receipt_path` is admitted from any working directory. Output and exit codes match `admit receipt`: 0
+`ADMISSIBLE`, 1 `REJECT` with the reasons, 2 usage or I/O error (including a missing or
+unparsable packet), 3 `DUPLICATE_OR_LATE` when the attempt is already admitted, rejected or
+cancelled.

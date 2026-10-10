@@ -274,10 +274,12 @@ rung that carries the structure.
 ## Craft convergence bar
 
 Craft work terminates; it does not loop. Findings classify as **Critical /
-Major / Minor**: done means zero Critical, zero Major, and every remaining Minor
-accepted **in writing** (owner + reason) in `polish-report.md` — an unwritten
-minor is an ignored finding, not an accepted one. AES proposals are capped at Minor
-and never block convergence. Re-running the full bar after a
+Important / Suggestion** on the pack's severity scale, owned by
+[`code-review.md`](../../devrites-lib/reference/standards/code-review.md): done
+means zero Critical, zero Important, and every remaining Suggestion accepted **in
+writing** (owner + reason) in `polish-report.md` — an unwritten suggestion is an
+ignored finding, not an accepted one. AES proposals are capped at Suggestion and
+never block convergence. Re-running the full bar after a
 fix pass happens only on an explicit opt-in ("re-run the full bar"); "keep going"
 is not opt-in. Each pass captures every supported viewport, not only the one that
 failed. **Failing case:** the 375 px overflow is fixed, 320 px still overflows,

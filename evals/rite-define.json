@@ -81,8 +81,7 @@
       "text": "Interview me before we plan.",
       "expected": "should_not_trigger",
       "rationale": "Interview = /rite-spec via devrites-interview.",
-      "owner": null,
-      "owner_rationale": "Interview = /rite-spec via devrites-interview."
+      "owner": "devrites-interview"
     },
     {
       "text": "Show me the status of the active feature.",

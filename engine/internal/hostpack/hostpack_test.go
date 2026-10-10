@@ -142,8 +142,14 @@ func TestAliasTemplateOutput(t *testing.T) {
 func TestMergeMarkerBlockIsIdempotent(t *testing.T) {
 	block := []byte("<!-- BEGIN DEVRITES CODEX -->\nDevRites\n<!-- END DEVRITES CODEX -->\n")
 	current := []byte("user\n\n<!-- BEGIN DEVRITES CODEX -->\nold\n<!-- END DEVRITES CODEX -->\n")
-	once := MergeMarkerBlock(current, block, "<!-- BEGIN DEVRITES CODEX -->", "<!-- END DEVRITES CODEX -->")
-	twice := MergeMarkerBlock(once, block, "<!-- BEGIN DEVRITES CODEX -->", "<!-- END DEVRITES CODEX -->")
+	once, err := MergeMarkerBlock(current, block, "<!-- BEGIN DEVRITES CODEX -->", "<!-- END DEVRITES CODEX -->")
+	if err != nil {
+		t.Fatal(err)
+	}
+	twice, err := MergeMarkerBlock(once, block, "<!-- BEGIN DEVRITES CODEX -->", "<!-- END DEVRITES CODEX -->")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if string(once) != string(twice) {
 		t.Fatalf("merge not idempotent:\nonce:\n%s\ntwice:\n%s", once, twice)
 	}
@@ -184,5 +190,80 @@ func TestTemplateFSIsEmbedded(t *testing.T) {
 	}
 	if _, err := RenderDevritesReadme(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestMergeMarkerBlockKeepsUserContentAfterUnterminatedBegin(t *testing.T) {
+	block := []byte("<!-- BEGIN X -->\nmanaged\n<!-- END X -->\n")
+	current := []byte("user intro\n\n<!-- BEGIN X -->\nstale\n\nIMPORTANT USER SECTION\nsecond line\n")
+	got, err := MergeMarkerBlock(current, block, "<!-- BEGIN X -->", "<!-- END X -->")
+	if err == nil {
+		t.Fatalf("unterminated BEGIN marker accepted, output:\n%s", got)
+	}
+	if got != nil {
+		t.Fatalf("expected no output on error, got:\n%s", got)
+	}
+}
+
+func TestStripMarkerBlockKeepsUserContentAfterUnterminatedBegin(t *testing.T) {
+	current := []byte("user intro\n\n<!-- BEGIN X -->\nstale\n\nIMPORTANT USER SECTION\nsecond line\n")
+	got, err := StripMarkerBlock(current, "<!-- BEGIN X -->", "<!-- END X -->")
+	if err == nil {
+		t.Fatalf("unterminated BEGIN marker accepted, output:\n%s", got)
+	}
+	if got != nil {
+		t.Fatalf("expected no output on error, got:\n%s", got)
+	}
+}
+
+func TestStripMarkerBlockRemovesBalancedBlock(t *testing.T) {
+	current := []byte("a\n<!-- BEGIN X -->\nmanaged\n<!-- END X -->\nb\n")
+	got, err := StripMarkerBlock(current, "<!-- BEGIN X -->", "<!-- END X -->")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "a\nb\n" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestValidateMarkerBlocksRejectsAnyUnterminatedBlock(t *testing.T) {
+	current := []byte("intro\n" + PiAgentsMerge.Begin + "\nold\nKEEP ME\n")
+	err := ValidateMarkerBlocks(current, CodexAgentsMerge, PiAgentsMerge)
+	if err == nil {
+		t.Fatal("unterminated PI marker accepted alongside a balanced Codex target")
+	}
+	if !strings.Contains(err.Error(), PiAgentsMerge.Begin) {
+		t.Fatalf("error does not name the unterminated marker: %v", err)
+	}
+}
+
+func TestValidateMarkerBlocksAcceptsBalancedBlocks(t *testing.T) {
+	current := []byte("a\n" + CodexAgentsMerge.Begin + "\nx\n" + CodexAgentsMerge.End + "\nb\n")
+	if err := ValidateMarkerBlocks(current, CodexAgentsMerge, PiAgentsMerge, DevinAgentsMerge); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestStripCodexConfigBlocksRejectsUnterminatedBlock(t *testing.T) {
+	current := []byte(CodexConfigMerge.Begin + "\nold\n[user]\nkeep = 1\n")
+	got, err := StripCodexConfigBlocks(current)
+	if err == nil {
+		t.Fatalf("unterminated BEGIN marker accepted, output:\n%s", got)
+	}
+	if !strings.Contains(err.Error(), CodexConfigMerge.Begin) {
+		t.Fatalf("error does not name the unterminated marker: %v", err)
+	}
+}
+
+func TestStripCodexConfigBlocksRemovesCurrentAndLegacyBlocks(t *testing.T) {
+	current := []byte("a = 1\n" + CodexConfigMerge.Begin + "\nx\n" + CodexConfigMerge.End +
+		"\n# BEGIN DEVRITES CODEX MCP\ny\n# END DEVRITES CODEX MCP\n### BEGIN DEVRITES CODEX MCP\nz\n### END DEVRITES CODEX MCP\nb = 2\n")
+	got, err := StripCodexConfigBlocks(current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "a = 1\nb = 2\n" {
+		t.Fatalf("got %q", got)
 	}
 }

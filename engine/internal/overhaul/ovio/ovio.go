@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,11 +23,16 @@ func SHA256Bytes(b []byte) string {
 
 // SHA256File returns the lowercase hex SHA-256 of the file's exact bytes.
 func SHA256File(path string) (string, error) {
-	b, err := os.ReadFile(path) // #nosec G304 -- callers pass operator-selected run-area paths
+	f, err := os.Open(path) // #nosec G304 -- callers pass operator-selected run-area paths
 	if err != nil {
 		return "", err
 	}
-	return SHA256Bytes(b), nil
+	defer func() { _ = f.Close() }()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // LoadJSON decodes a UTF-8 JSON document. Numbers stay json.Number so digests,
@@ -146,7 +152,8 @@ func Truthy(v any) bool {
 	case string:
 		return x != ""
 	case json.Number:
-		return x.String() != "0" && x.String() != "0.0"
+		f, err := x.Float64()
+		return err != nil || f != 0
 	case float64:
 		return x != 0
 	case []any:

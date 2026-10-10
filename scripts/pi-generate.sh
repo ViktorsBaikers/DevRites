@@ -63,6 +63,15 @@ gen_pi_skill_file() {
   gen_pi_markdown_file "$1" "$2"
 }
 
+# Strip one pair of outer double quotes from an already-quoted YAML scalar and
+# undo its \\ and \" escapes, so the generators can re-quote it exactly once.
+pi_yaml_unquote() {
+  case "$1" in
+  \"*\") local _v="${1#\"}"; printf '%s' "${_v%\"}" | sed 's/\\\(["\\]\)/\1/g' ;;
+  *) printf '%s' "$1" ;;
+  esac
+}
+
 pi_yaml_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
@@ -173,6 +182,7 @@ gen_pi_agent() {
   local _name _desc _tools_raw _tools _skills _desc_tmp _desc_pi _body_tmp _body_pi
   _name="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^name:[[:space:]]*/{sub(/^name:[[:space:]]*/, ""); print; exit}' "$_src")"
   _desc="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^description:[[:space:]]*/{sub(/^description:[[:space:]]*/, ""); print; exit}' "$_src")"
+  _desc="$(pi_yaml_unquote "$_desc")"
   _tools_raw="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^tools:[[:space:]]*/{sub(/^tools:[[:space:]]*/, ""); print; exit}' "$_src")"
   _skills="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^skills:[[:space:]]*$/{list=1; next} list && /^[[:space:]]*-[[:space:]]*/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print; next} list{exit}' "$_src" | tr '\n' ' ' | sed 's/ $//; s/ /, /g')"
   [ -n "$_name" ] || _name="$(basename "$_src" .md)"
@@ -208,6 +218,7 @@ gen_pi_prompt_stub() {
   local _skill_md="$1" _name="$2" _out="$3"
   local _desc _hint
   _desc="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^description:[[:space:]]*/{sub(/^description:[[:space:]]*/, ""); print; exit}' "$_skill_md")"
+  _desc="$(pi_yaml_unquote "$_desc")"
   _hint="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^argument-hint:[[:space:]]*/{sub(/^argument-hint:[[:space:]]*/, ""); print; exit}' "$_skill_md")"
   [ -n "$_desc" ] || _desc="DevRites $_name."
   mkdir -p "$(dirname "$_out")"
@@ -240,7 +251,7 @@ This project has DevRites installed for pi.
 - In DevRites guidance, **invoke** means run a skill inline in the current context; **dispatch** means start a fresh agent with `subagent({ agent, task })` (or `runs.run`/`runs.all` in a `workflowScript`), wait for it, and reconcile its result.
 - An asynchronous launch receipt is not a reviewer result or completion. Keep the returned native run/workflow handle and use the public management/status/completion API exposed by the installed tool schema to wait for and collect its terminal result. Reconcile that result before `devrites-engine dispatch ... return`; never re-dispatch to retrieve output. Host configuration may force asynchronous execution even with `async: false`.
 - Routine native result collection uses the exposed public tool; it does not require a bespoke workflow capture helper, private transcripts, or source excavation. Preserve confidentiality and any one-shot limits. Failed, malformed, or unavailable terminal results remain `gap`, never a passed review.
-- Only `devrites-slice-wright` may edit source or tests; every other specialist is read-only by tool allowlist. Exact paths are instruction-enforced: put the project-relative paths in the task, wait for the wright, compare its file list and `git diff --name-only` with that contract, and reject any extra path.
+- Among the lifecycle `devrites-*` specialists, only `devrites-slice-wright` may edit source or tests; every other specialist in that family is read-only by tool allowlist. The shipped profiles are the full role-to-permission map; `/rite-doctor` step 3 checks them. Exact paths are instruction-enforced: put the project-relative paths in the task, wait for the wright, compare its file list and `git diff --name-only` with that contract, and reject any extra path.
 - The explicit `/overhaul` skill ships its own `overhaul-*` agents outside the DevRites lifecycle. They carry the full write tool set, are dispatched only by that skill, and follow its own approval gate and path contracts instead of the lifecycle writer rules above.
 - The explicit `/rite-fast` skill ships its own `fast-*` agents. Only `fast-builder` carries write tools; `fast-planner`, `fast-checker`, and `fast-critic` stay read-only. `/rite-fast` dispatches them itself and applies its own exact-path contracts.
 - DevRites runtime helpers run through the installed `devrites-engine` binary.

@@ -31,14 +31,15 @@
   "files": [
     "bin/",
     "engine/",
-    "!engine/devrites-engine",
-    "!engine/devrites-engine.exe",
+    "!engine/tests/",
+    "!engine/testdata/",
     "pack/",
     "scripts/build-host-artifacts.sh",
     "scripts/codex-generate.sh",
     "scripts/omp-generate.sh",
     "scripts/pi-generate.sh",
     "scripts/devin-generate.sh",
+    "scripts/expand-includes.py",
     "scripts/install-lib.sh",
     "install.sh",
     "uninstall.sh",
@@ -60,7 +61,6 @@
   },
   "scripts": {
     "prepare": "husky || true",
-    "prepack": "bash scripts/build-host-artifacts.sh",
     "commitlint": "commitlint --edit",
     "validate": "bash scripts/validate.sh",
     "test": "node scripts/run-tests.mjs",
@@ -86,6 +86,7 @@
     "semantic-release": "^25.0.9"
   },
   "overrides": {
+    "@semantic-release/commit-analyzer": "14.0.0-beta.4",
     "@semantic-release/release-notes-generator": "15.0.0-beta.3",
     "@semantic-release/npm": {
       "npm": "11.20.0"

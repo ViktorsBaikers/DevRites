@@ -148,6 +148,8 @@ func (r *runner) installFile(src, rel string) error {
 
 func (r *runner) installData(data []byte, rel string) error {
 	dest := filepath.Join(r.target, filepath.FromSlash(rel))
+	sum := sha256.Sum256(data)
+	hash := fmt.Sprintf("sha256:%x", sum[:])
 	action := "install"
 	if exists(dest) {
 		record, managed := r.prev[rel]
@@ -159,13 +161,22 @@ func (r *runner) installData(data []byte, rel string) error {
 		case r.opts.Force:
 			action = "overwrite(force)"
 		default:
-			if r.opts.DryRun {
-				fmt.Fprintf(r.opts.Stdout, "  [skip] %s (exists, not DevRites-managed)\n", rel)
+			// A run that dies before writeManifest leaves the tree populated with
+			// no ownership record, so every residue file reaches this branch as
+			// foreign. When it already holds the payload bytes, adopt it instead
+			// of skipping it: that is what makes the retry self-healing and keeps
+			// the follow-on uninstall able to remove the tree.
+			if snapshot, ok := r.preflight[filepath.ToSlash(rel)]; ok && !snapshot.missing && snapshot.hash == hash {
+				action = "adopt"
 			} else {
-				fmt.Fprintf(r.opts.Stderr, "warning: skip %s (exists, not DevRites-managed; use --force to overwrite)\n", rel)
+				if r.opts.DryRun {
+					fmt.Fprintf(r.opts.Stdout, "  [skip] %s (exists, not DevRites-managed)\n", rel)
+				} else {
+					fmt.Fprintf(r.opts.Stderr, "warning: skip %s (exists, not DevRites-managed; use --force to overwrite)\n", rel)
+				}
+				r.stats.skipped++
+				return nil
 			}
-			r.stats.skipped++
-			return nil
 		}
 	}
 	if r.opts.DryRun {
@@ -174,13 +185,15 @@ func (r *runner) installData(data []byte, rel string) error {
 		if err := r.recheckPath(rel); err != nil {
 			return err
 		}
-		if err := fsutil.WriteFileAtomic(dest, data, 0o644); err != nil {
-			return fmt.Errorf("cannot write %s: %w", rel, err)
+		if action != "adopt" {
+			if err := r.writeConfined(dest, data, 0o644); err != nil {
+				return fmt.Errorf("cannot write %s: %w", rel, err)
+			}
 		}
 	}
 	r.addManifest(rel)
-	r.addInstallRecord(rel, data)
-	if action == "install" {
+	r.addInstallRecord(rel, hash)
+	if action == "install" || action == "adopt" {
 		r.stats.installed++
 	} else {
 		r.stats.overwrote++
@@ -188,16 +201,46 @@ func (r *runner) installData(data []byte, rel string) error {
 	return nil
 }
 
+// writeConfined writes dest, which must lie under the install target, through
+// a root opened on the target so a directory component replaced by a symlink
+// after the path recheck cannot redirect the write.
+func (r *runner) writeConfined(dest string, data []byte, perm fs.FileMode) error {
+	rel, err := filepath.Rel(r.target, dest)
+	if err != nil {
+		return err
+	}
+	root, err := os.OpenRoot(r.target)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = root.Close() }()
+	return fsutil.WriteFileAtomicIn(root, rel, data, perm)
+}
+
+// removeConfined removes dest, which must lie under the install target,
+// through a root opened on the target.
+func (r *runner) removeConfined(dest string) error {
+	rel, err := filepath.Rel(r.target, dest)
+	if err != nil {
+		return err
+	}
+	root, err := os.OpenRoot(r.target)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = root.Close() }()
+	return root.Remove(rel)
+}
+
 func (r *runner) addManifest(rel string) {
 	r.manifest = append(r.manifest, filepath.ToSlash(rel))
 }
 
-func (r *runner) addInstallRecord(rel string, data []byte) {
+func (r *runner) addInstallRecord(rel, hash string) {
 	if r.records == nil {
 		r.records = map[string]string{}
 	}
-	sum := sha256.Sum256(data)
-	r.records[filepath.ToSlash(rel)] = fmt.Sprintf("sha256:%x", sum[:])
+	r.records[filepath.ToSlash(rel)] = hash
 }
 
 func (r *runner) installMarker(rel, text string) error {
@@ -270,18 +313,18 @@ func (r *runner) pruneDropped() error {
 					return err
 				}
 				if merge.MarkerRel == hostpack.LegacyCodexHooksMerge.MarkerRel {
-					if err := stripHooksPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
+					if err := r.stripHooksConfined(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
 						return fmt.Errorf("strip hooks from %s: %w", merge.TargetRel, err)
 					}
 				} else if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
 					if err := r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), true); err != nil {
 						return fmt.Errorf("strip DevRites settings from %s: %w", merge.TargetRel, err)
 					}
-				} else if err := stripMarkerPath(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End); err != nil {
+				} else if err := r.stripMarkerConfined(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End); err != nil {
 					return fmt.Errorf("strip marker block from %s: %w", merge.TargetRel, err)
 				}
 			}
-			if err := os.Remove(dead); err != nil && !os.IsNotExist(err) {
+			if err := r.removeConfined(dead); err != nil && !os.IsNotExist(err) {
 				return fmt.Errorf("remove %s: %w", rel, err)
 			}
 			pruneEmptyDirs(filepath.Dir(dead), r.target)
@@ -312,7 +355,7 @@ func (r *runner) writeManifest() error {
 	if err := r.recheckPath(ManifestName); err != nil {
 		return err
 	}
-	return fsutil.WriteFileAtomic(filepath.Join(r.target, ManifestName), []byte(b.String()), 0o644)
+	return r.writeConfined(filepath.Join(r.target, ManifestName), []byte(b.String()), 0o644)
 }
 
 func (r *runner) flagsString() string {

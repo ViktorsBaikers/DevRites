@@ -171,7 +171,7 @@ func walkSequenceChain(root, slug, workspace string) ([]string, [][]candidateRow
 	chain := []string{}
 	manifests := [][]candidateRow{}
 	dir := workspace
-	for len(chain) < maxSequenceChain {
+	for {
 		raw, err := readBoundedRegularFile(filepath.Join(dir, "state.md"), maxCandidateManifestBytes)
 		if err != nil {
 			return nil, nil, fmt.Errorf("%s state.md: %w", filepath.Base(dir), err)
@@ -179,6 +179,9 @@ func walkSequenceChain(root, slug, workspace string) ([]string, [][]candidateRow
 		parent, _ := state.CursorField(strings.Split(string(raw), "\n"), state.CursorSequenceParent)
 		if parent == "" {
 			break
+		}
+		if len(chain) == maxSequenceChain {
+			return nil, nil, fmt.Errorf("sequence chain longer than %d; pass an explicit ordered predecessor list", maxSequenceChain)
 		}
 		if _, dup := visited[parent]; dup {
 			return nil, nil, fmt.Errorf("sequence_parent cycle at %q", parent)

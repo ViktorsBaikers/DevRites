@@ -15,7 +15,9 @@ Run every phase after one clarification window. Irreversible-risk,
 escalating,<!-- pack-scan-ignore: negated statement: gates are NOT disabled -->
 access, unanswered blocking with no recommended option, and remaining NO-GO
 still pause. Open blocking questions that already name a ranked recommended
-option auto-resolve; they are not a user handoff. Use the Standard native
+option auto-resolve; they are not a user handoff, except a question whose answer
+would add acceptance or product scope, which a recommended option never resolves.
+Use the Standard native
 profile by default and Full for high-risk scope or explicit `--full`; see
 [`orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md).
 
@@ -64,9 +66,10 @@ executable controller/harness/bundle bytes or a missing writer, read
   `--max-slices` must occur once and be followed by a positive base-10 integer;
   `--parallel` must occur once and be followed by a base-10 integer in `1`–`10`.
   Missing, repeated, malformed, or conflicting values stop before any write.
-- Temper always runs after Clarify. Auto-apply the recommended mode, including
-  `expand` and extra acceptance; record the ADR and fold via Spec Drift Guard.
-  Irreversible-risk still pauses.
+- Temper always runs after Clarify. Auto-apply `hold-rigor`, `reduce-to-MVP` or a skip;
+  record the ADR and fold via Spec Drift Guard. `expand` and extra acceptance never
+  auto-apply: ask through `ask`, hold the fold, and stop until a human
+  resolves the qid. Irreversible-risk still pauses.
 - Vet every plan. Cross-model is off unless the current invocation arms it.
 
 ## Workflow
@@ -87,7 +90,7 @@ executable controller/harness/bundle bytes or a missing writer, read
    and `cross_model: yes|no`.
    **Completion:** normalized state is unambiguous and no sentinel or workspace file has been written.
 2. **Specify and clarify.** Run `devrites-interview`, `/rite-spec`, and
-   `/rite-clarify` as one window. Partial/Missing material coverage never arms
+   `/rite-clarify` as one window. `open` material coverage never arms
    AFK. **Completion:** `Decision coverage: CLEAR` is durable.
 3. **Arm AFK once.** Apply the loop's
    [one-write AFK contract](reference/loop.md#arm-afk-once): preserve valid
@@ -120,7 +123,9 @@ executable controller/harness/bundle bytes or a missing writer, read
    option (`proposed` or option 1 labelled Recommended) auto-resolves through
    `devrites-engine state resolve` and continues (a missing or failing resolver is
    the bounded resolver-failure stop); do not emit `/rite-resolve` as
-   a user handoff. Technical exhaustion records terminal
+   a user handoff. Exception: a question whose answer would add acceptance or
+   product scope is never auto-resolved by a recommended option; it stops for a human.
+   Technical exhaustion records terminal
    `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
 6. **Seal boundary.** Without a ship flag, stop at Seal GO with `/rite-ship` —
    unless `continue_sequence: false` or sequence budget is spent; otherwise

@@ -58,7 +58,7 @@ max_minutes: 120                     # wall-clock minutes in one host activation
 max_review_queue: 8                  # unresolved review/gate items admitted before fan-out stops
 # max_tokens: 200000                 # optional stricter host-observed token cap
 # max_cost_usd: 10                   # optional stricter host-observed cost cap
-notify: "ntfy.sh/my-topic"           # shell command; examples: .devin/skills/rite-build/reference/afk-discipline.md
+notify: 'curl -fsS -m 10 -d "$DEVRITES_QID: $DEVRITES_QUESTION" ntfy.sh/my-topic'  # shell command; examples: .devin/skills/rite-build/reference/afk-discipline.md
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
 continue_sequence: true              # after Seal GO, open the next recorded continuation
 max_workspaces: 5                    # workspaces one armed sequence may open
@@ -147,6 +147,9 @@ parallel branches; do not add dispatch telemetry to `.devrites/`. `max_review_qu
 counts open validating questions plus unresolved admitted Critical/Important findings.
 Above it stop; at it run only reconciliation that reduces the queue. Optional
 `max_tokens`/`max_cost_usd` lower enforceable native caps; if declared but unobservable, stop.
+`/rite-autocomplete` deliberately ignores `max_slices`, `max_agents`, `max_minutes` and
+`max_review_queue` ([stop-conditions.md](../../../rite-autocomplete/reference/stop-conditions.md));
+there they are not a ceiling.
 
 Numeric limits are nonnegative decimals. Before costly checks, fan-out, or writing,
 run cheap readiness, reject overlap, count queue, and confirm agent/time/token/cost
@@ -265,12 +268,17 @@ proposed: <the recommended option restated — the HITL default + the AFK auto-p
 raised_at: <iso>
 answered_at: <iso, when status flips off "open">
 answer: <chosen option (or human's verbatim reply / drop reason)>
+answered_by: human                            # only when a human resolved it (`state resolve --human`)
 ```
 
 Rules:
 - `NNN` is sequential per date: the next-available 3-digit integer.
 - `status: open` is the only state `/rite-resolve` can mutate; `answered` and `dropped`
   are terminal.
+- `answered_by: human` is written only by `state resolve --human`. HITL live picks and `/rite-resolve`
+  pass `--human`; an AFK or autocomplete run never does, and the writer removes any `answered_by:` line
+  (any indentation or case) from a qid it resolves without the flag. Only an unindented lowercase
+  `answered_by: human` line counts as human resolution.
 - The file is the audit trail. Don't edit answered/dropped entries: open a new qid that
   references the old one (`supersedes: q-...-OLD`) and resolve it.
 

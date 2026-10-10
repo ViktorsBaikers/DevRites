@@ -26,6 +26,9 @@ import (
 //
 //	devrites-engine check regression <slug>            compare vs baseline
 //	devrites-engine check regression <slug> --update   ratchet baseline to now
+//	devrites-engine check regression <slug> --update --allow-empty
+//	                                                   ratchet even when every
+//	                                                   acceptance fact is gone
 //
 //	0  clean / no baseline yet
 //	2  usage error or workspace unreadable
@@ -75,18 +78,18 @@ type regressionBaseline struct {
 // RunCheckRegression compares the workspace against its recorded progress
 // baseline, or ratchets that baseline forward with --update.
 func RunCheckRegression(root string, args []string, stdout, stderr io.Writer) int {
-	if len(args) < 1 || len(args) > 2 {
+	if len(args) < 1 || len(args) > 3 {
 		fmt.Fprintln(stderr, regressionUsage)
 		return 2
 	}
 	slug := args[0]
-	update := false
-	if len(args) == 2 {
-		if args[1] != "--update" {
+	update, allowEmpty := false, false
+	if len(args) >= 2 {
+		if args[1] != "--update" || (len(args) == 3 && args[2] != "--allow-empty") {
 			fmt.Fprintln(stderr, regressionUsage)
 			return 2
 		}
-		update = true
+		update, allowEmpty = true, len(args) == 3
 	}
 	workspace, err := devritespaths.ExistingFeatureDirChecked(root, slug)
 	if err != nil {
@@ -120,24 +123,41 @@ func RunCheckRegression(root string, args []string, stdout, stderr io.Writer) in
 		fmt.Fprintf(stdout, "check regression: BLOCKED: %d regression(s) vs baseline %s\n", len(regressions), baseline.UpdatedAt)
 		return 3
 	}
-	return updateRegressionBaseline(root, slug, baselinePath, baseline, hasBaseline, current, stdout, stderr)
+	return updateRegressionBaseline(root, slug, baselinePath, baseline, hasBaseline, current, allowEmpty, stdout, stderr)
 }
 
-// fingerprintWorkspace computes the current structural progress facts.
+// fingerprintWorkspace computes the current structural progress facts. A
+// non-nil error names every artifact that existed but could not be read or
+// parsed; the returned fingerprint is then incomplete.
 func fingerprintWorkspace(root, slug, workspace string) (progressFingerprint, error) {
 	fp := progressFingerprint{PhaseOrdinal: -1}
 
-	if report, err := state.Status(root, slug); err == nil && report != nil {
-		fp.Phase = string(report.Phase)
-		for i, policy := range state.PhasePolicies() {
-			if policy.Target == report.Phase {
-				fp.PhaseOrdinal = i
-				break
-			}
+	// An unobservable phase would disable the phase-regression comparison, so
+	// it blocks instead of yielding PhaseOrdinal -1.
+	report, err := state.Status(root, slug)
+	if err != nil {
+		return fp, fmt.Errorf("phase unreadable, refusing to treat as progress facts: %w", err)
+	}
+	fp.Phase = string(report.Phase)
+	for i, policy := range state.PhasePolicies() {
+		if policy.Target == report.Phase {
+			fp.PhaseOrdinal = i
+			break
 		}
 	}
 
-	if masked, err := maskedArtifact(workspace, "spec.md"); err == nil {
+	// A missing artifact is a legitimate early-phase state; an unreadable or
+	// unparsable one would silently yield an empty fact set, so it is named.
+	var degraded []string
+	note := func(name string, err error) {
+		if err != nil && !os.IsNotExist(err) {
+			degraded = append(degraded, fmt.Sprintf("%s: %v", name, err))
+		}
+	}
+
+	masked, err := maskedArtifact(workspace, "spec.md")
+	note("spec.md", err)
+	if err == nil {
 		for _, m := range regressACRe.FindAllStringSubmatch(masked, -1) {
 			if strings.EqualFold(m[1], "x") {
 				fp.CheckedAC = append(fp.CheckedAC, m[2])
@@ -145,14 +165,19 @@ func fingerprintWorkspace(root, slug, workspace string) (progressFingerprint, er
 		}
 	}
 
-	if raw, err := os.ReadFile(filepath.Join(workspace, "tasks.md")); err == nil { // #nosec G304 -- workspace artifact
-		if masked, maskErr := markdowntext.Structural(raw); maskErr == nil {
-			fp.DoneSlices = doneSlices(string(masked))
-		}
+	masked, err = maskedArtifact(workspace, "tasks.md")
+	note("tasks.md", err)
+	if err == nil {
+		fp.DoneSlices = doneSlices(masked)
 	}
 
-	if raw, err := os.ReadFile(filepath.Join(workspace, acceptance.GatesFile)); err == nil { // #nosec G304 -- workspace artifact
+	raw, err := os.ReadFile(filepath.Join(workspace, acceptance.GatesFile)) // #nosec G304 -- workspace artifact
+	note(acceptance.GatesFile, err)
+	if err == nil {
 		doc := acceptance.ParseLedger(string(raw))
+		if len(doc.Errors) > 0 {
+			note(acceptance.GatesFile, fmt.Errorf("%s", strings.Join(doc.Errors, "; ")))
+		}
 		for _, g := range doc.Gates {
 			if g.Checked {
 				fp.MetGates = append(fp.MetGates, g.ID)
@@ -163,12 +188,17 @@ func fingerprintWorkspace(root, slug, workspace string) (progressFingerprint, er
 		}
 	}
 
-	if masked, err := maskedArtifact(workspace, "questions.md"); err == nil {
+	masked, err = maskedArtifact(workspace, "questions.md")
+	note("questions.md", err)
+	if err == nil {
 		fp.ResolvedQuestions = resolvedQuestions(masked)
 	}
 
 	fp.PresentArtifacts = presentArtifacts(workspace)
 	sortSets(&fp)
+	if len(degraded) > 0 {
+		return fp, fmt.Errorf("degraded artifact(s), refusing to treat as progress facts: %s", strings.Join(degraded, "; "))
+	}
 	return fp, nil
 }
 
@@ -297,10 +327,19 @@ func compareProgress(base, current progressFingerprint) []string {
 // updateRegressionBaseline replaces the baseline with the current fingerprint.
 // Regressions being blessed are printed, never hidden — a ratchet is the
 // recorded acknowledgment that the current state is the new floor.
-func updateRegressionBaseline(root, slug, baselinePath string, base regressionBaseline, hasBaseline bool, current progressFingerprint, stdout, stderr io.Writer) int {
+func updateRegressionBaseline(root, slug, baselinePath string, base regressionBaseline, hasBaseline bool, current progressFingerprint, allowEmpty bool, stdout, stderr io.Writer) int {
 	var blessed []string
 	if hasBaseline {
 		blessed = compareProgress(base.progressFingerprint, current)
+		// Wiping every recorded acceptance fact is indistinguishable from a
+		// destroyed workspace, so it needs an explicit flag.
+		if !allowEmpty && len(base.CheckedAC)+len(base.MetGates) > 0 && len(current.CheckedAC)+len(current.MetGates) == 0 {
+			for _, line := range blessed {
+				fmt.Fprintf(stdout, "REGRESSION: %s\n", line)
+			}
+			fmt.Fprintf(stdout, "check regression: BLOCKED: --update would leave no checked acceptance criterion or met gate; rerun with --allow-empty to accept\n")
+			return 3
+		}
 	}
 	// Keep the phase high-water mark: a baseline never forgets the furthest phase.
 	if hasBaseline && base.PhaseOrdinal > current.PhaseOrdinal {
@@ -375,4 +414,4 @@ func sortSets(fp *progressFingerprint) {
 	sort.Strings(fp.PresentArtifacts)
 }
 
-const regressionUsage = "usage: devrites-engine check regression <slug> [--update]"
+const regressionUsage = "usage: devrites-engine check regression <slug> [--update [--allow-empty]]"

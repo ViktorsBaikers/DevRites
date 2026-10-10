@@ -38,7 +38,7 @@ html{scroll-padding-top:4.5rem;-webkit-text-size-adjust:100%}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--sans)}
 h1,h2,h3,h4{font-weight:600;line-height:1.25;margin:0;text-wrap:balance}
-h2{font-size:1.25rem;margin:0 0 .25rem}h4{font-size:.8125rem;color:var(--muted);margin:0 0 .25rem}
+h2{font-size:1.25rem;margin:0 0 .25rem}.blk>h3{font-size:.8125rem;color:var(--muted);margin:0 0 .25rem}
 p{margin:0 0 1rem}a{color:var(--accent);text-underline-offset:2px}
 code,pre,textarea,.m{font-family:var(--mono);font-size:.8125rem}code{overflow-wrap:anywhere}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -53,7 +53,7 @@ code,pre,textarea,.m{font-family:var(--mono);font-size:.8125rem}code{overflow-wr
 .toc a{display:block;white-space:nowrap;padding:.25rem .75rem;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--fg);font-size:.875rem}
 .toc a:hover{background:var(--raised)}
 @media (min-width:64rem){.shell{display:grid;grid-template-columns:12rem minmax(0,1fr);gap:2.5rem}.toc{position:sticky;top:4.5rem;align-self:start}.toc ul{flex-direction:column;gap:0;overflow:visible;margin:0}.toc a{white-space:normal;border:0;border-radius:8px;padding:.3rem .5rem}}
-main>section,.records>section{margin:0 0 1.5rem;padding:1.5rem;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+main>section,.rec>section{margin:0 0 1.5rem;padding:1.5rem;background:var(--surface);border:1px solid var(--line);border-radius:12px}
 .hero{margin:0 0 1.5rem;padding:1.5rem;background:var(--surface);border:1px solid var(--line);border-radius:12px}
 .hero>p[role=status]{font-size:.8125rem;color:var(--muted);margin:0 0 1rem}.hero>p[role=status] strong{font-weight:500}
 .answer{display:grid;gap:2rem;grid-template-columns:minmax(0,1fr)}
@@ -63,7 +63,7 @@ main>section,.records>section{margin:0 0 1.5rem;padding:1.5rem;background:var(--
 .hero .score>.bar{height:18px;margin:.5rem 0 1.25rem}
 svg.bar{display:block;width:100%;height:12px;overflow:visible}
 .trk{fill:var(--track)}.tgt{fill:var(--fg)}.was{fill:var(--muted)}
-.g0,.c-pass,.c-part{fill:var(--pass)}.g4{fill:var(--sev4)}.g3{fill:var(--sev3)}.g2{fill:var(--sev2)}.g1{fill:var(--sev1)}.c-fail{fill:var(--fail)}.c-unk{fill:var(--unk)}
+.g0,.c-pass,.c-part{fill:var(--pass)}.g4{fill:var(--sev4)}.g3{fill:var(--sev3)}.g2{fill:var(--sev2)}.g1{fill:var(--sev1)}.c-fail{fill:var(--fail)}.c-unk,.gx{fill:var(--unk)}
 .s-critical{fill:var(--sev1)}.s-high{fill:var(--sev2)}.s-medium{fill:var(--sev3)}.s-low{fill:var(--sev4)}.s-informational,.s-none{fill:var(--info)}
 .rows{list-style:none;margin:0;padding:0;display:grid;gap:.75rem}
 .rows li{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"l v" "b b";gap:.25rem .75rem;align-items:center}
@@ -74,7 +74,7 @@ svg.bar{display:block;width:100%;height:12px;overflow:visible}
 .legend{list-style:none;display:flex;flex-wrap:wrap;gap:.25rem 1.25rem;margin:1rem 0 0;padding:0;font-size:.8125rem;color:var(--muted)}
 .legend li{display:flex;align-items:center;gap:.4rem}.legend strong{color:var(--fg)}
 .key{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;background:var(--c,var(--muted));flex:none}
-.key.g0,.key.c-pass,.key.c-part{--c:var(--pass)}.key.g4,.key.s-low{--c:var(--sev4)}.key.g3,.key.s-medium{--c:var(--sev3)}.key.g2,.key.s-high{--c:var(--sev2)}.key.g1,.key.s-critical{--c:var(--sev1)}.key.c-fail{--c:var(--fail)}.key.c-unk{--c:var(--unk)}.key.s-informational,.key.s-none{--c:var(--info)}.key.was{--c:var(--muted);width:3px}.key.tgt{--c:var(--fg);width:2px;height:.9rem;border-radius:0}
+.key.g0,.key.c-pass,.key.c-part{--c:var(--pass)}.key.g4,.key.s-low{--c:var(--sev4)}.key.g3,.key.s-medium{--c:var(--sev3)}.key.g2,.key.s-high{--c:var(--sev2)}.key.g1,.key.s-critical{--c:var(--sev1)}.key.c-fail{--c:var(--fail)}.key.c-unk{--c:var(--unk)}.key.gx{--c:var(--track);box-shadow:inset 0 0 0 1px var(--muted)}.key.s-informational,.key.s-none{--c:var(--info)}.key.was{--c:var(--muted);width:3px}.key.tgt{--c:var(--fg);width:2px;height:.9rem;border-radius:0}
 .blockers h2{font-size:1rem;margin:0 0 .75rem}
 .gates{list-style:none;margin:0 0 .75rem;padding:0;display:grid;gap:.6rem}
 .gates li{display:flex;gap:.6rem;align-items:flex-start}.gates code{color:var(--muted);font-size:.75rem}
@@ -94,15 +94,19 @@ svg.bar{display:block;width:100%;height:12px;overflow:visible}
 .filter input:checked+label{background:var(--fg);color:var(--bg);border-color:var(--fg)}.filter input:checked+label .count{color:inherit}
 .filter input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
 @supports not selector(:has(a)){.filter{display:none}}
-#findings:has(#sev-critical:checked) .finding:not(.s-critical),#findings:has(#sev-high:checked) .finding:not(.s-high),#findings:has(#sev-medium:checked) .finding:not(.s-medium),#findings:has(#sev-low:checked) .finding:not(.s-low),#findings:has(#sev-informational:checked) .finding:not(.s-informational){display:none}
+@media screen{#findings:has(#sev-critical:checked) .finding:not(.s-critical):not(:target),#findings:has(#sev-high:checked) .finding:not(.s-high):not(:target),#findings:has(#sev-medium:checked) .finding:not(.s-medium):not(:target),#findings:has(#sev-low:checked) .finding:not(.s-low):not(:target),#findings:has(#sev-informational:checked) .finding:not(.s-informational):not(:target){display:none}}
 .cards{border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .finding,.task{border-bottom:1px solid var(--line-2)}.finding:last-child,.task:last-child{border-bottom:0}.sub{font-size:1rem;margin:1.5rem 0 .5rem}
 .finding>summary,.task>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:5.5rem 4.5rem minmax(0,1fr);gap:.25rem .75rem;align-items:baseline;padding:.6rem .9rem}.task>summary{grid-template-columns:4.5rem 6.5rem minmax(0,1fr) auto}.task>summary>.pill:nth-child(2){justify-self:start}
 .finding>summary::-webkit-details-marker,.task>summary::-webkit-details-marker{display:none}.finding>summary:hover,.task>summary:hover{background:var(--raised)}
 .finding .where{grid-column:3;color:var(--muted);font-size:.75rem}
 @media (min-width:60rem){.finding>summary{grid-template-columns:5.5rem 4.5rem minmax(0,1fr) minmax(0,16rem)}.finding .where{grid-column:auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+@media (max-width:40rem){.finding>summary,.task>summary{grid-template-columns:auto auto minmax(0,1fr)}.ftitle,.finding .where{grid-column:1/-1}}
+@media (forced-colors:active){.filter input:checked+label{forced-color-adjust:none;background:Highlight;color:HighlightText;border-color:Highlight}.key{forced-color-adjust:none}}
 .sev{display:inline-flex;align-items:center;gap:.4rem;font-size:.8125rem;font-weight:600}
 .fid{font-weight:600}.ftitle{overflow-wrap:anywhere}
+.finding>summary .fid::before,.task>summary .fid::before,.records>summary::before{content:"\25B8\00A0"/"";color:var(--muted)}
+.finding[open]>summary .fid::before,.task[open]>summary .fid::before,.records[open]>summary::before{content:"\25BE\00A0"/""}
 .finding[open]>summary,.task[open]>summary{background:var(--raised)}.fbody{padding:.75rem .9rem 1rem;display:grid;gap:.9rem}
 .kv{display:grid;grid-template-columns:minmax(0,9rem) minmax(0,1fr);gap:.25rem 1rem;margin:0}
 .kv dt{color:var(--muted);font-size:.8125rem}.kv dd{margin:0;overflow-wrap:anywhere}
@@ -122,17 +126,17 @@ tr:target,.finding:target,.task:target{outline:2px solid var(--accent);outline-o
 #decide label{display:block;font-weight:600;margin:0 0 .5rem}
 textarea{display:block;width:100%;min-height:7rem;padding:.75rem;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);resize:vertical}
 @media print{.top,.toc,.skip,.filter{display:none}.shell{display:block;padding:0}.scroll{max-height:none;overflow:visible}thead th{position:static}.scroll:has(th:nth-child(6)) table{min-width:0}.finding,tr,.rows li{break-inside:avoid}body{font-size:10pt}}
-@media print{details::details-content{content-visibility:visible}}`
+@media print{details::details-content{content-visibility:visible}details.records:not([open])::details-content{content-visibility:hidden}}`
 
 var (
 	rowID    = regexp.MustCompile(`^[A-Z][A-Z0-9]*-[A-Za-z0-9._-]+$`)
 	unsafeID = regexp.MustCompile(`[^A-Za-z0-9_-]`)
 	flags    = set("PASS", "FAIL", "UNKNOWN", "NOT_READY", "MEETS_TARGETS", "NOT_ASSESSABLE", "BLOCKED")
 	leads    = set("candidate", "needs-validation")
-	reviewed = set("semantically-reviewed", "cross-boundary-reviewed", "verified")
+	reviewed = set("semantically-reviewed", "cross-boundary-reviewed", "verified", "excluded")
 	// esc matches Python html.escape(quote=True) byte for byte.
 	esc   = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;", "'", "&#x27;").Replace
-	mdEsc = strings.NewReplacer(`\`, `\\`, "|", `\|`, "\n", " ", "<", "&lt;").Replace
+	mdEsc = strings.NewReplacer(`\`, `\\`, "|", `\|`, "\r\n", " ", "\r", " ", "\n", " ", "<", "&lt;").Replace
 
 	// HTML-only presentation: severity scale, status order, typed table cells.
 	sevOrder = []string{"critical", "high", "medium", "low", "informational"}
@@ -941,11 +945,11 @@ func (v view) page(b *built, kind, title, summary, csp string, decide bool) []st
 			rest++
 		}
 	}
-	out = append(out, fmt.Sprintf(`<details id="records" class="records"><summary>All records <span class="count">%d tables</span></summary>`+
+	out = append(out, fmt.Sprintf(`<details id="records" class="records"><summary>All records <span class="count">%d sections</span></summary>`+
 		`<p class="muted">Every canonical record behind the charts above, as tables.</p>`, rest))
 	for _, s := range b.secs {
 		if !shown[s.anchor] {
-			out = append(out, v.section(b, s))
+			out = append(out, `<details class="rec"><summary>`+esc(s.heading)+`</summary>`+v.section(b, s)+`</details>`)
 		}
 	}
 	return append(out, "</details></main></div></body></html>")
@@ -1204,7 +1208,7 @@ func (v view) details(summary, body string) string {
 	if body == "" {
 		return ""
 	}
-	return `<div class="blk"><h4>` + esc(summary) + `</h4>` + body + `</div>`
+	return `<div class="blk"><h3>` + esc(summary) + `</h3>` + body + `</div>`
 }
 
 // threshold returns one scorecard threshold row: value, minimum and result.

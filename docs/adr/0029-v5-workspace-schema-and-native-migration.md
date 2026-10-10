@@ -60,3 +60,12 @@ by the v5 pack declare the row at creation.
 
 Guard tests: `engine/internal/state/workspaceschema_test.go`,
 `engine/tests/parity_resolve_test.go`, `engine/tests/parity_closeout_test.go`.
+
+## Amendment (2026-10-06)
+
+The Context section's "the current contract is schema 3" records the contract at
+adoption. `state.SchemaVersion` is now 4: schema 4 adds the `gates.md`
+acceptance ledger to the vetted artifact set (`engine/internal/state/schema.go`).
+The decision above is unchanged — the engine declares the current workspace
+schema, `state resolve` and `state close` refuse mismatched workspaces, and
+`devrites-engine migrate` performs fail-closed normalization.

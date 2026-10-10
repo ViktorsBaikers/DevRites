@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/devrites/devrites/internal/devritespaths"
@@ -21,18 +22,27 @@ const (
 )
 
 type cappedGitOutput struct {
-	bytes.Buffer
+	mu        sync.Mutex
+	buffer    bytes.Buffer
 	truncated bool
 }
 
+func (w *cappedGitOutput) Len() int { return w.buffer.Len() }
+
+func (w *cappedGitOutput) Bytes() []byte { return w.buffer.Bytes() }
+
+func (w *cappedGitOutput) String() string { return w.buffer.String() }
+
 func (w *cappedGitOutput) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	remaining := gitOutputLimit - w.Len()
 	if remaining > 0 {
 		if len(p) > remaining {
-			_, _ = w.Buffer.Write(p[:remaining])
+			_, _ = w.buffer.Write(p[:remaining])
 			w.truncated = true
 		} else {
-			_, _ = w.Buffer.Write(p)
+			_, _ = w.buffer.Write(p)
 		}
 	} else {
 		w.truncated = true
@@ -77,6 +87,7 @@ func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, a
 	env = gitenv.Sanitize(env)
 	cmd.Env = append(
 		env,
+		"GIT_OPTIONAL_LOCKS=0",
 		"GIT_TERMINAL_PROMPT=0",
 		"GCM_INTERACTIVE=never",
 		"GIT_PAGER=cat",
@@ -92,6 +103,9 @@ func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, a
 	cmd.Stderr = &output
 	err := cmd.Run()
 	if err == nil {
+		if output.truncated {
+			return nil, &gitCommandError{args: args, exitCode: 0, err: errors.New("git output exceeds limit")}
+		}
 		return output.Bytes(), nil
 	}
 	code := -1

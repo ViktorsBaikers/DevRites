@@ -74,7 +74,8 @@ Scans cap captured input at 64 MiB and entries/findings at 4,096; findings expos
 metadata only and source or limit errors fail closed.
 
 Direct `devrites-engine update` acquires the latest exact-release pack and
-platform binary, then hands local paths to the downloaded engine. Shell/npm may
+platform binary, each verified by SHA-256 sidecar and `gh attestation verify`
+(`gh` installed and authenticated), then hands local paths to the downloaded engine. Shell/npm may
 perform the same acquisition before invoking the local path. `--check` compares
 the installed version with latest release metadata without downloading assets;
 engine release selectors are unsupported.
@@ -180,8 +181,9 @@ exact named project role; if that role is unavailable, the workflow stops for
 HITL. The root never executes a specialist role. Reviewer profiles are
 natively read-only. Claude keeps its root in plan mode; Codex uses a
 workspace-capable root so its child can write, while workflow policy forbids
-that root from editing source/tests. Both hosts expose only
-`devrites-slice-wright` as a writable specialist. See
+that root from editing source/tests. Among the lifecycle `devrites-*` specialists, both hosts expose only
+`devrites-slice-wright` as a writable one. The shipped profiles are the full
+role-to-permission map; `/rite-doctor` step 3 checks them. See
 [`standards/agents.md`](../pack/.claude/skills/devrites-lib/reference/standards/agents.md#source-writing-boundary).
 
 ## Engineering rules (`pack/.claude/skills/devrites-lib/reference/standards/`)

@@ -2,6 +2,7 @@ package parallel
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -298,7 +299,7 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 			return "", nil, err
 		}
 		if dirty {
-			return "", nil, fmt.Errorf("control has uncommitted changes on slice paths; commit or stash them before integrate --apply-to-control")
+			return "", nil, fmt.Errorf("control has uncommitted changes on slice paths; stop for the human to resolve them (never stash or commit them), then rerun integrate --apply-to-control")
 		}
 	}
 
@@ -479,10 +480,32 @@ type Salvage struct {
 // ownedWorktreePath reports whether the lease's worktree path is exactly the
 // deterministic <scratch>/<batch>/<slice> location Create wrote. Anything else
 // is not ours: cleanup must neither salvage into it nor delete it.
+//
+// Lexical equality is necessary but not sufficient. filepath.Abs cleans a
+// path without resolving it, so when a component under the repository is a
+// symlink both sides carry the identical spelling while the directory a
+// cleanup would delete lives somewhere else. No component from the repository
+// root down to the worktree directory may be a symlink.
 func ownedWorktreePath(repoRoot, batchID string, sl LeaseSlice) bool {
 	got, err1 := filepath.Abs(sl.WorktreePath)
 	want, err2 := filepath.Abs(WorkerWorktreePath(repoRoot, batchID, sl.ID))
-	return err1 == nil && err2 == nil && got == want
+	root, err3 := filepath.Abs(repoRoot)
+	if err1 != nil || err2 != nil || err3 != nil || got != want {
+		return false
+	}
+	for p := got; p != root && p != filepath.Dir(p); p = filepath.Dir(p) {
+		fi, err := os.Lstat(p)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return false
+		}
+		if fi.Mode()&os.ModeSymlink != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // salvageSlice commits any uncommitted allowlisted changes in a worker
@@ -543,7 +566,14 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 			base = b
 		}
 	}
+	// Ownership comes from what git registered, read before anything is
+	// removed, never from the lease's own claim.
+	registered, err := registeredWorktrees(repoRoot)
+	if err != nil {
+		return nil, err
+	}
 	var salvaged []Salvage
+	var failed, stranded, unconfirmed []string
 	keptWorktrees := map[string]bool{}
 	for _, sl := range lease.Slices {
 		salvageFailed := false
@@ -551,10 +581,16 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 		// stale lease worktree_path is never salvaged into (git ops would run
 		// in an arbitrary repo) and never removed (RemoveAll would delete an
 		// arbitrary directory).
-		owned := sl.WorktreePath != "" && ownedWorktreePath(repoRoot, lease.BatchID, sl)
+		inScratch := sl.WorktreePath != "" && ownedWorktreePath(repoRoot, lease.BatchID, sl)
+		owned := inScratch && createdWorktree(registered, sl.WorktreePath)
 		if sl.WorktreePath != "" && !owned {
-			warnf("slice %s worktree_path %q is outside %s; leaving it untouched",
-				sl.ID, sl.WorktreePath, ScratchRoot(repoRoot))
+			if inScratch {
+				warnf("slice %s worktree_path %q is not a worktree git registered; leaving it untouched",
+					sl.ID, sl.WorktreePath)
+			} else {
+				warnf("slice %s worktree_path %q is outside %s; leaving it untouched",
+					sl.ID, sl.WorktreePath, ScratchRoot(repoRoot))
+			}
 		}
 		if !complete && owned {
 			if _, err := salvage(sl, lease.BatchID); err != nil {
@@ -569,6 +605,16 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 			}
 			if err := os.RemoveAll(sl.WorktreePath); err != nil {
 				warnf("worktree dir cleanup %s: %v", sl.WorktreePath, err)
+				failed = append(failed, sl.ID)
+				// git can unregister a worktree and still exit non-zero, so the
+				// exit code says nothing about registration; ask git again.
+				if reg, rerr := registeredWorktrees(repoRoot); rerr != nil {
+					unconfirmed = append(unconfirmed, sl.WorktreePath)
+				} else if !createdWorktree(reg, sl.WorktreePath) {
+					// A rerun refuses an unregistered directory as not
+					// created by us, so it will not delete it.
+					stranded = append(stranded, sl.WorktreePath)
+				}
 			}
 		}
 		if sl.Branch != "" && !ownedBranchName(slug, lease.BatchID, sl.Branch) {
@@ -599,6 +645,12 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 				salvaged = append(salvaged, s)
 			} else if err := deleteBranch(repoRoot, sl.Branch); err != nil {
 				warnf("branch cleanup %s: %v", sl.Branch, err)
+				// A refused worktree is not removed and the lease is cleared once
+				// nothing else failed, so the branch stays behind; the warning
+				// above names it.
+				if owned || sl.WorktreePath == "" {
+					failed = append(failed, sl.ID)
+				}
 			}
 		} else if salvageFailed {
 			salvaged = append(salvaged, Salvage{SliceID: sl.ID, Worktree: sl.WorktreePath})
@@ -616,29 +668,54 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 			salvaged = append(salvaged, Salvage{SliceID: "integrate", Branch: ibranch, Commit: itip})
 		} else if err := deleteBranch(repoRoot, ibranch); err != nil {
 			warnf("integrate branch cleanup %s: %v", ibranch, err)
+			failed = append(failed, "integrate")
 		}
 	}
 	batchDir := filepath.Join(ScratchRoot(repoRoot), lease.BatchID)
-	if len(keptWorktrees) == 0 {
-		if err := os.RemoveAll(batchDir); err != nil {
+	if fi, err := os.Lstat(batchDir); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		// Drop the link itself; what it points at is not ours.
+		if err := os.Remove(batchDir); err != nil {
 			warnf("scratch cleanup: %v", err)
+			failed = append(failed, "scratch")
 		}
 	} else if entries, err := os.ReadDir(batchDir); err == nil {
-		// A failed salvage keeps its worktree as the only copy — remove the
-		// batch dir's other entries but never a kept slice dir.
+		// A failed salvage keeps its worktree as the only copy, and an entry git
+		// never registered is not something Create made.
 		for _, e := range entries {
+			p := filepath.Join(batchDir, e.Name())
 			if keptWorktrees[e.Name()] {
 				continue
 			}
-			if err := os.RemoveAll(filepath.Join(batchDir, e.Name())); err != nil {
+			if !createdWorktree(registered, p) {
+				warnf("scratch entry %q is not a worktree git registered; leaving it untouched", p)
+				continue
+			}
+			if err := os.RemoveAll(p); err != nil {
 				warnf("scratch entry cleanup %s: %v", e.Name(), err)
+				failed = append(failed, e.Name())
 			}
 		}
-	} else {
+		// Fails harmlessly while anything was left behind.
+		_ = os.Remove(batchDir)
+	} else if !os.IsNotExist(err) {
 		warnf("scratch cleanup %s: %v", batchDir, err)
+		failed = append(failed, "scratch")
 	}
 	if _, err := git(repoRoot, "worktree", "prune"); err != nil {
 		warnf("worktree prune: %v", err)
+	}
+	if len(failed) > 0 {
+		// The lease is the only index of what is left on disk; keep it so a
+		// rerun can retry the removals, except for directories git no longer
+		// registers: a rerun leaves those in place.
+		msg := fmt.Sprintf("cleanup incomplete for %s; lease kept, rerun cleanup after fixing the warnings above", strings.Join(uniqueInOrder(failed), ", "))
+		if len(stranded) > 0 {
+			msg += fmt.Sprintf("; git no longer registers %s, a rerun will not delete it, remove it by hand", strings.Join(stranded, ", "))
+		}
+		if len(unconfirmed) > 0 {
+			msg += fmt.Sprintf("; could not confirm whether git still registers %s, remove it by hand if a rerun leaves it", strings.Join(unconfirmed, ", "))
+		}
+		return salvaged, errors.New(msg)
 	}
 	return salvaged, ClearLease(leasePath)
 }
@@ -681,4 +758,17 @@ func LeaseJSON(lease *Lease) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+// uniqueInOrder drops repeats, keeping each entry's first position.
+func uniqueInOrder(in []string) []string {
+	seen := make(map[string]bool, len(in))
+	out := make([]string, 0, len(in))
+	for _, v := range in {
+		if !seen[v] {
+			seen[v] = true
+			out = append(out, v)
+		}
+	}
+	return out
 }

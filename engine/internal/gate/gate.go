@@ -6,8 +6,10 @@ package gate
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
+	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/reason"
 	"github.com/devrites/devrites/internal/state"
 )
@@ -114,7 +116,11 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 	var stateProblems []string
 
 	if policy.BlocksOpenQuestions {
-		if gates, awaitingHuman := retainedHumanGates(observation); len(gates) > 0 {
+		gates, awaitingHuman, err := retainedHumanGates(observation)
+		if err != nil {
+			stateProblems = append(stateProblems, "questions.md is invalid Markdown, so open human questions cannot be ruled out")
+			blocked = true
+		} else if len(gates) > 0 {
 			problem := fmt.Sprintf("open %s human question(s) remain in questions.md", strings.Join(gates, "/"))
 			if !awaitingHuman {
 				problem += " but state.md is not awaiting_human"
@@ -247,7 +253,55 @@ func acceptanceMapProblems(observation *state.WorkspaceObservation, policy state
 			testPlan = fact.Bytes()
 		}
 	}
-	return state.ParseAcceptanceMap(spec.Bytes(), tasks, testPlan, requireTasks, requireTestPlan).Problems
+	result := state.ParseAcceptanceMap(spec.Bytes(), tasks, testPlan, requireTasks, requireTestPlan)
+	if len(result.SpecIDs) == 0 && specClaimsAcceptance(spec.Bytes()) {
+		return []string{"spec.md mentions acceptance criteria but no AC-### id was found under a `## Acceptance criteria` heading; use that exact heading and three-digit ids such as AC-001"}
+	}
+	return append(result.Problems, specUnreadAcceptanceProblems(spec.Bytes())...)
+}
+
+var (
+	specAcceptanceHeadingRE     = regexp.MustCompile(`(?i)^\s{0,3}#{1,6}\s+.*acceptance criteria`)
+	specCanonicalAcceptanceHead = regexp.MustCompile(`(?i)^##\s+Acceptance criteria\s*$`)
+	specACTokenRE               = regexp.MustCompile(`\bAC-\d+\b`)
+	specAcceptanceClaimRE       = regexp.MustCompile(`(?im)^\s{0,3}#{1,6}\s+.*acceptance criteria|\bAC-\d+\b`)
+)
+
+// specClaimsAcceptance reports whether structural (unfenced) spec text looks
+// like it carries acceptance criteria, so a parse that finds none is a defect
+// in the spec rather than a spec with nothing to map.
+func specClaimsAcceptance(spec []byte) bool {
+	structural, err := markdowntext.Structural(spec)
+	return err == nil && specAcceptanceClaimRE.Match(structural)
+}
+
+// specUnreadAcceptanceProblems names acceptance text the parser skips: ids that
+// are not exactly three digits and acceptance headings after the first
+// canonical one, which would otherwise escape the coverage check.
+func specUnreadAcceptanceProblems(spec []byte) []string {
+	structural, err := markdowntext.Structural(spec)
+	if err != nil {
+		return nil
+	}
+	var problems []string
+	seen := map[string]bool{}
+	readHeading := false
+	for _, line := range strings.Split(string(structural), "\n") {
+		if specAcceptanceHeadingRE.MatchString(line) {
+			if trimmed := strings.TrimSpace(line); !readHeading && specCanonicalAcceptanceHead.MatchString(trimmed) {
+				readHeading = true
+			} else {
+				problems = append(problems, fmt.Sprintf("spec.md has an acceptance criteria heading the gate does not read (%q); only the first `## Acceptance criteria` section is checked", trimmed))
+			}
+		}
+		for _, id := range specACTokenRE.FindAllString(line, -1) {
+			if len(id) != len("AC-000") && !seen[id] {
+				seen[id] = true
+				problems = append(problems, fmt.Sprintf("spec.md uses %s, which is not a three-digit AC-### id, so the gate does not check it", id))
+			}
+		}
+	}
+	return problems
 }
 
 func missingSections(observation *state.WorkspaceObservation, required []state.Section) []state.Section {
@@ -378,25 +432,43 @@ func diagnosticRepair(code state.DiagnosticCode) string {
 
 const gateSpaceChars = " \t\n\v\f\r"
 
-func retainedHumanGates(observation *state.WorkspaceObservation) ([]string, bool) {
+func retainedHumanGates(observation *state.WorkspaceObservation) ([]string, bool, error) {
 	questions, ok := observation.Fact("questions.md")
 	if !ok || (questions.State() != state.ArtifactPresent && questions.State() != state.ArtifactEmpty) {
-		return nil, false
+		return nil, false, nil
 	}
-	gates := OpenBlockingQuestionGates(questions.Bytes())
-	if len(gates) == 0 {
-		return nil, false
+	gates, err := openBlockingQuestionGates(questions.Bytes())
+	if err != nil || len(gates) == 0 {
+		return nil, false, err
 	}
 	ledger, ok := observation.Fact(state.LedgerFile)
-	return gates, ok && ledger.State() == state.ArtifactPresent && stateAwaitingHuman(ledger.Bytes())
+	return gates, ok && ledger.State() == state.ArtifactPresent && stateAwaitingHuman(ledger.Bytes()), nil
 }
 
 // OpenBlockingQuestionGates returns the deduplicated gate kinds (blocking,
 // validating, escalating) still open in questions.md, tolerating both the
 // per-question block form and the register table form. Exported so the
-// handoff resume record reports the same gates the lifecycle enforces.
+// handoff resume record reports the same gates the lifecycle enforces. Content
+// that cannot be parsed fails closed as [blocking], matching the lifecycle gate,
+// so a caller never reads an unparseable file as having no open gates.
 func OpenBlockingQuestionGates(data []byte) []string {
-	lines := splitLinesNoTrailing(data)
+	gates, err := openBlockingQuestionGates(data)
+	if err != nil {
+		return []string{"blocking"}
+	}
+	return gates
+}
+
+// openBlockingQuestionGates masks fenced regions first: a fenced region is a
+// documented example, never live question structure. Content markdowntext
+// rejects yields no gates and an error, which Check turns into a blocking
+// problem rather than reading the file as clean.
+func openBlockingQuestionGates(data []byte) ([]string, error) {
+	visible, err := markdowntext.Structural(data)
+	if err != nil {
+		return nil, err
+	}
+	lines := splitLinesNoTrailing(visible)
 	seen := map[string]bool{}
 	var gates []string
 	inQ := false
@@ -417,6 +489,7 @@ func OpenBlockingQuestionGates(data []byte) []string {
 		}
 	}
 	for _, line := range lines {
+		lower := strings.ToLower(line)
 		if cells, ok := questionTableCells(line); ok {
 			if !tableOpen {
 				tableOpen = true
@@ -431,20 +504,20 @@ func OpenBlockingQuestionGates(data []byte) []string {
 			statusColumn, gateColumn = -1, -1
 		}
 		switch {
-		case strings.HasPrefix(strings.ToLower(line), "## q-"):
+		case strings.HasPrefix(lower, "## q-"):
 			finalize()
 			inQ, status, gate = true, "", ""
-		case inQ && strings.HasPrefix(line, "status:"):
-			status = strings.TrimLeft(strings.TrimPrefix(line, "status:"), gateSpaceChars)
-		case inQ && strings.HasPrefix(line, "gate:"):
-			gate = strings.TrimLeft(strings.TrimPrefix(line, "gate:"), gateSpaceChars)
+		case inQ && strings.HasPrefix(lower, "status:"):
+			status = strings.TrimLeft(line[len("status:"):], gateSpaceChars)
+		case inQ && strings.HasPrefix(lower, "gate:"):
+			gate = strings.TrimLeft(line[len("gate:"):], gateSpaceChars)
 		case inQ && isHeadingLine(line):
 			finalize()
 			inQ = false
 		}
 	}
 	finalize()
-	return gates
+	return gates, nil
 }
 
 func questionTableCells(line string) ([]string, bool) {

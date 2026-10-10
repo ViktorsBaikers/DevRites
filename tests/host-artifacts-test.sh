@@ -34,6 +34,17 @@ else
   ok "build-host-artifacts propagates output failures"
 fi
 
+SECONDS=0
+DEVRITES_HOST_ARTIFACT_DIR="$T/not-a-directory/generated" \
+  bash "$ROOT/scripts/build-host-artifacts.sh" >/dev/null 2>"$T/early-build.err"
+early_rc=$?
+if [ "$early_rc" -ne 0 ] && [ "$SECONDS" -lt 5 ] && grep -q DEVRITES_HOST_ARTIFACT_DIR "$T/early-build.err"; then
+  ok "build-host-artifacts rejects an unusable output location before rendering"
+else
+  no "build-host-artifacts did not reject an unusable output location early (rc=$early_rc, ${SECONDS}s)"
+  sed -n '1,5p' "$T/early-build.err"
+fi
+
 for f in \
   "claude/skills/rite-build/SKILL.md" \
   "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md" \
@@ -111,10 +122,10 @@ grep -q '## Codex compatibility' "$OUT/codex/skills/rite-build/SKILL.md" &&
 grep -q '.agents/skills/devrites-lib/reference/standards/core.md' "$OUT/codex/skills/rite-build/SKILL.md" &&
   ok "Codex skill artifact uses mirrored rules path" ||
   no "Codex skill artifact missing mirrored rules path"
-grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' "$OUT/codex/AGENTS.md" &&
+tr -s '[:space:]' ' ' <"$OUT/codex/AGENTS.md" | grep -q 'repository-aware file tool refuses an ignored path.*native filesystem command.*not a completed task' &&
   ok "Codex AGENTS artifact recovers from ignored mirror refusals" ||
   no "Codex AGENTS artifact can return an ignored mirror refusal"
-grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' "$OUT/codex/AGENTS.md" &&
+tr -s '[:space:]' ' ' <"$OUT/codex/AGENTS.md" | grep -q 'Engram calls.*omit optional `project` and `session_id`.*Never derive either from `task_name`.*mem_session_summary.*unknown_session.*unknown_project.*both optional fields omitted.*ambiguous.*ask the user' &&
   ok "Codex AGENTS artifact preserves exact Engram identifiers" ||
   no "Codex AGENTS artifact can invent Engram identifiers"
 grep -q 'exact path-bounded executable workflow artifacts under the active `.devrites/work/<slug>/`' "$OUT/codex/AGENTS.md" &&
@@ -362,9 +373,9 @@ grep -q 'devrites-engine check readiness <slug>' "$OUT/codex/skills/devrites-lib
   ok "Codex core preserves lifecycle rest points" ||
   no "Codex core lost lifecycle rest points"
 if grep -R -nE 'devrites-engine (readiness|seal|spec-validate|check-acceptance|evidence-fresh|coverage|doubt-coverage|test-integrity|review-integrity|build-readiness|readiness-digest|analyze|ledger|resolve|clarify-return|tick-afk|recovery|close-out)([[:space:]`]|$)' \
-  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" "$OUT/devin" >/tmp/dr_host_artifacts_retired 2>/dev/null; then
+  "$OUT/claude" "$OUT/codex" "$OUT/omp" "$OUT/pi" "$OUT/devin" >"$T/dr_host_artifacts_retired" 2>/dev/null; then
   no "generated host artifacts retain retired engine commands"
-  sed -n '1,20p' /tmp/dr_host_artifacts_retired
+  sed -n '1,20p' "$T/dr_host_artifacts_retired"
 else
   ok "generated host artifacts use only nested thin-engine commands"
 fi
@@ -467,33 +478,33 @@ grep -qE '^description: "?User-invoked read-only active-feature report' "$OUT/co
   no "Codex public explicit-only description was stubbed"
 
 if { grep -R -nE '\.claude/skills|\.claude/agents|(^|[^A-Za-z0-9_./-])/rite(-[a-z0-9-]+)?([^A-Za-z0-9_-]|$)' "$OUT/codex/skills" "$OUT/codex/agents" ||
-  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/codex/skills" "$OUT/codex/agents"; } >/tmp/dr_host_artifacts_paths 2>/dev/null; then
+  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/codex/skills" "$OUT/codex/agents"; } >"$T/dr_host_artifacts_paths" 2>/dev/null; then
   no "Codex artifacts contain stale runtime Claude paths or slash invocations"
-  sed -n '1,40p' /tmp/dr_host_artifacts_paths
+  sed -n '1,40p' "$T/dr_host_artifacts_paths"
 else
   ok "Codex artifacts contain no stale runtime Claude paths or slash invocations"
 fi
 
 if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills' "$OUT/omp/skills" "$OUT/omp/agents" ||
-  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/omp/skills" "$OUT/omp/agents"; } >/tmp/dr_host_artifacts_omp_paths 2>/dev/null; then
+  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/omp/skills" "$OUT/omp/agents"; } >"$T/dr_host_artifacts_omp_paths" 2>/dev/null; then
   no "omp artifacts contain leftover Claude/Codex paths"
-  sed -n '1,40p' /tmp/dr_host_artifacts_omp_paths
+  sed -n '1,40p' "$T/dr_host_artifacts_omp_paths"
 else
   ok "omp artifacts contain no leftover Claude/Codex paths"
 fi
 
 if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/' "$OUT/pi/skills" "$OUT/pi/agents" "$OUT/pi/prompts" ||
-  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/pi/skills" "$OUT/pi/agents"; } >/tmp/dr_host_artifacts_pi_paths 2>/dev/null; then
+  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/pi/skills" "$OUT/pi/agents"; } >"$T/dr_host_artifacts_pi_paths" 2>/dev/null; then
   no "pi artifacts contain leftover Claude/Codex/omp paths"
-  sed -n '1,40p' /tmp/dr_host_artifacts_pi_paths
+  sed -n '1,40p' "$T/dr_host_artifacts_pi_paths"
 else
   ok "pi artifacts contain no leftover Claude/Codex/omp paths"
 fi
 
 if { grep -R -nE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/|\.pi/' "$OUT/devin/skills" "$OUT/devin/agents" "$OUT/devin/AGENTS.md" ||
-  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/devin/skills" "$OUT/devin/agents"; } >/tmp/dr_host_artifacts_devin_paths 2>/dev/null; then
+  grep -R --exclude='skill-authoring.md' -nE 'pack/\.claude' "$OUT/devin/skills" "$OUT/devin/agents"; } >"$T/dr_host_artifacts_devin_paths" 2>/dev/null; then
   no "Devin artifacts contain leftover foreign host paths"
-  sed -n '1,40p' /tmp/dr_host_artifacts_devin_paths
+  sed -n '1,40p' "$T/dr_host_artifacts_devin_paths"
 else
   ok "Devin artifacts contain no leftover foreign host paths"
 fi

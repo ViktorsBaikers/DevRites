@@ -2,8 +2,12 @@ package lib
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"path/filepath"
+	"slices"
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/state"
@@ -41,6 +45,7 @@ type ObserveSummary struct {
 	NextAction        string                 `json:"next_action,omitempty"`
 	MissingSections   []string               `json:"missing_sections,omitempty"`
 	MissingFiles      []string               `json:"missing_files,omitempty"`
+	Unreadable        []string               `json:"unreadable,omitempty"`
 	PrinciplesPresent bool                   `json:"principles_present"`
 	TaskGraph         *ObserveTaskGraph      `json:"task_graph,omitempty"`
 	ArtifactBudgets   []ArtifactBudget       `json:"artifact_budgets,omitempty"`
@@ -64,7 +69,13 @@ func ObserveSummaryFor(root, slug string) (ObserveSummary, error) {
 		MissingSections:   missingSectionNames(report.Missing),
 	}
 
-	if graph, graphErr := CheckTaskGraph(root, slug); graphErr == nil && (len(graph.Slices) > 0 || len(graph.Problems) > 0) {
+	graph, graphErr := CheckTaskGraph(root, slug)
+	switch {
+	case errors.Is(graphErr, fs.ErrNotExist):
+		// tasks.md is created at define; before that its absence is expected.
+	case graphErr != nil:
+		summary.Unreadable = append(summary.Unreadable, "tasks.md")
+	case len(graph.Slices) > 0 || len(graph.Problems) > 0:
 		slices := make([]ObserveSlice, 0, len(graph.Slices))
 		for _, slice := range graph.Slices {
 			deps := make([]string, 0, len(slice.Dependencies))
@@ -89,9 +100,19 @@ func ObserveSummaryFor(root, slug string) (ObserveSummary, error) {
 		}
 	}
 	if workspace, wsErr := devritespaths.ExistingFeatureDirChecked(root, slug); wsErr == nil {
-		if budgets, bulk, budgetErr := observeArtifactBudgets(workspace); budgetErr == nil {
+		budgets, bulk, unreadable, budgetErr := observeArtifactBudgets(workspace)
+		if budgetErr == nil {
 			summary.ArtifactBudgets = budgets
 			summary.BulkFiles = bulk
+			for _, name := range unreadable {
+				if !slices.Contains(summary.Unreadable, name) {
+					summary.Unreadable = append(summary.Unreadable, name)
+				}
+			}
+		} else {
+			// The directory itself is unreadable, so no entry name is available; report
+			// the loss under the workspace rather than emitting a shorter summary.
+			summary.Unreadable = append(summary.Unreadable, filepath.Base(workspace))
 		}
 	}
 	return summary, nil

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/devrites/devrites/internal/markdowntext"
 )
 
 var (
@@ -48,7 +50,11 @@ func ParseAcceptanceMap(spec, tasks, testPlan []byte, requireTasks, requireTestP
 }
 
 func acceptanceSection(spec []byte) string {
-	lines := strings.Split(strings.ReplaceAll(string(spec), "\r\n", "\n"), "\n")
+	structural, err := markdowntext.Structural(spec)
+	if err != nil {
+		return ""
+	}
+	lines := strings.Split(strings.ReplaceAll(string(structural), "\r\n", "\n"), "\n")
 	start := -1
 	for i, line := range lines {
 		if acceptanceHeadingRE.MatchString(strings.TrimSpace(line)) {

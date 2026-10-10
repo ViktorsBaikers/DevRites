@@ -23,5 +23,255 @@
     "name": "Unicode byte length",
     "input": "π before\n~~~md\n## hïdden π\n~~~\nπ after\n",
     "output": "π before\n     \n             \n   \nπ after\n"
+  },
+  {
+    "name": "list-indented fence",
+    "input": "- item\n\n    ```\n    ## hidden\n    ```\nafter\n",
+    "output": "- item\n\n       \n             \n       \nafter\n"
+  },
+  {
+    "name": "nested list fence within content indent plus three",
+    "input": "1. one\n   - nested\n\n        ```\n        ## hidden\n        ```\nend\n",
+    "output": "1. one\n   - nested\n\n        ```\n        ## hidden\n        ```\nend\n"
+  },
+  {
+    "name": "fence past container indent plus three is indented code",
+    "input": "- item\n\n         ```\n## visible\n",
+    "output": "- item\n\n         ```\n## visible\n"
+  },
+  {
+    "name": "list marker inside top-level indented code opens no list",
+    "input": "# Q\n\n    - example\n    ```\n\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "# Q\n\n    - example\n    ```\n\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "list marker inside list indented code opens no list",
+    "input": "- a\n\n      - not a list\n       ```\n\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "- a\n\n      - not a list\n       ```\n\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "top-level fence keeps three-column limit after a list ends",
+    "input": "- a\nplain\n\n    ```\n## visible\n",
+    "output": "- a\nplain\n\n    ```\n## visible\n"
+  },
+  {
+    "name": "top-level fence keeps three-column limit without a list",
+    "input": "text\n\n    ```\n## visible\n\n   ```\n## hidden\n```\n",
+    "output": "text\n\n    ```\n## visible\n\n      \n         \n   \n"
+  },
+  {
+    "name": "unclosed list fence stays visible before a dedented heading",
+    "input": "- a\n\n    ```\n\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "- a\n\n    ```\n\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "unclosed ordered list fence stays visible",
+    "input": "1. step\n\n     ```\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "1. step\n\n     ```\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "unclosed nested list fence stays visible",
+    "input": "- a\n  - b\n\n      ```\n\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "- a\n  - b\n\n      ```\n\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "list fence with no close inside the item stays visible",
+    "input": "- example:\n\n    ```\n    code\n## Q-001\nstatus: open\ngate: blocking\n    ```\n",
+    "output": "- example:\n\n    ```\n    code\n## Q-001\nstatus: open\ngate: blocking\n    ```\n"
+  },
+  {
+    "name": "list fence interrupted by a line indented less than the item content stays visible",
+    "input": "- a\n\n    ```\n b\n    ```\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "- a\n\n    ```\n b\n    ```\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "tab-indented line stays inside a list fence",
+    "input": "- a\n\n    ```\n\tcode\n    ```\nafter\n",
+    "output": "- a\n\n       \n     \n       \nafter\n"
+  },
+  {
+    "name": "thematic break star is not a list item",
+    "input": "* * *\n\n    ```\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "* * *\n\n    ```\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "thematic break dash is not a list item",
+    "input": "- - -\n\n    ```\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "- - -\n\n    ```\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "thematic break bare star is not a list item",
+    "input": "***\n\n    ```\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "***\n\n    ```\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "ordered item not starting at one cannot interrupt a paragraph",
+    "input": "text\n2. foo\n\n    ```\n## Q-001\nstatus: open\ngate: blocking\n",
+    "output": "text\n2. foo\n\n    ```\n## Q-001\nstatus: open\ngate: blocking\n"
+  },
+  {
+    "name": "ordered item starting at one interrupts a paragraph",
+    "input": "text\n1. foo\n\n    ```\n    ## hidden\n    ```\nafter\n",
+    "output": "text\n1. foo\n\n    ```\n    ## hidden\n    ```\nafter\n"
+  },
+  {
+    "name": "ordered item not starting at one opens a list after a blank line",
+    "input": "text\n\n2. foo\n\n    ```\n    ## hidden\n    ```\nafter\n",
+    "output": "text\n\n2. foo\n\n       \n             \n       \nafter\n"
+  },
+  {
+    "name": "empty dash marker does not open list context",
+    "input": "-\n\n    ```\n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-1 | open | blocking |\n",
+    "output": "-\n\n    ```\n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-1 | open | blocking |\n"
+  },
+  {
+    "name": "setext dash does not open list context",
+    "input": "Intro\n-\n\n    ```\n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-1 | open | blocking |\n",
+    "output": "Intro\n-\n\n    ```\n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-1 | open | blocking |\n"
+  },
+  {
+    "name": "empty star marker does not open list context",
+    "input": "Some text\n*\n\n    ```\n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-1 | open | blocking |\n",
+    "output": "Some text\n*\n\n    ```\n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-1 | open | blocking |\n"
+  },
+  {
+    "name": "empty marker does not hide acceptance heading",
+    "input": "-\n\n    ```\n  ## Acceptance criteria\n",
+    "output": "-\n\n    ```\n  ## Acceptance criteria\n"
+  },
+  {
+    "name": "list fence closed inside the item masks and ends",
+    "input": "- item\n\n    ```\n    ## Q-1\n    Status: open\n    ```\n## Q-1\nStatus: open\nGate: blocking\n",
+    "output": "- item\n\n       \n          \n                \n       \n## Q-1\nStatus: open\nGate: blocking\n"
+  },
+  {
+    "name": "unclosed list fence stays visible",
+    "input": "- a\n\n    ```\n## Q-1\nStatus: open\nGate: blocking\n",
+    "output": "- a\n\n    ```\n## Q-1\nStatus: open\nGate: blocking\n"
+  },
+  {
+    "name": "unclosed list fence with indented tail stays visible",
+    "input": "- a\n\n    ```\n    text\n",
+    "output": "- a\n\n    ```\n    text\n"
+  },
+  {
+    "name": "list fence dedent before close stays visible",
+    "input": "- a\n\n    ```\n    text\nback\n    ```\n## Q-1\nStatus: open\nGate: blocking\n",
+    "output": "- a\n\n    ```\n    text\nback\n    ```\n## Q-1\nStatus: open\nGate: blocking\n"
+  },
+  {
+    "name": "indented dash then top-level unclosed fence masks to end",
+    "input": "    - x\n```\n## Q-1\nStatus: open\nGate: blocking\n",
+    "output": "    - x\n   \n      \n            \n              \n"
+  },
+  {
+    "name": "tab-indented list fence closer keeps a question table visible",
+    "input": "- a\n\n    ```\n\t```\n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-1 | open | blocking |\n    ```\n",
+    "output": "- a\n\n       \n    \n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-1 | open | blocking |\n    ```\n"
+  },
+  {
+    "name": "tab-indented list fence closer keeps a heading visible",
+    "input": "- a\n\n    ```\n\t```\n  ## Acceptance criteria\n    ```\n",
+    "output": "- a\n\n       \n    \n  ## Acceptance criteria\n    ```\n"
+  },
+  {
+    "name": "tab-indented list fence opener closed by spaces",
+    "input": "- a\n\n\t```\n    ```\n  ## Acceptance criteria\n",
+    "output": "- a\n\n    \n       \n  ## Acceptance criteria\n"
+  },
+  {
+    "name": "fence on the list marker line is never masked and a later lookalike opener masks nothing",
+    "input": "- ```\n    ```\n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-001 | open | blocking |\n\n    ```\n",
+    "output": "- ```\n    ```\n  | ID | Status | Gate |\n  |---|---|---|\n  | Q-001 | open | blocking |\n\n    ```\n"
+  },
+  {
+    "name": "ordered marker line fence is never masked and a later lookalike opener masks nothing",
+    "input": "1. ```\n    ```\n   | ID | Status | Gate |\n   |---|---|---|\n   | Q-001 | open | blocking |\n\n    ```\n",
+    "output": "1. ```\n    ```\n   | ID | Status | Gate |\n   |---|---|---|\n   | Q-001 | open | blocking |\n\n    ```\n"
+  },
+  {
+    "name": "nested marker on the parent line keeps a fence with a shallower table unmasked",
+    "input": "1. - a\n\n      ```\n   | ID | Status | Gate |\n   |---|---|---|\n   | Q-001 | open | blocking |\n\n   ```\n",
+    "output": "1. - a\n\n      ```\n   | ID | Status | Gate |\n   |---|---|---|\n   | Q-001 | open | blocking |\n\n      \n"
+  },
+  {
+    "name": "marker line fence closed by the next line leaves the following item text visible",
+    "input": "- ```\n    ```\n    visible\n    ```\n",
+    "output": "- ```\n    ```\n    visible\n    ```\n"
+  },
+  {
+    "name": "rejected list opener keeps a later pair in the same item unmasked",
+    "input": "- a\n    ```\n  | t |\n\n    ```\n    visible\n    ```\n",
+    "output": "- a\n    ```\n  | t |\n\n    ```\n    visible\n    ```\n"
+  },
+  {
+    "name": "list fence with a deeper closer-like line before the matching closer stays visible",
+    "input": "- a\n    ```\n     ```\n    visible\n    ```\n",
+    "output": "- a\n    ```\n     ```\n    visible\n    ```\n"
+  },
+  {
+    "name": "four-space heading then ordered item does not anchor a fence",
+    "input": "Intro\n    # x\n2. item\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n",
+    "output": "Intro\n    # x\n2. item\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n"
+  },
+  {
+    "name": "four-space thematic break then ordered item does not anchor a fence",
+    "input": "Intro\n    ---\n2. item\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n",
+    "output": "Intro\n    ---\n2. item\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n"
+  },
+  {
+    "name": "dash item whose content is a star marker does not anchor a fence",
+    "input": "- * x\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n",
+    "output": "- * x\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n"
+  },
+  {
+    "name": "ordered item whose content is a dash marker does not anchor a fence",
+    "input": "1. - a\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n",
+    "output": "1. - a\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n"
+  },
+  {
+    "name": "dash item whose content is a thematic break does not anchor a fence",
+    "input": "- ---\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n",
+    "output": "- ---\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n"
+  },
+  {
+    "name": "list item after a paragraph without a blank line does not anchor a fence",
+    "input": "Intro\n- item\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n",
+    "output": "Intro\n- item\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n"
+  },
+  {
+    "name": "nested item does not anchor a fence",
+    "input": "- item\n  - sub\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n",
+    "output": "- item\n  - sub\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n"
+  },
+  {
+    "name": "text between the item and the fence does not anchor it",
+    "input": "- item\n\n    text\n\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n",
+    "output": "- item\n\n    text\n\n    ```\n    | ID | Status | Gate |\n    |---|---|---|\n    | Q-001 | open | blocking |\n    ```\n"
+  },
+  {
+    "name": "anchored list fence masks a note line",
+    "input": "- item\n\n    ```\n    - NOTE x\n    ```\n",
+    "output": "- item\n\n       \n            \n       \n"
+  },
+  {
+    "name": "lone CR inside a list fence region masks nothing",
+    "input": "- a\n\n    ~~~\r| ID | Status | Gate |\r|---|---|---|\r| Q-001 | open | blocking |\r    ~~~\n    ~~~\n",
+    "output": "- a\n\n    ~~~\r| ID | Status | Gate |\r|---|---|---|\r| Q-001 | open | blocking |\r    ~~~\n    ~~~\n"
+  },
+  {
+    "name": "lone CR inside a list fence region keeps a heading unmasked",
+    "input": "- a\n\n    ~~~\r## Q-001\r    ~~~\n    ~~~\n",
+    "output": "- a\n\n    ~~~\r## Q-001\r    ~~~\n    ~~~\n"
+  },
+  {
+    "name": "two-backtick line opens no fence",
+    "input": "``\n## visible\n",
+    "output": "``\n## visible\n"
+  },
+  {
+    "name": "closing fence with trailing text does not close",
+    "input": "~~~\nhidden\n~~~ tail\nstill hidden\n~~~\nafter\n",
+    "output": "   \n      \n        \n            \n   \nafter\n"
   }
 ]

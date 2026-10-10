@@ -82,9 +82,15 @@ cat > "$STAGED_WRONG" <<'EOF'
 [ "$1" = version ] && echo 1.0.0
 EOF
 chmod +x "$STAGED_WRONG"
-DEVRITES_ENGINE_CLI="$STAGED_WRONG" DEVRITES_REF="v9.9.11" "$BIN/devrites-engine" install \
-  --source-dir "$ROOT" --payload-dir "$DEVRITES_HOST_ARTIFACT_DIR" --target "$TGT" --force >/dev/null 2>&1 \
-  && no "wrong staged version was accepted" || ok "wrong staged version rejected before replacement"
+wrong_out="$(DEVRITES_ENGINE_CLI="$STAGED_WRONG" DEVRITES_REF="v9.9.11" "$BIN/devrites-engine" install \
+  --source-dir "$ROOT" --payload-dir "$DEVRITES_HOST_ARTIFACT_DIR" --target "$TGT" --force 2>&1)"
+wrong_status=$?
+if [ "$wrong_status" -ne 0 ] && printf '%s' "$wrong_out" | grep -q 'version mismatch' \
+  && ! printf '%s' "$wrong_out" | grep -q 'verify installed engine binary'; then
+  ok "wrong staged version rejected before replacement"
+else
+  no "wrong staged version not rejected before replacement (exit $wrong_status): $wrong_out"
+fi
 v="$("$BIN/devrites-engine" version 2>/dev/null || true)"
 [ "$v" = "v9.9.9" ] && ok "wrong staged version left old binary intact" || no "wrong staged version changed binary: '$v'"
 rm -f "$STAGED_WRONG"
@@ -101,9 +107,14 @@ if [ "\$1" = version ]; then
 fi
 EOF
 chmod +x "$STAGED_POST"
-DEVRITES_ENGINE_CLI="$STAGED_POST" DEVRITES_REF="v9.9.11" "$BIN/devrites-engine" install \
-  --source-dir "$ROOT" --payload-dir "$DEVRITES_HOST_ARTIFACT_DIR" --target "$TGT" --force >/dev/null 2>&1 \
-  && no "post-install wrong version was accepted" || ok "post-install wrong version rejected"
+post_out="$(DEVRITES_ENGINE_CLI="$STAGED_POST" DEVRITES_REF="v9.9.11" "$BIN/devrites-engine" install \
+  --source-dir "$ROOT" --payload-dir "$DEVRITES_HOST_ARTIFACT_DIR" --target "$TGT" --force 2>&1)"
+post_status=$?
+if [ "$post_status" -ne 0 ] && printf '%s' "$post_out" | grep -q 'verify installed engine binary'; then
+  ok "post-install wrong version rejected"
+else
+  no "post-install wrong version not rejected by post-install verify (exit $post_status): $post_out"
+fi
 v="$("$BIN/devrites-engine" version 2>/dev/null || true)"
 [ "$v" = "v9.9.9" ] && ok "post-install failure restored old binary" || no "rollback did not restore old binary: '$v'"
 rm -f "$STAGED_POST"
@@ -117,9 +128,13 @@ else
 fi
 
 # 12) Non-exact versions fail closed before a build or download can be selected.
-TMPDIR="$ENGINE_TMP_ROOT" DEVRITES_REF="main" bash "$ROOT/install.sh" --target "$TGT" --dry-run >/dev/null 2>&1 \
-  && no "non-semver engine reference was accepted" \
-  || ok "non-semver engine reference rejected"
+ref_out="$(TMPDIR="$ENGINE_TMP_ROOT" DEVRITES_REF="main" bash "$ROOT/install.sh" --target "$TGT" --dry-run 2>&1)"
+ref_status=$?
+if [ "$ref_status" -eq 1 ] && printf '%s' "$ref_out" | grep -qF 'release tag validation failed'; then
+  ok "non-semver engine reference rejected"
+else
+  no "non-semver engine reference not rejected by tag validation (exit $ref_status): $ref_out"
+fi
 
 [ "$fail" -eq 0 ] && echo "PASS: binary lifecycle" || echo "FAILED: binary lifecycle"
 exit "$fail"

@@ -59,6 +59,8 @@ Pull these via `Read` when shaping the plan:
    **STOP** and tell the user to run `$rite-spec <feature>` first.
    If `decision-coverage.md` is absent or does not say `Decision coverage: CLEAR`,
    **STOP** → `$rite-clarify`.
+   If `checklists/` has no `<domain>.md` or any carries an open CRITICAL fail,
+   **STOP** → `$rite-spec`.
 1. **Read the spec:** `spec.md` (objective, requirements, acceptance, **placement**,
    design references, gaps/decisions), plus `references.md`, `decisions.md`,
    `assumptions.md`, `decision-coverage.md`, **`strategy.md` if present** (the scope mode, deferred / out-of-scope

@@ -194,8 +194,8 @@ done
 if command -v devin >/dev/null 2>&1; then
   proj="$TMP_GEN_DIR/devin-proj"
   mkdir -p "$proj/.devin/skills" "$proj/.devin/agents"
-  cp -R "$ROOT/pack/generated/devin/skills/." "$proj/.devin/skills/" 2>/dev/null || true
-  cp "$ROOT"/pack/generated/devin/agents/*.md "$proj/.devin/agents/" 2>/dev/null || true
+  cp -R "$ROOT/pack/generated/devin/skills/." "$proj/.devin/skills/"
+  cp "$ROOT"/pack/generated/devin/agents/*.md "$proj/.devin/agents/"
   if [ -d "$proj/.devin/skills/rite" ] && [ -f "$proj/.devin/agents/devrites-slice-wright.md" ]; then
     if (cd "$proj" && devin doctor 2>&1 | grep -q "29 profile(s) loaded"); then
       ok "devin doctor loads all 29 generated profiles"
@@ -208,7 +208,7 @@ if command -v devin >/dev/null 2>&1; then
       no "devin skills list missing generated skills"
     fi
   else
-    ok "devin probe skipped (generated payload not built)"
+    no "generated Devin payload missing"
   fi
 else
   ok "devin probe skipped (devin CLI not installed)"

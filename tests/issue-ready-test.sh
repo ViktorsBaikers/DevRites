@@ -16,6 +16,7 @@ out="$(bash "$ROOT/scripts/issue-ready.sh" "$T/b" "$T/a")"
 fail=0
 case "$out" in *"a/01-first.md"*) ;; *) echo "FAIL: unblocked a/01 missing"; fail=1 ;; esac
 case "$out" in *"b/02-second.md"*) ;; *) echo "FAIL: b/02 blocked by done b/01 should be ready"; fail=1 ;; esac
+case "$out" in *"b/01-first.md"*) echo "FAIL: done b/01 listed as ready"; fail=1 ;; esac
 case "$out" in *"a/02-second.md"*) echo "FAIL: a/02 resolved its blocker against another feature's 01"; fail=1 ;; esac
 
 [ "$fail" -eq 0 ] && echo "PASS: issue-ready keys blockers per feature"

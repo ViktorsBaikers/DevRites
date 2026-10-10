@@ -66,6 +66,15 @@ gen_omp_skill_file() {
   gen_omp_markdown_file "$1" "$2"
 }
 
+# Strip one pair of outer double quotes from an already-quoted YAML scalar and
+# undo its \\ and \" escapes, so the generators can re-quote it exactly once.
+omp_yaml_unquote() {
+  case "$1" in
+  \"*\") local _v="${1#\"}"; printf '%s' "${_v%\"}" | sed 's/\\\(["\\]\)/\1/g' ;;
+  *) printf '%s' "$1" ;;
+  esac
+}
+
 omp_yaml_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
@@ -171,6 +180,7 @@ gen_omp_agent() {
   local _name _desc _tools_raw _tools _skills _desc_tmp _desc_omp _body_tmp _body_omp
   _name="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^name:[[:space:]]*/{sub(/^name:[[:space:]]*/, ""); print; exit}' "$_src")"
   _desc="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^description:[[:space:]]*/{sub(/^description:[[:space:]]*/, ""); print; exit}' "$_src")"
+  _desc="$(omp_yaml_unquote "$_desc")"
   _tools_raw="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^tools:[[:space:]]*/{sub(/^tools:[[:space:]]*/, ""); print; exit}' "$_src")"
   # Claude `skills:` preloads map to omp `autoloadSkills` (list or inline CSV).
   _skills="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^skills:/{sk=1; sub(/^skills:[[:space:]]*/, ""); if ($0 != "") print; next} sk && /^[[:space:]]*-[[:space:]]*/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print; next} {sk=0}' "$_src" | paste -sd, - | sed 's/,/, /g')"
@@ -221,6 +231,7 @@ gen_omp_command_stub() {
   local _skill_md="$1" _name="$2" _out="$3"
   local _desc _hint
   _desc="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^description:[[:space:]]*/{sub(/^description:[[:space:]]*/, ""); print; exit}' "$_skill_md")"
+  _desc="$(omp_yaml_unquote "$_desc")"
   _hint="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^argument-hint:[[:space:]]*/{sub(/^argument-hint:[[:space:]]*/, ""); print; exit}' "$_skill_md")"
   [ -n "$_desc" ] || _desc="DevRites $_name."
   mkdir -p "$(dirname "$_out")"

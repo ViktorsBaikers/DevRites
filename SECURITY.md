@@ -15,7 +15,7 @@ Please include:
 - A clear description of the vulnerability and its impact.
 - A minimal reproduction (commands, files, or a target project layout).
 - The DevRites version (commit SHA or release tag), affected host, and host
-  version (Claude Code or Codex).
+  version (Claude Code, Codex, omp, pi, or Devin CLI).
 - Your name / handle for credit (optional).
 
 You should receive an acknowledgement within **5 business days** and a triage
@@ -119,17 +119,23 @@ and `.codex/config.toml` without replacing unrelated user settings. The shared
 `devrites-engine` executable is the only allowed artifact outside the project.
 It is installed to `DEVRITES_BIN_DIR`, a writable `~/.local/bin`, or a writable
 `/usr/local/bin`; `--no-binary` / `DEVRITES_NO_BINARY=1` skips it. The bootstrap
-and direct updater may fetch the release bundle and checksummed engine assets.
+and direct updater may fetch the release bundle and checksummed engine assets,
+each of which must also pass `gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`).
 They never invoke `sudo` or edit shell startup files.
 
 The documented Node-free boundary downloads the release-owned `install.sh` and
-its exact-name sidecar before execution; mutable default-branch scripts are not
-recommended. Legacy local and extracted shim invocations remain compatible, but
+its exact-name sidecar, then requires both the checksum and the build-provenance
+attestation (`gh attestation verify`, pinned to `ViktorsBaikers/DevRites` and
+signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`)
+to pass before execution, as in the README "verified Bash bootstrap"; mutable
+default-branch scripts are not recommended. Legacy local and extracted shim invocations remain compatible, but
 their exact-release guarantee begins at that verified asset. A piped shim never
 treats current-directory siblings as its bundle.
 
 Network acquisition accepts only an exact SemVer release asset and its mandatory
-exact-filename SHA-256 sidecar. Every redirect hop must remain HTTPS, private
+exact-filename SHA-256 sidecar, and every release asset must also pass
+`gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`;
+`gh` must be installed and authenticated, with no bypass). Every redirect hop must remain HTTPS, private
 temporary-directory creation must succeed, and unchecked raw/source/default-
 branch fallbacks are absent. Representative in-stream ceilings are 1 MiB for
 release metadata, 4 KiB for a sidecar, and 64 MiB for an archive or binary, with
@@ -148,8 +154,9 @@ and [ADR-0028](docs/adr/0028-self-contained-engine-update.md) own the rationale.
 With `npx devrites@latest`, the CLI (`bin/devrites.mjs`) calls
 `devrites-engine` directly instead of running `install.sh`. The bundled host
 payload is pinned to the requested npm package version. The shim first tries the
-matching exact-release binary and its mandatory SHA-256 sidecar, then a
-package-local Go build, and then an existing engine. Remote responses are
+matching exact-release binary, which must pass its mandatory SHA-256 sidecar and
+`gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`),
+then a package-local Go build, and then an existing engine. Remote responses are
 byte-bounded and every redirect is checked before following it. It has no
 runtime npm dependencies. The same project and shared-binary boundaries apply
 to the Bash installer.
@@ -180,11 +187,17 @@ separate type-`GO` workflow gate still applies.
 Reviewer profiles are natively read-only. Claude keeps the root in project plan
 mode. Codex uses a workspace-capable root because a child cannot elevate above
 its parent; root source/test non-writing is therefore a workflow rule, not a
-Codex sandbox guarantee. On both hosts, `devrites-slice-wright` is the only
-writable specialist. Its task states the exact project-relative paths. The root
+Codex sandbox guarantee. Among the lifecycle `devrites-*` specialists,
+`devrites-slice-wright` is the only writable one on either host; the shipped
+profiles are the full role-to-permission map, and `/rite-doctor` step 3 checks
+them. Its task states the exact project-relative paths. The root
 waits, compares the returned file list and `git diff --name-only` with that
 contract, and rejects out-of-scope work. Exact-path scope is instruction-backed,
 not a per-task filesystem allowlist.
+The standalone explicit skills ship their own writers: the `overhaul-*` agents
+(ADR-0031) and `fast-builder` (ADR-0033) are write-capable (Codex `:workspace`,
+Claude edit-capable); they run only when the user explicitly invokes /overhaul
+or /rite-fast.
 Agent lifecycle, session history, compaction, presentation, browsing, indexes,
 and irreversible-action approval remain native host responsibilities.
 
@@ -200,8 +213,9 @@ Unrelated Git variables are preserved. Go and shell parity is covered by
 ### Third-party trust
 
 DevRites vendors no third-party code (see `NOTICE.md`). It runs through the
-external Claude Code or Codex host selected by the user and is independent of
-Anthropic and OpenAI. Codegraph, graphify, and Playwright MCP are optional
+external host selected by the user (Claude Code, Codex, omp, pi, or Devin CLI)
+and is independent of, and not affiliated with or endorsed by, any of these
+hosts or their makers. Codegraph, graphify, and Playwright MCP are optional
 user-selected tools that DevRites calls through their documented interfaces
 rather than bundling them.
 

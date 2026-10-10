@@ -315,7 +315,7 @@ func ShouldRemoveOnUninstall(rel string, entries []string) bool {
 	return true
 }
 
-func MergeMarkerBlock(current, block []byte, begin, end string) []byte {
+func MergeMarkerBlock(current, block []byte, begin, end string) ([]byte, error) {
 	lines := strings.SplitAfter(string(current), "\n")
 	var out strings.Builder
 	inBlock := false
@@ -341,6 +341,9 @@ func MergeMarkerBlock(current, block []byte, begin, end string) []byte {
 		}
 		out.WriteString(line)
 	}
+	if inBlock {
+		return nil, fmt.Errorf("unterminated %s marker", begin)
+	}
 	if !found {
 		if out.Len() > 0 && !strings.HasSuffix(out.String(), "\n") {
 			out.WriteByte('\n')
@@ -351,7 +354,54 @@ func MergeMarkerBlock(current, block []byte, begin, end string) []byte {
 			out.WriteByte('\n')
 		}
 	}
-	return []byte(out.String())
+	return []byte(out.String()), nil
+}
+
+func StripMarkerBlock(data []byte, begin, end string) ([]byte, error) {
+	var out strings.Builder
+	inBlock := false
+	for _, line := range strings.SplitAfter(string(data), "\n") {
+		trim := strings.TrimSuffix(line, "\n")
+		trim = strings.TrimSuffix(trim, "\r")
+		switch trim {
+		case begin:
+			inBlock = true
+			continue
+		case end:
+			inBlock = false
+			continue
+		}
+		if !inBlock {
+			out.WriteString(line)
+		}
+	}
+	if inBlock {
+		return nil, fmt.Errorf("unterminated %s marker", begin)
+	}
+	return []byte(out.String()), nil
+}
+
+func ValidateMarkerBlocks(current []byte, merges ...MarkerMerge) error {
+	for _, merge := range merges {
+		if _, err := MergeMarkerBlock(current, nil, merge.Begin, merge.End); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func StripCodexConfigBlocks(data []byte) ([]byte, error) {
+	for _, markers := range [][2]string{
+		{CodexConfigMerge.Begin, CodexConfigMerge.End},
+		{"# BEGIN DEVRITES CODEX MCP", "# END DEVRITES CODEX MCP"},
+		{"### BEGIN DEVRITES CODEX MCP", "### END DEVRITES CODEX MCP"},
+	} {
+		var err error
+		if data, err = StripMarkerBlock(data, markers[0], markers[1]); err != nil {
+			return nil, err
+		}
+	}
+	return data, nil
 }
 
 func render(name string, data any) ([]byte, error) {

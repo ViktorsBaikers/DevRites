@@ -143,14 +143,14 @@ else
   printf '%s\n' "$OUT"
 fi
 
-# 5) Shipped scoreboard: agent files must not mark rite-learn/polish/temper yes.
+# 5) Shipped scoreboard: agent files must not mark rite-learn/polish yes.
 JSON_OUT="$(bash "$SH" --json 2>/dev/null)" || { no "shipped --json failed"; JSON_OUT=""; }
-python3 - "$JSON_OUT" <<'PY' && ok "shipped scoreboard does not double-count agent corpora as rite-learn/polish/temper" || no "shipped scoreboard still double-counts agent corpora"
+python3 - "$JSON_OUT" <<'PY' && ok "shipped scoreboard does not double-count agent corpora as rite-learn/polish" || no "shipped scoreboard still double-counts agent corpora"
 import json, sys
 payload = json.loads(sys.argv[1] or "{}")
 by_name = {row["name"]: row for row in payload.get("skills", [])}
 borrowed = []
-for skill in ("rite-learn", "rite-polish", "rite-temper"):
+for skill in ("rite-learn", "rite-polish"):
     row = by_name.get(skill) or {}
     if row.get("behavioral") == "yes":
         borrowed.append(skill)
@@ -158,12 +158,61 @@ if borrowed:
     raise SystemExit(f"still counted as skill behavioral: {borrowed}")
 PY
 
-# 6) Shipped blocking ledger: gating skills + P0 agents.
-if bash "$SH" >/tmp/devrites-eval-ledger-shipped.log 2>&1; then
+# 6) require_trigger is consumed: a missing corpus in scope fails, an unknown scope
+# fails, a present corpus passes, and the shipped scope covers every public skill.
+trigger_case() { # name scope gating-skills-json
+  cat > "$T/coverage-trigger-$1.json" <<JSON
+{"version": 1, "gating_skills": $3, "require_behavioral": [], "require_behavioral_agents": [], "outcome_skills": [], "require_trigger": "$2"}
+JSON
+  OUT="$(DEVRITES_COVERAGE_JSON="$T/coverage-trigger-$1.json" bash "$SH" 2>&1)"; r=$?
+}
+trigger_case missing gating_skills '["rite-no-such-skill"]'
+if [ "$r" -ne 0 ] && printf '%s' "$OUT" | grep -q 'required trigger corpus for rite-no-such-skill missing'; then
+  ok "require_trigger fails on a missing trigger corpus"
+else
+  no "require_trigger missing corpus: expected FAIL (rc=$r)"
+  printf '%s\n' "$OUT"
+fi
+trigger_case unknown no_such_scope '[]'
+if [ "$r" -ne 0 ] && printf '%s' "$OUT" | grep -q 'unknown require_trigger scope'; then
+  ok "require_trigger fails on an unknown scope"
+else
+  no "require_trigger unknown scope: expected FAIL (rc=$r)"
+  printf '%s\n' "$OUT"
+fi
+trigger_case present gating_skills '["rite-build"]'
+if [ "$r" -eq 0 ]; then
+  ok "require_trigger passes when the corpus exists"
+else
+  no "require_trigger present corpus: expected PASS (rc=$r)"
+  printf '%s\n' "$OUT"
+fi
+if grep -q '"require_trigger": "all_public_skills_except_devrites-lib"' "$ROOT/evals/coverage.json" \
+  && [ -f "$ROOT/evals/overhaul.json" ]; then
+  ok "shipped require_trigger covers all public skills"
+else
+  no "shipped coverage.json must require trigger corpora for all public skills"
+fi
+
+# 7) outcome_skills is required: a coverage file without it fails loudly rather
+# than falling back to a built-in list; an explicit empty list stays valid.
+cat > "$T/coverage-no-outcome.json" <<'JSON'
+{"version": 1, "gating_skills": [], "require_behavioral": [], "require_behavioral_agents": []}
+JSON
+OUT="$(DEVRITES_COVERAGE_JSON="$T/coverage-no-outcome.json" bash "$SH" 2>&1)"; r=$?
+if [ "$r" -ne 0 ] && printf '%s' "$OUT" | grep -q 'missing outcome_skills'; then
+  ok "missing outcome_skills fails loudly"
+else
+  no "missing outcome_skills: expected FAIL (rc=$r)"
+  printf '%s\n' "$OUT"
+fi
+
+# 8) Shipped blocking ledger: gating skills + P0 agents.
+if bash "$SH" >$T/devrites-eval-ledger-shipped.log 2>&1; then
   ok "shipped blocking ledger (gating skills + P0 agents)"
 else
   no "shipped blocking ledger failed"
-  sed -n '1,40p' /tmp/devrites-eval-ledger-shipped.log
+  sed -n '1,40p' $T/devrites-eval-ledger-shipped.log
 fi
 
 echo ""

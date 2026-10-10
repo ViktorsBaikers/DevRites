@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func gitOk(t *testing.T, dir string, args ...string) string {
@@ -573,8 +574,12 @@ func TestIntegrateRefusesDirtyControlOnSlicePaths(t *testing.T) {
 	if err := os.WriteFile(userWIP, []byte("user wip\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := Integrate(IntegrateOpts{Root: repo, Slug: slug, ApplyToControl: true}); err == nil {
+	_, _, ierr := Integrate(IntegrateOpts{Root: repo, Slug: slug, ApplyToControl: true})
+	if ierr == nil {
 		t.Fatal("expected dirty-control refusal")
+	}
+	if msg := ierr.Error(); strings.Contains(msg, "commit or stash") || !strings.Contains(msg, "stop for the human") {
+		t.Fatalf("refusal must route user work to the human, not advise commit/stash: %v", msg)
 	}
 	leasePath, err := LeasePath(repo, slug)
 	if err != nil {
@@ -612,4 +617,29 @@ func mustRead(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return string(b)
+}
+
+func TestGitReturnsWhenHookGrandchildHoldsPipe(t *testing.T) {
+	repo, _ := setupRepo(t)
+	hook := filepath.Join(repo, ".git", "hooks", "pre-commit")
+	if err := os.WriteFile(hook, []byte("#!/bin/sh\nsleep 30\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "new.txt"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gitOk(t, repo, "add", "new.txt")
+	prev := gitTimeout
+	gitTimeout = time.Second
+	t.Cleanup(func() { gitTimeout = prev })
+
+	start := time.Now()
+	_, err := git(repo, "commit", "-m", "m")
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatal("commit with a hanging hook succeeded")
+	}
+	if limit := gitTimeout + gitWaitDelay + 3*time.Second; elapsed > limit {
+		t.Fatalf("git returned after %v, want within %v", elapsed, limit)
+	}
 }

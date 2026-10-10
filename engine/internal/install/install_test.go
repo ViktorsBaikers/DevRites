@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+
+	"strconv"
 	"testing"
 	"time"
 
@@ -355,6 +357,7 @@ func TestGeneratedPayloadInstallsVerbatim(t *testing.T) {
 }
 
 func TestInstallBinaryUsesEngineHandoff(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "")
 	payload := testPayload(t)
 	target := t.TempDir()
 	binDir := t.TempDir()
@@ -398,6 +401,7 @@ func TestAcquireBinaryRequiresCompatibleEngineHandoff(t *testing.T) {
 }
 
 func TestInstallBinaryRejectsIncompatibleEngineHandoff(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "")
 	engine := buildVersionBinary(t, "1.2.2")
 	t.Setenv("DEVRITES_ENGINE_CLI", engine)
 	t.Setenv("DEVRITES_BIN_DIR", t.TempDir())
@@ -410,6 +414,7 @@ func TestInstallBinaryRejectsIncompatibleEngineHandoff(t *testing.T) {
 }
 
 func TestInstallBinaryRejectsMissingConfiguredEngineHandoff(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "")
 	handoff := filepath.Join(t.TempDir(), "missing-devrites-engine")
 	t.Setenv("DEVRITES_ENGINE_CLI", handoff)
 	t.Setenv("DEVRITES_BIN_DIR", t.TempDir())
@@ -433,6 +438,7 @@ func TestAcquireBinaryRejectsMissingEngineHandoff(t *testing.T) {
 }
 
 func TestInstallBinaryFailsWhenPreparedUpdateCannotBeWritten(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "")
 	prepared := filepath.Join(t.TempDir(), "devrites-engine")
 	testutil.WriteExecutable(t, prepared, "#!/bin/sh\nif [ \"$1\" = version ]; then echo 1.2.3; fi\n")
 	blocked := filepath.Join(t.TempDir(), "not-a-directory")
@@ -450,6 +456,7 @@ func TestInstallBinaryFailsWhenPreparedUpdateCannotBeWritten(t *testing.T) {
 }
 
 func TestInstallBinaryWithoutBinaryReportsSkip(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "")
 	var stdout bytes.Buffer
 	opts := DefaultOptions(ModeInstall)
 	opts.WithBinary = false
@@ -463,6 +470,23 @@ func TestInstallBinaryWithoutBinaryReportsSkip(t *testing.T) {
 	output := stdout.String()
 	if output != "  engine binary: skipped (--no-binary).\n" {
 		t.Fatalf("stdout = %q, want binary skip diagnostic", output)
+	}
+}
+
+func TestInstallBinaryEnvSkipNamesEnvVar(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	var stdout bytes.Buffer
+	opts := DefaultOptions(ModeInstall)
+	opts.WithBinary = true
+	opts.Stdout = &stdout
+
+	r := runner{opts: opts}
+	if err := r.installBinary(); err != nil {
+		t.Fatalf("installBinary() error = %v", err)
+	}
+
+	if got, want := stdout.String(), "  engine binary: skipped (DEVRITES_NO_BINARY=1).\n"; got != want {
+		t.Fatalf("stdout = %q, want %q", got, want)
 	}
 }
 
@@ -1100,6 +1124,7 @@ func TestVerifyEngineBinary(t *testing.T) {
 }
 
 func TestInstallBinaryRollsBackVerificationFailure(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "")
 	if runtime.GOOS == "windows" {
 		t.Skip("shell fixture is Unix-only; backup/restore portability is covered separately")
 	}
@@ -1310,4 +1335,407 @@ func testSource(t *testing.T, version string) string {
 	root := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(root, "package.json"), `{"version":"`+version+`"}`+"\n")
 	return root
+}
+
+func manifestEntries(t *testing.T, manifest string) []string {
+	t.Helper()
+	var out []string
+	for _, line := range strings.Split(testutil.ReadFile(t, manifest), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		out = append(out, line)
+	}
+	return out
+}
+
+func slicesContains(haystack []string, needle string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func summaryCount(out, key string) (int, error) {
+	for _, line := range strings.Split(out, "\n") {
+		i := strings.Index(line, key)
+		if i < 0 {
+			continue
+		}
+		fields := strings.Fields(line[i+len(key):])
+		if len(fields) == 0 {
+			continue
+		}
+		n, err := strconv.Atoi(fields[0])
+		if err != nil {
+			return 0, fmt.Errorf("parse %s count %q: %w", key, fields[0], err)
+		}
+		return n, nil
+	}
+	return 0, fmt.Errorf("install output has no %s counter:\n%s", key, out)
+}
+
+func TestInstallAdoptsResidueAfterLostManifest(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	target := t.TempDir()
+	runInstall(t, target, payload, func(*Options) {})
+
+	first := manifestEntries(t, filepath.Join(target, ManifestName))
+	if len(first) == 0 {
+		t.Fatal("first install recorded no managed paths")
+	}
+
+	// Exactly the state a run that dies before writeManifest leaves behind.
+	if err := os.Remove(filepath.Join(target, ManifestName)); err != nil {
+		t.Fatal(err)
+	}
+
+	var out, errOut bytes.Buffer
+	opts := DefaultOptions(ModeInstall)
+	opts.Target = target
+	opts.PayloadDir = payload
+	opts.Stdout = &out
+	opts.Stderr = &errOut
+	if err := Apply(opts); err != nil {
+		t.Fatalf("reinstall after manifest loss returned %v; want the tree adopted, not refused\nstdout:\n%s\nstderr:\n%s", err, out.String(), errOut.String())
+	}
+	if !strings.Contains(out.String(), "DevRites installed") {
+		t.Fatalf("reinstall did not report an install:\n%s", out.String())
+	}
+	if got := strings.Count(errOut.String(), "not DevRites-managed"); got != 0 {
+		t.Fatalf("reinstall rejected %d payload-identical files as foreign:\n%s", got, errOut.String())
+	}
+
+	installed, err := summaryCount(out.String(), "installed:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	skipped, err := summaryCount(out.String(), "skipped(conflict):")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if installed != len(first) || skipped != 0 {
+		t.Fatalf("reinstall installed %d of %d payload files and skipped %d; want the whole tree adopted\n%s", installed, len(first), skipped, out.String())
+	}
+
+	second := manifestEntries(t, filepath.Join(target, ManifestName))
+	if len(second) != len(first) {
+		t.Fatalf("reinstall manifest records %d paths, want the %d the first install owned", len(second), len(first))
+	}
+	for _, rel := range first {
+		if !slicesContains(second, rel) {
+			t.Fatalf("reinstall manifest dropped %s", rel)
+		}
+	}
+
+	// The orphan leg: every file the crashed run left on disk must be removable
+	// again. This asserts against the first manifest on purpose, so a reinstall
+	// that records nothing cannot pass it vacuously.
+	opts = DefaultOptions(ModeUninstall)
+	opts.Target = target
+	opts.KeepBinary = true
+	opts.Stdout = &bytes.Buffer{}
+	opts.Stderr = &bytes.Buffer{}
+	if err := Apply(opts); err != nil {
+		t.Fatalf("uninstall after adopted reinstall returned %v", err)
+	}
+	for _, rel := range first {
+		if exists(filepath.Join(target, filepath.FromSlash(rel))) {
+			t.Fatalf("uninstall orphaned %s", rel)
+		}
+	}
+}
+
+func TestReinstallAfterLostManifestSkipsDifferingFile(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	target := t.TempDir()
+	runInstall(t, target, payload, func(*Options) {})
+
+	var foreign string
+	for _, rel := range manifestEntries(t, filepath.Join(target, ManifestName)) {
+		if strings.HasSuffix(rel, "agents/devrites-code-reviewer.md") {
+			foreign = rel
+		}
+	}
+	if foreign == "" {
+		t.Fatal("first install did not record the agent file")
+	}
+	path := filepath.Join(target, filepath.FromSlash(foreign))
+	if err := os.Remove(filepath.Join(target, ManifestName)); err != nil {
+		t.Fatal(err)
+	}
+	const mine = "user-authored bytes\n"
+	testutil.WriteFile(t, path, mine)
+
+	var out, errOut bytes.Buffer
+	opts := DefaultOptions(ModeInstall)
+	opts.Target = target
+	opts.PayloadDir = payload
+	opts.Stdout = &out
+	opts.Stderr = &errOut
+	if err := Apply(opts); err != nil {
+		t.Fatalf("reinstall returned %v\n%s", err, errOut.String())
+	}
+
+	if got := testutil.ReadFile(t, path); got != mine {
+		t.Fatalf("reinstall rewrote a file whose bytes differ from the payload: %q", got)
+	}
+	if slicesContains(manifestEntries(t, filepath.Join(target, ManifestName)), foreign) {
+		t.Fatalf("manifest adopted %s although its bytes differ from the payload", foreign)
+	}
+	if !strings.Contains(errOut.String(), "skip "+foreign) {
+		t.Fatalf("reinstall did not warn about skipping %s:\n%s", foreign, errOut.String())
+	}
+
+	opts = DefaultOptions(ModeUninstall)
+	opts.Target = target
+	opts.KeepBinary = true
+	opts.Stdout = &bytes.Buffer{}
+	opts.Stderr = &bytes.Buffer{}
+	if err := Apply(opts); err != nil {
+		t.Fatalf("uninstall returned %v", err)
+	}
+	if got := testutil.ReadFile(t, path); got != mine {
+		t.Fatalf("uninstall removed or changed the unmanaged file: %q", got)
+	}
+}
+
+func TestApplyReportsSkippedEngineBinary(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "")
+	t.Setenv("DEVRITES_ENGINE_CLI", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("DEVRITES_BIN_DIR", t.TempDir())
+	var out, errOut bytes.Buffer
+	opts := DefaultOptions(ModeInstall)
+	opts.Target = t.TempDir()
+	opts.PayloadDir = testPayload(t)
+	opts.WithBinary = true
+	opts.Stdout = &out
+	opts.Stderr = &errOut
+	if err := Apply(opts); err != nil {
+		t.Fatalf("Apply() error = %v, want nil", err)
+	}
+	if !strings.Contains(out.String(), "DevRites installed") {
+		t.Fatalf("stdout = %q, want install success", out.String())
+	}
+	if !strings.Contains(out.String(), "engine binary: skipped (no DEVRITES_ENGINE_CLI handoff)") {
+		t.Fatalf("stdout = %q, want the skipped engine binary and its reason in the summary", out.String())
+	}
+}
+
+func TestApplySkippedEngineBinaryKeepsExistingBinary(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "")
+	t.Setenv("DEVRITES_ENGINE_CLI", "")
+	t.Setenv("HOME", t.TempDir())
+	binDir := t.TempDir()
+	t.Setenv("DEVRITES_BIN_DIR", binDir)
+	old := filepath.Join(binDir, engineBinaryName())
+	if err := os.WriteFile(old, []byte("old engine"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	opts := DefaultOptions(ModeInstall)
+	opts.Target = t.TempDir()
+	opts.PayloadDir = testPayload(t)
+	opts.WithBinary = true
+	opts.Stdout = &out
+	opts.Stderr = &errOut
+	if err := Apply(opts); err != nil {
+		t.Fatalf("Apply() error = %v, want nil", err)
+	}
+	if strings.Contains(out.String(), "will not be on PATH") {
+		t.Fatalf("stdout = %q, must not claim the command is missing while an older binary is kept", out.String())
+	}
+	if !strings.Contains(out.String(), "existing devrites-engine binary was kept") {
+		t.Fatalf("stdout = %q, want the kept existing binary reported", out.String())
+	}
+	if got := testutil.ReadFile(t, old); got != "old engine" {
+		t.Fatalf("existing binary changed: %q", got)
+	}
+}
+
+func installForSwap(t *testing.T) (Options, string, string) {
+	t.Helper()
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	target := filepath.Join(t.TempDir(), "target")
+	if err := os.MkdirAll(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	opts := DefaultOptions(ModeInstall)
+	opts.Target = target
+	opts.PayloadDir = testPayload(t)
+	opts.Stdout = &bytes.Buffer{}
+	opts.Stderr = &bytes.Buffer{}
+	if err := Apply(opts); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(filepath.Dir(target), "outside")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return opts, target, outside
+}
+
+// swapDirAfterRecheck replaces dir with a symlink to outside once rel has been
+// rechecked, the way a concurrent process could.
+func swapDirAfterRecheck(t *testing.T, rel, dir, outside string) *bool {
+	t.Helper()
+	swapped := new(bool)
+	afterRecheckPath = func(r string) {
+		if *swapped || r != rel {
+			return
+		}
+		if err := os.Rename(dir, dir+".real"); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(outside, dir); err != nil {
+			t.Fatal(err)
+		}
+		*swapped = true
+	}
+	t.Cleanup(func() { afterRecheckPath = nil })
+	return swapped
+}
+
+func TestUninstallStripAfterRecheckStaysInTarget(t *testing.T) {
+	opts, target, outside := installForSwap(t)
+	cfg := filepath.Join(target, ".codex", "config.toml")
+	orig, err := os.ReadFile(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	withUser := append([]byte("model = \"user\"\n"), orig...)
+	if err := os.WriteFile(cfg, withUser, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	outsideCfg := filepath.Join(outside, "config.toml")
+	if err := os.WriteFile(outsideCfg, withUser, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	swapped := swapDirAfterRecheck(t, ".codex/config.toml", filepath.Join(target, ".codex"), outside)
+	opts.Mode = ModeUninstall
+	_ = Apply(opts)
+	if !*swapped {
+		t.Fatal("swap never happened")
+	}
+	after, err := os.ReadFile(outsideCfg)
+	if err != nil || !bytes.Equal(after, withUser) {
+		t.Fatalf("uninstall rewrote a file outside the target: err=%v content=%q", err, after)
+	}
+}
+
+func TestUninstallRemoveAfterRecheckStaysInTarget(t *testing.T) {
+	opts, target, outside := installForSwap(t)
+	victim := filepath.Join(outside, "devrites-code-reviewer.toml")
+	if err := os.WriteFile(victim, []byte("precious\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	swapped := swapDirAfterRecheck(t, ".codex/agents/devrites-code-reviewer.toml", filepath.Join(target, ".codex", "agents"), outside)
+	opts.Mode = ModeUninstall
+	_ = Apply(opts)
+	if !*swapped {
+		t.Fatal("swap never happened")
+	}
+	if _, err := os.Stat(victim); err != nil {
+		t.Fatalf("uninstall removed a file outside the target: %v", err)
+	}
+}
+
+func TestUninstallDryRunUnbalancedMarker(t *testing.T) {
+	opts, target, _ := installForSwap(t)
+	agents := filepath.Join(target, "AGENTS.md")
+	data, err := os.ReadFile(agents)
+	if err != nil {
+		t.Fatal(err)
+	}
+	broken := strings.Replace(string(data), "<!-- END DEVRITES CODEX -->\n", "", 1)
+	if broken == string(data) {
+		t.Fatalf("no END marker in %q", data)
+	}
+	if err := os.WriteFile(agents, []byte(broken+"user tail\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	opts.Mode = ModeUninstall
+	dry := opts
+	dry.DryRun = true
+	dryErr := Apply(dry)
+	realErr := Apply(opts)
+	if realErr == nil {
+		t.Fatal("real uninstall accepted an unterminated marker block")
+	}
+	if dryErr == nil || dryErr.Error() != realErr.Error() {
+		t.Fatalf("dry-run err=%v, real uninstall err=%v; want the same error", dryErr, realErr)
+	}
+}
+
+func hashTree(t *testing.T, root string) string {
+	t.Helper()
+	h := sha256.New()
+	err := filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(root, p)
+		fmt.Fprintf(h, "%s|%v\n", rel, d.Type())
+		if d.Type().IsRegular() {
+			data, err := os.ReadFile(p)
+			if err != nil {
+				return err
+			}
+			h.Write(data)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func TestUninstallDryRunMatchesRealMarkerErrors(t *testing.T) {
+	const (
+		piBegin    = "<!-- BEGIN DEVRITES PI -->\n"
+		piEnd      = "<!-- END DEVRITES PI -->\n"
+		codexBegin = "<!-- BEGIN DEVRITES CODEX -->\n"
+		codexEnd   = "<!-- END DEVRITES CODEX -->\n"
+	)
+	for _, tc := range []struct {
+		name    string
+		agents  string
+		wantErr bool
+	}{
+		{name: "balanced", agents: "user\n" + codexBegin + "x\n" + codexEnd + piBegin + "y\n" + piEnd},
+		{name: "only blocks", agents: codexBegin + "x\n" + codexEnd},
+		{name: "unterminated codex", agents: codexBegin + "x\nuser tail\n", wantErr: true},
+		{name: "unterminated pi", agents: piBegin + "x\nuser tail\n", wantErr: true},
+		{name: "crossed", agents: "u\n" + piBegin + "A\n" + codexBegin + "B\n" + piEnd + "C\n" + codexEnd + "v\n", wantErr: true},
+		{name: "crossed other way", agents: codexBegin + "A\n" + piBegin + "B\n" + codexEnd + "C\n" + piEnd},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts, target, _ := installForSwap(t)
+			if err := os.WriteFile(filepath.Join(target, "AGENTS.md"), []byte(tc.agents), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			opts.Mode = ModeUninstall
+			dry := opts
+			dry.DryRun = true
+			before := hashTree(t, target)
+			dryErr := Apply(dry)
+			if hashTree(t, target) != before {
+				t.Fatal("dry-run changed the target tree")
+			}
+			realErr := Apply(opts)
+			if (realErr != nil) != tc.wantErr {
+				t.Fatalf("real uninstall err=%v, want error=%v", realErr, tc.wantErr)
+			}
+			if fmt.Sprint(dryErr) != fmt.Sprint(realErr) {
+				t.Fatalf("dry-run err=%v, real uninstall err=%v; want the same error", dryErr, realErr)
+			}
+		})
+	}
 }

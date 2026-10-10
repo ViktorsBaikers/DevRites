@@ -154,3 +154,123 @@ func TestCursorHelpersRejectCorruptTextWithoutMutation(t *testing.T) {
 		}
 	}
 }
+
+// ConvertCursorToTable and CursorForm must obtain their
+// structural lines through structuralCursorLines (markdowntext.Structural), the
+// same way CursorField, SetCursorField, UpsertCursorField and DeleteCursorField
+// do. The cases below separate "the fence was masked" from "the call site never
+// consulted the masker at all".
+
+const ledgerWithFencedExample = `# State
+
+## Recovery note
+
+The pre-v5 ledger looked like this:
+
+~~~md
+- Phase: build
+- Status: running
+~~~
+
+## Cursor
+
+- Phase: build
+- Status: running
+`
+
+// Fenced-only legacy bullets and a live table row: a ledger whose only legacy
+// bullets sit inside a fence. Nothing here is structural, so nothing may change.
+func TestConvertCursorToTableIsByteIdenticalOnFencedOnlyLedger(t *testing.T) {
+	lines := strings.Split("# State\n\n~~~md\n- Phase: build\n~~~\n\n## Cursor\n| phase | spec |", "\n")
+	original := strings.Join(lines, "\n")
+	out, changed := ConvertCursorToTable(lines)
+	if changed {
+		t.Fatalf("ConvertCursorToTable reported a change for a fenced-only ledger:\n%s", strings.Join(out, "\n"))
+	}
+	if got := strings.Join(out, "\n"); got != original {
+		t.Fatalf("ConvertCursorToTable mutated a fenced-only ledger:\ngot  %q\nwant %q", got, original)
+	}
+}
+
+// The discriminating case: one document, the same key spelling inside and
+// outside a fence. The fenced bullet must survive untouched while the live
+// bullet is still converted, which neither "convert nothing" nor "convert
+// everything" can satisfy.
+func TestConvertCursorToTableConvertsLiveBulletsAndLeavesFencedOnes(t *testing.T) {
+	lines := strings.Split(ledgerWithFencedExample, "\n")
+	out, changed := ConvertCursorToTable(lines)
+	if !changed {
+		t.Fatalf("ConvertCursorToTable converted nothing; the live bullets must still convert:\n%s", strings.Join(out, "\n"))
+	}
+	if out[7] != "- Phase: build" || out[8] != "- Status: running" {
+		t.Fatalf("ConvertCursorToTable rewrote the fenced example:\n%s", strings.Join(out, "\n"))
+	}
+	if out[13] != "| phase | build |" || out[14] != "| status | running |" {
+		t.Fatalf("ConvertCursorToTable did not convert the live bullets:\n%s", strings.Join(out, "\n"))
+	}
+}
+
+// A fence that is still open masks the rest of the document, which is what
+// markdowntext.Structural does. The bullet after the unclosed fence is not converted.
+func TestConvertCursorToTableTreatsAnUnclosedFenceAsStructuralMasking(t *testing.T) {
+	lines := strings.Split("~~~md\n- Phase: build\n\n- Phase: build\n", "\n")
+	out, changed := ConvertCursorToTable(lines)
+	if changed {
+		t.Fatalf("ConvertCursorToTable converted content after an unclosed fence:\n%s", strings.Join(out, "\n"))
+	}
+	if out[1] != "- Phase: build" || out[3] != "- Phase: build" {
+		t.Fatalf("ConvertCursorToTable rewrote content after an unclosed fence:\n%s", strings.Join(out, "\n"))
+	}
+}
+
+// CursorForm must report the presentation of the structural document only.
+func TestCursorFormIgnoresFencedTableRows(t *testing.T) {
+	fenced := []string{"~~~md", "| phase | x |", "~~~"}
+	if got := CursorForm(fenced); got != "none" {
+		t.Fatalf("CursorForm(fenced-only table) = %q, want none", got)
+	}
+	if got := CursorForm([]string{"| phase | x |"}); got != "table" {
+		t.Fatalf("CursorForm(live table) = %q, want table", got)
+	}
+	if got := CursorForm([]string{"~~~md", "- phase: build", "~~~", "- Phase: build"}); got != "legacy" {
+		t.Fatalf("CursorForm(fenced bullet plus live bullet) = %q, want legacy", got)
+	}
+}
+
+// Proves the masker is consulted rather than the outcome being right by some
+// other route. markdowntext.Structural is the only thing in this package that
+// rejects NUL bytes, so a document that carries a valid, unfenced cursor bullet
+// next to one NUL byte must be declined whole: ConvertCursorToTable returns
+// changed=false and CursorForm reports "none". A parser that never calls the
+// masker reports changed=true / "table" on exactly this input.
+func TestCursorFormAndConvertConsultTheFenceMasker(t *testing.T) {
+	corrupt := []string{"- Phase: build", "- Status: run\x00ning"}
+	out, changed := ConvertCursorToTable(corrupt)
+	if changed {
+		t.Fatalf("ConvertCursorToTable converted a document the masker must decline:\n%q", strings.Join(out, "\n"))
+	}
+	if strings.Join(out, "\n") != strings.Join(corrupt, "\n") {
+		t.Fatalf("ConvertCursorToTable mutated a document the masker must decline:\n%q", strings.Join(out, "\n"))
+	}
+	if got := CursorForm([]string{"| phase | build |", "- Status: run\x00ning"}); got != "none" {
+		t.Fatalf("CursorForm(corrupt table) = %q, want none: the masker was not consulted", got)
+	}
+	if got := CursorForm([]string{"- Phase: build", "- Status: run\xffning"}); got != "none" {
+		t.Fatalf("CursorForm(corrupt legacy) = %q, want none: the masker was not consulted", got)
+	}
+}
+
+// Bullets in prose sections outside any fence still convert.
+func TestConvertCursorToTableStillConvertsProseSections(t *testing.T) {
+	lines := strings.Split("# State\n\n## Notes\n\n- Phase: build\n- owner: platform\n", "\n")
+	out, changed := ConvertCursorToTable(lines)
+	if !changed {
+		t.Fatalf("ConvertCursorToTable converted nothing:\n%s", strings.Join(out, "\n"))
+	}
+	if out[4] != "| phase | build |" {
+		t.Fatalf("ConvertCursorToTable did not convert the prose-section bullet:\n%s", strings.Join(out, "\n"))
+	}
+	if out[5] != "- owner: platform" {
+		t.Fatalf("ConvertCursorToTable converted a non-cursor bullet:\n%s", strings.Join(out, "\n"))
+	}
+}

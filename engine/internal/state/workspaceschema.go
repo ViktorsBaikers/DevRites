@@ -21,7 +21,21 @@ const workspaceSchemaKey = CursorSchema
 // WorkspaceSchema reports the schema version declared by the feature's
 // state.md cursor. A missing row means the pre-v5 (schema 2) contract.
 func WorkspaceSchema(root, slug string) (int, error) {
-	raw, err := os.ReadFile(filepath.Join(featureDir(root, slug), LedgerFile))
+	statePath := filepath.Join(featureDir(root, slug), LedgerFile)
+	info, err := os.Lstat(statePath)
+	if err != nil {
+		return 0, fmt.Errorf("read workspace schema for %s: %w", slug, err)
+	}
+	switch {
+	case info.Mode()&os.ModeSymlink != 0:
+		return 0, fmt.Errorf("read workspace schema for %s: state.md is unsafe (%s)", slug, DiagnosticFinalSymlink)
+	case !info.Mode().IsRegular():
+		return 0, fmt.Errorf("read workspace schema for %s: state.md is unsafe (%s)", slug, DiagnosticNonRegular)
+	case info.Size() > maxArtifactBytes:
+		return 0, fmt.Errorf("read workspace schema for %s: state.md is unsafe (%s)", slug, DiagnosticFileTooLarge)
+	}
+	// #nosec G304 -- fixed state.md under the engine-resolved feature workspace, checked above to be a regular non-symlink file within the size cap
+	raw, err := os.ReadFile(statePath)
 	if err != nil {
 		return 0, fmt.Errorf("read workspace schema for %s: %w", slug, err)
 	}
@@ -37,7 +51,7 @@ func RequireWorkspaceSchema(root, slug string) error {
 		return err
 	}
 	if version < SchemaVersion {
-		return fmt.Errorf("%w: workspace %s predates the v5 workspace schema (schema %d, engine requires %d); run devrites-engine migrate %s", ErrWorkspaceSchemaRefused, slug, version, SchemaVersion, slug)
+		return fmt.Errorf("%w: workspace %s predates the current workspace schema (schema %d, engine requires %d); run devrites-engine migrate %s", ErrWorkspaceSchemaRefused, slug, version, SchemaVersion, slug)
 	}
 	if version > SchemaVersion {
 		return fmt.Errorf("%w: workspace %s declares schema %d, newer than this engine's %d; upgrade devrites", ErrWorkspaceSchemaRefused, slug, version, SchemaVersion)

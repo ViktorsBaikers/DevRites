@@ -4,7 +4,7 @@ description: Adopt an existing codebase into DevRites by reverse-engineering cur
 argument-hint: "[path or area to adopt] [+ what you want to build next]"
 user-invocable: true
 ---
-<!-- loads: {"always":["rite-adopt/reference/adoption.md","rite-adopt/reference/anti-patterns.md","rite-polish/reference/ledger.md"],"triggers":{}} -->
+<!-- loads: {"always":["rite-adopt/reference/adoption.md","rite-adopt/reference/anti-patterns.md","rite-polish/reference/ledger.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"]}} -->
 > Read-set manifest: `devrites-engine context [slug] --skill rite-adopt` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # $rite-adopt: onboard existing code
@@ -41,10 +41,16 @@ parallel convention system.
    workflow runs during Polish, not Adopt.
 5. For a verified non-obvious policy or recurring/costly mistake, prefer existing hook/lint/
    CI/type/schema enforcement; else propose one evidence-cited nearest-scope instruction edit.
-   Apply only after review; never create convention bands, scores, or a command cache.
+   Propose only. When the nearest scope is `AGENTS.md`, `CLAUDE.md`, or another host identity
+   or memory file, `$rite-customize` applies the edit after `devrites-engine check skill-trust
+   <path>` and explicit human approval, never here (trigger `security`). Owner:
+   [`security.md`](../devrites-lib/reference/standards/security.md) § Prompt-injection
+   resistance. Never create convention bands, scores, or a command cache.
 6. A genuine non-negotiable invariant may be proposed for
    `.devrites/principles.md`; the human must ratify it.
 7. Set the next step to `$rite-clarify` and stop. Do not plan or build.
+
+> Refuse the rationalizations in [`anti-patterns`](reference/anti-patterns.md).
 
 ## Output
 
