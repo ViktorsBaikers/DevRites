@@ -48,6 +48,7 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"handoff", "--help"}, want: "handoff [slug]"},
 		{args: []string{"next", "help"}, want: "devrites-engine next [slug]"},
 		{args: []string{"dispatch", "help"}, want: "devrites-engine dispatch <slug>"},
+		{args: []string{"dispatch", "x", "open", "--help"}, want: "devrites-engine dispatch <slug>"},
 		{args: []string{"secret-scan", "help"}, want: "secret-scan [--staged] [--stdin]"},
 		{args: []string{"open-visual", "help"}, want: "open-visual <path-or-name>"},
 		{args: []string{"claim", "--help"}, want: "claim <add|release|list|check>"},
