@@ -96,6 +96,7 @@ On any security-relevant error: deny, roll back; never default to allow or half-
 - Install reproducibly from a committed lockfile (`npm ci` / frozen); never resolving installs in CI. Hand-editing lockfiles bypasses review.
 - Distrust install scripts (`postinstall` runs arbitrary code) — review before adding; prefer `--ignore-scripts`.
 - Typosquats are a delivery vector: confirm exact name/publisher, not install success.
+  After a failed install, never try a similarly named package; report the failure.
 - A CI/release change names the SLSA build provenance level it claims and where the build runs; a claimed level with no verified provenance attestation is `cannot_verify`, not a pass.
 
 ## Trust boundary (three tiers)

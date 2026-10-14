@@ -18,7 +18,8 @@ first and write only workspace/ticket artifacts.
 - Search `decisions.md`, accepted ADRs, and relevant archives for rejected directions;
   revive one only with evidence that answers its recorded reason, citing both.
 - Generate 3-5 different shapes, including obvious, smaller, and different-boundary/data/
-  flow options. Use named lenses— inversion, constraint removal, audience shift, 10×, or
+  flow options, plus a **do-nothing baseline** (cost of not building) that every option
+  must beat. Use named lenses— inversion, constraint removal, audience shift, 10×, or
   expert practice—without padding. Borrow analogous mechanisms, not branding.
 - For each, name concrete entities/flows/surfaces, optimization, rough cost, and main risk.
 
@@ -27,7 +28,9 @@ first and write only workspace/ticket artifacts.
 - Weigh options against the goal, constraints, and existing codebase conventions.
 - Prefer felt pain over nice-to-have. Rank differentiation: new capability > 10× gain >
   new audience > new context > better UX > cheaper; do not dress a vitamin as a painkiller.
-- Recommend one, with the reason and the key trade-off accepted.
+- Recommend one, with the reason and the key trade-off accepted. When no option beats
+  the do-nothing baseline, recommend **Kill**: record the reason in `decisions.md` and
+  do not route to `$rite-spec`.
 - Note what would change the recommendation (the decision's hinge).
 
 ## Premise evidence floor
@@ -65,7 +68,7 @@ Done: pressure test complete for <goal>.
 Changed: workspace only
 Evidence: options compared <n>; recommendation <option>; hinge <condition>; premises <supported/assumption/refuted + sources>
 Open: <none | unresolved premise and resolving evidence>
-Next: <when supported: $rite-spec <feature>; when Hold: none — requires <resolving evidence>>
+Next: <when supported: $rite-spec <feature>; when Hold: none — requires <resolving evidence>; when Kill: none — not building: <reason>>
 Record: <investigation-map.md path | questions.md id (Hold) | not applicable>
 ↻ Hygiene: /clear before starting the lifecycle
 ```

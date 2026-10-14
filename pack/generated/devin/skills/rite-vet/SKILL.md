@@ -172,7 +172,15 @@ plan declares a root-authored executable workflow file, read
    `devrites-engine gates lint <slug> --strict` and resolve every finding before
    READY; the readiness check refuses a missing or malformed ledger but does not
    replace this oracle-quality gate.
-7. **Narrow recheck after edits.** Dispatch the exact plan reviewer once per
+7. **Narrow recheck after edits.** A slice-bound recheck builds its bundle and
+   opens its wave with `--slice <SLICE-ID>` per affected slice (every 5 rechecks
+   per slice need a reslice review, as in Build). **Workflow Artifact bytes-only:**
+   after `OFFLINE_RECOVERY`, a correction leaving every admission/`WA-*` row
+   unchanged records `Workflow Artifact reviewed identity: <re-preflight identity
+   digest>` below the admission block; when `check drift` reports only
+   `reviewed-identity-only`, the reviewer is one fresh `devrites-code-reviewer` on
+   the prior-source→re-preflight diff against those rows (no drafter or plan
+   reviewer); green proceeds to step 8. Otherwise dispatch the exact plan reviewer once per
    fold — one dispatch covering every open fingerprint, preserving
    per correction/fingerprint accounting (each checked individually with its
    accepted findings, changed paths/criteria, new identity, and recorded delta

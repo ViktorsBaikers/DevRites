@@ -94,13 +94,15 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    <id>`; a malformed contract is dropped from the batch and recorded as a
    gap, not dispatched.
 2. Write lease; freeze `B=HEAD`; `parallel create` worktrees.
-3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`).
+3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`;
+   one `--slice` per sibling on the wave).
 4. Inspect each returned path list, cumulative diff from `B`, transfer identity,
    and required result fields against the immutable contract. Reject malformed,
    stale, or out-of-scope work. Apply
    [independent Build review](phase-contract.md#independent-build-review): first
-   full inventory, then bounded owning-role rechecks after repairs. Gap or
-   Critical/Important → `gap`; else approved proof → `green|red|gap`.
+   full inventory, then bounded owning-role rechecks after repairs. Run approved
+   proof in the same window as that review. Gap or Critical/Important → `gap`;
+   else proof → `green|red|gap`.
    Reviewer fan-out for a batch is itself batched under
    [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#scale-limits)
    (≈4 concurrent read-only reviewers, 8 only with disjoint paths), and `max_agents`

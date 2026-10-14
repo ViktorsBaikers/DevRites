@@ -104,3 +104,32 @@ func TestDriftCorruptBaselineBlocks(t *testing.T) {
 		t.Fatalf("code=%d out=%s", code, out)
 	}
 }
+
+func TestDriftClassifiesReviewedIdentityOnlyChange(t *testing.T) {
+	root, featureDir := driftWorkspace(t)
+	if code, out := checkDrift(t, root, "feat", "--record"); code != 0 {
+		t.Fatalf("record code=%d out=%s", code, out)
+	}
+	plan := filepath.Join(featureDir, "test-plan.md")
+	line := "Workflow Artifact reviewed identity: " + strings.Repeat("ab", 32) + "\n"
+	writeFile(t, plan, "# test-plan.md\n\ncontent\n"+line)
+	code, out := checkDrift(t, root, "feat")
+	if code != 0 || !strings.Contains(out, "test-plan.md reviewed-identity-only") || !strings.Contains(out, "bytes-only recheck") {
+		t.Fatalf("identity-only change not classified: code=%d\n%s", code, out)
+	}
+	// Any other edit, including a malformed identity line, is ordinary drift.
+	for _, body := range []string{
+		"# test-plan.md\n\nchanged\n" + line,
+		"# test-plan.md\n\ncontent\nWorkflow Artifact reviewed identity: not-a-digest\n",
+	} {
+		writeFile(t, plan, body)
+		if _, out := checkDrift(t, root, "feat"); !strings.Contains(out, "test-plan.md changed") || strings.Contains(out, "bytes-only") {
+			t.Fatalf("non-identity edit hidden:\n%s", out)
+		}
+	}
+	writeFile(t, plan, "# test-plan.md\n\ncontent\n"+line)
+	writeFile(t, filepath.Join(featureDir, "plan.md"), "# plan.md\n\nrewritten\n")
+	if _, out := checkDrift(t, root, "feat"); strings.Contains(out, "bytes-only") {
+		t.Fatalf("a second changed input must void the bytes-only route:\n%s", out)
+	}
+}

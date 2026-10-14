@@ -357,6 +357,8 @@ access, safety and irreversible-action boundaries independently stop work.
   renaming/splitting an unchanged cause does not. Suggestion/Nit/FYI cannot extend
   recovery. Initial discovery and expected test-first RED are not corrections;
   total rounds, re-batches and distinct-finding counts never exhaust recovery.
+  Every 5 Build wright rounds on one slice, the next first needs a reslice review
+  ([`wright-dispatch.md`](../../../rite-build/reference/wright-dispatch.md#run)).
 - **Rechecks are scoped; late findings never reopen the round.** *Late* applies only
   from a phase's **second** review pass (Vet 1b, Build's recheck after the first repair,
   Review step 7); an initial pass has no late findings and every supported finding is

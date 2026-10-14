@@ -55,8 +55,9 @@ worktrees stay forbidden.
 2. Include goal, verbatim acceptance, exclusions, context,
    `test-plan.md` proof commands, applicable standards, and the exact
    `WIP(<slug>):` subject (no slice id). Build the wright's read-set with
-   `devrites-engine context <slug> --phase build --role slice-wright --trigger <set>`
-   and hand it the bundle path; evaluate each trigger condition and pass those
+   `devrites-engine context <slug> --phase build --role slice-wright --slice <SLICE-ID> --trigger <set>`
+   and hand it the bundle path (over-budget artifacts arrive as anchor indexes;
+   read owning sections live). Evaluate each trigger condition and pass those
    that fire (TDD slice → `tdd`, AFK run → `afk`, UI work → `frontend`, …).
    The command prints `unselected=[...]`; an omitted applicable trigger is a gap.
    For each triggered
@@ -80,8 +81,14 @@ is never a task path; see [Workflow Artifact admission](../../devrites-lib/refer
 Ask the host
 for the exact writer in fresh context and wait. Track it through the
 launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
-<slice-id> --role slice-wright`, then `start` with the host handle, `seal`, and
-`return` on completion (auto-records dispatch/return metrics). Use
+<slice-id> --role slice-wright --slice <SLICE-ID>`, then `start` with the host handle, `seal`, and
+`return` on completion (auto-records dispatch/return metrics). Every 5 wright
+rounds on one slice, `open` blocks for a reslice review: propose an
+acceptance-preserving split (`root_no_change_analysis` → `FOLD` per
+[acceptance-preserving-reslice](../../devrites-lib/reference/standards/acceptance-preserving-reslice.md);
+open findings move to the new slice owning their paths), or record
+`## <DRIFT-ID> — <SLICE-ID> reslice review` with why no smaller split exists and
+reopen with `--reslice-review <DRIFT-ID>`. Use
 at most one writer across all linked worktrees for this workspace. Never run two
 writers in one worktree, run isolated and same-worktree writers concurrently, or
 substitute a generic agent. Opt-in `$rite-build --parallel N` fans out only under
@@ -106,17 +113,24 @@ TTL is crash recovery, not normal cleanup.
    Reject a result that omits any required key — the bookkeeping arrays count
    whether empty or filled — or adds a path. Root never widens scope or edits
    source.
-2. Inspect the test diff for deletion, skipping, focus markers, or loosened
+2. Run `devrites-engine check windows <slug>` on the wright's diff (`--worktree`
+   in the same tree; `--base <B> --cwd <worktree>` for a parallel transfer
+   commit). Each unwaived hit is repaired through the bounded wright or gets a
+   reasoned `windows.md` row before review; never waive to reach green. Then
+   inspect the test diff for deletion, skipping, focus markers, or loosened
    assertions. Dedicated test analysis treats weakening as Critical.
    Confirm a test for a data/integration/topology risk can actually exhibit that risk;
    mocks that erase it and one-root proof offered for another root are unproven.
 3. Apply [independent Build review](phase-contract.md#independent-build-review)
-   before proof. Human choices return; technical failures follow
+   and, in the same window, run only repository proof already approved by
+   `test-plan.md` against the same frozen candidate; neither waits for the
+   other. Human choices return; technical failures follow
    [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
    Derive accounting from recorded reproductions, corrections, and decisive rechecks.
-4. Run only repository proof already approved by `test-plan.md`, then inspect
-   `git diff --name-only` again in case a proof tool changed source.
-   **Do not land on control until review and proof are green.** Isolated
+4. After proof, inspect `git diff --name-only` again in case a proof tool changed
+   source; a change rejects that candidate and voids the concurrent review. A
+   repair wright voids both; rerun both on the new candidate.
+   **Do not land on control until review and proof are both green.** Isolated
    `transfer_commit` stays on the worker branch; same-worktree diffs stay
    uncommitted. Serial: [`checkpoint.md`](checkpoint.md), then host may remove the
    worktree. Parallel: `record-green` only; land with `parallel integrate

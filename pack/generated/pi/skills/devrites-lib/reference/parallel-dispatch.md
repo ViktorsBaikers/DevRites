@@ -36,6 +36,7 @@ If the candidate diff has no matching surfaces, record
 2. Build each reviewer's read-set once with
    `devrites-engine context <slug> --phase <p> --role <role> --trigger <set>` and
    hand the bundle path as the packet's source list instead of a file roster.
+   Build roles add `--slice <SLICE-ID>` (slice-scoped, slice-named bundle).
    Evaluate the skill's trigger conditions and pass each that fires — a role's
    Trigger column maps to manifest names: `security-auditor` → `security`,
    `frontend-reviewer` → `ui`/`frontend`, `performance-reviewer` → `performance`.

@@ -14,6 +14,8 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/markdowntext"
+	"github.com/devrites/devrites/internal/state"
 )
 
 // loadsManifest is the machine-readable read-set a skill declares in an HTML
@@ -24,29 +26,35 @@ import (
 // role key is present its list replaces "workspace" entirely (an empty list
 // means the role needs no workspace artifacts). "agents" maps a --role name to
 // an agents-root-relative path when it deviates from the devrites-<role>
-// convention.
+// convention. "rootOnly" lists always/trigger paths that only the controlling
+// root executes; a --role bundle names them instead of inlining them.
 type loadsManifest struct {
 	Always          []string            `json:"always"`
 	Triggers        map[string][]string `json:"triggers"`
 	Workspace       []string            `json:"workspace"`
 	WorkspaceByRole map[string][]string `json:"workspaceByRole"`
 	Agents          map[string]string   `json:"agents"`
+	RootOnly        []string            `json:"rootOnly"`
 }
 
 const loadsMarker = "<!-- loads:"
 
-const contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
+const contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
 
 Emits one deduplicated context bundle for a phase or standalone skill
 (+ optional dispatch role) into .devrites/work/<slug>/ctx/ so an agent
 reads a single file. With --skill, slug may be omitted; then --out is
-required and no workspace section is included.
+required and no workspace section is included. --slice scopes the
+workspace section to one slice: tasks.md contributes that slice's block,
+and an artifact over its line/byte budget becomes a by-reference index
+(path, SHA-256, headings, and line hits for every ID the block cites).
+Repeat --slice for a recheck that spans several slices.
 `
 
 // RunContext emits one deduplicated context bundle for a phase (+ optional
 // dispatch role) so an agent reads a single file instead of selecting files.
 //
-//	context <slug> --phase <p> [--role <r>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
+//	context <slug> --phase <p> [--role <r>] [--slice <SLICE-###>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
 func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	opts, code := parseContextArgs(args, stderr)
 	if code != 0 {
@@ -80,6 +88,27 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		fmt.Fprintf(stderr, "context: %v\n", err)
 		return 2
+	}
+
+	var sliceBlock string
+	var sliceIDs []citedID
+	if opts.slice != "" {
+		raw, err := os.ReadFile(filepath.Join(featureDir, "tasks.md")) // #nosec G304 -- featureDir is the validated feature workspace
+		if err != nil {
+			fmt.Fprintf(stderr, "context: %v\n", err)
+			return 2
+		}
+		var blocks []string
+		for _, id := range opts.slices {
+			block, ok := state.ExtractTaskSlice(raw, id)
+			if !ok {
+				fmt.Fprintf(stdout, "context: BLOCKED: %s not found in tasks.md\n", id)
+				return 3
+			}
+			blocks = append(blocks, block)
+		}
+		sliceBlock = strings.Join(blocks, "\n")
+		sliceIDs = citedIDs(sliceBlock)
 	}
 
 	var files []string
@@ -124,12 +153,31 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 
 	seen := map[string]bool{}
 	loaded := 0
+	// The role contract leads the bundle so the agent reads its rules before
+	// reference text.
+	if opts.role != "" {
+		rel := roleAgentPath(manifest, opts.role)
+		if writeContextEntry(&bundle, filepath.Join(skillsRoot, "..", "agents", filepath.FromSlash(rel)),
+			"agents/"+rel, seen, true) {
+			loaded++
+		} else {
+			// The agent contract is a pack file, not a workspace artifact: a
+			// miss means a typo'd role or a pack bug, and a dispatch without
+			// its contract must fail loudly.
+			missingRequired = append(missingRequired, "agents/"+rel)
+		}
+	}
+	var rootOnly []string
 	for _, rel := range files {
 		abs := filepath.Join(skillsRoot, filepath.FromSlash(rel))
 		if seen[abs] {
 			continue
 		}
 		seen[abs] = true
+		if opts.role != "" && slices.Contains(manifest.RootOnly, rel) {
+			rootOnly = append(rootOnly, rel)
+			continue
+		}
 		data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated skills root
 		fmt.Fprintf(&bundle, "===== %s =====\n", rel)
 		if err != nil {
@@ -144,34 +192,37 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 		bundle.WriteByte('\n')
 		loaded++
 	}
+	if len(rootOnly) > 0 {
+		fmt.Fprintf(&bundle, "===== root-only (not inlined for role %s) =====\n%s\n\n", opts.role, strings.Join(rootOnly, "\n"))
+	}
 
+	whole, byReference := 0, 0
 	workspaceList, workspaceScoped := workspaceReadSet(manifest, opts.role)
 	if hasManifest && featureDir != "" {
 		if workspaceScoped && len(workspaceList) == 0 {
 			bundle.WriteString("===== workspace =====\nskipped: role-scoped read-set declares no workspace artifacts\n\n")
 		}
 		for _, rel := range workspaceList {
-			if writeContextEntry(&bundle, filepath.Join(featureDir, filepath.FromSlash(rel)),
-				"workspace/"+rel, seen, false) {
+			abs := filepath.Join(featureDir, filepath.FromSlash(rel))
+			if opts.slice == "" {
+				if writeContextEntry(&bundle, abs, "workspace/"+rel, seen, false) {
+					loaded++
+				}
+				continue
+			}
+			ok, byRef := writeSliceEntry(&bundle, filepath.Dir(root), abs, "workspace/"+rel, opts.slice, sliceBlock, sliceIDs, seen)
+			if ok {
 				loaded++
+			}
+			if byRef {
+				byReference++
+			} else if ok {
+				whole++
 			}
 		}
 	} else if hasManifest && len(workspaceList) > 0 {
 		bundle.WriteString("===== workspace =====\nskipped: no feature workspace (slug omitted)\n\n")
 	}
-	if opts.role != "" {
-		rel := roleAgentPath(manifest, opts.role)
-		if writeContextEntry(&bundle, filepath.Join(skillsRoot, "..", "agents", filepath.FromSlash(rel)),
-			"agents/"+rel, seen, true) {
-			loaded++
-		} else {
-			// The agent contract is a pack file, not a workspace artifact: a
-			// miss means a typo'd role or a pack bug, and a dispatch without
-			// its contract must fail loudly.
-			missingRequired = append(missingRequired, "agents/"+rel)
-		}
-	}
-
 	out := opts.out
 	if out == "" {
 		out = filepath.Join(featureDir, "ctx", bundleName(opts))
@@ -216,6 +267,9 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, ", MISSING: %s", strings.Join(missingRequired, ","))
 	}
 	fmt.Fprintln(stdout, ")")
+	if opts.slice != "" {
+		fmt.Fprintf(stdout, "scope: slice %s (%d whole, %d by-reference)\n", opts.slice, whole, byReference)
+	}
 	if workspaceScoped {
 		fmt.Fprintf(stdout, "workspace: role-scoped for %s (%d of %d declared artifacts)\n",
 			opts.role, len(workspaceList), len(manifest.Workspace))
@@ -280,6 +334,110 @@ func expandIncludes(abs string, data []byte) []byte {
 	})
 }
 
+// writeSliceEntry writes one workspace artifact of a --slice bundle: tasks.md
+// as the slice block plus a by-reference index, any other canonical artifact
+// over its line/byte budget as a by-reference index, everything else whole.
+func writeSliceEntry(bundle *strings.Builder, project, abs, label, slice, block string, ids []citedID, seen map[string]bool) (loaded, byRef bool) {
+	if seen[abs] {
+		return false, false
+	}
+	data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated feature workspace
+	name := filepath.Base(abs)
+	if err == nil && name == "tasks.md" {
+		seen[abs] = true
+		fmt.Fprintf(bundle, "===== %s (%s block) =====\n%s\n", label, slice, block)
+	} else if status, ok := state.ArtifactBudget(name, data); err != nil || !ok || !status.Over {
+		return writeContextEntry(bundle, abs, label, seen, false), false
+	} else {
+		seen[abs] = true
+	}
+	writeAnchorIndex(bundle, project, abs, label, data, ids)
+	return true, true
+}
+
+var (
+	citedIDRE       = regexp.MustCompile(`\b[A-Z]{1,6}-\d{2,}(?:-[A-Z][A-Z0-9]*)*\b`)
+	anchorHeadingRE = regexp.MustCompile(`^#{1,3}\s`)
+)
+
+// maxIDHits bounds the line anchors listed per ID; the live file holds the rest.
+const maxIDHits = 20
+
+// citedID is one ID the slice block cites with its word-bounded matcher.
+type citedID struct {
+	id string
+	re *regexp.Regexp
+}
+
+// citedIDs returns each distinct ID the slice block cites (AC-###, DEC-###,
+// T-###, PF-##, SLICE-###, ...).
+func citedIDs(block string) []citedID {
+	var out []citedID
+	seen := map[string]bool{}
+	for _, id := range citedIDRE.FindAllString(block, -1) {
+		if !seen[id] {
+			seen[id] = true
+			out = append(out, citedID{id, regexp.MustCompile(`\b` + regexp.QuoteMeta(id) + `\b`)})
+		}
+	}
+	return out
+}
+
+// writeAnchorIndex emits a by-reference entry: identity, heading anchors, and
+// line hits for each cited ID, so the agent reads owning sections from the
+// live file instead of the whole artifact.
+func writeAnchorIndex(bundle *strings.Builder, project, abs, label string, data []byte, ids []citedID) {
+	rel, err := filepath.Rel(project, abs)
+	if err != nil {
+		rel = abs
+	}
+	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
+	structural := lines
+	if masked, err := markdowntext.Structural(data); err == nil {
+		structural = strings.Split(strings.ReplaceAll(string(masked), "\r\n", "\n"), "\n")
+	}
+	fmt.Fprintf(bundle, "===== %s (by reference) =====\n", label)
+	fmt.Fprintf(bundle, "path: %s sha256: %x bytes: %d lines: %d\n", filepath.ToSlash(rel), sha256.Sum256(data), len(data), len(lines))
+	bundle.WriteString("Not inlined. Read owning sections from the live file by line anchor; nothing is omitted there.\n")
+	bundle.WriteString("headings:\n")
+	for i, line := range structural {
+		if anchorHeadingRE.MatchString(line) {
+			fmt.Fprintf(bundle, "- L%d %s\n", i+1, clipRunes(lines[i], 120))
+		}
+	}
+	if len(ids) > 0 {
+		bundle.WriteString("id hits (IDs cited by the slice block):\n")
+	}
+	for _, cited := range ids {
+		var at []string
+		total := 0
+		for i, line := range lines {
+			if cited.re.MatchString(line) {
+				total++
+				if len(at) < maxIDHits {
+					at = append(at, fmt.Sprintf("L%d", i+1))
+				}
+			}
+		}
+		hits := "none"
+		if total > 0 {
+			hits = strings.Join(at, " ")
+			if total > len(at) {
+				hits += fmt.Sprintf(" (+%d more)", total-len(at))
+			}
+		}
+		fmt.Fprintf(bundle, "- %s: %s\n", cited.id, hits)
+	}
+	bundle.WriteByte('\n')
+}
+
+func clipRunes(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n]) + "…"
+	}
+	return s
+}
+
 func writeContextEntry(bundle *strings.Builder, abs, label string, seen map[string]bool, expand bool) bool {
 	if seen[abs] {
 		return false
@@ -308,6 +466,8 @@ type contextOpts struct {
 	phase      string
 	skill      string
 	role       string
+	slice      string // display label: slices joined with "+"
+	slices     []string
 	triggers   []string
 	skillsRoot string
 	out        string
@@ -325,6 +485,8 @@ func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
 			opts.skill = value
 		case "--role":
 			opts.role = value
+		case "--slice":
+			opts.slices = append(opts.slices, value)
 		case "--trigger", "--triggers":
 			for _, name := range strings.Split(value, ",") {
 				if name = strings.TrimSpace(name); name != "" {
@@ -353,6 +515,13 @@ func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
 		fmt.Fprintf(stderr, "context: --skill must be a directory name, not a path\n")
 		return opts, 2
 	}
+	for _, id := range opts.slices {
+		if !state.ValidSliceID(id) || len(positional) == 0 {
+			fmt.Fprintf(stderr, "context: --slice needs a slug and a SLICE-### id, got %q\n", id)
+			return opts, 2
+		}
+	}
+	opts.slice = strings.Join(opts.slices, "+")
 	if len(positional) == 1 {
 		opts.slug = positional[0]
 	} else if opts.out == "" {
@@ -428,6 +597,9 @@ func bundleName(opts contextOpts) string {
 	}
 	if opts.role != "" {
 		name += "-" + opts.role
+	}
+	if opts.slice != "" {
+		name += "." + opts.slice
 	}
 	return name + ".bundle.md"
 }

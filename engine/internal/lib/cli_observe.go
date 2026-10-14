@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/state"
 )
 
 // RunTaskGraphCheck validates tasks.md for one slug.
@@ -21,6 +22,21 @@ func RunTaskGraphCheck(root, slug string, stdout, stderr io.Writer) int {
 		return 3
 	}
 	fmt.Fprintf(stdout, "task-graph: ok (%d slices)\n", len(graph.Slices))
+	// Size advisory: never changes the exit code; the metric shows how often
+	// it would have fired before anyone makes it blocking.
+	if raw, err := readWorkspaceArtifact(root, slug, "tasks.md"); err == nil {
+		over := 0
+		for _, s := range graph.Slices {
+			block, _ := state.ExtractTaskSlice(raw, s.ID)
+			if n, ok := sliceSizeAdvisory(block); ok {
+				fmt.Fprintf(stdout, "task-graph: ADVISORY size: %s has %d Writer allowlist files (>= %d); split it (acceptance-preserving) or record `Size rationale:`\n", s.ID, n, sliceFileAdvisory)
+				over++
+			}
+		}
+		if over > 0 {
+			recordMetric(root, slug, "define", "size-advisory", "", int64(over))
+		}
+	}
 	return 0
 }
 

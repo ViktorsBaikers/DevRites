@@ -64,7 +64,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `review.md` | reconciled Review verdict: `## Spec` and `## Code review` accounts, deferred-finding labels/actions, drift | 240 lines |
 | `seal.md` | seal preflight, exact reviewer roster accounts, GO/NO-GO verdict and disclosures | 200 lines |
 | `ai-spec.md` | model/RAG/agent/eval/LLM-output scope for AI surfaces | 160 lines |
-| `windows.md` | deferral-marker waiver ledger: one `- path | marker | reason` row per introduced marker; `check windows` fails on unwaived hits | 120 lines |
+| `windows.md` | deferral/bar-lowering waiver ledger: one `- path | marker | reason` row per introduced marker; `check windows` fails on unwaived hits | 120 lines |
 | `notes.md` | `NOTE-###` anchored notes — rationale/warnings bound to a verbatim quote in one repository file; `note check` regrades anchors and drift blocks seal | 160 lines |
 
 For visual pairs load only matching [playbooks](visual-playbooks/index.md); use
@@ -230,7 +230,10 @@ Done condition: <checkable, exhaustive completion criterion>
 `depends_on` is the machine-readable mirror of `Dependencies`; keep the sets
 identical and cycle-free. `Gate`, `SLA`, and `Checkpoint` are required for HITL
 slices; use `none` when they do not apply. Complexity above 3 triggers reslicing
-unless the stated reason makes the boundary irreducible.
+unless the stated reason makes the boundary irreducible. A Writer allowlist of 12+
+files prints an engine `ADVISORY size:` line (`check task-graph`, `check slice`;
+never blocking): split it acceptance-preserving, or add `Size rationale:` naming
+the inseparable capability.
 
 ## Read next by phase
 

@@ -6,7 +6,7 @@ so dead or mistyped declarations fail at validate time instead of silently
 producing incomplete context bundles at runtime:
 
   1. The manifest is valid JSON and uses only engine keys
-     (always, triggers, workspace, workspaceByRole, agents).
+     (always, triggers, workspace, workspaceByRole, agents, rootOnly).
   2. Every `always`/`triggers` path exists under pack/.claude/skills/.
   3. Every trigger name has a fire path: an engine `triggerSignals` regexp
      matches it (extracted from engine/internal/lib/triggers.go), a
@@ -18,6 +18,8 @@ producing incomplete context bundles at runtime:
      real file under pack/.claude/agents/ (default `devrites-<role>.md`).
   5. workspace/workspaceByRole artifact names are declared in
      devrites-lib/reference/workspace-artifact-schema.md.
+  6. Every rootOnly path is also declared in `always` or a trigger list, so
+     the exclusion cannot silently name a file the bundle never loads.
 
 Run: python3 scripts/check-loads-manifest.py    (exit 0 clean, 1 on any violation)
 """
@@ -37,7 +39,8 @@ def repo_paths(root):
             os.path.join(skills,
                          "devrites-lib/reference/workspace-artifact-schema.md"))
 
-KNOWN_KEYS = {"always", "triggers", "workspace", "workspaceByRole", "agents"}
+KNOWN_KEYS = {"always", "triggers", "workspace", "workspaceByRole", "agents",
+              "rootOnly"}
 RESERVED_TRIGGERS = {"agents"}  # auto-fired by `context --role`
 
 
@@ -161,6 +164,15 @@ def main():
                 if not os.path.isfile(os.path.join(skills, path)):
                     problems.append(
                         f"{rel}: trigger {trigger!r} path missing: {path}")
+
+        # rootOnly entries must name a path the manifest actually loads
+        loaded = set(manifest.get("always", []))
+        for paths in manifest.get("triggers", {}).values():
+            loaded.update(paths)
+        for path in manifest.get("rootOnly", []):
+            if path not in loaded:
+                problems.append(
+                    f"{rel}: rootOnly path {path} is not in always/triggers")
 
         # every trigger name needs a fire path: engine signal, prose
         # annotation, reserved auto-fire name, or a mention in the skill's

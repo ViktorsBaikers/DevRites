@@ -59,7 +59,7 @@ topic's owner.
 | `architecture-health.md` | An audit needs a whole-codebase structural score from a code index — coupling, cohesion, cycles, god files, orphans, depth. |
 | `assumption-checkpoints.md` | Scope generalizes an existing boundary: a second case, a newly optional field, or a constant turned parameter. |
 | `debug-recovery.md` | Waiting on async readiness (server start, job completion, browser signal) needs a bounded condition-based poll. |
-| `windows.md` | A deferral marker (TODO/FIXME/skipped test/stub) is introduced or waived — the `check windows` ledger and grammar. |
+| `windows.md` | A deferral or bar-lowering marker (TODO/FIXME/skipped test/stub/suppression/removed test) is introduced or waived — the `check windows` ledger and grammar. |
 | `glossary.md` | A DevRites term is unclear; resolve it once here instead of inferring. |
 
 The table is a load trigger, not an exemption. [`core.md` § Rule summary](core.md#rule-summary-load-the-full-file-when-in-scope)

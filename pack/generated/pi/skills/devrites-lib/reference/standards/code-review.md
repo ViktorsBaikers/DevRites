@@ -30,6 +30,9 @@ If it does not, do not merge it.
    no justification), stripped assertions, deleted or skipped tests, and new
    unimplemented stubs or `throw`-only placeholders. Each names what it lowers and
    needs a recorded reason in the diff or `decisions.md`; unexplained is a finding.
+   `devrites-engine check windows` flags the mechanical subset (suppressions,
+   skip/focus, stubs, empty catch, deleted tests, stripped assertions) against
+   `windows.md` waivers; loosened thresholds remain this sweep's judgment.
 3. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
 4. **Readability:** names, function size, control flow, intent obvious without the author.
 5. **Architecture:** right seam, coupling/cohesion, fits existing patterns, no premature

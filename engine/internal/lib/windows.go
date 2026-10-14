@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -12,17 +13,21 @@ import (
 	"github.com/devrites/devrites/internal/devritespaths"
 )
 
-// windows.go — the broken-windows check. Review prose flags a new TODO, stub, or
-// skipped test as a finding; this gate makes the register countable instead: any
-// deferral marker the change *introduces* must carry a recorded waiver row in the
-// workspace's windows.md, or the check fails. A silent deferral is the bug.
+// windows.go — the broken-windows check. Review prose flags a new TODO, stub,
+// skipped or focused test, checker suppression, swallowed error, deleted test
+// file, or stripped assertion as a finding; this gate makes the register
+// countable instead: any such marker the change *introduces* must carry a
+// recorded waiver row in the workspace's windows.md, or the check fails. A
+// silent deferral or lowered bar is the bug.
 //
 //	devrites-engine check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]
 //
 //	0  no unwaived markers    2  usage error    3  unwaived markers or blocked
 //
 // Only added lines count: a marker already on the baseline is pre-existing debt,
-// never attributable to this change. Each windows.md row waives exactly one hit —
+// never attributable to this change. Removals count once per file: a deleted
+// test file (`deleted-test`) or a net loss of assertion lines in a test file
+// that remains (`removed-assertion`). Each windows.md row waives exactly one hit —
 // one blanket row cannot cover a file's five new TODOs.
 //
 // windows.md row grammar (one waiver per line):
@@ -34,8 +39,10 @@ import (
 
 const windowsUsage = `usage: devrites-engine check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]
 
-Reports deferral markers introduced by the change (added lines only) and requires
-each to be waived by a row in .devrites/work/<slug>/windows.md:
+Reports deferral and bar-lowering markers introduced by the change (added lines:
+TODO/stub/skip/focus idioms, checker suppressions, empty-catch; removals:
+deleted-test, removed-assertion) and requires each to be waived by a row in
+.devrites/work/<slug>/windows.md:
   - <path> | <marker> | <reason>
 Each row waives one hit at that path with that marker token.
 Exit 0 clean or fully waived, 3 unwaived markers or blocked.`
@@ -55,13 +62,35 @@ var deferralIdioms = []string{
 	"panic(\"TODO", "panic(\"unimplemented", "panic(\"not implemented",
 	"throw new Error(\"unimplemented", "throw new Error(\"not implemented",
 	"TODO: implement", "not yet implemented",
+	// Focused tests and checker suppressions lower the bar the same way.
+	"it.only(", "describe.only(", "test.only(",
+	"@ts-ignore", "@ts-expect-error", "@ts-nocheck", "eslint-disable",
+	"biome-ignore", "deno-lint-ignore", "istanbul ignore", "c8 ignore",
+	"noqa", "type: ignore", "pylint: disable", "pragma: no cover",
+	"nolint", "#nosec", "nosemgrep", "NOSONAR", "gitleaks:allow",
+	"rubocop:disable", "@SuppressWarnings", "#[allow(", "shellcheck disable",
+	"Stryker disable",
 }
+
+// emptyCatchRe catches a one-line swallowed error: `catch (e) {}`, `except: pass`.
+var emptyCatchRe = regexp.MustCompile(`\bcatch\s*(?:\([^)]*\))?\s*\{\s*\}|\bexcept\b[^:\n]*:\s*pass\b`)
+
+// assertionRe matches a line carrying a test assertion in common frameworks.
+var assertionRe = regexp.MustCompile(`(?i)\bassert|XCTAssert|\bexpect\(|\bt\.(?:error|fatal)|\brequire\.|\.should\b`)
 
 type windowHit struct {
 	Path   string
 	Line   int
 	Marker string
 	Text   string
+}
+
+// location is path:line, or the bare path for a file-level hit (Line 0).
+func (h windowHit) location() string {
+	if h.Line == 0 {
+		return h.Path
+	}
+	return fmt.Sprintf("%s:%d", h.Path, h.Line)
 }
 
 type windowWaiver struct {
@@ -92,7 +121,73 @@ func windowsMarkers(line string) []string {
 			out = append(out, m[1])
 		}
 	}
-	return append(out, idioms...)
+	out = append(out, idioms...)
+	if emptyCatchRe.MatchString(line) {
+		out = append(out, "empty-catch")
+	}
+	return out
+}
+
+// isTestPath reports whether a project-relative path names a test source file.
+func isTestPath(p string) bool {
+	base := path.Base(p)
+	for _, suffix := range []string{"_test.go", "_test.py", "_spec.rb", "Test.java", "Tests.java", "Test.kt", "Test.cs", "Tests.cs"} {
+		if strings.HasSuffix(base, suffix) {
+			return true
+		}
+	}
+	return strings.Contains(base, ".test.") || strings.Contains(base, ".spec.") ||
+		strings.HasPrefix(base, "test_") && strings.HasSuffix(base, ".py") ||
+		strings.Contains("/"+p, "/__tests__/") ||
+		strings.Contains("/"+p, "/tests/") && strings.HasSuffix(base, ".rs")
+}
+
+// removedTestHits reports bar-lowering removals in a `git diff -U0` stream: a
+// deleted test file, or a test file that still exists but lost assertion lines
+// on net (moving an assertion within the file is not a loss). Renames are not
+// deletions when git rename detection pairs them.
+func removedTestHits(diff string) []windowHit {
+	var hits []windowHit
+	net := map[string]int{}
+	var order []string
+	var oldPath, file string
+	inHeader, deleted := false, false
+	for _, line := range strings.Split(diff, "\n") {
+		switch {
+		case strings.HasPrefix(line, "diff --git "):
+			inHeader, deleted, file = true, false, ""
+		case inHeader && strings.HasPrefix(line, "--- "):
+			oldPath = strings.TrimPrefix(strings.Trim(strings.TrimSpace(line[4:]), `"`), "a/")
+		case inHeader && strings.HasPrefix(line, "+++ "):
+			newPath := strings.Trim(strings.TrimSpace(line[4:]), `"`)
+			if newPath == "/dev/null" {
+				deleted = true
+				if isTestPath(oldPath) {
+					hits = append(hits, windowHit{Path: oldPath, Marker: "deleted-test", Text: "test file deleted"})
+				}
+				continue
+			}
+			if file = strings.TrimPrefix(newPath, "b/"); !isTestPath(file) {
+				file = ""
+			}
+		case strings.HasPrefix(line, "@@"):
+			inHeader = false
+		case inHeader || deleted || file == "":
+		case strings.HasPrefix(line, "-") && assertionRe.MatchString(line[1:]):
+			if _, seen := net[file]; !seen {
+				order = append(order, file)
+			}
+			net[file]++
+		case strings.HasPrefix(line, "+") && assertionRe.MatchString(line[1:]):
+			net[file]--
+		}
+	}
+	for _, f := range order {
+		if n := net[f]; n > 0 {
+			hits = append(hits, windowHit{Path: f, Marker: "removed-assertion", Text: fmt.Sprintf("net -%d assertion line(s)", n)})
+		}
+	}
+	return hits
 }
 
 // addedLinesFromDiff parses a `git diff -U0` stream into added (path, line,
@@ -180,17 +275,18 @@ func windowsHits(opts diffScopeOpts) ([]windowHit, error) {
 	var diffArgs []string
 	switch opts.mode {
 	case "staged":
-		diffArgs = []string{"diff", "--cached", "-U0", "--"}
+		diffArgs = []string{"diff", "--cached", "-M", "-U0", "--"}
 	case "base":
-		diffArgs = []string{"diff", opts.base, "-U0", "--"}
+		diffArgs = []string{"diff", opts.base, "-M", "-U0", "--"}
 	default:
-		diffArgs = []string{"diff", "HEAD", "-U0", "--"}
+		diffArgs = []string{"diff", "HEAD", "-M", "-U0", "--"}
 	}
 	diff, err := runGitCommand(dir, nil, diffArgs...)
 	var diffPaths map[string]bool
 	switch {
 	case err == nil:
 		hits, diffPaths = addedLinesFromDiff(string(diff))
+		hits = append(hits, removedTestHits(string(diff))...)
 	case opts.mode == "worktree" && isUnbornHEAD(dir):
 		// No commits yet: every changed file is wholly new.
 		diffPaths = map[string]bool{}
@@ -334,11 +430,11 @@ func RunCheckWindows(root string, args []string, stdout, stderr io.Writer) int {
 		if waivers[w] > 0 {
 			waivers[w]--
 			waived++
-			fmt.Fprintf(stdout, "windows: waived: %s:%d %s\n", h.Path, h.Line, h.Marker)
+			fmt.Fprintf(stdout, "windows: waived: %s %s\n", h.location(), h.Marker)
 			continue
 		}
 		unwaived++
-		fmt.Fprintf(stdout, "windows: unwaived: %s:%d %s — %s\n", h.Path, h.Line, h.Marker, h.Text)
+		fmt.Fprintf(stdout, "windows: unwaived: %s %s — %s\n", h.location(), h.Marker, h.Text)
 	}
 	switch {
 	case len(hits) == 0:
