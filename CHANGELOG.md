@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v6.0.2...v6.0.3) (2026-10-14)
+
+### Changed
+
+* **devrites:** cut rite-build time without weakening gates ([#104](https://github.com/ViktorsBaikers/DevRites/issues/104)) ([64133ca](https://github.com/ViktorsBaikers/DevRites/commit/64133ca070947c3e9b170f1ee978302d63937c03))
+
+### Fixed
+
+* **no-release:** accept --help after dispatch subcommand ([#103](https://github.com/ViktorsBaikers/DevRites/issues/103)) ([532ce43](https://github.com/ViktorsBaikers/DevRites/commit/532ce4324ae155f891345f825cbd2e04dd37ae85))
+
 ## [6.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v6.0.1...v6.0.2) (2026-10-14)
 
 ### Fixed
