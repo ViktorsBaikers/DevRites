@@ -125,16 +125,20 @@ func takesSubcommand(command string) bool {
 	}
 }
 
-// claimValueFlags are the claim flags that consume the next argument as a value.
-var claimValueFlags = map[string]bool{"--session": true, "--reason": true, "--ttl": true, "--id": true}
+// valueFlags lists, per command, the flags that consume the next argument as a
+// value. A command listed here has known flags, so its help flag is honoured
+// anywhere except as the value of one of these flags.
+var valueFlags = map[string]map[string]bool{
+	"claim":    {"--session": true, "--reason": true, "--ttl": true, "--id": true},
+	"dispatch": {"--phase": true, "--wave": true, "--role": true, "--handle": true, "--reason": true},
+}
 
 // hasHelpFlag reports whether args (the arguments after the command word) are a
 // help request. The command path is consumed by dispatch, so a help flag is
 // honoured among the leading flags that follow it. The scan stops at the first
 // argument that does not start with a dash, because from there the engine
-// cannot tell a flag from a value or operand. Only claim, whose value flags are
-// known, honours a help flag later, and never one that is the value of such a
-// flag.
+// cannot tell a flag from a value or operand. Commands in valueFlags honour a
+// help flag later, and never one that is the value of such a flag.
 func hasHelpFlag(command string, args []string) bool {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") && takesSubcommand(command) {
 		args = args[1:]
@@ -143,9 +147,10 @@ func hasHelpFlag(command string, args []string) bool {
 		if isHelpFlag(args[i]) {
 			return true
 		}
-		if command == "claim" && claimValueFlags[args[i]] {
+		known, ok := valueFlags[command]
+		if ok && known[args[i]] {
 			i++
-		} else if command != "claim" && !strings.HasPrefix(args[i], "-") {
+		} else if !ok && !strings.HasPrefix(args[i], "-") {
 			return false
 		}
 	}
