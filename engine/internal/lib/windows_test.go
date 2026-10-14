@@ -57,6 +57,12 @@ func TestWindowsMarkersTokensAndIdioms(t *testing.T) {
 		{"describe.skip(\"x\", fn)", []string{"describe.skip("}},
 		{"raise NotImplementedError", []string{"NotImplementedError"}},
 		{"panic(\"TODO wire cache\")", []string{"panic(\"TODO"}},
+		{"// @ts-ignore", []string{"@ts-ignore"}},
+		{"x = f()  # noqa: E501", []string{"noqa"}},
+		{"it.only(\"focus\", fn)", []string{"it.only("}},
+		{"try { f() } catch (e) {}", []string{"empty-catch"}},
+		{"except ValueError: pass", []string{"empty-catch"}},
+		{"} catch (e) { log(e) }", nil},
 		{"plain line", nil},
 	}
 	for _, tc := range cases {
@@ -331,5 +337,84 @@ func TestCheckWindowsFailsWhenStatusScanFails(t *testing.T) {
 	}
 	if !strings.Contains(errBuf.String(), "windows:") {
 		t.Fatalf("status failure must be reported on stderr: err=%q", errBuf.String())
+	}
+}
+
+func TestRemovedTestHits(t *testing.T) {
+	diff := "diff --git a/old_test.go b/old_test.go\ndeleted file mode 100644\n--- a/old_test.go\n+++ /dev/null\n@@ -1,2 +0,0 @@\n-package a\n-\tassert(true)\n" +
+		"diff --git a/a_test.go b/a_test.go\n--- a/a_test.go\n+++ b/a_test.go\n@@ -3,2 +3,0 @@\n-\tif got != 1 { t.Fatalf(\"got %d\", got) }\n-\trequire.NoError(t, err)\n" +
+		"diff --git a/moved.test.ts b/moved.test.ts\n--- a/moved.test.ts\n+++ b/moved.test.ts\n@@ -2 +2,0 @@\n-  expect(x).toBe(1)\n@@ -9,0 +9 @@\n+  expect(x).toBe(1)\n" +
+		"diff --git a/lib.go b/lib.go\n--- a/lib.go\n+++ b/lib.go\n@@ -1 +0,0 @@\n-\tassert(ok)\n" +
+		"diff --git a/gone.go b/gone.go\ndeleted file mode 100644\n--- a/gone.go\n+++ /dev/null\n@@ -1 +0,0 @@\n-package a\n"
+	hits := removedTestHits(diff)
+	if len(hits) != 2 {
+		t.Fatalf("hits=%+v", hits)
+	}
+	if hits[0].Path != "old_test.go" || hits[0].Marker != "deleted-test" {
+		t.Fatalf("deleted test hit=%+v", hits[0])
+	}
+	if hits[1].Path != "a_test.go" || hits[1].Marker != "removed-assertion" || !strings.Contains(hits[1].Text, "net -2") {
+		t.Fatalf("removed assertion hit=%+v", hits[1])
+	}
+}
+
+func TestIsTestPath(t *testing.T) {
+	for p, want := range map[string]bool{
+		"pkg/a_test.go": true, "src/a.test.ts": true, "src/a.spec.js": true,
+		"tests/test_api.py": true, "spec/user_spec.rb": true, "src/__tests__/a.js": true,
+		"FooTest.java": true, "tests/integration.rs": true,
+		"pkg/a.go": false, "src/latest.ts": false, "tests/fixture.json": false, "contest.py": false,
+	} {
+		if got := isTestPath(p); got != want {
+			t.Fatalf("isTestPath(%q)=%v want %v", p, got, want)
+		}
+	}
+}
+
+func TestCheckWindowsBlocksLoweredBarUntilWaived(t *testing.T) {
+	project := t.TempDir()
+	initWindowsRepo(t, project)
+	root := windowsWorkspace(t, project, "feat")
+	testutil.WriteFile(t, filepath.Join(project, "a_test.go"), "package a\n\nfunc TestA(t *testing.T) {\n\tif A() != 1 {\n\t\tt.Fatal(\"bad\")\n\t}\n}\n")
+	testutil.WriteFile(t, filepath.Join(project, "b_test.go"), "package a\n")
+	runSecretScanGit(t, project, "add", "--", "a_test.go", "b_test.go")
+	runSecretScanGit(t, project, "commit", "-qm", "baseline")
+	testutil.WriteFile(t, filepath.Join(project, "a_test.go"), "package a\n\nfunc TestA(t *testing.T) {\n\t_ = A()\n}\n")
+	if err := os.Remove(filepath.Join(project, "b_test.go")); err != nil {
+		t.Fatal(err)
+	}
+
+	var out, errBuf bytes.Buffer
+	if code := RunCheckWindows(root, []string{"feat"}, &out, &errBuf); code != 3 {
+		t.Fatalf("code=%d out=%q err=%q", code, out.String(), errBuf.String())
+	}
+	for _, want := range []string{"unwaived: a_test.go removed-assertion", "unwaived: b_test.go deleted-test"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("missing %q in out=%q", want, out.String())
+		}
+	}
+
+	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "windows.md"),
+		"- a_test.go | removed-assertion | assertion moved to TestB in SLICE-002\n- b_test.go | deleted-test | feature removed per spec AC-3\n")
+	out.Reset()
+	if code := RunCheckWindows(root, []string{"feat"}, &out, &errBuf); code != 0 {
+		t.Fatalf("waived: code=%d out=%q", code, out.String())
+	}
+}
+
+func TestCheckWindowsRenamedTestIsNotDeleted(t *testing.T) {
+	project := t.TempDir()
+	initWindowsRepo(t, project)
+	root := windowsWorkspace(t, project, "feat")
+	runSecretScanGit(t, project, "config", "diff.renames", "false")
+	body := "package a\n\nfunc TestA(t *testing.T) {\n\tif A() != 1 {\n\t\tt.Fatal(\"bad\")\n\t}\n}\n"
+	testutil.WriteFile(t, filepath.Join(project, "a_test.go"), body)
+	runSecretScanGit(t, project, "add", "--", "a_test.go")
+	runSecretScanGit(t, project, "commit", "-qm", "baseline")
+	runSecretScanGit(t, project, "mv", "a_test.go", "b_test.go")
+
+	var out, errBuf bytes.Buffer
+	if code := RunCheckWindows(root, []string{"feat"}, &out, &errBuf); code != 0 {
+		t.Fatalf("rename flagged: code=%d out=%q err=%q", code, out.String(), errBuf.String())
 	}
 }

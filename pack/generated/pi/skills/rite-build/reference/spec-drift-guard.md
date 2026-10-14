@@ -22,7 +22,9 @@ phases. Never silently code against a known-wrong plan.
 4. Local repair that preserves behavior/scope/architecture/data/UX/security/migration?
      YES, active-slice technical/tool failure → log it and use Build's bounded debug
        recovery. Do not ask for retry authorization and do not re-plan unless the
-       durable remaining-work instructions are wrong.
+       durable remaining-work instructions are wrong. A Workflow Artifact byte fix
+       that keeps every admission row is this case: `OFFLINE_RECOVERY`, then
+       `/rite-vet`'s bytes-only recheck — never `/rite-plan repair`.
      YES, durable plan is wrong → run the batch sweep below, log every
        violation, save the caller's return cursor, then invoke `/rite-plan repair` and `/rite-vet` inline
        without a question — ONE folded repair for all open entries, ONE

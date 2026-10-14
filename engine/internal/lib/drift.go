@@ -48,7 +48,7 @@ type driftBaseline struct {
 // driftDiff is one input whose state differs from the baseline.
 type driftDiff struct {
 	Path string `json:"path"`
-	Kind string `json:"kind"` // changed | missing | added
+	Kind string `json:"kind"` // changed | missing | added | reviewed-identity-only
 }
 
 // RunCheckDrift implements `devrites-engine check drift`.
@@ -130,6 +130,10 @@ func compareDrift(workspace, baselinePath string, digests []gate.ReadinessInputD
 	if baseline.Binding != binding && len(diffs) == 0 {
 		fmt.Fprintln(stdout, "DRIFT: aggregate binding changed without a recorded input diff; re-record the baseline")
 	}
+	if len(diffs) == 1 && diffs[0].Kind == "reviewed-identity-only" {
+		fmt.Fprintln(stdout, "check drift: reviewed-identity-only — only the Workflow Artifact reviewed identity moved; /rite-vet may use its bytes-only recheck")
+		return 0
+	}
 	fmt.Fprintf(stdout, "check drift: %d input(s) differ — a change is legal only as a dated delta through the owning rite; otherwise restore the input or rerun /rite-vet and --record\n", len(diffs))
 	return 0
 }
@@ -189,7 +193,11 @@ func diffInputs(base, current []gate.ReadinessInputDigest) []driftDiff {
 			}
 			diffs = append(diffs, driftDiff{Path: b.Path, Kind: kind})
 		case b.Present && b.SHA256 != c.SHA256:
-			diffs = append(diffs, driftDiff{Path: b.Path, Kind: "changed"})
+			kind := "changed"
+			if b.Normalized != "" && b.Normalized == c.Normalized {
+				kind = "reviewed-identity-only"
+			}
+			diffs = append(diffs, driftDiff{Path: b.Path, Kind: kind})
 		}
 	}
 	sort.Slice(diffs, func(i, j int) bool { return diffs[i].Path < diffs[j].Path })

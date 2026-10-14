@@ -29,6 +29,22 @@ var (
 	windowsDrivePath = regexp.MustCompile(`^[A-Za-z]:[\\/]`)
 )
 
+// sliceFileAdvisory is the Writer allowlist size at which a slice is flagged
+// for an acceptance-preserving split. Advisory only: it never changes an exit
+// code. Measured on real plans, slices at or above it averaged ~10 wright
+// rounds versus ~3.5 below it.
+const sliceFileAdvisory = 12
+
+// sliceSizeAdvisory returns the Writer allowlist size and whether the slice is
+// oversized without a recorded `Size rationale:`.
+func sliceSizeAdvisory(block string) (int, bool) {
+	fields := sliceFields(block)
+	raw, _ := fieldValue(fields, "writer allowlist")
+	n := len(parsePathList(raw))
+	rationale, _ := fieldValue(fields, "size rationale")
+	return n, n >= sliceFileAdvisory && rationale == ""
+}
+
 // sliceFields extracts the single-line `Field: value` pairs of a slice block.
 func sliceFields(block string) map[string]string {
 	fields := map[string]string{}
@@ -169,6 +185,9 @@ func RunCheckSlice(root string, args []string, stdout, stderr io.Writer) int {
 		problems = append(problems, "Tests/proof field missing or empty — no evidence plan for the slice")
 	}
 
+	if n, over := sliceSizeAdvisory(block); over {
+		fmt.Fprintf(stdout, "check slice: ADVISORY size: %s has %d Writer allowlist files (>= %d); consider an acceptance-preserving split\n", sliceID, n, sliceFileAdvisory)
+	}
 	if len(problems) > 0 {
 		fmt.Fprintf(stdout, "check slice: %s BLOCKED\n", sliceID)
 		for _, p := range problems {

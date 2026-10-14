@@ -79,7 +79,8 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
      `/rite-spec`, and stop.
    See [replan-and-repair](reference/replan-and-repair.md) for each mode's steps.
 2a. **Draft fresh.** Dispatch `devrites-plan-drafter` in `repair` mode with frozen mode,
-   affected artifacts, settled contract, and failure/drift. Await one atomic, read-only
+   affected artifacts, settled contract, and failure/drift; a slice-bound repair
+   builds its bundle with `--slice <SLICE-ID>` per affected slice. Await one atomic, read-only
    the drafter's `candidate_files` bundle; human choices return separately.
    When the observed failure is missing or ambiguous consumptive-action evidence,
    require the drafter to apply [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md) and return the bounded

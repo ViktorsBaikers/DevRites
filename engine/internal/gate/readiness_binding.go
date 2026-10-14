@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"regexp"
 	"strings"
 
 	"github.com/devrites/devrites/internal/markdowntext"
@@ -147,6 +148,20 @@ type ReadinessInputDigest struct {
 	Path    string `json:"path"`
 	Present bool   `json:"present"`
 	SHA256  string `json:"sha256,omitempty"`
+	// Normalized is test-plan.md's digest without its reviewed-identity lines,
+	// so drift can prove a Workflow Artifact byte correction changed nothing
+	// else Vet approved.
+	Normalized string `json:"normalized,omitempty"`
+}
+
+// reviewedIdentityRE is the exact test-plan.md line binding the Workflow
+// Artifact bytes an independent code review approved. Only this exact shape
+// is ignored, so the exclusion cannot hide any other edit.
+var reviewedIdentityRE = regexp.MustCompile(`(?m)^Workflow Artifact reviewed identity: [0-9a-f]{64}\r?\n?`)
+
+// withoutReviewedIdentity drops every exact reviewed-identity line.
+func withoutReviewedIdentity(content []byte) []byte {
+	return reviewedIdentityRE.ReplaceAll(content, nil)
 }
 
 // ReadinessInputDigests returns each readiness input's content digest plus the
@@ -172,6 +187,10 @@ func ReadinessInputDigests(root, slug string) ([]ReadinessInputDigest, string, e
 		if present {
 			sum := sha256.Sum256(content)
 			entry.SHA256 = hex.EncodeToString(sum[:])
+			if input.logical == "test-plan.md" {
+				normalized := sha256.Sum256(withoutReviewedIdentity(content))
+				entry.Normalized = hex.EncodeToString(normalized[:])
+			}
 		}
 		digests = append(digests, entry)
 	}

@@ -1,7 +1,9 @@
 # Windows — the deferral ledger
 
 > Applies when: a change introduces a deferral marker (TODO, FIXME, XXX, HACK,
-> a skipped test, a stub body) or `windows.md` waivers are authored or judged.
+> a skipped or focused test, a stub body), lowers the bar (a checker
+> suppression, an empty catch, a deleted test file, stripped assertions), or
+> `windows.md` waivers are authored or judged.
 
 `windows.md` is the broken-windows ledger. A review finding can describe a new
 `TODO`, a skipped test, or a stubbed body; this artifact makes the register
@@ -24,7 +26,8 @@ Optional until a marker is introduced: a feature with no new markers needs no
   that marker. Five new TODOs in one file need five rows — a blanket row
   cannot cover them.
 - `marker token` is the literal marker the checker reported (`TODO`, `t.Skip(`,
-  `NotImplementedError`, `panic("TODO`, …).
+  `NotImplementedError`, `panic("TODO`, `it.only(`, `eslint-disable`, `noqa`,
+  `nolint`, `#nosec`, `empty-catch`, `deleted-test`, `removed-assertion`, …).
 - `reason` must be non-empty and should name the follow-up owner or slice; a
   row with an empty reason warns and waives nothing.
 - Rows never suppress coverage — they explain it. Reviewers still judge
@@ -39,8 +42,13 @@ devrites-engine check windows <slug> [--worktree|--staged|--base <ref>]
 Exit `0` when no marker is introduced or every hit is waived; `3` when any
 introduced marker lacks a waiver or the workspace/ledger is unreadable; `2`
 on usage errors. It parses the unified diff (`-U0`), treats untracked files as
-wholly new in `--worktree`, and ignores binary files, deletions, and
+wholly new in `--worktree`, and ignores binary files, non-test deletions, and
 `.devrites/` paths; `--staged` and `--base` cover the tracked diff only.
+Removals are file-level hits: a deleted test file is `deleted-test`, and a test
+file that remains but loses assertion lines on net is `removed-assertion`
+(moving an assertion within the file is not a loss; a git-detected rename is
+not a deletion). Loosened thresholds have no deterministic signal and stay a
+review judgment ([`code-review.md`](code-review.md) § Bar integrity).
 
 ## Reviewer posture
 

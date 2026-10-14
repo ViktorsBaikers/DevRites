@@ -143,7 +143,9 @@ Stay inside the exact project-relative paths listed in the dispatch task.
 return an `Escalation`** when:
 - the slice is **underspecified**, the **plan looks wrong**, or requirements, code,
   and tests conflict;
-- the slice needs a **new dependency** or a **second design system**;
+- the slice needs a **new dependency** or a **second design system**, or a planned
+  package fails to install or resolve (report the failure; never retry under a
+  similar or alternative package name);
 - the work requires an unapproved product/security-policy choice, public API break,
   external-service contract change, destructive live migration, or filesystem
   destruction outside the workspace. A path allowlist alone does not approve those

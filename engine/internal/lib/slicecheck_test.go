@@ -127,3 +127,44 @@ func TestCheckSliceTouchedComparesNormalizedPaths(t *testing.T) {
 		t.Fatalf("code=%d want 0\n%s%s", code, stdout, stderr)
 	}
 }
+
+func bigSliceTasks(rationale string) string {
+	var paths []string
+	for i := 1; i <= sliceFileAdvisory; i++ {
+		paths = append(paths, "`src/f"+strings.Repeat("x", i)+".go`")
+	}
+	return "# Tasks\n\n## SLICE-001 Big\nGoal: do it.\nSatisfies: AC-001\ndepends_on: []\nWriter allowlist: " +
+		strings.Join(paths, ", ") + "\nTests/proof: go test ./...\n" + rationale +
+		"\n## SLICE-002 Small\nGoal: tiny.\nSatisfies: AC-001\ndepends_on: [SLICE-001]\nWriter allowlist: `src/a.go`\nTests/proof: go test ./...\n"
+}
+
+func TestSliceSizeAdvisoryNeverBlocks(t *testing.T) {
+	root := sliceWorkspace(t, bigSliceTasks(""), "## Acceptance criteria\n- AC-001 works\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunCheckSlice(root, []string{"feat", "SLICE-001"}, stdout, stderr); code != 0 {
+		t.Fatalf("advisory must not block: code=%d\n%s%s", code, stdout, stderr)
+	}
+	if !strings.Contains(stdout.String(), "ADVISORY size: SLICE-001 has 12 Writer allowlist files") {
+		t.Fatalf("advisory missing:\n%s", stdout)
+	}
+	stdout.Reset()
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 {
+		t.Fatalf("task-graph code=%d\n%s%s", code, stdout, stderr)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "task-graph: ADVISORY size: SLICE-001 has 12") || strings.Contains(out, "SLICE-002 has") {
+		t.Fatalf("task-graph advisory wrong:\n%s", out)
+	}
+	stdout.Reset()
+	if code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr); code != 0 || !strings.Contains(stdout.String(), "size-advisory=1") {
+		t.Fatalf("size-advisory metric not recorded: code=%d\n%s", code, stdout)
+	}
+}
+
+func TestSliceSizeRationaleSilencesAdvisory(t *testing.T) {
+	root := sliceWorkspace(t, bigSliceTasks("Size rationale: one generated golden set moves together\n"), "## Acceptance criteria\n- AC-001 works\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 || strings.Contains(stdout.String(), "ADVISORY") {
+		t.Fatalf("rationale must silence advisory: code=%d\n%s", code, stdout)
+	}
+}

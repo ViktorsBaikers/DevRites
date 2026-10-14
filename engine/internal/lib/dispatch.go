@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -19,24 +21,38 @@ import (
 // fan-out cannot silently degrade to serial (open -> every role started ->
 // seal -> returns -> complete). start/return also auto-record metrics events.
 //
-//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s]
+//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>]
 
-const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s]
+const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
 role has a distinct handle; return fails before seal; status exits nonzero
 while a wave is open, sealed, or abandoned.
+
+A build wave with a wright role must name its slice(s) with --slice; a vet
+wave may (slice-bound recheck). Every 5 rounds of one kind on one slice, the
+next open is blocked until --reslice-review names a drift.md
+"## <DRIFT-ID>" heading for that slice.
 `
+
+// wrightRoundsPerReview is how many build wright rounds (or slice-bound Vet
+// rechecks) one slice may take before (and after each) reslice review.
+// Recovery itself stays unbounded; the cap only forces the split question
+// onto the record.
+const wrightRoundsPerReview = 5
 
 type dispatchFile struct {
 	Waves map[string]*dispatchWave `json:"waves"`
 }
 
 type dispatchWave struct {
-	Phase  string                   `json:"phase"`
-	State  string                   `json:"state"` // open, sealed, abandoned, complete
-	Reason string                   `json:"reason,omitempty"`
-	Roles  map[string]*dispatchRole `json:"roles"`
+	Phase           string                   `json:"phase"`
+	State           string                   `json:"state"` // open, sealed, abandoned, complete
+	Reason          string                   `json:"reason,omitempty"`
+	Roles           map[string]*dispatchRole `json:"roles"`
+	Slices          []string                 `json:"slices,omitempty"`
+	ResliceReview   string                   `json:"reslice_review,omitempty"`
+	ResliceReviewed []string                 `json:"reslice_reviewed,omitempty"`
 }
 
 type dispatchRole struct {
@@ -89,8 +105,8 @@ func nowStamp() string { return time.Now().UTC().Format(time.RFC3339) }
 
 // RunDispatch implements the dispatch wave state machine.
 func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
-	var slug, sub, phase, wave, role, handle, reason string
-	var roles []string
+	var slug, sub, phase, wave, role, handle, reason, review string
+	var roles, sliceIDs []string
 	var positional []string
 	for i := 0; i < len(args); i++ {
 		value := argAt(args, i+1)
@@ -106,6 +122,10 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			handle = value
 		case "--reason":
 			reason = value
+		case "--slice":
+			sliceIDs = append(sliceIDs, value)
+		case "--reslice-review":
+			review = value
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(stderr, "dispatch: unknown flag %q\n", args[i])
@@ -129,7 +149,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	// an update and strand the wave short of complete.
 	code := 0
 	if err := state.WithFeatureLock(root, slug, func() error {
-		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, stdout, stderr)
+		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, stdout, stderr)
 		return nil
 	}); err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -138,7 +158,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles []string, stdout, stderr io.Writer) int {
+func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review string, stdout, stderr io.Writer) int {
 	f, path, err := loadDispatch(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -166,18 +186,25 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if w := getWave(); w != nil && w.State != "abandoned" {
 			return fail("wave %q already exists (state %s)", wave, w.State)
 		}
-		w := &dispatchWave{Phase: phase, State: "open", Roles: map[string]*dispatchRole{}}
+		w := &dispatchWave{Phase: phase, State: "open", Roles: map[string]*dispatchRole{}, Slices: sliceIDs}
 		for _, r := range roles {
 			if w.Roles[r] != nil {
 				return fail("duplicate role %q in wave", r)
 			}
 			w.Roles[r] = &dispatchRole{}
 		}
+		rounds, code := admitWrightRounds(root, slug, f, w, review, stderr)
+		if code != 0 {
+			return code
+		}
 		f.Waves[wave] = w
 		if err := saveDispatch(path, f); err != nil {
 			return fail("%v", err)
 		}
 		fmt.Fprintf(stdout, "dispatch: wave %s open, %d roles declared\n", wave, len(roles))
+		for _, line := range rounds {
+			fmt.Fprintln(stdout, line)
+		}
 		return 0
 
 	case "start":
@@ -320,6 +347,114 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 	}
 	fmt.Fprint(stderr, dispatchUsage)
 	return 2
+}
+
+// roundKind names the capped loop a wave belongs to: build wright rounds or
+// slice-bound Vet rechecks. Other waves are uncapped.
+func roundKind(w *dispatchWave) string {
+	switch {
+	case isBuildWrightWave(w):
+		return "wright"
+	case strings.EqualFold(w.Phase, "vet") && len(w.Slices) > 0:
+		return "vet"
+	}
+	return ""
+}
+
+func isBuildWrightWave(w *dispatchWave) bool {
+	if w.Phase != "build" {
+		return false
+	}
+	for r := range w.Roles {
+		if strings.Contains(r, "wright") {
+			return true
+		}
+	}
+	return false
+}
+
+// admitWrightRounds enforces the per-slice round cap for a new build wright
+// or slice-bound Vet wave and returns the round lines to print. A slice may
+// take wrightRoundsPerReview rounds of each kind per reslice review (the first
+// window is free); beyond that the open needs --reslice-review naming an
+// unused drift.md heading for every slice over the cap.
+func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, review string, stderr io.Writer) ([]string, int) {
+	kind := roundKind(w)
+	if kind == "" {
+		if review != "" || (len(w.Slices) > 0 && !strings.EqualFold(w.Phase, "vet")) {
+			fmt.Fprintln(stderr, "dispatch: --slice/--reslice-review apply only to build wright waves and slice-bound vet waves")
+			return nil, 2
+		}
+		return nil, 0
+	}
+	if len(w.Slices) == 0 {
+		fmt.Fprintln(stderr, "dispatch: a build wright wave needs --slice SLICE-### for each slice it builds")
+		return nil, 2
+	}
+	for _, id := range w.Slices {
+		if !state.ValidSliceID(id) {
+			fmt.Fprintf(stderr, "dispatch: %q is not a SLICE-### id\n", id)
+			return nil, 2
+		}
+	}
+	var lines, overCap []string
+	for _, id := range w.Slices {
+		prior, reviews := 0, 0
+		for _, other := range f.Waves {
+			if other.State == "abandoned" || roundKind(other) != kind {
+				continue
+			}
+			if slices.Contains(other.Slices, id) {
+				prior++
+			}
+			if slices.Contains(other.ResliceReviewed, id) {
+				reviews++
+			}
+		}
+		round := prior + 1
+		if round > wrightRoundsPerReview*(1+reviews) {
+			overCap = append(overCap, id)
+		}
+		lines = append(lines, fmt.Sprintf("dispatch: %s %s round %d (reslice review every %d)", id, kind, round, wrightRoundsPerReview))
+	}
+	if len(overCap) == 0 {
+		if review != "" {
+			fmt.Fprintf(stderr, "dispatch: --reslice-review given but no slice has reached its %d-round cap\n", wrightRoundsPerReview)
+			return nil, 2
+		}
+		return lines, 0
+	}
+	if review == "" {
+		fmt.Fprintf(stderr, "dispatch: BLOCKED: %s reached %d %s rounds; run a reslice review (acceptance-preserving split or simpler proof seam, or a drift.md entry recording why neither applies) and reopen with --reslice-review <DRIFT-ID>\n",
+			strings.Join(overCap, ","), wrightRoundsPerReview, kind)
+		return nil, 3
+	}
+	for _, other := range f.Waves {
+		if other.State != "abandoned" && other.ResliceReview == review && roundKind(other) == kind {
+			fmt.Fprintf(stderr, "dispatch: BLOCKED: reslice review %s already admitted another round window\n", review)
+			return nil, 3
+		}
+	}
+	drift, err := readWorkspaceArtifact(root, slug, "drift.md")
+	if err != nil {
+		fmt.Fprintf(stderr, "dispatch: BLOCKED: reslice review %s: %v\n", review, err)
+		return nil, 3
+	}
+	heading := driftHeading(string(drift), review)
+	for _, id := range overCap {
+		if !regexp.MustCompile(`\b` + regexp.QuoteMeta(id) + `\b`).MatchString(heading) {
+			fmt.Fprintf(stderr, "dispatch: BLOCKED: drift.md has no \"## %s\" heading naming %s\n", review, id)
+			return nil, 3
+		}
+	}
+	w.ResliceReview, w.ResliceReviewed = review, overCap
+	return lines, 0
+}
+
+// driftHeading returns the drift.md level-2 heading line for id, or "".
+func driftHeading(drift, id string) string {
+	re := regexp.MustCompile(`(?m)^## ` + regexp.QuoteMeta(id) + `\b.*$`)
+	return re.FindString(drift)
 }
 
 func waveState(w *dispatchWave) string {

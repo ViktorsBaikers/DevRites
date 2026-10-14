@@ -35,6 +35,6 @@
 | Standards | The rule files in this directory; `core.md` is always-on, the rest load on trigger (`README.md` table). |
 | Transfer commit | The isolated wright's local unpushed `WIP(<slug>):` transport commit; never the control-branch checkpoint. |
 | Trigger | A named conditional read-set in a `loads:` manifest (e.g. `tdd`, `applicability`, `ui`); engine fails closed on unknown names. |
-| Windows ledger | `windows.md`: one waiver row per deferral marker the change introduces; `check windows` fails on unwaived hits. [`windows.md`](windows.md). |
+| Windows ledger | `windows.md`: one waiver row per deferral or bar-lowering marker the change introduces; `check windows` fails on unwaived hits. [`windows.md`](windows.md). |
 | Workflow Artifact | A Vet-ready, root-authored executable file under `.devrites/work/<slug>/`; [`workflow-artifacts.md`](workflow-artifacts.md). |
 | Wright | `devrites-slice-wright`: the sole product source/test writer under a path-bounded contract. |

@@ -33,11 +33,13 @@ Spec Drift Guard still applies.
    spending review. Then compare returned paths and `git diff --name-only` with the
    contract for semantics diff-scope cannot judge (stale/partial/malformed work;
    preserved user work). Restoration uses the bounded wright.
-5. **Review.** Apply [Independent Build review](#independent-build-review).
+5. **Review.** Apply [Independent Build review](#independent-build-review). Run step 6
+   proof in the same window on the same frozen candidate; both gate step 7, and a
+   repair or source-mutating proof voids both.
    Missing verdicts, principle breaches and open Critical/Important block acceptance.
 6. **Prove.** Against the frozen pre-slice candidate inspect
    test hunks for deletion, skipping/focus, tautology, or weaker expectations.
-   Use step 5's exact test-analyst account; missing/adverse criterion verdict is
+   Wait for step 5's exact test-analyst account; missing/adverse criterion verdict is
    Critical. Run only `test-plan.md` repository/CI commands, record output, recheck
    `git diff --name-only`. Missing/weakened/red/source-mutating proof cannot pass.
    Pre-existing/environment-specific claims need a predating same-command,
@@ -70,7 +72,7 @@ inventory: one full-diff `devrites-code-reviewer`, one `devrites-test-analyst`,
 and one exact `devrites-doubt-reviewer` per stood decision that meets
 `devrites-doubt` § When to use (boundary, data model, auth, public API, migration,
 user flow, assumption tests cannot prove); other stood decisions are recorded in
-`decisions.md` without dispatch. Dispatch fresh,
+`decisions.md` without dispatch. Bundles take `--slice <SLICE-ID>`. Dispatch fresh,
 read-only under [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md).
 Wait for every required account to become terminal; missing/gap needs a valid result.
 Fold supported in-scope Critical/Important findings by cause into one inventory.

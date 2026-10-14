@@ -48,11 +48,11 @@ Usage:
   devrites-engine orient <slug>            Alias for observe summary
   devrites-engine next [slug]              Print the minimal remaining lifecycle path with advisory skips
   devrites-engine handoff [slug]           Emit the deterministic resume record (cursor, blocking gates, ledger, dead ends)
-  devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--trigger a,b]
+  devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <id>] [--trigger a,b]
                                          Emit one deduplicated read-set bundle for a phase, skill, or dispatch role
   devrites-engine metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   devrites-engine metrics summary [slug]   Summarize the per-feature metrics.jsonl event ledger
-  devrites-engine dispatch <slug> <sub>    Launch-wave barrier for parallel dispatch: open/start/seal/return/status/abandon
+  devrites-engine dispatch <slug> <sub>    Launch-wave barrier for parallel dispatch: open/start/seal/return/status/abandon (build wright waves: --slice, round cap)
   devrites-engine claim <add|release|list|check>   Advisory session-scoped file claims for same-tree concurrent sessions (.devrites/claims.jsonl)
   devrites-engine note <subcommand> <slug>         Anchored workspace notes bound to verbatim code quotes; drift regrades them (notes.md)
   devrites-engine observe slice <slug> <SLICE-ID>  Print one SLICE-### section of tasks.md

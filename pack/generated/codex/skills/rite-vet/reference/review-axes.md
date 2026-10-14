@@ -29,7 +29,8 @@ Before implementation review, check for work beyond the settled spec.
    [feature ceiling](../../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
    (over-budget `tasks.md`/`plan.md` from slice or AC count) is a scope finding, not a
    `Budget override`: route to `$rite-plan course-correct` (`MVP cut`) with the
-   continuation sequence named; do not vet the whole epic.
+   continuation sequence named; do not vet the whole epic. An `ADVISORY size:`
+   slice without `Size rationale:` is a non-blocking Suggestion to split it.
 4. **Built-in check.** For each new pattern/infra/concurrency approach, invoke
    `devrites-source-driven` inline to verify current framework/runtime support and cite it. Custom
    work where a built-in suffices is a scope-reduction finding.
@@ -197,7 +198,10 @@ Use standard `AskUserQuestion`:
    recovery owner, test, handling, and user-visible/silent result. No test + no handling +
    silent = **Critical** (`artifacts.md`).
 4. **Dependency safety:** verify graph/order and shared file/state/contract/lock/port/queue/env
-   conflicts. Correct the plan; native host scheduling needs no lane artifact.
+   conflicts. Each `Dependencies` edge must genuinely gate its slice (consumes an
+   output, interface, or state the predecessor produces); remove an ordering-only
+   edge, since it silently shrinks the parallel set. Correct the plan; native host
+   scheduling needs no lane artifact.
 5. **Build-entry preflight:** commands/cwds, tools, package state, parser/browser smoke,
    prerequisites, and provenance ([`artifacts.md`](artifacts.md)).
 6. **Implementation readiness:** goal-backward coverage, wiring, dependency simulation,

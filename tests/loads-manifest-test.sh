@@ -212,6 +212,19 @@ cat > "$SK/rite-build/SKILL.md" <<'EOF'
 EOF
 expect_fail "unknown artifact" "not declared in workspace-artifact-schema"
 
+# --- rootOnly must name a loaded path -----------------------------------------
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"always":["devrites-lib/reference/core.md"],"rootOnly":["devrites-lib/reference/core.md"]} -->
+# build
+EOF
+expect_ok "rootOnly names an always path"
+
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"always":["devrites-lib/reference/core.md"],"rootOnly":["devrites-lib/reference/extra.md"]} -->
+# build
+EOF
+expect_fail "rootOnly not loaded" "is not in always/triggers"
+
 # --- invalid JSON -----------------------------------------------------------
 cat > "$SK/rite-build/SKILL.md" <<'EOF'
 <!-- loads: {not json} -->

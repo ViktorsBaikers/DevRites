@@ -672,3 +672,189 @@ func TestContextWorkspaceIncludeMarkerStaysLiteral(t *testing.T) {
 		t.Fatalf("workspace include marker not kept literal:\n%s", text)
 	}
 }
+
+func TestContextSliceScopesWorkspaceAndRole(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	skills := newSkillsRoot(t)
+	writeFile(t, filepath.Join(skills, "rite-build", "reference", "root-procedure.md"), "# root procedure body\n")
+	writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), "---\nname: rite-build\n---\n<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\",\"rite-build/reference/root-procedure.md\"],\"rootOnly\":[\"rite-build/reference/root-procedure.md\"],\"workspace\":[\"tasks.md\",\"decisions.md\",\"spec.md\"]} -->\n# build\n")
+	writeFile(t, filepath.Join(featureDir, "tasks.md"), "# Tasks\n\n## SLICE-001 First\nGoal: first body\n\n## SLICE-002 Second\nGoal: second body\nSatisfies: AC-001\nDecisions: DEC-010\ndepends_on: [SLICE-001]\n")
+	var decisions strings.Builder
+	decisions.WriteString("# Decisions\n")
+	for i := 0; i < 250; i++ {
+		decisions.WriteString("filler decision row\n")
+	}
+	decisions.WriteString("## DEC-010 Use the store\nDEC-0100 is a different id\n")
+	writeFile(t, filepath.Join(featureDir, "decisions.md"), decisions.String())
+	writeFile(t, filepath.Join(featureDir, "spec.md"), "# spec\nAC-001 small spec body\n")
+
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	args := []string{"feat", "--phase", "build", "--role", "slice-wright", "--slice", "SLICE-002", "--skills-root", skills}
+	if code := RunContext(root, args, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+	}
+	if !strings.Contains(stdout.String(), "scope: slice SLICE-002 (1 whole, 2 by-reference)") {
+		t.Fatalf("scope line missing:\n%s", stdout)
+	}
+	raw, err := os.ReadFile(filepath.Join(featureDir, "ctx", "build-slice-wright.SLICE-002.bundle.md"))
+	if err != nil {
+		t.Fatalf("bundle: %v", err)
+	}
+	text := string(raw)
+	for _, want := range []string{
+		"Goal: second body",
+		"workspace/decisions.md (by reference)",
+		"/work/feat/decisions.md sha256: ",
+		"- L252 ## DEC-010 Use the store",
+		"- DEC-010: L252\n",
+		"- SLICE-001: L3 L10\n",
+		"- AC-001: L8\n",
+		"small spec body",
+		"===== root-only (not inlined for role slice-wright) =====\nrite-build/reference/root-procedure.md",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("bundle missing %q:\n%s", want, text)
+		}
+	}
+	for _, absent := range []string{"Goal: first body", "filler decision row", "root procedure body"} {
+		if strings.Contains(text, absent) {
+			t.Fatalf("bundle inlined %q:\n%s", absent, text)
+		}
+	}
+	if strings.Index(text, "# wright") > strings.Index(text, "# core") {
+		t.Fatalf("role contract must lead the bundle:\n%s", text)
+	}
+
+	// Without --role the root still gets its procedure inline.
+	stdout.Reset()
+	if code := RunContext(root, []string{"feat", "--phase", "build", "--skills-root", skills}, stdout, stderr); code != 0 {
+		t.Fatalf("phase bundle code=%d\n%s", code, stderr)
+	}
+	phase, err := os.ReadFile(filepath.Join(featureDir, "ctx", "build.bundle.md"))
+	if err != nil || !strings.Contains(string(phase), "root procedure body") || !strings.Contains(string(phase), "Goal: first body") {
+		t.Fatalf("phase bundle must stay whole: err=%v\n%s", err, phase)
+	}
+}
+
+func TestContextSliceRejectsBadOrUnknownID(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	skills := newSkillsRoot(t)
+	writeFile(t, filepath.Join(featureDir, "tasks.md"), "# Tasks\n\n## SLICE-001 First\nGoal: x\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunContext(root, []string{"feat", "--phase", "build", "--slice", "slice-1", "--skills-root", skills}, stdout, stderr); code != 2 {
+		t.Fatalf("malformed id: code=%d want 2\n%s", code, stderr)
+	}
+	if code := RunContext(root, []string{"--skill", "rite-build", "--slice", "SLICE-001", "--out", "x.md", "--skills-root", skills}, stdout, stderr); code != 2 {
+		t.Fatalf("slice without slug: code=%d want 2\n%s", code, stderr)
+	}
+	stdout.Reset()
+	if code := RunContext(root, []string{"feat", "--phase", "build", "--slice", "SLICE-009", "--skills-root", skills}, stdout, stderr); code != 3 || !strings.Contains(stdout.String(), "BLOCKED: SLICE-009 not found") {
+		t.Fatalf("unknown slice: code=%d\n%s", code, stdout)
+	}
+}
+
+func TestDispatchWrightRoundCap(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	run := func(args ...string) (int, string) {
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		code := RunDispatch(root, append([]string{"feat"}, args...), stdout, stderr)
+		return code, stdout.String() + stderr.String()
+	}
+	open := func(wave string, extra ...string) (int, string) {
+		return run(append([]string{"open", "--phase", "build", "--wave", wave, "--role", "slice-wright", "--slice", "SLICE-001"}, extra...)...)
+	}
+	if code, out := run("open", "--phase", "build", "--wave", "w0", "--role", "slice-wright"); code != 2 || !strings.Contains(out, "needs --slice") {
+		t.Fatalf("missing --slice: code=%d\n%s", code, out)
+	}
+	if code, out := run("open", "--phase", "vet", "--wave", "v1", "--role", "plan-reviewer"); code != 0 {
+		t.Fatalf("non-build wave must not need --slice: code=%d\n%s", code, out)
+	}
+	for i := 1; i <= wrightRoundsPerReview; i++ {
+		code, out := open("r" + string(rune('0'+i)))
+		if code != 0 || !strings.Contains(out, "SLICE-001 wright round "+string(rune('0'+i))) {
+			t.Fatalf("round %d: code=%d\n%s", i, code, out)
+		}
+	}
+	if code, out := run("abandon", "--wave", "r5", "--reason", "orphaned"); !strings.Contains(out, "wave r5 abandoned") {
+		t.Fatalf("abandon: code=%d\n%s", code, out)
+	}
+	if code, out := open("r5b"); code != 0 || !strings.Contains(out, "wright round 5") {
+		t.Fatalf("abandoned wave must not count: code=%d\n%s", code, out)
+	}
+	if code, out := open("r6"); code != 3 || !strings.Contains(out, "BLOCKED: SLICE-001 reached 5 wright rounds") {
+		t.Fatalf("round 6 must block: code=%d\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(featureDir, "drift.md"), "# Drift\n\n## D-010 — SLICE-002 unrelated\n\n## D-011 — SLICE-001 reslice review: no smaller AC-preserving split\n")
+	if code, out := open("r6", "--reslice-review", "D-099"); code != 3 {
+		t.Fatalf("unknown drift id: code=%d\n%s", code, out)
+	}
+	if code, out := open("r6", "--reslice-review", "D-010"); code != 3 || !strings.Contains(out, "naming SLICE-001") {
+		t.Fatalf("drift heading for another slice: code=%d\n%s", code, out)
+	}
+	if code, out := open("r6", "--reslice-review", "D-011"); code != 0 || !strings.Contains(out, "wright round 6") {
+		t.Fatalf("valid review must admit: code=%d\n%s", code, out)
+	}
+	for i := 7; i <= 2*wrightRoundsPerReview; i++ {
+		if code, out := open("r" + string(rune('a'+i))); code != 0 {
+			t.Fatalf("round %d inside the reviewed window: code=%d\n%s", i, code, out)
+		}
+	}
+	if code, out := open("r11", "--reslice-review", "D-011"); code != 3 || !strings.Contains(out, "already admitted") {
+		t.Fatalf("reused review: code=%d\n%s", code, out)
+	}
+	if code, out := run("open", "--phase", "build", "--wave", "s2", "--role", "slice-wright", "--slice", "SLICE-002", "--reslice-review", "D-010"); code != 2 {
+		t.Fatalf("review before the cap must be refused: code=%d\n%s", code, out)
+	}
+}
+
+func TestDispatchVetRoundsCountSeparately(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	run := func(args ...string) (int, string) {
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		code := RunDispatch(root, append([]string{"feat"}, args...), stdout, stderr)
+		return code, stdout.String() + stderr.String()
+	}
+	for i := 0; i < 7; i++ {
+		if code, out := run("open", "--phase", "vet", "--wave", "full"+string(rune('a'+i)), "--role", "plan-reviewer"); code != 0 {
+			t.Fatalf("full Vet without --slice stays uncapped: code=%d\n%s", code, out)
+		}
+	}
+	if code, out := run("open", "--phase", "build", "--wave", "w1", "--role", "slice-wright", "--slice", "SLICE-001"); code != 0 || !strings.Contains(out, "wright round 1") {
+		t.Fatalf("wright round must not see vet waves: code=%d\n%s", code, out)
+	}
+	for i := 1; i <= wrightRoundsPerReview; i++ {
+		if code, out := run("open", "--phase", "vet", "--wave", "v"+string(rune('0'+i)), "--role", "plan-reviewer", "--slice", "SLICE-001"); code != 0 || !strings.Contains(out, "vet round "+string(rune('0'+i))) {
+			t.Fatalf("vet round %d: code=%d\n%s", i, code, out)
+		}
+	}
+	if code, out := run("open", "--phase", "vet", "--wave", "v6", "--role", "plan-reviewer", "--slice", "SLICE-001"); code != 3 || !strings.Contains(out, "reached 5 vet rounds") {
+		t.Fatalf("vet round 6 must block: code=%d\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(featureDir, "drift.md"), "## D-001 — SLICE-001 reslice review: proof seam already minimal\n")
+	if code, out := run("open", "--phase", "vet", "--wave", "v6", "--role", "plan-reviewer", "--slice", "SLICE-001", "--reslice-review", "D-001"); code != 0 {
+		t.Fatalf("reviewed vet round 6: code=%d\n%s", code, out)
+	}
+	if code, out := run("open", "--phase", "plan", "--wave", "p1", "--role", "plan-drafter", "--slice", "SLICE-001"); code != 2 {
+		t.Fatalf("--slice on a plan wave: code=%d\n%s", code, out)
+	}
+}
+
+func TestContextRepeatedSliceUnion(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	skills := newSkillsRoot(t)
+	writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), "---\nname: rite-build\n---\n<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\"],\"workspace\":[\"tasks.md\"]} -->\n# build\n")
+	writeFile(t, filepath.Join(featureDir, "tasks.md"), "# Tasks\n\n## SLICE-001 A\nGoal: alpha body\n\n## SLICE-002 B\nGoal: beta body\n\n## SLICE-003 C\nGoal: gamma body\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	args := []string{"feat", "--phase", "build", "--slice", "SLICE-001", "--slice", "SLICE-003", "--skills-root", skills}
+	if code := RunContext(root, args, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+	}
+	raw, err := os.ReadFile(filepath.Join(featureDir, "ctx", "build.SLICE-001+SLICE-003.bundle.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	if !strings.Contains(text, "alpha body") || !strings.Contains(text, "gamma body") || strings.Contains(text, "beta body") {
+		t.Fatalf("union of slice blocks wrong:\n%s", text)
+	}
+}

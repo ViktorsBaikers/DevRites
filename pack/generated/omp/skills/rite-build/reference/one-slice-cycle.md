@@ -21,8 +21,9 @@ DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). 
 (DOUBT)   → orchestrator, on return: devrites-doubt each non-trivial decision the wright stood up
             — dispatch the initial read-only reviews of distinct decisions in parallel
             (independent claims, fresh contexts); wright fixes stay serial — writers share files
-PROVE     → root: required build/browser/E2E, then returned-diff/path review; fail-on-red
-            (red/gap → repair wright, then re-review/re-prove; do not commit yet)
+PROVE     → root, concurrent with the reviews on the same frozen candidate:
+            required build/browser/E2E, then returned-diff/path recheck; fail-on-red
+            (red/gap → repair wright, then re-review and re-prove; do not commit yet)
 RECORD    → orchestrator: after green verification, update state.md/evidence.md and
             upsert the authoritative candidate manifest from the actual scoped diff
 (CHECKPOINT) → only now, with review+proof green: local WIP(<slug>): <imperative summary>

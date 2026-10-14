@@ -157,7 +157,8 @@ Pull these via `Read` when shaping the plan:
    acceptance, and names/prose agree. Missing, duplicate, contradictory, or
    meaning-changing mappings block. Then run
    `devrites-engine check task-graph <slug>`; a malformed dependency graph blocks
-   before Vet rather than spending a reviewer context on invalid tasks.
+   before Vet rather than spending a reviewer context on invalid tasks. Resolve each
+   `ADVISORY size:` line now (split, or `Size rationale:`); it never blocks.
 7. **Readiness gate** (`plan-template.md`): require CLEAR coverage; complete acceptance,
    wiring, shared-contract proof, applicable outputs, and rollback; risk-first acyclic order;
    justified deviations; and every horizon item present, with blockers resolved, planning
