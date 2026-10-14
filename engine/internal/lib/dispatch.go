@@ -106,9 +106,6 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			handle = value
 		case "--reason":
 			reason = value
-		case "-h", "-help", "--help":
-			fmt.Fprint(stdout, dispatchUsage)
-			return 0
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(stderr, "dispatch: unknown flag %q\n", args[i])
