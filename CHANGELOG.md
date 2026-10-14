@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v6.0.0...v6.0.1) (2026-10-14)
+
+### Fixed
+
+* **skills:** route .devrites writes to workflow artifacts ([#102](https://github.com/ViktorsBaikers/DevRites/issues/102)) ([8bb83b2](https://github.com/ViktorsBaikers/DevRites/commit/8bb83b21ef80cbcde3788e434830e38217297e31))
+
 ## [6.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v5.14.4...v6.0.0) (2026-10-10)
 
 ### ⚠ BREAKING CHANGES
