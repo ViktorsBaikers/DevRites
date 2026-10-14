@@ -75,7 +75,9 @@ Same-worktree (non-isolated) dispatch claims before writing: `devrites-engine
 claim add --session <id> <task-paths>`; retain its returned `<claim-id>`, then run
 `devrites-engine claim check --session <id> <task-paths>` — a held claim from a
 live foreign session releases the retained claim and stops the dispatch, per
-[`agents.md`](../../devrites-lib/reference/standards/agents.md). Ask the host
+[`agents.md`](../../devrites-lib/reference/standards/agents.md). `.devrites/**`
+is never a task path; see [Workflow Artifact admission](../../devrites-lib/reference/standards/workflow-artifacts.md).
+Ask the host
 for the exact writer in fresh context and wait. Track it through the
 launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
 <slice-id> --role slice-wright`, then `start` with the host handle, `seal`, and

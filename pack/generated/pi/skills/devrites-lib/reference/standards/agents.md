@@ -68,6 +68,8 @@ rejected result, stop, or a launch refused with no handle — run
 `devrites-engine claim release --session <id> --id <claim-id>`. Claims expire
 by TTL only as crash recovery; `claim list` shows who holds what. Claims are
 advisory coordination, never a substitute for the one-writer-per-worktree rule.
+Claims cover product paths only; root-authored `.devrites/**` files use
+[`workflow-artifacts.md`](workflow-artifacts.md) admission instead.
 Expiry is not proof the holder stopped: size `claim add --ttl <minutes>` to the
 expected write (engine max 240) and re-add before it lapses; before writing, also
 read `claim list --all` — a foreign `expired` claim on overlapping paths whose
