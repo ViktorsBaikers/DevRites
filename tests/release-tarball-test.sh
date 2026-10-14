@@ -283,8 +283,6 @@ project_dir="$PWD"
     exit 1
   fi
   [ "$got" = "$want" ] || { echo 'error: install.sh checksum mismatch' >&2; exit 1; }
-  command -v gh >/dev/null 2>&1 || { echo 'error: gh (GitHub CLI) is required and was not found' >&2; exit 1; }
-  gh attestation verify install.sh --repo ViktorsBaikers/DevRites --signer-workflow ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main || { if gh auth status >/dev/null 2>&1; then echo 'error: install.sh attestation verification failed: no build provenance from ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main' >&2; else echo 'error: gh is not authenticated; run gh auth login' >&2; fi; exit 1; }
 
   # Choose one Node-free operation:
   bash ./install.sh --target "$project_dir"  # install into the directory you ran this from
@@ -344,62 +342,6 @@ bad_url="$(sed -E 's/\]\(https?:[^)]*\)//g; s/(href|src)="[^"]*"//g' "$ROOT/READ
   diff <(printf '%s\n' "$expected_bootstrap") <(printf '%s\n' "$actual_bootstrap") >&2 || true
   exit 1
 }
-# The install.sh attestation must be one exact, fatal, pinned line that runs before the first
-# live installer call; each way of weakening it must be flagged.
-attest_line="  gh attestation verify install.sh --repo ViktorsBaikers/DevRites --signer-workflow ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main || { if gh auth status >/dev/null 2>&1; then echo 'error: install.sh attestation verification failed: no build provenance from ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main' >&2; else echo 'error: gh is not authenticated; run gh auth login' >&2; fi; exit 1; }"
-attest_before_install() {
-  printf '%s\n' "$1" | awk -v want="$2" '
-    $0 == want { if (!installed) ok++; else late++ }
-    /^[[:space:]]*bash \.\/install\.sh/ { installed = 1 }
-    END { exit !(ok == 1 && !late) }
-  '
-}
-attest_before_install "$actual_bootstrap" "$attest_line" || {
-  echo "README bootstrap does not run the pinned fatal install.sh attestation before bash ./install.sh" >&2
-  exit 1
-}
-attest_mutants=(
-  "$(printf '%s\n' "$actual_bootstrap" | grep -Fvx "$attest_line")"
-  "$(printf '%s\n' "$actual_bootstrap" | grep -Fvx "$attest_line" | awk -v l="$attest_line" '{ print } /^[[:space:]]*bash \.\/install\.sh/ { print l }')"
-  "$(printf '%s\n' "$actual_bootstrap" | sed 's/ || { if gh auth status.*$/ || true/')"
-  "$(printf '%s\n' "$actual_bootstrap" | sed 's/ --repo ViktorsBaikers\/DevRites//')"
-  "$(printf '%s\n' "$actual_bootstrap" | sed 's/ --signer-workflow [^ ]*//')"
-)
-for mutant in "${attest_mutants[@]}"; do
-  ! attest_before_install "$mutant" "$attest_line" || {
-    echo "install.sh attestation check accepts a weakened bootstrap" >&2
-    exit 1
-  }
-done
-# The bootstrap itself must name each cause: gh absent (checked before the attestation) and gh
-# logged out (distinguished from a provenance rejection), both fatal; install.sh never runs then.
-gh_line="  command -v gh >/dev/null 2>&1 || { echo 'error: gh (GitHub CLI) is required and was not found' >&2; exit 1; }"
-attest_before_install "$actual_bootstrap" "$gh_line" || {
-  echo "README bootstrap does not name a missing gh before bash ./install.sh" >&2
-  exit 1
-}
-[[ "$(printf '%s\n' "$actual_bootstrap" | awk -v g="$gh_line" -v a="$attest_line" '$0 == g { gi = NR } $0 == a { ai = NR } END { print (gi && ai && gi < ai) }')" == 1 ]] || {
-  echo "README bootstrap does not check for gh before the attestation" >&2
-  exit 1
-}
-for cause in "echo 'error: gh is not authenticated; run gh auth login' >&2" "gh auth status >/dev/null 2>&1" \
-  "echo 'error: install.sh attestation verification failed: no build provenance from ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main' >&2"; do
-  printf '%s\n' "$actual_bootstrap" | grep -Fx "$attest_line" | grep -Fq -- "$cause" || {
-    echo "README bootstrap attestation failure does not name its cause: $cause" >&2
-    exit 1
-  }
-done
-cause_mutants=(
-  "$(printf '%s\n' "$actual_bootstrap" | grep -Fvx "$gh_line")"
-  "$(printf '%s\n' "$actual_bootstrap" | sed "s/^  command -v gh >.*$/  command -v gh >\/dev\/null 2>\&1 || true/")"
-  "$(printf '%s\n' "$actual_bootstrap" | grep -Fvx "$gh_line" | awk -v l="$gh_line" '{ print } /^[[:space:]]*bash \.\/install\.sh/ { print l }')"
-)
-for mutant in "${cause_mutants[@]}"; do
-  ! { attest_before_install "$mutant" "$gh_line" && [[ "$(printf '%s\n' "$mutant" | awk -v g="$gh_line" -v a="$attest_line" '$0 == g { gi = NR } $0 == a { ai = NR } END { print (gi && ai && gi < ai) }')" == 1 ]]; } || {
-    echo "gh-missing check accepts a weakened bootstrap" >&2
-    exit 1
-  }
-done
 
 node - "$ROOT/.releaserc.json" <<'JS'
 const config = require(process.argv[2]);

@@ -15,8 +15,7 @@ case "$url" in
   *) [ -z "${MOCK_HTTP_FAIL:-}" ] || exit 22; cat "$MOCK_ASSET" ;;
 esac
 MOCK
-printf '#!/bin/sh\nexit 1\n' > "$MOCKBIN/gh"
-chmod +x "$MOCKBIN/curl" "$MOCKBIN/gh"
+chmod +x "$MOCKBIN/curl"
 export PATH="$MOCKBIN:$PATH" DEVRITES_REF=v1.2.3
 SRC="$TMP/src"; mkdir -p "$SRC"; printf '{"version":"1.2.3"}\n' > "$SRC/package.json"
 # shellcheck source=/dev/null

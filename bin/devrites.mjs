@@ -190,14 +190,6 @@ async function downloadEngine() {
     rmSync(`${out}.sha256`, { force: true });
     return null;
   }
-  const signer = `${repo}/.github/workflows/ci.yml@refs/heads/main`;
-  const attestation = spawnSync('gh', ['attestation', 'verify', out, '--repo', repo, '--signer-workflow', signer], { stdio: 'ignore', timeout: 120_000 });
-  if (attestation.error || attestation.status !== 0) {
-    acquisitionFailure = `release ${tag} asset ${name}: attestation verification failed (gh must be installed and authenticated)`;
-    rmSync(out, { force: true });
-    rmSync(`${out}.sha256`, { force: true });
-    return null;
-  }
   try {
     chmodSync(out, 0o755);
   } catch {

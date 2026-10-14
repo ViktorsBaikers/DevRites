@@ -248,59 +248,11 @@ globalThis.fetch = async (url, options) => {
 };
 JS
 NODE_DIR="$(dirname "$(command -v node)")"
-# gh stand-in: attests only the fixture engine digest, signed by ATTESTED_SIGNER, and
-# accepts only a request pinned to the default repository and that exact signer workflow.
-# The wrong-digest, wrong-repo and wrong-workflow arms below prove it is strict.
-GH_BIN="$FAKEBIN/gh-bin"
-mkdir "$GH_BIN"
-ATTESTED_ENGINE="$FAKE_RELEASE_ENGINE"
-ATTESTED_SIGNER=ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main
-export ATTESTED_ENGINE ATTESTED_SIGNER
-cat >"$GH_BIN/gh" <<'SH'
-#!/bin/sh
-[ "$1" = attestation ] && [ "$2" = verify ] && [ "$4" = --repo ] && [ "$6" = --signer-workflow ] &&
-  [ "$5" = ViktorsBaikers/DevRites ] && [ "$7" = "$ATTESTED_SIGNER" ] || exit 64
-got=$(shasum -a 256 "$3" | awk '{print $1}') || exit 65
-want=$(shasum -a 256 "$ATTESTED_ENGINE" | awk '{print $1}')
-[ "$got" = "$want" ]
-SH
-chmod +x "$GH_BIN/gh"
 NODE_TMP="$FAKEBIN/node-tmp"
 mkdir "$NODE_TMP"
-NOGH_STAGE="$FAKEBIN/nogh-stage"
-mkdir "$NOGH_STAGE"
-if env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_NO_BINARY -u DEVRITES_ENGINE_CLI DEVRITES_BIN_DIR="$NOGH_STAGE" TMPDIR="$NODE_TMP" NODE_OPTIONS="--import=$FAKEBIN/fetch-mock.mjs" PATH="$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin" \
-  "$BIN" --target "$TARGET_BINARY" --force >/dev/null 2>&1; then
-  no "engine acquisition succeeded without attestation verification"
-else
-  ok "engine acquisition refuses without attestation verification"
-fi
-[ -e "$NOGH_STAGE/devrites-engine" ] && no "unattested engine was staged" || ok "unattested engine not staged"
-
-# Each arm serves a self-consistent sidecar, so only the attestation can refuse it.
-refused_by_attestation() {
-  arm="$1"
-  shift
-  stage="$FAKEBIN/$arm-stage"
-  mkdir "$stage"
-  if env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_NO_BINARY -u DEVRITES_ENGINE_CLI "$@" DEVRITES_BIN_DIR="$stage" TMPDIR="$NODE_TMP" NODE_OPTIONS="--import=$FAKEBIN/fetch-mock.mjs" PATH="$GH_BIN:$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin" \
-    "$BIN" --target "$TARGET_BINARY" --force >"$FAKEBIN/$arm.out" 2>&1; then
-    no "$arm engine install succeeded"
-  elif grep -Fq 'attestation verification failed' "$FAKEBIN/$arm.out"; then
-    ok "$arm engine install refused by attestation"
-  else
-    no "$arm engine install failed for a reason other than attestation"
-  fi
-  find "$stage" -mindepth 1 -print -quit | grep -q . && no "$arm engine was staged" || ok "$arm engine not staged"
-}
-printf '#!/bin/sh\nexit 0\n' >"$FAKEBIN/attacker-engine"
-chmod +x "$FAKEBIN/attacker-engine"
-refused_by_attestation wrong-digest FAKE_RELEASE_ENGINE="$FAKEBIN/attacker-engine"
-refused_by_attestation wrong-repo DEVRITES_REPO=attacker/fork ATTESTED_SIGNER=attacker/fork/.github/workflows/ci.yml@refs/heads/main
-refused_by_attestation wrong-workflow ATTESTED_SIGNER=ViktorsBaikers/DevRites/.github/workflows/release.yml@refs/heads/main
 : >"$FETCH_LOG"
 : >"$REDIRECT_CANCEL_LOG"
-env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_NO_BINARY -u DEVRITES_ENGINE_CLI DEVRITES_BIN_DIR="$BIN_STAGE" TMPDIR="$NODE_TMP" NODE_OPTIONS="--import=$FAKEBIN/fetch-mock.mjs" PATH="$GH_BIN:$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin" \
+env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_NO_BINARY -u DEVRITES_ENGINE_CLI DEVRITES_BIN_DIR="$BIN_STAGE" TMPDIR="$NODE_TMP" NODE_OPTIONS="--import=$FAKEBIN/fetch-mock.mjs" PATH="$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin" \
   "$BIN" --target "$TARGET_BINARY" --force >/dev/null 2>&1 ||
   no "packaged binary install exited non-zero"
 fetch_calls="$(cat "$FETCH_LOG" 2>/dev/null || true)"
@@ -427,8 +379,8 @@ console.log(`${result} ${enginePid && alive(enginePid) ? 'orphan' : 'clean'}`);
 for (const target of [-child.pid, enginePid]) if (target) try { process.kill(target, 'SIGKILL'); } catch {}
 JS
 engine_env() {
-  env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_ENGINE_CLI FAKE_RELEASE_ENGINE="$SLEEP_ENGINE" ATTESTED_ENGINE="$SLEEP_ENGINE" \
-    NODE_OPTIONS="--import=$FAKEBIN/fetch-mock.mjs" PATH="$GH_BIN:$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin" "$@"
+  env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_ENGINE_CLI FAKE_RELEASE_ENGINE="$SLEEP_ENGINE" \
+    NODE_OPTIONS="--import=$FAKEBIN/fetch-mock.mjs" PATH="$NODE_DIR:/usr/bin:/bin:/usr/sbin:/sbin" "$@"
 }
 for engine_case in group:INT:130 group:TERM:143 group:HUP:129 wrapper:INT:130 wrapper:TERM:143 wrapper:HUP:129; do
   IFS=: read -r mode sig want_status <<<"$engine_case"
@@ -553,81 +505,6 @@ env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_ENGINE_CLI UNINSTALL_HELP_EXIT=2 F
 [ -s "$UNINSTALL_FETCH_LOG" ] &&
   ok "uninstall acquires a release when the PATH engine lacks uninstall" ||
   no "uninstall trusted a PATH engine that lacks uninstall"
-
-# The attestation check is bounded and a timeout is a refusal.
-cat >"$FAKEBIN/gh-spy.mjs" <<'JS'
-import cp from 'node:child_process';
-import { syncBuiltinESMExports } from 'node:module';
-import { appendFileSync } from 'node:fs';
-const real = cp.spawnSync;
-cp.spawnSync = (command, args, options) => {
-  if (command !== 'gh') return real(command, args, options);
-  appendFileSync(process.env.GH_SPY_LOG, `${options?.timeout}\n`);
-  if (process.env.GH_SIM_TIMEOUT === '1') return { error: Object.assign(new Error('spawnSync gh ETIMEDOUT'), { code: 'ETIMEDOUT' }), status: null, signal: 'SIGTERM' };
-  return real(command, args, options);
-};
-syncBuiltinESMExports();
-JS
-GH_SPY_LOG="$FAKEBIN/gh-spy.log"
-ATTEST_TMP="$FAKEBIN/attest-tmp"
-mkdir "$ATTEST_TMP"
-export GH_SPY_LOG
-: >"$GH_SPY_LOG"
-env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_ENGINE_CLI TMPDIR="$ATTEST_TMP" \
-  NODE_OPTIONS="--import=$FAKEBIN/fetch-mock.mjs --import=$FAKEBIN/gh-spy.mjs" PATH="$GH_BIN:$FAIL_PATH" \
-  "$BIN" --target "$TARGET_BINARY" --dry-run >/dev/null 2>&1
-grep -Fxq 120000 "$GH_SPY_LOG" && ok "Node attestation verification is bounded" ||
-  no "Node attestation verification has no timeout"
-env -u DEVRITES_HOST_ARTIFACT_DIR -u DEVRITES_ENGINE_CLI GH_SIM_TIMEOUT=1 TMPDIR="$ATTEST_TMP" \
-  NODE_OPTIONS="--import=$FAKEBIN/fetch-mock.mjs --import=$FAKEBIN/gh-spy.mjs" PATH="$GH_BIN:$FAIL_PATH" \
-  "$BIN" --target "$TARGET_BINARY" --dry-run >"$FAKEBIN/attest-timeout.out" 2>&1 &&
-  no "a timed-out attestation was accepted" ||
-  { grep -Fq 'attestation verification failed' "$FAKEBIN/attest-timeout.out" &&
-    ok "a timed-out Node attestation is refused" || no "a timed-out Node attestation failed for another reason"; }
-
-# The shell bootstrap bounds the same check: a gh that outlives the limit is a refusal.
-SHELL_ATTEST="$FAKEBIN/shell-attest"
-mkdir "$SHELL_ATTEST" "$SHELL_ATTEST/bin" "$SHELL_ATTEST/src"
-printf '{"version":"1.2.3"}\n' >"$SHELL_ATTEST/src/package.json"
-printf 'payload\n' >"$SHELL_ATTEST/asset"
-cat >"$SHELL_ATTEST/bin/curl" <<'SH'
-#!/bin/sh
-for url do :; done
-case "$url" in
-  *.sha256) printf '%s  %s\n' "$(shasum -a 256 "$SHELL_ATTEST/asset" | awk '{print $1}')" "${url##*/}" | sed 's/\.sha256$//' ;;
-  *) cat "$SHELL_ATTEST/asset" ;;
-esac
-SH
-printf '#!/bin/sh\nsleep 5\nexit 0\n' >"$SHELL_ATTEST/bin/gh"
-chmod +x "$SHELL_ATTEST/bin/curl" "$SHELL_ATTEST/bin/gh"
-export SHELL_ATTEST
-attest_started=$SECONDS
-PATH="$SHELL_ATTEST/bin:$PATH" DEVRITES_REF=v1.2.3 DR_ATTEST_TIMEOUT=1 bash -c '
-  source "$1"
-  dr_download_engine "$2" owner/repo "$3" || { printf "%s\n" "$DR_ACQUIRE_FAILURE"; exit 3; }
-' _ "$ROOT/scripts/install-lib.sh" "$SHELL_ATTEST/src" "$SHELL_ATTEST/engine" >"$SHELL_ATTEST/out" 2>&1
-attest_status=$?
-[ "$attest_status" -eq 3 ] && grep -Fq 'attestation verification failed' "$SHELL_ATTEST/out" &&
-  [ "$((SECONDS - attest_started))" -lt 5 ] && [ ! -e "$SHELL_ATTEST/engine" ] &&
-  ok "a shell attestation that outlives its limit is refused" ||
-  no "a shell attestation that outlives its limit was not refused promptly (status $attest_status)"
-
-# A gh that finishes in time leaves no watchdog or sleep behind.
-printf '#!/bin/sh\nexit 0\n' >"$SHELL_ATTEST/bin/gh"
-attest_marker=$((40000 + $$ % 20000))
-rm -f "$SHELL_ATTEST/engine"
-PATH="$SHELL_ATTEST/bin:$PATH" DEVRITES_REF=v1.2.3 DR_ATTEST_TIMEOUT="$attest_marker" bash -c '
-  source "$1"
-  dr_download_engine "$2" owner/repo "$3"
-' _ "$ROOT/scripts/install-lib.sh" "$SHELL_ATTEST/src" "$SHELL_ATTEST/engine" >/dev/null 2>&1
-attest_status=$?
-sleep 0.3
-if [ "$attest_status" -eq 0 ] && ! pgrep -f "sleep $attest_marker" >/dev/null; then
-  ok "a shell attestation that finishes in time leaves no watchdog behind"
-else
-  pkill -f "sleep $attest_marker" >/dev/null 2>&1
-  no "a shell attestation that finishes in time left a watchdog behind (status $attest_status)"
-fi
 
 # 6) dry-run writes nothing
 env -u DEVRITES_HOST_ARTIFACT_DIR DEVRITES_ENGINE_CLI="$STAGED_ENGINE" "$BIN" --target "$TARGET" --dry-run >/dev/null 2>&1 || no "dry-run exited non-zero"

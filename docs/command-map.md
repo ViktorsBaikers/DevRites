@@ -74,8 +74,7 @@ Scans cap captured input at 64 MiB and entries/findings at 4,096; findings expos
 metadata only and source or limit errors fail closed.
 
 Direct `devrites-engine update` acquires the latest exact-release pack and
-platform binary, each verified by SHA-256 sidecar and `gh attestation verify`
-(`gh` installed and authenticated), then hands local paths to the downloaded engine. Shell/npm may
+platform binary, each verified by SHA-256 sidecar, then hands local paths to the downloaded engine. Shell/npm may
 perform the same acquisition before invoking the local path. `--check` compares
 the installed version with latest release metadata without downloading assets;
 engine release selectors are unsupported.

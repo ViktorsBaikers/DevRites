@@ -503,8 +503,9 @@ jobs:
 
       # Build provenance for every release artifact, independent of npm
       # provenance: 2026's TanStack/Miasma waves shipped malicious packages
-      # carrying valid SLSA provenance, so consumers verify this attestation
-      # (gh attestation verify, see docs/release.md) against the artifact
+      # carrying valid SLSA provenance, so consumers can verify this attestation
+      # manually (gh attestation verify, see docs/release.md; installers check
+      # only SHA-256 sidecars) against the artifact
       # digest, not against the npm publish record.
       - name: Attest release artifacts
         if: hashFiles('dist/bin/*') != ''

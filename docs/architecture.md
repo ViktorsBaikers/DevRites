@@ -154,8 +154,7 @@ consume only local source, payload, and binary candidates.
 
 Direct `devrites-engine update` uses the separate `engine/internal/release`
 boundary to resolve the latest stable release and acquire its checksummed bundle
-and platform engine, each also checked with `gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`;
-`gh` must be installed and authenticated). It then invokes the downloaded engine with local paths, so
+and platform engine. It then invokes the downloaded engine with local paths, so
 the candidate validates its own payload schema. `update --check` resolves only
 release metadata and downloads no assets. Engine `--to` and `--pre` selectors do
 not exist.
@@ -164,9 +163,7 @@ The shell entrypoints
 (`bin/devrites.mjs`) remain equivalent acquisition adapters. They acquire and
 verify the exact-release bundle or binary, then pass local paths and user flags
 through to the deterministic engine operation. All network paths require exact SemVer,
-HTTPS-only redirects, exact-filename SHA-256 sidecars, a `gh attestation verify`
-pass for every release asset (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`;
-see [Install, update, and remove](../README.md#install-update-and-remove)), private temporary
+HTTPS-only redirects, exact-filename SHA-256 sidecars, private temporary
 directories, bounded transfers, and full archive preflight. They provide no
 unchecked raw, source-archive, tag, or default-branch fallback.
 

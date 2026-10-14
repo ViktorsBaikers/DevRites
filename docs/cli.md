@@ -76,11 +76,7 @@ Run `devrites-engine update` in an installed project to resolve the latest
 stable release and update the project pack plus shared engine binary. The
 command downloads the release bundle and platform engine, verifies both exact
 filenames against their SHA-256 sidecars, then hands the extracted candidate to
-the downloaded engine. Each release asset must also pass `gh attestation verify`,
-pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`,
-so `gh` must be installed and authenticated, with no bypass (see
-[Install, update, and remove](../README.md#install-update-and-remove)). This
-avoids asking an old engine to validate a newer payload schema.
+the downloaded engine. This avoids asking an old engine to validate a newer payload schema.
 
 `devrites-engine update --check` resolves and compares release metadata without
 downloading assets. `--source-dir` and `--payload-dir` remain the advanced local
@@ -100,9 +96,8 @@ comparison without changing the installation. Use
 retaining the shared `devrites-engine` binary.
 
 If an older direct engine reports `missing codex/hooks.json` or asks for
-`--source-dir`, run `npx devrites@latest update`, or use a release `install.sh` that is both
-checksum-verified and attestation-verified (pinned repo and signer workflow, see
-the verified Bash bootstrap under
+`--source-dir`, run `npx devrites@latest update`, or use a release `install.sh` that is
+checksum-verified (see the verified Bash bootstrap under
 [README Install, update, and remove](../README.md#install-update-and-remove))
 and run `bash ./install.sh update` once to install a release with the
 self-contained updater.
@@ -271,9 +266,7 @@ commands refuse ambiguous, escaped, symlinked, or otherwise unsafe roots.
 Install, update application, and uninstall remain manifest-owned local
 operations. Direct engine update, shell, and npm may acquire a release candidate;
 all remote acquisition uses exact SemVer, HTTPS-only redirect hops, mandatory
-exact-filename SHA-256 sidecars, a `gh attestation verify` check of every release
-asset (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`;
-`gh` must be installed and authenticated, with no bypass), private temporary
+exact-filename SHA-256 sidecars, private temporary
 directories, and byte/archive bounds, with no unchecked raw/source/default-branch
 fallback. Update accepts
 `--check` to compare the installed manifest version with the latest stable

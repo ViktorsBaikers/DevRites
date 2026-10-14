@@ -119,23 +119,20 @@ and `.codex/config.toml` without replacing unrelated user settings. The shared
 `devrites-engine` executable is the only allowed artifact outside the project.
 It is installed to `DEVRITES_BIN_DIR`, a writable `~/.local/bin`, or a writable
 `/usr/local/bin`; `--no-binary` / `DEVRITES_NO_BINARY=1` skips it. The bootstrap
-and direct updater may fetch the release bundle and checksummed engine assets,
-each of which must also pass `gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`).
+and direct updater may fetch the release bundle and checksummed engine assets.
 They never invoke `sudo` or edit shell startup files.
 
 The documented Node-free boundary downloads the release-owned `install.sh` and
-its exact-name sidecar, then requires both the checksum and the build-provenance
-attestation (`gh attestation verify`, pinned to `ViktorsBaikers/DevRites` and
-signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`)
-to pass before execution, as in the README "verified Bash bootstrap"; mutable
+its exact-name sidecar, then requires the checksum to pass before execution, as
+in the README "verified Bash bootstrap"; mutable
 default-branch scripts are not recommended. Legacy local and extracted shim invocations remain compatible, but
 their exact-release guarantee begins at that verified asset. A piped shim never
 treats current-directory siblings as its bundle.
 
 Network acquisition accepts only an exact SemVer release asset and its mandatory
-exact-filename SHA-256 sidecar, and every release asset must also pass
-`gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`;
-`gh` must be installed and authenticated, with no bypass). Every redirect hop must remain HTTPS, private
+exact-filename SHA-256 sidecar. Installers do not run `gh attestation verify`;
+release assets carry build-provenance attestations that users may verify
+manually (see [docs/release.md](docs/release.md)). Every redirect hop must remain HTTPS, private
 temporary-directory creation must succeed, and unchecked raw/source/default-
 branch fallbacks are absent. Representative in-stream ceilings are 1 MiB for
 release metadata, 4 KiB for a sidecar, and 64 MiB for an archive or binary, with
@@ -154,8 +151,7 @@ and [ADR-0028](docs/adr/0028-self-contained-engine-update.md) own the rationale.
 With `npx devrites@latest`, the CLI (`bin/devrites.mjs`) calls
 `devrites-engine` directly instead of running `install.sh`. The bundled host
 payload is pinned to the requested npm package version. The shim first tries the
-matching exact-release binary, which must pass its mandatory SHA-256 sidecar and
-`gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`),
+matching exact-release binary, which must pass its mandatory SHA-256 sidecar,
 then a package-local Go build, and then an existing engine. Remote responses are
 byte-bounded and every redirect is checked before following it. It has no
 runtime npm dependencies. The same project and shared-binary boundaries apply

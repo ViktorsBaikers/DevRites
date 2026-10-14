@@ -31,9 +31,8 @@ the missing host payload before handing that local candidate to the engine. The
 engine itself only validates and copies host payloads; it never generates them.
 The npm entrypoint, verified release installer, and direct engine updater acquire
 only an exact-SemVer release bundle or platform binary with its mandatory
-exact-filename SHA-256 sidecar, and each such asset must also pass
-`gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`;
-`gh` must be installed and authenticated, with no bypass).
+exact-filename SHA-256 sidecar. They do not run `gh attestation verify`; that
+check is an optional manual step (below).
 
 Verify a downloaded engine binary from a GitHub Release:
 
@@ -45,7 +44,8 @@ curl -q -LO "https://github.com/ViktorsBaikers/DevRites/releases/download/v<vers
 
 Every release artifact also carries a GitHub artifact attestation (build
 provenance generated inside the release job, bound to the artifact digest).
-Verify it, pinning the signer workflow so an attestation minted from any other
+The installers do not check it, and GitHub CLI is not needed to install.
+To verify it manually, pin the signer workflow so an attestation minted from any other
 workflow path in this repository is rejected — provenance proves where a build
 ran, not that the publishing step was the intended one:
 
@@ -80,8 +80,7 @@ or path breach before extraction (at most 10,000 members, 4,096-byte paths, and
 256 MiB expanded files). Metadata is capped at 1 MiB, sidecars at 4 KiB,
 archives/binaries at 64 MiB, and the Node adapter follows at most five redirects.
 There is no raw, source-archive, tag, or default-branch acquisition fallback;
-exact-release guarantees begin at the checksummed release `install.sh` asset that
-also passes `gh attestation verify` (pinned to `ViktorsBaikers/DevRites` and signer workflow `ViktorsBaikers/DevRites/.github/workflows/ci.yml@refs/heads/main`).
+exact-release guarantees begin at the checksummed release `install.sh` asset.
 The Go release boundary may acquire the latest stable candidate; the downloaded
 engine then supplies local paths to the manifest-owned update core. Engine
 `update --check` resolves release metadata but downloads no assets. `--to` and

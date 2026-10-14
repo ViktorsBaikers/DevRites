@@ -100,20 +100,6 @@ dr_verify_checksum() {
   [ "$_dr_got" = "$_dr_want" ]
 }
 
-# Runs a command for at most $1 seconds with output discarded; a timeout is a failure.
-dr_run_bounded() {
-  _dr_limit="$1"; shift
-  "$@" >/dev/null 2>&1 </dev/null &
-  _dr_job=$!
-  { trap 'kill "$_dr_nap"; exit 0' TERM; sleep "$_dr_limit" & _dr_nap=$!; wait "$_dr_nap" && kill "$_dr_job"; } >/dev/null 2>&1 </dev/null &
-  _dr_watch=$!
-  wait "$_dr_job" 2>/dev/null
-  _dr_rc=$?
-  kill "$_dr_watch" >/dev/null 2>&1
-  wait "$_dr_watch" 2>/dev/null
-  return "$_dr_rc"
-}
-
 dr_download_engine() {
   _dr_source_dir="$1"
   _dr_repo="$2"
@@ -138,8 +124,6 @@ dr_download_engine() {
   dr_bounded_download "$_dr_url" "$_dr_engine_out" 67108864 || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: ${DR_DOWNLOAD_FAILURE:-download} failed"; return 1; }
   dr_bounded_download "$_dr_url.sha256" "$_dr_engine_out.sha256" 4096 || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset.sha256: ${DR_DOWNLOAD_FAILURE:-download} failed"; rm -f "$_dr_engine_out"; return 1; }
   dr_verify_checksum "$_dr_engine_out" "$_dr_engine_out.sha256" "$_dr_asset" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: checksum failed"; rm -f "$_dr_engine_out" "$_dr_engine_out.sha256"; return 1; }
-  _dr_signer="$_dr_repo/.github/workflows/ci.yml@refs/heads/main"
-  command -v gh >/dev/null 2>&1 && dr_run_bounded "${DR_ATTEST_TIMEOUT:-120}" gh attestation verify "$_dr_engine_out" --repo "$_dr_repo" --signer-workflow "$_dr_signer" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: attestation verification failed (gh must be installed and authenticated)"; rm -f "$_dr_engine_out" "$_dr_engine_out.sha256"; return 1; }
   chmod +x "$_dr_engine_out" || { DR_ACQUIRE_FAILURE="release $_dr_tag asset $_dr_asset: executable preparation failed"; rm -f "$_dr_engine_out" "$_dr_engine_out.sha256"; return 1; }
 }
 
