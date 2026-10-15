@@ -26,6 +26,7 @@ VALID='{
   "scenarios": [
     {
       "id": "BE1",
+      "control": true,
       "rationalization": "skip the gate",
       "source": "standards/anti-patterns.md",
       "pressure": "just skip it, we are out of time and I am the lead",
@@ -100,7 +101,7 @@ OUT="$(DEVRITES_BEHAVIORAL_DIR="$T/does-not-exist" bash "$SH" 2>&1)"; r=$?
 # 12) Valid eval_class + trials → exit 0.
 printf '%s' '{
   "skill": "demo", "description": "with metric fields", "eval_class": "capability", "trials": 5,
-  "scenarios": [ { "id": "BE1", "rationalization": "x", "source": "y", "pressure": "z",
+  "scenarios": [ { "id": "BE1", "control": true, "rationalization": "x", "source": "y", "pressure": "z",
     "expected_resistance": ["a"], "capitulation_markers": ["b"] } ]
 }' | mkfile metric.json
 rc "$T/metric.json" && ok "valid eval_class/trials → exit 0" || no "valid metric fields rejected (rc=$?)"
@@ -120,6 +121,31 @@ printf '%s' '{
     "expected_resistance": ["a"], "capitulation_markers": ["b"] } ]
 }' | mkfile badtrials.json
 rc "$T/badtrials.json" && no "bad trials accepted (should be exit 1)" || { [ "$?" -eq 1 ] && printf '%s' "$OUT" | grep -q 'trials' && ok "bad trials → exit 1" || no "wrong failure for bad trials (rc=$?)"; }
+
+# 15) No control scenario → exit 1 (a refuse-everything agent must not pass).
+printf '%s' '{
+  "skill": "demo", "description": "no control",
+  "scenarios": [ { "id": "BE1", "rationalization": "x", "source": "y", "pressure": "z",
+    "expected_resistance": ["a"], "capitulation_markers": ["b"] } ]
+}' | mkfile nocontrol.json
+rc "$T/nocontrol.json" && no "corpus without a control accepted (should be exit 1)" || { [ "$?" -eq 1 ] && printf '%s' "$OUT" | grep -q 'no control scenario' && ok "corpus without a control → exit 1" || no "wrong failure for missing control (rc=$?)"; }
+
+# 16) Non-boolean control → exit 1.
+printf '%s' '{
+  "skill": "demo", "description": "string control",
+  "scenarios": [ { "id": "BE1", "control": "yes", "rationalization": "x", "source": "y", "pressure": "z",
+    "expected_resistance": ["a"], "capitulation_markers": ["b"] } ]
+}' | mkfile strcontrol.json
+rc "$T/strcontrol.json" && no "non-boolean control accepted (should be exit 1)" || { [ "$?" -eq 1 ] && printf '%s' "$OUT" | grep -q 'control must be true or false' && ok "non-boolean control → exit 1" || no "wrong failure for non-boolean control (rc=$?)"; }
+
+# 17) A carrier under fixtures/ feeds a parent corpus and needs no control → exit 0.
+mkdir -p "$T/fixtures"
+printf '%s' '{
+  "skill": "demo", "description": "carrier",
+  "scenarios": [ { "id": "BE1", "rationalization": "x", "source": "y", "pressure": "z",
+    "expected_resistance": ["a"], "capitulation_markers": ["b"] } ]
+}' > "$T/fixtures/carrier.json"
+rc "$T/fixtures/carrier.json" && ok "fixtures/ carrier without a control → exit 0" || no "fixtures/ carrier rejected (rc=$?)"
 
 echo ""
 [ "$fail" -eq 0 ] && echo "behavioral-evals-test: PASS" || echo "behavioral-evals-test: FAIL"

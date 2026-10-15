@@ -550,12 +550,17 @@ func Render(text, newline, id, summary, subject, quote, body string) string {
 }
 
 // RemoveEntry deletes one note block (its `- NOTE-` row through its last
-// contiguous attribute row) from the source text.
+// attribute row) from the source text. Like ParseNotes, blank lines do not end
+// the block; trailing blank lines stay.
 func RemoveEntry(text, newline string, note *Note) string {
 	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
 	end := note.Line
-	for end < len(lines) && attrLineRE.MatchString(lines[end]) {
-		end++
+	for i := end; i < len(lines); i++ {
+		if attrLineRE.MatchString(lines[i]) {
+			end = i + 1
+		} else if strings.TrimSpace(lines[i]) != "" {
+			break
+		}
 	}
 	kept := append([]string{}, lines[:note.Line-1]...)
 	kept = append(kept, lines[end:]...)

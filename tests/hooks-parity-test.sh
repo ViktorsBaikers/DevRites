@@ -28,8 +28,8 @@ hook_re = re.compile(r"devrites-engine hook ([a-z0-9-]+)")
 fail = []
 
 claude_settings = json.loads((root / "pack/.claude/settings.json").read_text())
-if claude_settings.get("permissions", {}).get("defaultMode") != "plan":
-    fail.append("Claude root does not use native plan mode")
+if "defaultMode" in claude_settings.get("permissions", {}):
+    fail.append("Claude settings set a permission mode; the read-only root is instruction-enforced")
 if claude_settings.get("hooks"):
     fail.append("Claude root retained project hooks")
 

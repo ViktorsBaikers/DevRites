@@ -13,6 +13,10 @@ declared invariants.
 Name before planning implementation:
 
 - the authoritative owner of each fact and every writer;
+- the stable identity key of each record: joins, matches, upserts, and dedupes key on
+  an immutable unique ID, never on a mutable or non-unique attribute (email, name,
+  title, path); **failing case:** two accounts share an email, or a user changes it,
+  and the match merges or orphans their records;
 - uniqueness, referential, ordering, range, and lifecycle invariants;
 - tenant/subject partition keys and authorization boundary;
 - transaction boundary and externally visible commit point;

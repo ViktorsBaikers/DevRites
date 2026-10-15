@@ -11,7 +11,7 @@
 - **`pull_request_target` / `issue_comment` triggers running untrusted code.**
   Checking out PR head code or evaluating `${{ github.event.* }}` fields in a
   privileged context (write token, secrets): trace execution, available authority,
-  and reachable effect; assign severity under [`security.md`](../security.md).
+  and reachable effect; assign severity under [`security.md`](skill://devrites-lib/reference/standards/security.md).
 - **Expression injection.** `${{ github.event.issue.title }}`,
   `github.head_ref`, PR body, or any attacker-controlled field interpolated
   into `run:` can turn data into executable syntax. Establish attacker control

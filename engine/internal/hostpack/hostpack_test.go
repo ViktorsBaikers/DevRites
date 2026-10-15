@@ -267,3 +267,27 @@ func TestStripCodexConfigBlocksRemovesCurrentAndLegacyBlocks(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestMarkerBlockAppendStripRoundTripAddsNoBlankLines(t *testing.T) {
+	codex := []byte(CodexAgentsMerge.Begin + "\nC\n" + CodexAgentsMerge.End + "\n")
+	pi := []byte(PiAgentsMerge.Begin + "\nP\n" + PiAgentsMerge.End + "\n")
+	data := []byte("user guidance\n")
+	for cycle := 0; cycle < 3; cycle++ {
+		var err error
+		if data, err = MergeMarkerBlock(data, codex, CodexAgentsMerge.Begin, CodexAgentsMerge.End); err != nil {
+			t.Fatal(err)
+		}
+		if data, err = MergeMarkerBlock(data, pi, PiAgentsMerge.Begin, PiAgentsMerge.End); err != nil {
+			t.Fatal(err)
+		}
+		if data, err = StripMarkerBlock(data, CodexAgentsMerge.Begin, CodexAgentsMerge.End); err != nil {
+			t.Fatal(err)
+		}
+		if data, err = StripMarkerBlock(data, PiAgentsMerge.Begin, PiAgentsMerge.End); err != nil {
+			t.Fatal(err)
+		}
+		if string(data) != "user guidance\n" {
+			t.Fatalf("cycle %d: strip did not restore the original: %q", cycle, data)
+		}
+	}
+}

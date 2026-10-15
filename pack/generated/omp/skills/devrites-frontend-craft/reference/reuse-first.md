@@ -1,7 +1,7 @@
 # Reuse first: frontend application
 
 Frontend application of the canonical rule in
-[`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md#reuse-before-you-write):
+[`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md#reuse-before-you-write):
 reuse → extend → build new, AHA caveat below. Before creating any new component, style,
 token, icon, hook, util, or helper, search the project first.
 
@@ -9,7 +9,7 @@ This applies to UI **and** non-UI code: utilities, helpers, types, validators, s
 formatters, hooks, query helpers: anything that might already exist.
 
 ## The decision (in order)
-1. **Search first.** Apply `../../devrites-lib/reference/standards/tooling.md`: use the
+1. **Search first.** Apply `skill://devrites-lib/reference/standards/tooling.md`: use the
    primary available code index to find similar definitions, cross-check only a named
    unresolved predicate, then fall back to grep/glob over `components/`, design tokens, hooks/,
    utils/, lib/. Look for things doing the *same job*, not just the same name.

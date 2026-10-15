@@ -4,7 +4,7 @@ description: Interview the user one question at a time to extract intent. Use wh
 user-invocable: false
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-spec/reference/interview-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["spec.md","questions.md","decisions.md","assumptions.md","decision-coverage.md","state.md"]} -->
-> Read-set manifest: `devrites-engine context [slug] --skill devrites-interview` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill devrites-interview` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # devrites-interview: extract intent
 
@@ -30,7 +30,7 @@ spec, plan, or code.
   is explicitly selected or explicitly deferred by the user. A cap MUST NOT move a blocker to
   `assumptions.md`. Own and log reversible, low-impact technical details instead of asking.
 - **Structured options** when the space is enumerable: present them as the standard ranked
-  **option set** ([[`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) → "Option set"](../devrites-lib/reference/standards/afk-hitl.md#option-set-how-every-gap-is-presented)): recommended **first**, labelled
+  **option set** ([[`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) → "Option set"](skill://devrites-lib/reference/standards/afk-hitl.md#option-set-how-every-gap-is-presented)): recommended **first**, labelled
   `(Recommended)`, each with a dimension-tagged rationale (`logic · infra · business ·
   architecture`, + `security`/`UX`/`risk` when in scope), plus the escape hatch. Render via
   `ask` when the harness has it:
@@ -73,7 +73,7 @@ Approval requires an **explicit** yes. Treat these replies differently:
 For a short or vague request (`"design a contact page"`), do not ask isolated questions.
 Sketch the **decision tree** first, then resolve each branch **depth-first** with the
 protocol above. Domain branches per area:
-[`../rite-spec/reference/interview-patterns.md`](../rite-spec/reference/interview-patterns.md).
+[`skill://rite-spec/reference/interview-patterns.md`](skill://rite-spec/reference/interview-patterns.md).
 
 ## Reframe (once, when stuck)
 If the interview is not converging, use **one** turn to challenge the premise:

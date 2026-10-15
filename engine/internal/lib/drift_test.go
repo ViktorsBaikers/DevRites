@@ -133,3 +133,27 @@ func TestDriftClassifiesReviewedIdentityOnlyChange(t *testing.T) {
 		t.Fatalf("a second changed input must void the bytes-only route:\n%s", out)
 	}
 }
+
+// A fenced example binding in eng-review.md is documentation, not the record.
+func TestDriftFallbackIgnoresFencedExampleBinding(t *testing.T) {
+	root, featureDir := driftWorkspace(t)
+	_, binding, err := gate.ReadinessInputDigests(root, "feat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(featureDir, "eng-review.md"), "# Eng review\n\n"+binding+"\n\nFormat:\n\n```text\nReadiness inputs SHA-256: 0000\n```\n")
+	if code, out := checkDrift(t, root, "feat"); code != 0 || !strings.Contains(out, "drift: none") {
+		t.Fatalf("code=%d out=%s", code, out)
+	}
+}
+
+func TestDriftRecordLabelsCursorPhase(t *testing.T) {
+	root, featureDir := driftWorkspace(t)
+	if code, out := checkDrift(t, root, "feat", "--record"); code != 0 {
+		t.Fatalf("record code=%d out=%s", code, out)
+	}
+	raw, err := os.ReadFile(filepath.Join(featureDir, MetricsFile))
+	if err != nil || !strings.Contains(string(raw), `"phase":"vet","event":"drift-baseline"`) {
+		t.Fatalf("metrics=%q err=%v", raw, err)
+	}
+}

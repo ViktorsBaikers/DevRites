@@ -423,6 +423,8 @@ else
 fi
 
 # ---- 17. workflow lint (actionlint · zizmor) ------------------------------
+# The CI validate job sets DEVRITES_REQUIRE_WORKFLOW_LINT=1: there a missing
+# linter fails the gate. Test shards run validate.sh without these tools.
 section "workflow lint (actionlint · zizmor)"
 if command -v actionlint >/dev/null 2>&1; then
   # No -color flag: it is boolean in actionlint, so `-color never` made
@@ -433,6 +435,8 @@ if command -v actionlint >/dev/null 2>&1; then
   else
     bad "actionlint reported workflow issues"
   fi
+elif [ "${DEVRITES_REQUIRE_WORKFLOW_LINT:-}" = 1 ]; then
+  bad "actionlint not installed in CI (the workflow lint gate cannot run)"
 else
   skip "actionlint not installed locally (CI installs and enforces)"
 fi
@@ -442,6 +446,8 @@ if command -v zizmor >/dev/null 2>&1; then
   else
     bad "zizmor reported workflow security issues"
   fi
+elif [ "${DEVRITES_REQUIRE_WORKFLOW_LINT:-}" = 1 ]; then
+  bad "zizmor not installed in CI (the workflow security gate cannot run)"
 else
   skip "zizmor not installed locally (CI installs and enforces)"
 fi

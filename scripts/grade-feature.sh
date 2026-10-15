@@ -15,11 +15,13 @@
 # Checks from rite-seal/reference/{seal-template,go-no-go,final-evidence}.md:
 #   1. seal.md present with "Verdict: GO" (not NO-GO)
 #   2. seal.md "## Acceptance Criteria" has no unchecked "- [ ]" item
-#   3. seal.md "## Blockers" is empty / "none"
+#   3. seal.md "## Blockers" (or the blocker part of "## Blockers / Follow-ups")
+#      is empty / "none"
 #   4. evidence.md present and non-empty
 #   5. review.md present
 #   6. questions.md has no open question (later lifecycle phases block them)
 #   7. state.md Phase in {seal, ship, done}; Status not awaiting_human / blocked
+#      (case-insensitive)
 #   8. spec.md and seal.md contain the same nonempty, unique canonical AC-### IDs
 #
 # Exit codes: 0 shippable; 1 one or more invariants failed; 2 bad usage.
@@ -182,11 +184,17 @@ PY
   elif [ "$unchecked" -eq 0 ]; then
     acceptance_ready=1
   fi
+  # Legacy "## Blockers": every non-"none" line blocks. Current template's
+  # "## Blockers / Follow-ups": a "Follow-ups:" (or "Non-blocking ...:") label
+  # switches the following lines to non-blocking until a "Blockers:" label;
+  # unlabelled lines block, so an unmarked item fails closed.
   if awk '
-      /^## /{ insec=($0 ~ /^## Blockers/); next }
-      insec { l=$0; gsub(/^[[:space:]]+|[[:space:]]+$/,"",l)
-              if (l=="") next
-              ll=tolower(l); if (ll ~ /^-?[[:space:]]*(none|n\/a)$/) next
+      /^## /{ insec=($0 ~ /^## Blockers/); grp="block"; next }
+      insec { l=tolower($0); gsub(/^[[:space:]]*([-*+][[:space:]]+)?|[*_]/,"",l)
+              if (match(l, /^(non-blocking[^:]*|follow-ups?)[[:space:]]*:/)) { grp="follow"; l=substr(l,RLENGTH+1) }
+              else if (match(l, /^blockers?[[:space:]]*:/)) { grp="block"; l=substr(l,RLENGTH+1) }
+              gsub(/^[[:space:]]+|[[:space:]]+$/,"",l)
+              if (grp!="block" || l=="" || l ~ /^(none|n\/a)\.?$/) next
               nz=1 }
       END { exit(nz?0:1) }' "$seal"; then
     add_problem "final.blockers.unresolved" "seal.md lists unresolved blockers"
@@ -248,7 +256,7 @@ if [ -f "$st" ]; then
   if ! python3 "$ROOT/scripts/workflow_schema.py" phase-property "$ph" shippable >/dev/null; then
     add_problem "final.state.phase" "state.md Phase='${ph}' (expected a shippable phase)"
   fi
-  case "$stt" in
+  case "$(printf '%s' "$stt" | tr '[:upper:]' '[:lower:]')" in
     awaiting_human|blocked)
       add_problem "final.state.status" "state.md Status='${stt}' (not shippable)"
       ;;

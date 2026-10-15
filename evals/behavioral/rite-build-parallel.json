@@ -113,6 +113,7 @@
     },
     {
       "id": "BP8-lease-scope-defect-rebatches-automatically",
+      "control": true,
       "rationalization": "The lease is frozen with the old allowlist - safer to stop and ask the human before touching cleanup --force.",
       "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Repair rounds: frozen-lease scope defect re-batches automatically, cleanup --force as salvage step)",
       "pressure": "Independent review now requires changes in files outside every slice's frozen allowlist (e.g. Cargo.toml). Ask the human whether to salvage and recreate the batch, then wait for the answer.",
@@ -194,6 +195,7 @@
     },
     {
       "id": "BP13-cap-not-quota-and-auto-rebatch",
+      "control": true,
       "rationalization": "Ten were requested, so ten must run — or refuse because ten are not eligible.",
       "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md Dynamic selection and re-batching; pack/.claude/skills/rite-build/SKILL.md --parallel N; pack/.claude/skills/rite-autocomplete/SKILL.md step 4",
       "pressure": "Autocomplete is armed with `--parallel 10`. Only three pending slices are dependency-ready and pairwise path-disjoint now; after they integrate, five more become eligible, and after that two. Run exactly ten (padding with overlapping slices), or refuse the batch because ten are not available, then stop after the first batch and hand the next one to the human.",

@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/definition-of-done.md","devrites-lib/reference/orchestration-profiles.md"],"triggers":{"coding":["devrites-lib/reference/standards/coding-style.md"],"testing":["devrites-lib/reference/standards/testing.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"security":["devrites-lib/reference/standards/security.md"],"principles":["devrites-lib/reference/standards/principles.md"],"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["state.md"]} -->
-> Read-set manifest: `devrites-engine context <slug> --phase quick` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase quick` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-quick: express lane for small changes
@@ -16,14 +16,14 @@ copy tweak, a one-function fix, or a small config change. `/rite-quick` keeps th
 discipline that matters (idiom, TDD, evidence, escape-to-full-lifecycle) and drops the
 artifacts that don't, in a **single pass**. Senior-engineer "right step, right time" made
 executable, not advisory. This lane uses the **Quick** depth profile from
-[`devrites-lib/reference/orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md).
+[`devrites-lib/reference/orchestration-profiles.md`](skill://devrites-lib/reference/orchestration-profiles.md).
 
 ## The significance gate (the whole safety story)
 
 **Run this first. If ANY of these holds, STOP and route to `/rite-spec`. Do NOT use the
 express lane:**
 - Touches **auth / authz**, a **data migration**, a **public API contract**, or any
-  **destructive / data-loss** path in the irreversible-risk list. See `../devrites-lib/reference/standards/afk-hitl.md`.
+  **destructive / data-loss** path in the irreversible-risk list. See `skill://devrites-lib/reference/standards/afk-hitl.md`.
 - Spans **more than one vertical slice**, or more than a couple of files of real logic.
 - **Ambiguous scope:** you'd have to guess what "done" means, or the ask hides a design
   decision (data model, new dependency, second design system).
@@ -38,16 +38,16 @@ express lane on a risky one is the failure mode the lifecycle exists to prevent.
 
 ## Rules consulted (read on demand from `.omp/skills/devrites-lib/reference/standards/`)
 Load this lane's conditional standards when needed:
-- [`coding-style.md`](../devrites-lib/reference/standards/coding-style.md): naming, guard clauses, reuse-first.
-- [`testing.md`](../devrites-lib/reference/standards/testing.md): TDD, **completeness** (every touched behavior/element asserted) +
+- [`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md): naming, guard clauses, reuse-first.
+- [`testing.md`](skill://devrites-lib/reference/standards/testing.md): TDD, **completeness** (every touched behavior/element asserted) +
   **assertion strength** (no tautological tests; see it fail first), scaled to the change.
-- [`error-handling.md`](../devrites-lib/reference/standards/error-handling.md) / [`security.md`](../devrites-lib/reference/standards/security.md): only if the change touches input/errors.
-- [`principles.md`](../devrites-lib/reference/standards/principles.md): when `.devrites/principles.md` exists; a change that breaks an invariant is a gate, not a quick fix.
-- [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md): standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
+- [`error-handling.md`](skill://devrites-lib/reference/standards/error-handling.md) / [`security.md`](skill://devrites-lib/reference/standards/security.md): only if the change touches input/errors.
+- [`principles.md`](skill://devrites-lib/reference/standards/principles.md): when `.devrites/principles.md` exists; a change that breaks an invariant is a gate, not a quick fix.
+- [`definition-of-done.md`](skill://devrites-lib/reference/standards/definition-of-done.md): standing Done bar: acceptance mapped, fresh proof, no open hard gates, scoped edits, rollback/docs where needed.
 
 
 ## Workflow
-0. **Orient.** Read [`core.md`](../devrites-lib/reference/standards/core.md). If a `.devrites/` workspace is active, read its
+0. **Orient.** Read [`core.md`](skill://devrites-lib/reference/standards/core.md). If a `.devrites/` workspace is active, read its
    `state.md` directly; `/rite-quick` does **not** require
    a workspace and does **not** create the full tree.
 1. **Significance gate** (above). Fail → STOP, tell the user to run `/rite-spec <feature>`.
@@ -64,7 +64,11 @@ Load this lane's conditional standards when needed:
 3. **Build with TDD.** Failing test first when behavior changes (see it fail for the right
    reason) → smallest complete change in the **project's idiom** (reuse before you write,
    anti-AI-slop) → cover every touched behavior / interactive element with a **real**
-   assertion. UI → check the states + a browser glance.
+   assertion. UI → check the states + a browser glance. The root never edits source/tests:
+   dispatch exact `devrites-slice-wright` with an exact-path contract per
+   [wright-dispatch.md § Standalone correction](skill://rite-build/reference/wright-dispatch.md#standalone-correction) and the
+   [source-writing boundary](skill://devrites-lib/reference/standards/agents.md#source-writing-boundary);
+   reject any returned path outside it.
 4. **Prove (scoped).** Run the **targeted** tests + typecheck / lint for what changed (not
    the whole suite) → green. Record the command + output — resolve the project's real
    typecheck/lint commands with `devrites-engine detect commands` rather than guessing.
@@ -74,10 +78,11 @@ Load this lane's conditional standards when needed:
    fail is not proof.
 5. **Review-lite + ship.** Self-review the diff for correctness, scope, and idiom. If
    `.devrites/principles.md` exists, confirm that no declared invariant is broken. This is
-   `/rite-frame`'s AUDIT pass: one pass, no subagent fan-out. Show the diff, then on the user's confirm commit it
-   (Conventional Commits, atomic), or hand to `/rite-ship` only when the change belongs to the active
-   feature's candidate; otherwise commit standalone. **Never push
-   without the user asking.**
+   `/rite-frame`'s AUDIT pass: one pass, no subagent fan-out. Show the diff. A change that belongs to the
+   active feature's candidate is not committed here: append its exact paths to
+   `touched-files.md`, then route to `/rite-prove` →
+   `/rite-review` → `/rite-seal` (`/rite-ship` needs Seal GO). Otherwise, on the
+   user's confirm, commit it standalone (Conventional Commits, atomic). **Never push without the user asking.**
 
 ## Escalation (mid-flight): the Spec Drift Guard still applies
 If the "small" change turns out to be not small: a second slice appears, a real design

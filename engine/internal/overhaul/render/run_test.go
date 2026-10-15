@@ -19,7 +19,7 @@ import (
 const (
 	hostile    = "\"><img src=x onerror=alert(1)><script>alert(2)</script>|`rm -rf /`"
 	hostileEsc = "&quot;&gt;&lt;img src=x onerror=alert(1)&gt;&lt;script&gt;alert(2)&lt;/script&gt;|`rm -rf /`"
-	fakeHome   = "/Users/tester"
+	fakeHome   = "/Users/tester" // no-personal-paths-ignore: fixture
 	badLane    = `x"><a href="#p">y</a>`
 )
 

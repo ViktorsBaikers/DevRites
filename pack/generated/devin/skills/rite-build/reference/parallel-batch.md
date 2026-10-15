@@ -229,6 +229,6 @@ isolation cannot be established.
 
 ## Host
 
-Devin: N concurrent `run_subagent` wrights (`acceptEdits`, cwd=worktree). Codex: require
+Devin: `run_subagent` takes no worktree cwd, so force serial. Codex: require
 host-explicit concurrent worktree writers + native reconcile; else force serial.
 Never two writers in one worktree; never root-emulated concurrency.

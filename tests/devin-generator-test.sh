@@ -224,5 +224,24 @@ else
   ok "devin probe skipped (devin CLI not installed)"
 fi
 
+links_src="$TMP_GEN_DIR/links.md"
+cat >"$links_src" <<'LINKS'
+See [`../../agents/overhaul-boundary.md`](../../agents/overhaul-boundary.md).
+Claude: N concurrent Task wrights (`acceptEdits`, cwd=worktree). Codex: require
+Ask via `AskUserQuestion`.
+LINKS
+gen_devin_markdown_file "$links_src" "$TMP_GEN_DIR/links.devin.md"
+grep -qF '[`.devin/agents/overhaul-boundary.md`](../../agents/overhaul-boundary.md)' "$TMP_GEN_DIR/links.devin.md" &&
+  ok "relative agent link kept" || no "relative agent link kept"
+grep -qF 'Devin: `run_subagent` takes no worktree cwd, so force serial. Codex' "$TMP_GEN_DIR/links.devin.md" &&
+  ok "Devin parallel build forced serial" || no "Devin parallel build forced serial"
+grep -qF 'Ask via `ask_user_question`.' "$TMP_GEN_DIR/links.devin.md" &&
+  ok "AskUserQuestion maps to ask_user_question" || no "AskUserQuestion maps to ask_user_question"
+
+bridge_out="$TMP_GEN_DIR/devin-bridge.md"
+gen_devin_agents_bridge "$bridge_out"
+grep -qF 'use the `devin:` form (`/devin:rite-build`)' "$bridge_out" &&
+  ok "bridge routes ambiguous names to devin: skills" || no "bridge routes ambiguous names to devin: skills"
+
 [ "$fail" -eq 0 ] && echo "devin-generator-test: PASS" || echo "devin-generator-test: FAIL"
 exit "$fail"

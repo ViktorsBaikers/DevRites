@@ -211,3 +211,32 @@ func TestMigratePlanDoesNotOfferConversionForFencedCursorsOnly(t *testing.T) {
 		t.Fatalf("plan incomplete:\n%s", stdout.String())
 	}
 }
+
+func TestMigrateNormalizesRawPhaseSpelling(t *testing.T) {
+	root, workspace := seedPreV5Workspace(t, "Build (slice 2)")
+	var stdout, stderr strings.Builder
+	if code := Migrate(root, []string{"feature"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code=%d stderr=%q", code, stderr.String())
+	}
+	if _, err := os.Stat(filepath.Join(workspace, "gates.md")); err != nil {
+		t.Fatalf("build stubs missing: %v", err)
+	}
+}
+
+func TestMigrateUnparseableStateFailsWithoutWriting(t *testing.T) {
+	root, workspace := seedPreV5Workspace(t, "build")
+	body := "```\n- Phase: build\n"
+	if err := os.WriteFile(filepath.Join(workspace, "state.md"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr strings.Builder
+	if code := Migrate(root, []string{"feature", "--answer", "phase=build"}, &stdout, &stderr); code == 0 || !strings.Contains(stderr.String(), "schema row") {
+		t.Fatalf("code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if got, _ := os.ReadFile(filepath.Join(workspace, "state.md")); string(got) != body {
+		t.Fatalf("state.md changed: %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(workspace, "spec.md")); !os.IsNotExist(err) {
+		t.Fatalf("stub written for a failed migration: %v", err)
+	}
+}

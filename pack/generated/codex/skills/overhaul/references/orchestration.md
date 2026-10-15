@@ -31,11 +31,11 @@ directory names or file extensions. One package or file can serve several lanes.
 
 | Lane | Owns | Agent |
 | --- | --- | --- |
-| Frontend engineering | Client correctness, state/data flow, component architecture, framework idioms, client security, frontend performance and tests (web, native, desktop, game UI) | [`overhaul-frontend-engineer`](.codex/agents/overhaul-frontend-engineer.toml) |
-| Backend engineering | Service, domain, API, job, data, concurrency, authorization and service performance, including server parts of full-stack frameworks | [`overhaul-backend-engineer`](.codex/agents/overhaul-backend-engineer.toml) |
-| Boundary / integration | Producer/consumer contracts, shared packages, serialization, trust transitions, deployment skew | [`overhaul-boundary`](.codex/agents/overhaul-boundary.toml) |
-| Frontend craft | Design system fit, interaction states, keyboard/focus, accessibility, responsive and motion evidence | [`overhaul-craft`](.codex/agents/overhaul-craft.toml) |
-| Other | Build tooling, CI, infrastructure, libraries, data/ML workloads, operations readiness, public API and CLI experience, documentation — explicit extra profiles, never forced into frontend/backend | [`overhaul-specialist`](.codex/agents/overhaul-specialist.toml) |
+| Frontend engineering | Client correctness, state/data flow, component architecture, framework idioms, client security, frontend performance and tests (web, native, desktop, game UI) | [`overhaul-frontend-engineer`](../../../../.codex/agents/overhaul-frontend-engineer.toml) |
+| Backend engineering | Service, domain, API, job, data, concurrency, authorization and service performance, including server parts of full-stack frameworks | [`overhaul-backend-engineer`](../../../../.codex/agents/overhaul-backend-engineer.toml) |
+| Boundary / integration | Producer/consumer contracts, shared packages, serialization, trust transitions, deployment skew | [`overhaul-boundary`](../../../../.codex/agents/overhaul-boundary.toml) |
+| Frontend craft | Design system fit, interaction states, keyboard/focus, accessibility, responsive and motion evidence | [`overhaul-craft`](../../../../.codex/agents/overhaul-craft.toml) |
+| Other | Build tooling, CI, infrastructure, libraries, data/ML workloads, operations readiness, public API and CLI experience, documentation — explicit extra profiles, never forced into frontend/backend | [`overhaul-specialist`](../../../../.codex/agents/overhaul-specialist.toml) |
 
 Frontend and backend engineering are always different agent invocations with
 different active profiles, even in a same-language codebase. The boundary reviewer
@@ -277,10 +277,14 @@ correctness gate.
 ## Admission tool
 
 `devrites-engine overhaul admit receipt <run> <receipt.json> [--observed <paths.txt>]` checks one
-receipt against its dispatch packet: run, role, lane and snapshot match; timestamps
+receipt against its dispatch packet: the file is the attempt's own
+`<run>/receipts/<run_id>__<task_id>__<attempt_id>__<role>.json` (not a copy elsewhere
+or a symlink, and the attempt's recorded `receipt` when it has one); run, role, lane
+and snapshot match; timestamps
 and an allowed `outcome` are present; `no-findings` names inspected ranges; a writer's
 claimed paths stay inside its task contract and equal the observed paths.
 `devrites-engine overhaul admit anchor <tree> <proposals.json>` checks that every quoted location in
 `{"findings": [...]}` matches its file lines under the reviewed tree. It never edits
 canonical records; record its verdict in a staged generation. Exit codes: 0
-admissible or anchored, 1 reject, 2 usage or I/O error, 3 duplicate or late receipt.
+admissible or anchored, 1 reject, 2 usage or I/O error (including an extra or
+misspelled argument), 3 duplicate or late receipt.

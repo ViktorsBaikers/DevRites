@@ -120,6 +120,45 @@ var CodexConfigMerge = MarkerMerge{
 	MarkerText: ".codex/config.toml contains the DevRites read-only-root permission profile.",
 }
 
+// HostConfig is a host project config DevRites creates only when absent; an
+// existing user file is never edited, the installer prints Advice instead.
+type HostConfig struct {
+	Host    string
+	Rel     string
+	Content string
+	Advice  string
+	// Applied is a substring showing the user already added the advice.
+	Applied string
+}
+
+// OmpConfig hides the .claude/skills and .agents/skills DevRites copies that
+// omp also lists as claude/<name> and agents/<name>; the user's own skills
+// stay visible. omp ignores dotted keys, so the YAML must be nested.
+var OmpConfig = HostConfig{
+	Host: "omp",
+	Rel:  ".omp/config.yml",
+	Content: `skills:
+  ignoredSkills: ["claude/rite*", "claude/devrites-*", "claude/overhaul", "agents/rite*", "agents/devrites-*", "agents/overhaul"]
+`,
+	Advice:  `skills: {ignoredSkills: ["claude/rite*", "claude/devrites-*", "claude/overhaul", "agents/rite*", "agents/devrites-*", "agents/overhaul"]}`,
+	Applied: `claude/rite*`,
+}
+
+// PiSettings stops pi from also loading the Codex .agents/skills copies of
+// DevRites skills (one name-collision warning each; the .pi copy wins). The
+// patterns match only below .agents, so .pi/skills and the user's own
+// .agents skills still load.
+var PiSettings = HostConfig{
+	Host: "pi",
+	Rel:  ".pi/settings.json",
+	Content: `{
+  "skills": ["!**/.agents/skills/rite", "!**/.agents/skills/rite-*", "!**/.agents/skills/devrites-*", "!**/.agents/skills/overhaul"]
+}
+`,
+	Advice:  `"skills": ["!**/.agents/skills/rite", "!**/.agents/skills/rite-*", "!**/.agents/skills/devrites-*", "!**/.agents/skills/overhaul"]`,
+	Applied: `!**/.agents/skills/rite-*`,
+}
+
 var LegacyCodexHooksMerge = ManagedMerge{
 	MarkerRel: ".claude/devrites.codex-hooks-merge",
 	TargetRel: ".codex/hooks.json",
@@ -357,14 +396,20 @@ func MergeMarkerBlock(current, block []byte, begin, end string) ([]byte, error) 
 	return []byte(out.String()), nil
 }
 
+// StripMarkerBlock removes the begin/end block and the one blank separator
+// line MergeMarkerBlock puts before an appended block, so install/uninstall
+// cycles do not accumulate blank lines.
 func StripMarkerBlock(data []byte, begin, end string) ([]byte, error) {
-	var out strings.Builder
+	var kept []string
 	inBlock := false
 	for _, line := range strings.SplitAfter(string(data), "\n") {
 		trim := strings.TrimSuffix(line, "\n")
 		trim = strings.TrimSuffix(trim, "\r")
 		switch trim {
 		case begin:
+			if n := len(kept); n > 0 && strings.TrimSpace(kept[n-1]) == "" {
+				kept = kept[:n-1]
+			}
 			inBlock = true
 			continue
 		case end:
@@ -372,13 +417,13 @@ func StripMarkerBlock(data []byte, begin, end string) ([]byte, error) {
 			continue
 		}
 		if !inBlock {
-			out.WriteString(line)
+			kept = append(kept, line)
 		}
 	}
 	if inBlock {
 		return nil, fmt.Errorf("unterminated %s marker", begin)
 	}
-	return []byte(out.String()), nil
+	return []byte(strings.Join(kept, "")), nil
 }
 
 func ValidateMarkerBlocks(current []byte, merges ...MarkerMerge) error {

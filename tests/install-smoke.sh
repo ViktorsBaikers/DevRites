@@ -224,7 +224,8 @@ grep -q 'BEGIN DEVRITES DEVIN' "$T/AGENTS.md" \
 grep -q '\.devin/skills/devrites-lib/reference/standards/core.md' "$T/.devin/skills/rite-build/SKILL.md" \
   && ok "Devin skill mirror loads DevRites rules mirror" \
   || no "Devin skill mirror missing rules instruction"
-grep -q '\.devin/agents/devrites-slice-wright.md' "$T/.devin/skills/rite-build/SKILL.md" \
+grep -qF '](../../agents/devrites-slice-wright.md)' "$T/.devin/skills/rite-build/SKILL.md" \
+  && [ -f "$T/.devin/skills/rite-build/../../agents/devrites-slice-wright.md" ] \
   && ok "Devin skill root points at Devin agent markdown" \
   || no "Devin skill root missing Devin agent path"
 if grep -R -nE '\.claude/skills|\.claude/agents|\.codex/|\.agents/skills|\.omp/|\.pi/' \

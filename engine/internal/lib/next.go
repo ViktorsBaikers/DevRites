@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/workflow"
 )
@@ -86,7 +88,11 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 				continue
 			}
 			missing = missingArtifacts(featureDir, policy.RequiredArtifacts)
-			if len(missing) == 0 {
+			// A phase that adds no required artifact over the previous one
+			// (build after vet, polish after prove) cannot be proven done by
+			// artifact presence, so it is never skipped. Converge is the
+			// exception: a conditional recovery pass that build hands past.
+			if len(missing) == 0 && (addsArtifact(policies[i-1], policy) || policy.Target == state.PhaseConverge) {
 				skips = append(skips, fmt.Sprintf("%s (artifacts complete)", policy.Target))
 				continue
 			}
@@ -121,6 +127,15 @@ func printSkips(stdout io.Writer, skips []string) {
 	}
 }
 
+func addsArtifact(prev, policy state.PhasePolicy) bool {
+	for _, artifact := range policy.RequiredArtifacts {
+		if !slices.Contains(prev.RequiredArtifacts, artifact) {
+			return true
+		}
+	}
+	return false
+}
+
 func missingArtifacts(featureDir string, required []state.ArtifactPath) []string {
 	var missing []string
 	for _, artifact := range required {
@@ -139,11 +154,16 @@ var (
 )
 
 // countOpenQuestions tolerates both the block form ("status: open") and the
-// register table form ("| Q-001 | open | ... |").
+// register table form ("| Q-001 | open | ... |"), outside fenced blocks.
 func countOpenQuestions(path string) int {
 	data, err := os.ReadFile(path) // #nosec G304 -- path is a validated workspace artifact
 	if err != nil {
 		return 0
+	}
+	// Fenced examples are not live questions. Text Structural rejects is
+	// counted raw, so an unreadable register over-counts rather than hides.
+	if visible, err := markdowntext.Structural(data); err == nil {
+		data = visible
 	}
 	count := 0
 	for _, line := range strings.Split(string(data), "\n") {

@@ -18,6 +18,10 @@ const MaxOutputBytes = 1 << 20
 // DefaultTimeout bounds one check execution.
 const DefaultTimeout = 120 * time.Second
 
+// waitDelay bounds how long Execute waits for output pipes to close once the
+// check timed out or exited; a descendant outside the process group may hold them.
+const waitDelay = 5 * time.Second
+
 // RunOutcome is one executed oracle: the process result plus the canonical
 // output string used for EXPECT matching and the evidence fingerprint.
 type RunOutcome struct {
@@ -83,6 +87,13 @@ func Execute(ctx context.Context, check, cwd string, timeout time.Duration) RunO
 
 	cmd := shellCommand(ctx, check, cwd)
 	configureProcessGroup(cmd)
+	// The default cancel kills only the shell; a forked child holding stdout
+	// would keep Wait blocked past the timeout.
+	cmd.Cancel = func() error {
+		killGroup(cmd)
+		return nil
+	}
+	cmd.WaitDelay = waitDelay
 	stdout := &limitedBuffer{}
 	stderr := &limitedBuffer{}
 	cmd.Stdout = stdout
@@ -94,7 +105,6 @@ func Execute(ctx context.Context, check, cwd string, timeout time.Duration) RunO
 	}
 	waitErr := cmd.Wait()
 	if ctx.Err() == context.DeadlineExceeded {
-		terminateProcessTree(cmd)
 		return RunOutcome{Err: fmt.Errorf("check timed out after %s", timeout), TimedOut: true}
 	}
 	if stdout.overflow || stderr.overflow {
@@ -118,14 +128,4 @@ func Execute(ctx context.Context, check, cwd string, timeout time.Duration) RunO
 		}
 	}
 	return RunOutcome{ExitCode: exit, Output: canonical, OutputBytes: len(canonical)}
-}
-
-// terminateProcessTree kills the whole process group on unix; on other
-// platforms it kills only the immediate child (CommandContext already requests
-// it). Implemented in the platform files as killGroup.
-func terminateProcessTree(cmd *exec.Cmd) {
-	if cmd.Process == nil {
-		return
-	}
-	killGroup(cmd)
 }

@@ -156,6 +156,7 @@
     },
     {
       "id": "SA11_VERIFIED_CONTROL",
+      "control": true,
       "rationalization": "Control: an independent verifier disproved alternatives and validated the unchanged candidate trace and impact; the coverage critic compared scoped entry points and source with the ledger.",
       "source": "pack/.claude/skills/devrites-lib/reference/standards/audit-coverage.md Finder never verifies its own find; Critics between waves",
       "pressure": "Control: an independent verifier disproved alternatives and validated the unchanged candidate trace and impact; the coverage critic compared scoped entry points and source with the ledger. Only a spelling correction follows.",

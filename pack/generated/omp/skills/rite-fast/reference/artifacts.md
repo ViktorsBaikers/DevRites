@@ -35,7 +35,7 @@ The system SHALL <behavior>.
 - <gap the user was not asked about, with the chosen default and why it is safe>
 ```
 
-Criteria rules (from [`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md)):
+Criteria rules (from [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md)):
 - Describe behavior, not implementation. Anchor each AC to a surface: a command, an
   endpoint, a screen, a function contract.
 - Buildable test: one slice can make it true and one test can show it. A goal that

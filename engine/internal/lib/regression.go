@@ -7,7 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -49,6 +51,8 @@ var doneSliceStates = map[string]bool{
 var (
 	regressACRe      = regexp.MustCompile(`(?im)^[ \t]*- \[([xX ])\] (AC-\d+)`)
 	regressSliceRe   = regexp.MustCompile(`(?m)^## (SLICE-\d+)\b[^\n]*`)
+	regressBuiltRe   = regexp.MustCompile(`(?m)^[ \t]*[-*] \[[xX]\][^\n]*`)
+	regressSliceIDRe = regexp.MustCompile(`(?i)\b(?:SLICE-|Slice )(\d+)\b`)
 	regressStatusRe  = regexp.MustCompile(`(?im)^Status:[ \t]*([^\s]+)`)
 	regressQHeaderRe = regexp.MustCompile(`(?im)^## (q-\d{4}-\d{2}-\d{2}-\d+)\b`)
 	regressQStatusRe = regexp.MustCompile(`(?im)^status:[ \t]*([^\s]+)`)
@@ -169,6 +173,22 @@ func fingerprintWorkspace(root, slug, workspace string) (progressFingerprint, er
 	note("tasks.md", err)
 	if err == nil {
 		fp.DoneSlices = doneSlices(masked)
+	}
+	// The canonical slice grammar has no Status field: Build records the
+	// built list in state.md as checked items naming the slice.
+	masked, err = maskedArtifact(workspace, "state.md")
+	note("state.md", err)
+	if err == nil {
+		for _, item := range regressBuiltRe.FindAllString(masked, -1) {
+			for _, m := range regressSliceIDRe.FindAllStringSubmatch(item, -1) {
+				// `SLICE-001` and `Slice 1` name the same slice.
+				n, _ := strconv.Atoi(m[1])
+				id := fmt.Sprintf("SLICE-%03d", n)
+				if !slices.Contains(fp.DoneSlices, id) {
+					fp.DoneSlices = append(fp.DoneSlices, id)
+				}
+			}
+		}
 	}
 
 	raw, err := os.ReadFile(filepath.Join(workspace, acceptance.GatesFile)) // #nosec G304 -- workspace artifact

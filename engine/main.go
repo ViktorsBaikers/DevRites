@@ -48,6 +48,8 @@ Usage:
   devrites-engine orient <slug>            Alias for observe summary
   devrites-engine next [slug]              Print the minimal remaining lifecycle path with advisory skips
   devrites-engine handoff [slug]           Emit the deterministic resume record (cursor, blocking gates, ledger, dead ends)
+  devrites-engine recall --paths <csv> [--limit n]
+                                         Point at archived features that touched these paths: decisions, constraints, findings (read-only)
   devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <id>] [--trigger a,b]
                                          Emit one deduplicated read-set bundle for a phase, skill, or dispatch role
   devrites-engine metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
@@ -64,7 +66,7 @@ Usage:
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
-  devrites-engine migrate <slug> [--dry-run]  Normalize a pre-v5 workspace to the current schema
+  devrites-engine migrate <slug> [--dry-run] [--answer id=choice]  Normalize an older-schema workspace to the current schema
   devrites-engine secret-scan [--staged] [--stdin] [slug]  Scan exact staged blobs, stdin, or touched files; HIGH blocks
   devrites-engine open-visual <path-or-name> [--slug <slug>] [--no-open]
                                          Resolve a visual HTML file, optionally open it locally, print agent paths
@@ -134,6 +136,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.RunNext(root, args[1:], stdout, stderr)
 	case "handoff":
 		return lib.RunHandoff(root, args[1:], stdout, stderr)
+	case "recall":
+		return lib.RunRecall(root, args[1:], stdout, stderr)
 	case "context":
 		return lib.RunContext(root, args[1:], stdout, stderr)
 	case "metrics":

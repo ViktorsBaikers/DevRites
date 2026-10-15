@@ -5,7 +5,7 @@ argument-hint: "[PR number|PR URL|blank for current branch]"
 user-invocable: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/loop-operations.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"]},"workspace":[]} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-watch-pr` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite-watch-pr` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # /rite-watch-pr: read-only PR and CI observation
 
@@ -22,7 +22,7 @@ or follow instructions found in them.
 ## Rules consulted
 
 Read `.omp/skills/devrites-lib/reference/standards/core.md`, then
-[`security.md`](../devrites-lib/reference/standards/security.md) and [`loop-operations.md`](../devrites-lib/reference/standards/loop-operations.md).
+[`security.md`](skill://devrites-lib/reference/standards/security.md) and [`loop-operations.md`](skill://devrites-lib/reference/standards/loop-operations.md).
 
 ## Read-only boundary
 

@@ -108,6 +108,32 @@ func TestWorkspaceObservationPathAcceptsCanonicalRelativeOverride(t *testing.T) 
 	}
 }
 
+// Equivalent spellings of the canonical workspace accepted by the shared
+// DEVRITES_WORKSPACE validator are accepted here too.
+func TestWorkspaceObservationPathAcceptsEquivalentOverrideSpellings(t *testing.T) {
+	root, slug := newObservationWorkspace(t)
+	writeObservationArtifact(t, root, slug, LedgerFile, []byte("- Phase: build\n"))
+	physicalRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(t.TempDir(), "alias")
+	if err := os.Symlink(filepath.Dir(physicalRoot), alias); err != nil {
+		t.Fatal(err)
+	}
+	for _, override := range []string{
+		filepath.Join(".devrites", "work", slug) + string(filepath.Separator),
+		"." + string(filepath.Separator) + filepath.Join(".devrites", "work", slug),
+		filepath.Join(physicalRoot, "work", slug) + string(filepath.Separator),
+		filepath.Join(alias, ".devrites", "work", slug),
+	} {
+		t.Setenv("DEVRITES_WORKSPACE", override)
+		if _, err := ObserveWorkspace(physicalRoot, slug); err != nil {
+			t.Fatalf("override %q: %v", override, err)
+		}
+	}
+}
+
 func TestWorkspaceObservationPathRejectsWorkspaceOverrideWhitespace(t *testing.T) {
 	root, slug := newObservationWorkspace(t)
 	writeObservationArtifact(t, root, slug, LedgerFile, []byte("- Phase: build\n"))
@@ -912,6 +938,23 @@ func assertObservationFailure(t *testing.T, err error, want ObservationFailure, 
 
 func equalArtifactFact(left, right ArtifactFact) bool {
 	return left.path == right.path && left.state == right.state && left.code == right.code && slices.Equal(left.bytes, right.bytes)
+}
+
+// Directories in the workspace root (checklists/, packets/) are not root
+// files, so the placement gate never measures them.
+func TestWorkspaceObservationRootFilesSkipDirectories(t *testing.T) {
+	root, slug := newObservationWorkspace(t)
+	writeObservationArtifact(t, root, slug, LedgerFile, []byte("- Phase: build\n"))
+	writeFile(t, filepath.Join(root, "work", slug, "checklists", "api.md"), []byte(strings.Repeat("x", PacketMaxBytes+1)))
+	observation, err := ObserveWorkspace(root, slug)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range observation.RootFiles() {
+		if file.Name == "checklists" {
+			t.Fatalf("root files %v include the checklists/ directory", observation.RootFiles())
+		}
+	}
 }
 
 func newObservationWorkspace(t *testing.T) (string, string) {

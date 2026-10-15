@@ -543,3 +543,43 @@ func TestGradeAllReadsEachCandidateOnce(t *testing.T) {
 		t.Errorf("note 3: %+v", graded[2])
 	}
 }
+
+func TestAddRejectsWhitespaceOnlyQuoteOrTitle(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	work := filepath.Join(root, "work", "feat")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, project, "src/pool.go", "package src\n\nconst "+anchorQuote+"\n")
+	t.Setenv("DEVRITES_WORKSPACE", "")
+	for _, args := range [][]string{
+		{"feat", "src/pool.go", "  \t ", "title"},
+		{"feat", "src/pool.go", anchorQuote, " \r\n "},
+	} {
+		var stdout, stderr bytes.Buffer
+		if code := cmdAdd(root, args, &stdout, &stderr); code != ExitUsage {
+			t.Fatalf("%q: exit = %d, want %d:\n%s%s", args, code, ExitUsage, stdout.String(), stderr.String())
+		}
+	}
+	if _, err := os.Stat(filepath.Join(work, NotesFile)); err == nil {
+		t.Fatal("note add wrote notes.md for a blank quote or title")
+	}
+}
+
+// The parser keeps a note open across blank lines, so removal must too: an
+// orphaned BODY would otherwise attach to the previous note or fail parsing.
+func TestRemoveEntryTakesBodyAcrossBlankLines(t *testing.T) {
+	text := "# Anchored notes\n\n- NOTE-001: first\n  SUBJECT: a.go\n  QUOTE: q1\n\n- NOTE-002: second\n  SUBJECT: b.go\n  QUOTE: q2\n\n  BODY: second body\n\nTrailing prose.\n"
+	doc := ParseNotes(text)
+	if len(doc.Errors) != 0 || len(doc.Notes) != 2 || doc.Notes[1].Body != "second body" {
+		t.Fatalf("parse: %v %+v", doc.Errors, doc.Notes)
+	}
+	removed := RemoveEntry(text, "\n", doc.Notes[1])
+	if strings.Contains(removed, "second body") || !strings.Contains(removed, "Trailing prose.") {
+		t.Fatalf("removed = %q", removed)
+	}
+	if after := ParseNotes(removed); len(after.Errors) != 0 || len(after.Notes) != 1 || after.Notes[0].Body != "" {
+		t.Fatalf("after remove: %v %+v", after.Errors, after.Notes)
+	}
+}

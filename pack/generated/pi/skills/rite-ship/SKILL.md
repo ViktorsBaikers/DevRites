@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/candidate-integrity.md","devrites-lib/reference/standards/git-workflow.md","devrites-lib/reference/standards/definition-of-done.md","devrites-lib/reference/standards/release/ship-checklist.md","rite-ship/reference/git-ship.md","rite-ship/reference/rollout.md","rite-ship/reference/close-out.md","rite-ship/reference/ship-template.md","rite-ship/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md","touched-files.md","review.md","seal.md"]} -->
-> Read-set manifest: `devrites-engine context <slug> --phase ship` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase ship` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-ship: ship + close the task

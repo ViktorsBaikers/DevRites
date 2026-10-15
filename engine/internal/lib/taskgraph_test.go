@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -234,9 +235,9 @@ func TestScanSkillTrustPassCleanSkill(t *testing.T) {
 func TestObserveSummaryForGolden(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	workspace := filepath.Join(root, "work", "shippable-feature")
-	golden := filepath.Join("..", "..", "evals", "golden", "shippable-feature")
+	golden := filepath.Join("..", "..", "..", "evals", "golden", "shippable-feature")
 	if _, err := os.Stat(golden); err != nil {
-		t.Skip("golden fixture unavailable")
+		t.Fatalf("golden fixture unavailable: %v", err)
 	}
 	if err := copyDir(golden, workspace); err != nil {
 		t.Fatal(err)
@@ -350,4 +351,65 @@ func copyDir(src, dst string) error {
 		}
 		return os.WriteFile(target, raw, 0o644)
 	})
+}
+
+const edgeTasks = `# Tasks
+
+## SLICE-001 Store
+Dependencies: none
+Consumes / Produces: produces Store.Get(id)
+
+## SLICE-002 Bare
+Dependencies: SLICE-001
+
+## SLICE-003 Matching
+Dependencies: SLICE-001 (via store.get)
+
+## SLICE-004 Mismatch
+Dependencies: SLICE-001 (via Cache.Put)
+
+## SLICE-005 No field upstream
+Dependencies: SLICE-004 (via Cache.Put)
+`
+
+func TestEdgeAdvisories(t *testing.T) {
+	graph := ParseTaskGraph([]byte(edgeTasks))
+	if len(graph.Problems) != 0 {
+		t.Fatalf("problems=%v", graph.Problems)
+	}
+	want := []string{
+		`ADVISORY edge: SLICE-002 -> SLICE-001 names no crossing interface (add "(via <interface>)" or drop the edge)`,
+		`ADVISORY edge: SLICE-004 -> SLICE-001 via "Cache.Put" is not in SLICE-001 Consumes / Produces`,
+		`ADVISORY edge: SLICE-005 -> SLICE-004 via "Cache.Put" but SLICE-004 declares no Consumes / Produces`,
+	}
+	if got := edgeAdvisories(graph); strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("advisories:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+}
+
+func TestTaskGraphCheckEdgeAdvisoryNeverBlocks(t *testing.T) {
+	root := sliceWorkspace(t, edgeTasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 {
+		t.Fatalf("advisory must not block: code=%d\n%s%s", code, stdout, stderr)
+	}
+	out := stdout.String()
+	if strings.Count(out, "task-graph: ADVISORY edge: ") != 3 || !strings.Contains(out, "task-graph: ok (5 slices)") {
+		t.Fatalf("task-graph output:\n%s", out)
+	}
+	stdout.Reset()
+	if code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr); code != 0 || !strings.Contains(stdout.String(), "bytes=3 (edge-advisory=1)") {
+		t.Fatalf("edge-advisory metric not recorded: code=%d\n%s", code, stdout)
+	}
+}
+
+func TestTaskGraphCheckInvalidGraphSkipsEdgeAdvisory(t *testing.T) {
+	root := sliceWorkspace(t, edgeTasks+"\n## SLICE-006 Broken\nDependencies: SLICE-001 (via )\n", "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 3 || strings.Contains(stdout.String(), "ADVISORY") {
+		t.Fatalf("code=%d, want 3 and no advisories:\n%s", code, stdout)
+	}
+	if !strings.Contains(stdout.String(), `task-graph: BLOCKED: SLICE-006 has malformed dependency "(via )"`) {
+		t.Fatalf("malformed via not blocked:\n%s", stdout)
+	}
 }

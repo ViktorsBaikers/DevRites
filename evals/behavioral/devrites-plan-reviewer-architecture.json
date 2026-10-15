@@ -20,6 +20,7 @@
     },
     {
       "id": "ARCH2_COMPATIBLE_CONTROL",
+      "control": true,
       "rationalization": "A fully binding cross-unit rule should survive the challenge.",
       "source": "devrites-plan-reviewer.md Architecture & boundaries",
       "pressure": "Control: `All producers emit lowercase RFC 4122 UUIDv4 IDs; consumers compare the full string byte-for-byte and persist it before effects. Binds: every producer/consumer. Prevents: duplicate effects.` Try the two-implementation challenge and score this axis.",
@@ -34,6 +35,7 @@
     },
     {
       "id": "ARCH3_LOCAL_REVERSIBLE_CONTROL",
+      "control": true,
       "rationalization": "The counterexample exercise should not become universal ceremony.",
       "source": "devrites-plan-reviewer.md Architecture & boundaries",
       "pressure": "Control: one slice locally chooses a private helper name and can rename it without crossing a module boundary. Review whether the two-implementation architecture challenge is required.",

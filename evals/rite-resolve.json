@@ -13,7 +13,7 @@
       "rationale": "Direct Codex invocation with --drop."
     },
     {
-      "text": "/rite resolve --batch answers.yaml",
+      "text": "/rite resolve --batch .devrites/work/<slug>/answers.batch",
       "expected": "should_trigger",
       "rationale": "Menu-style invocation."
     },

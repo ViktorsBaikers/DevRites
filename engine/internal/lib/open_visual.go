@@ -63,7 +63,9 @@ func OpenVisual(root string, args []string, stdout, stderr io.Writer) int {
 			return 2
 		}
 		visualDir := filepath.Join(feature, "visual")
-		if !safepath.WithinResolved(htmlPath, visualDir) {
+		// visual/ itself may be a symlink: resolving both sides would then
+		// accept any file under its target.
+		if !safepath.WithinResolved(visualDir, feature) || !safepath.WithinResolved(htmlPath, visualDir) {
 			fmt.Fprintf(stderr, "open-visual: refused: resolved path escapes workspace visual/\n")
 			return 2
 		}

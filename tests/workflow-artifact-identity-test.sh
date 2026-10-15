@@ -2139,8 +2139,9 @@ def check_module_and_corpus(root: Path) -> None:
     scenarios = corpus["scenarios"]
     require([row["id"] for row in scenarios] == EXPECTED_SCENARIOS, "scenario IDs/order")
     require({row["id"]: row["expected_route"] for row in scenarios} == EXPECTED_ROUTES, "scenario routes")
-    require(all(set(row) == SCENARIO_FIELDS for row in scenarios), "exact scenario field maps")
-    require(exact_map_digest(scenarios) == CORPUS_SCENARIOS_SHA256, "complete scenario corpus map")
+    require(all(set(row) - {"control"} == SCENARIO_FIELDS and row.get("control", True) is True for row in scenarios), "exact scenario field maps")
+    require(any(row.get("control") is True for row in scenarios), "corpus control scenario")
+    require(exact_map_digest([{k: v for k, v in row.items() if k != "control"} for row in scenarios]) == CORPUS_SCENARIOS_SHA256, "complete scenario corpus map")
     for row in scenarios:
         require(row["durable_consequence"] and row["forbidden_actions"], f"scenario consequence: {row['id']}")
     adapter_rows = markdown_table(module, "|Canonical adapter|Entry trigger|Canonical action|Return cursor|")

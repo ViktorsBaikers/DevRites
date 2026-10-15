@@ -46,9 +46,17 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"observe", "slice", "--help"}, want: "observe slice <slug> <SLICE-ID>"},
 		{args: []string{"orient", "--help"}, want: "orient [slug]"},
 		{args: []string{"handoff", "--help"}, want: "handoff [slug]"},
+		{args: []string{"recall", "--help"}, want: "recall --paths <p1,p2,...>"},
+		{args: []string{"recall", "help"}, want: "recall --paths <p1,p2,...>"},
+		{args: []string{"recall", "--paths", "src", "--help"}, want: "[--limit n]"},
 		{args: []string{"next", "help"}, want: "devrites-engine next [slug]"},
 		{args: []string{"dispatch", "help"}, want: "devrites-engine dispatch <slug>"},
 		{args: []string{"dispatch", "x", "open", "--help"}, want: "devrites-engine dispatch <slug>"},
+		{args: []string{"dispatch", "--help"}, want: "[--slice SLICE-###] [--reslice-review <DRIFT-ID>]"},
+		{args: []string{"context", "--help"}, want: "[--role <r>] [--slice <SLICE-###>]"},
+		{args: []string{"metrics", "--help"}, want: "metrics summary [slug] [--by-slice]"},
+		{args: []string{"check", "--help"}, want: "check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]"},
+		{args: []string{"check", "--help"}, want: "[--worktree|--staged|--base <ref>] [--allow-empty] [--cwd <dir>]"},
 		{args: []string{"secret-scan", "help"}, want: "secret-scan [--staged] [--stdin]"},
 		{args: []string{"open-visual", "help"}, want: "open-visual <path-or-name>"},
 		{args: []string{"claim", "--help"}, want: "claim <add|release|list|check>"},
@@ -164,6 +172,15 @@ func TestHelpTokenAsFlagValueOrOperandIsNotHelp(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "claims.jsonl")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRecallHelpTokenAsPathsValueIsUsageError(t *testing.T) {
+	t.Setenv("DEVRITES_ROOT", "")
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"recall", "--paths", "--help"}, strings.NewReader(""), &stdout, &stderr)
+	if code != exitUsage || stdout.Len() != 0 || !strings.Contains(stderr.String(), "--paths requires") {
+		t.Fatalf("code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
 }
 

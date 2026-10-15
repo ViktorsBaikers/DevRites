@@ -15,7 +15,7 @@ Diverge on the *real problem*, not the obvious path. Ask:
 Ambition aims at the **outcome** (problem definition, success bar, user value) and at
 complexity-**neutral** future-proofing. It never aims at the **solution surface** (that's Pass 2's
 job to prune). Ground every ambitious idea in the codebase's real seams and blast radius. Use a
-code-intelligence index if available (see `../../devrites-lib/reference/standards/tooling.md`). Don't invent greenfield scope a
+code-intelligence index if available (see `skill://devrites-lib/reference/standards/tooling.md`). Don't invent greenfield scope a
 constrained codebase can't absorb.
 
 ## Pass 2: INVERSION (quench: pre-mortem + prune)
@@ -26,7 +26,7 @@ Invert. Two subtractive moves:
 - **YAGNI ledger.** Each candidate scope item gets the "imagine the later refactor" test: if
   adding it *later* isn't materially more expensive, **defer it** (with a revisit note).
   Bias hard toward defer: most presumed-needed features are never used. Reuse the
-  pack's existing [`patterns.md`](../../devrites-lib/reference/standards/patterns.md) standard ('no speculative abstraction or pattern
+  pack's existing [`patterns.md`](skill://devrites-lib/reference/standards/patterns.md) standard ('no speculative abstraction or pattern
   without a current need'). Don't invent a new YAGNI rule.
 
 ## The four modes: commit exactly one
@@ -43,7 +43,7 @@ Mode selection is the first convergence move. Record the chosen mode + rationale
 ## Bound ambition by reversibility
 The bigger the bet, the more it must be reversible. Irreversible-risk areas (auth, migrations,
 public API, data model) get the **opposite** of ambition: maximum conservatism, explicit
-rollback, and they **always pause** regardless of mode (the [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) irreversible-risk
+rollback, and they **always pause** regardless of mode (the [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) irreversible-risk
 list is honored verbatim). Size big bets so that if the whole thing vanished tomorrow, you'd be
 fine.
 

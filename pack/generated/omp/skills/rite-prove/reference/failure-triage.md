@@ -6,7 +6,7 @@ loop to `devrites-debug-recovery`.
 ## Triage ladder
 1. **Reproduce:** for a repeatable command, run it again and capture the exact
    error (quote it). For a consumptive action under
-   [`one-shot-actions.md`](../../devrites-lib/reference/standards/one-shot-actions.md),
+   [`one-shot-actions.md`](skill://devrites-lib/reference/standards/one-shot-actions.md),
    never rerun it: use the retained bounded artifact as the reproduction input.
 2. **Classify** the failure:
    - test is right, code is wrong → fix the code (in scope).
@@ -20,7 +20,7 @@ loop to `devrites-debug-recovery`.
      blocker citing that baseline, never green; without the baseline it is unresolved.
    - flaky (at least one fail and one pass on the unchanged candidate digest;
      timing/order) → record every attempt and apply
-     [the Determinism standard](../../devrites-lib/reference/standards/testing.md#determinism-no-flaky-tests):
+     [the Determinism standard](skill://devrites-lib/reference/standards/testing.md#determinism-no-flaky-tests):
      the green attempt proves nothing; fix it or record a blocker. Don't paper over with retries.
    - external dependency down → record blocker; don't fake the result.
 3. **Isolate:** minimize to the smallest failing case; bisect the diff if needed.

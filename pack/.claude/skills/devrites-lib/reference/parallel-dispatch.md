@@ -4,7 +4,7 @@ Host dispatch; DevRites governs.
 
 ## Roster
 
-Review: Spec/Code; Seal: all applicable roles.
+Review: Spec/Code plus triggered frontend/security/performance; Seal: all applicable roles.
 
 | Reviewer | Fires | Trigger |
 |---|---|---|
@@ -38,8 +38,9 @@ If the candidate diff has no matching surfaces, record
    hand the bundle path as the packet's source list instead of a file roster.
    Build roles add `--slice <SLICE-ID>` (slice-scoped, slice-named bundle).
    Evaluate the skill's trigger conditions and pass each that fires — a role's
-   Trigger column maps to manifest names: `security-auditor` → `security`,
-   `frontend-reviewer` → `ui`/`frontend`, `performance-reviewer` → `performance`.
+   Trigger column maps to the phase manifest's names: `security-auditor` →
+   `security`; at Review, `frontend-reviewer` → `ui` and `performance-reviewer` →
+   `performance`. Seal declares neither; those roles load their own standards.
    The `agents` dispatch contract needs no flag: `--role` auto-fires it
    (`auto=[agents]` in the output). The command prints `unselected=[...]`; an
    omitted applicable trigger is a gap, not a shortcut.

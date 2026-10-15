@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"triggers":{"intent":["devrites-lib/reference/intent-map.md"],"menu":["rite/reference/menu.md"],"dispatch":["devrites-lib/reference/parallel-dispatch.md"],"reply":["devrites-lib/reference/reply-contract.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # /rite: DevRites menu + router
 
@@ -16,7 +16,7 @@ Two modes:
   workspace status; `/rite-status` owns that.
 - **Verb arg** → pass-through invocation of the matching `rite-<verb>` skill (`/rite spec foo` ≡ `/rite-spec foo`); the called skill owns the output.
 
-When the user asks which rite fits, load [`devrites-lib/reference/intent-map.md`](../devrites-lib/reference/intent-map.md).
+When the user asks which rite fits, load [`devrites-lib/reference/intent-map.md`](skill://devrites-lib/reference/intent-map.md).
 When they ask how phases connect, load [`reference/menu.md`](reference/menu.md).
 
 ## Dispatch
@@ -74,9 +74,10 @@ What each verb does lives once, in the Menu below; this table is the invocation 
 Both forms call the same skill. The menu supports discovery; `/rite-<verb>` is the direct form.
 
 `use <slug>` is handled **inline**. There is no `rite-use` skill. Confirm
-`.devrites/work/<slug>/` exists, then re-point `.devrites/ACTIVE` to `<slug>` and report
+`<slug>` is a safe slug and `.devrites/work/<slug>/state.md` is a contained regular file, then re-point `.devrites/ACTIVE` to `<slug>` and report
 the now-active feature. It is cheap context-switching only: no re-spec, no phase run. If
-the workspace is missing, list the slugs under `.devrites/work/` and stop.
+the workspace or its `state.md` is missing, list the slugs under `.devrites/work/` that have
+`state.md` and stop.
 
 `guide` is an inline walkthrough for the first feature. Agree on one **real, small**
 change, then run spec → clarify → temper → define → vet → build → prove → polish → review → seal →
@@ -89,13 +90,13 @@ Specialist triggers (model-invoked inside the above):
 decision) · `devrites-api-interface` (cross-boundary) ·
 `devrites-audit <security|perf|simplify>` (single-axis review/polish pass) ·
 `devrites-debug-recovery` (failures). Parallel reviewer fan-out at seal is a shared
-reference (see [`devrites-lib/reference/parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)).
+reference (see [`devrites-lib/reference/parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md)).
 
 ## What to output
 
 Reply-contract exception: `/rite` is the menu/router, not a workspace completion step.
 Called phase skills own the shared completion reply contract
-([`reply-contract.md`](../devrites-lib/reference/reply-contract.md)).
+([`reply-contract.md`](skill://devrites-lib/reference/reply-contract.md)).
 
 1. **Verb in `$ARGUMENTS`** → invoke the matching skill per the table above.
 2. **No args** → menu mode, as above.
@@ -150,4 +151,4 @@ UTILITY       /rite frame | prototype | handoff | zoom-out | pressure-test  (or 
 
 The operating rules live in `.omp/skills/devrites-lib/reference/standards/core.md`; DevRites skills Read it as
 their first step, and the other rule files load on demand. See
-[`.omp/skills/devrites-lib/reference/standards/README.md`](../devrites-lib/reference/standards/README.md) for the full index.
+[`.omp/skills/devrites-lib/reference/standards/README.md`](skill://devrites-lib/reference/standards/README.md) for the full index.

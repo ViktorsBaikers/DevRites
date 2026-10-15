@@ -65,7 +65,7 @@ Completion criterion: every concern has at least one clickable repo-relative `pa
 
 If the explainer or walkthrough needs a spatial/relational page, follow the SKILL's
 "Visual where it earns it" branch: load matching playbooks from
-[`../../devrites-lib/reference/visual-playbooks/index.md`](../../devrites-lib/reference/visual-playbooks/index.md),
+[`skill://devrites-lib/reference/visual-playbooks/index.md`](skill://devrites-lib/reference/visual-playbooks/index.md),
 emit `visual/<name>.html` + `visual/<name>.outline.md` (workspace or `$RUN_DIR`), treat
 outline as SSOT, and never invent a new phase or Lavish dependency. Classification still
 owns shape; the visual branch does not change which shape you are in.

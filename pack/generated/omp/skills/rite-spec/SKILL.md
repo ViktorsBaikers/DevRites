@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/standards/agents.md","rite-spec/reference/investigation.md","rite-spec/reference/question-protocol.md","rite-spec/reference/spec-template.md","rite-spec/reference/spec-checklists.md","rite-spec/reference/state-workspace.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/interview-patterns.md","rite-spec/reference/ai-spec-template.md","rite-spec/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"edge-cases":["devrites-lib/reference/standards/edge-case-trace.md"],"frontend":["rite-build/reference/frontend-trigger.md"],"grammar":["devrites-lib/reference/standards/spec-grammar.md"],"principles":["devrites-lib/reference/standards/principles.md"],"references":["rite-spec/reference/references-intake.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md"],"workspaceByRole":{"evidence-scout":["brief.md","spec.md","state.md","questions.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase spec` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase spec` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-spec: investigate and write the spec
@@ -18,12 +18,12 @@ Investigate and resolve material gaps into a placed, covered `spec.md`.
 > here for auth, data, migration, public API, or multi-slice work.
 
 ## Rules consulted (read on demand from `.omp/skills/devrites-lib/reference/standards/`)
-Pull [`documentation.md`](../devrites-lib/reference/standards/documentation.md) for significant decisions and [`principles.md`](../devrites-lib/reference/standards/principles.md) for
+Pull [`documentation.md`](skill://devrites-lib/reference/standards/documentation.md) for significant decisions and [`principles.md`](skill://devrites-lib/reference/standards/principles.md) for
 declared invariants; an unavoidable principle violation is blocking.
-For behavioral/high-risk acceptance, use [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) plus workspace schema;
+For behavioral/high-risk acceptance, use [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md) plus workspace schema;
 simple criteria stay flat `AC-###`. Apply
 [`acceptance-criteria.md`](reference/acceptance-criteria.md) so each is binary and observable.
-Use [`edge-case-trace.md`](../devrites-lib/reference/standards/edge-case-trace.md)
+Use [`edge-case-trace.md`](skill://devrites-lib/reference/standards/edge-case-trace.md)
 to populate only relevant edge/prohibition rows (trigger `edge-cases`). The spec's applicability map routes
 topology, data, integration, security, and delivery concerns to their focused standard;
 load a routed standard to discover required behavior, not to prescribe implementation.
@@ -32,10 +32,10 @@ load a routed standard to discover required behavior, not to prescribe implement
 - No silent assumptions or guessing; prefer conventions; ask on scope,
   placement, data, UX, security, migration, or acceptance changes.
 - **Root authority:** controlling chat asks humans, decides, and writes workspace;
-  evidence work follows [`agents.md`](../devrites-lib/reference/standards/agents.md).
+  evidence work follows [`agents.md`](skill://devrites-lib/reference/standards/agents.md).
 - **Author one section at a time:** problem → goal → requirements → acceptance →
   edges. For contested requirements/boundaries/assumptions, apply
-  [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) before continuing.
+  [`elicitation.md`](skill://devrites-lib/reference/standards/elicitation.md) before continuing.
 
 ## Workflow
 0. Read core; if `.devrites/ACTIVE` exists, require its `state.md`.
@@ -58,8 +58,11 @@ load a routed standard to discover required behavior, not to prescribe implement
    **Completion:** it includes both, and every ask is listed. **Failing case:** "CSV export
    and an email digest" yields a CSV-only spec; the digest is neither Non-goal nor question.
 1a. **Dedupe.** Search local issues/PRDs, work, and archive. On a close match ask
-   extend/adopt/new, then record the choice; otherwise continue silently.
-   A recorded [feature-sequence continuation](../rite-plan/reference/slicing.md#continuation-workspaces)
+   extend/adopt/new, then record the choice; otherwise continue silently. A slug handed
+   off by `/rite-adopt` extends that adopted workspace without asking. Adopting a
+   pressure-test provisional slug turns each `Hold:` in its `investigation-map.md` into an
+   open `gate: blocking` question in `questions.md`.
+   A recorded [feature-sequence continuation](skill://rite-plan/reference/slicing.md#continuation-workspaces)
    is a **new** workspace (`<parent>-2`): carry the parent slug and position into
    `brief.md`, read the parent artifacts as design input, and do not route to
    `/rite-plan revise` on the parent. When the ask is open and archived work records
@@ -74,13 +77,13 @@ load a routed standard to discover required behavior, not to prescribe implement
    (`PRODUCT.md`, `DESIGN.md`, `CLAUDE.md`, `AGENTS.md`, and `.devrites/principles.md` when
    present).
    **Consult the capability ledger**, which records current system behavior
-   ([`ledger.md`](../rite-polish/reference/ledger.md)); Polish folds accepted deltas
+   ([`ledger.md`](skill://rite-polish/reference/ledger.md)); Polish folds accepted deltas
    before Review. List `.devrites/specs/*/spec.md` with the
    host filesystem and read only capabilities this feature touches. Search accepted ADRs and
    relevant `.devrites/**/decisions.md` files directly before asking the human to revisit a
    settled architecture, API, or auth choice. Compare exact requirement headers and meanings
    with the current ledger to choose ADDED/MODIFIED/REMOVED; never classify from memory. Use
-   [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md)'s singular `Capability impact:` declaration to name the affected
+   [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md)'s singular `Capability impact:` declaration to name the affected
    capabilities and change, or give its specific `none` justification.
    Inventory affected observable behavior from current test/contract/runtime/source
    evidence; map each outcome to preserving REQ/AC. Greenfield `none` needs the
@@ -101,7 +104,7 @@ load a routed standard to discover required behavior, not to prescribe implement
    rather than treating every reference as a fidelity target.
    **Completion:** every supplied reference is saved and classified, or absence is explicit.
 3a. **Shape UX/UI before code when the feature is frontend**
-   ([frontend-trigger](../rite-build/reference/frontend-trigger.md)). Apply
+   ([frontend-trigger](skill://rite-build/reference/frontend-trigger.md)). Apply
    `devrites-ux-shape` within the spec phase. It turns the
    references and spec into a feature-level **`design-brief.md`** (design direction, key
    states, interaction model, optional Figma/image visual-direction probe) that `/rite-build`
@@ -110,7 +113,7 @@ load a routed standard to discover required behavior, not to prescribe implement
    backend/data/CLI features skip this.
 4. **Resolve human-owned gaps.** Recommend an option and let the human decide. Apply
    [question-protocol](reference/question-protocol.md), the shared
-   [[`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) option-set and decision-ownership rules](../devrites-lib/reference/standards/afk-hitl.md#decision-ownership-search-before-asking),
+   [[`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) option-set and decision-ownership rules](skill://devrites-lib/reference/standards/afk-hitl.md#decision-ownership-search-before-asking),
    and [`interview-patterns.md`](reference/interview-patterns.md) for a vague ask. Every
    material dimension is resolved by a human pick or explicitly deferred as non-blocking;
    only genuinely reversible, low-impact details go to `assumptions.md`. A paper-only
@@ -136,14 +139,14 @@ load a routed standard to discover required behavior, not to prescribe implement
    never by softening the question.
 6. **Run the complete readiness gate** at the bottom of
    [spec-template](reference/spec-template.md), then apply the
-   **Native grammar re-read checklist** in [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) to the complete
+   **Native grammar re-read checklist** in [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md) to the complete
    saved `spec.md`. Re-open the file after corrections and verify every
    applicable item; there is no parser or replacement script. Natively compare
    deltas with the current ledger using exact header semantics and the ledger's
    complete-block preservation rule.
    `tasks.md` deliberately does not exist yet; cross-artifact traceability starts in
    `/rite-define`. Any grammar or delta failure blocks. The interruption forecast must be resolved, owned, or a justified
-   action-time gate. Run the [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) marker sweep; a kept hit blocks. Then record
+   action-time gate. Run the [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md) marker sweep; a kept hit blocks. Then record
    `passed <iso>; marker sweep: …` in the `state.md` `spec_gate` row, never in `spec.md`.
 6a. **Existing-spec delta.** For a pre-existing slug/workspace, compare old/new
    spec and questions, then show `Acceptance delta` (added/removed/reworded IDs)

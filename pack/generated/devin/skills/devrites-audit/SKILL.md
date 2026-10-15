@@ -6,7 +6,7 @@ triggers:
   - model
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/parallel-dispatch.md","devrites-lib/reference/standards/agents.md"],"triggers":{"audit-coverage":["devrites-lib/reference/standards/audit-coverage.md"],"architecture-health":["devrites-lib/reference/standards/architecture-health.md"]},"workspace":["spec.md","plan.md","tasks.md","touched-files.md","evidence.md","state.md","decisions.md"],"workspaceByRole":{"performance-reviewer":["spec.md","plan.md","tasks.md","state.md","touched-files.md","evidence.md"],"security-auditor":["spec.md","plan.md","tasks.md","state.md","touched-files.md","evidence.md"],"simplifier-reviewer":["spec.md","plan.md","tasks.md","state.md","touched-files.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill devrites-audit` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill devrites-audit` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # devrites-audit: read-only audit dispatch
 

@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/agents.md","rite-temper/reference/significance.md","rite-temper/reference/scope-modes.md","rite-temper/reference/review-dimensions.md","rite-temper/reference/strategy-template.md","rite-temper/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"yagni":["devrites-lib/reference/standards/patterns.md","devrites-lib/reference/standards/coding-style.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","strategy.md","design-brief.md"],"workspaceByRole":{"strategy-reviewer":["brief.md","spec.md","decision-coverage.md","decisions.md","strategy.md","state.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase temper` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --phase temper` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # $rite-temper: review scope and risk before planning
@@ -120,7 +120,7 @@ the spec applicability map triggers that risk family.
    Unapproved irreversible choices and unresolved growth qids set `Awaiting human`.
    Objective below-bar findings continue correction.
 7. **Adversarial verification loop:** ask the exact
-   [`devrites-strategy-reviewer`](.codex/agents/devrites-strategy-reviewer.toml)
+   [`devrites-strategy-reviewer`](../../../.codex/agents/devrites-strategy-reviewer.toml)
    through the native fresh-context contract in
    [`agents.md`](../devrites-lib/reference/standards/agents.md), with **only** its `--role strategy-reviewer` read-set
    (hardened spec, `strategy.md`, claim-check artifacts) + rubric, no authoring reasoning. Fold technical findings into one correction;

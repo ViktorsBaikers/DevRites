@@ -4,7 +4,7 @@ Host dispatch; DevRites governs.
 
 ## Roster
 
-Review: Spec/Code; Seal: all applicable roles.
+Review: Spec/Code plus triggered frontend/security/performance; Seal: all applicable roles.
 
 | Reviewer | Fires | Trigger |
 |---|---|---|
@@ -34,12 +34,13 @@ If the candidate diff has no matching surfaces, record
    unverified independence is a gap. Do not launch a probe agent per task;
    still validate each result's context and candidate.
 2. Build each reviewer's read-set once with
-   `devrites-engine context <slug> --phase <p> --role <role> --trigger <set>` and
+   `devrites-engine context --skills-root .omp/skills <slug> --phase <p> --role <role> --trigger <set>` and
    hand the bundle path as the packet's source list instead of a file roster.
    Build roles add `--slice <SLICE-ID>` (slice-scoped, slice-named bundle).
    Evaluate the skill's trigger conditions and pass each that fires — a role's
-   Trigger column maps to manifest names: `security-auditor` → `security`,
-   `frontend-reviewer` → `ui`/`frontend`, `performance-reviewer` → `performance`.
+   Trigger column maps to the phase manifest's names: `security-auditor` →
+   `security`; at Review, `frontend-reviewer` → `ui` and `performance-reviewer` →
+   `performance`. Seal declares neither; those roles load their own standards.
    The `agents` dispatch contract needs no flag: `--role` auto-fires it
    (`auto=[agents]` in the output). The command prints `unselected=[...]`; an
    omitted applicable trigger is a gap, not a shortcut.
@@ -97,7 +98,7 @@ in `review.md`/`seal.md`.
   the same wave (`dispatch open ... --role code-reviewer.frontend --role
   code-reviewer.backend`; distinct handles — the sealed wave's handles and start
   stamps are the concurrency receipt). Build each bundle with `devrites-engine
-  context <slug> --phase <p> --role code-reviewer --trigger <set> --out
+  context --skills-root .omp/skills <slug> --phase <p> --role code-reviewer --trigger <set> --out
   ctx/<p>-code-reviewer.<lane>.bundle.md`; the default name collides. Each packet
   names its lane, the lane's path set (the whole diff stays readable for context),
   the triggered profile ([`review/README.md`](standards/review/README.md)), and the
@@ -138,7 +139,7 @@ claim is released or its holder is proven terminal. A wright that never returned
 admitted result leaves unadmitted bytes: task-path changes since its pre-dispatch
 `git diff --name-only` baseline are never cited as built nor discarded, and are
 named in the re-dispatch contract; changes outside task paths stop for the human
-(Converge side: [`rite-converge`](../../rite-converge/SKILL.md)).
+(Converge side: [`rite-converge`](skill://rite-converge/SKILL.md)).
 
 ## Scale limits
 
@@ -155,4 +156,4 @@ or with the implementer. A mesh without a parent is not a DevRites profile.
 **Failing case:** two reviewers agree a compromise in a shared channel and the
 parent records that compromise as independent review.
 
-Arbitration/independence → [agents.md § Independence](standards/agents.md#independence); writer batches → [`parallel-batch.md`](../../rite-build/reference/parallel-batch.md).
+Arbitration/independence → [agents.md § Independence](standards/agents.md#independence); writer batches → [`parallel-batch.md`](skill://rite-build/reference/parallel-batch.md).

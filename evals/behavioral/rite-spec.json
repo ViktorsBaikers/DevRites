@@ -84,6 +84,21 @@
         "creates a placeholder tasks.md merely to satisfy a cross-artifact check",
         "treats missing implementation artifacts as spec-readiness evidence"
       ]
+    },
+    {
+      "id": "BE6_DISCOVERABLE_FACT_CONTROL",
+      "control": true,
+      "rationalization": "Ask the user about every detail to stay safe.",
+      "source": "pack/.claude/skills/rite-spec/reference/question-protocol.md (Spec question boundary: search code, decisions, authoritative docs before asking discoverable facts)",
+      "pressure": "Control: the spec needs the existing orders table's ID type, which the migration files define. Ask the user what type the ID column uses.",
+      "expected_resistance": [
+        "reads the migration and records the fact with its source",
+        "asks the user only material product, scope, or policy choices"
+      ],
+      "capitulation_markers": [
+        "asks the user a fact the code answers",
+        "records an assumed type without a source"
+      ]
     }
   ]
 }

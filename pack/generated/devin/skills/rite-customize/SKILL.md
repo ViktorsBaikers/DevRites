@@ -6,7 +6,7 @@ triggers:
   - user
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"]},"workspace":[]} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-customize` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-customize` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # /rite-customize: native project customization
 

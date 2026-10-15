@@ -54,6 +54,16 @@ func Structural(input []byte) ([]byte, error) {
 					start = closeEnd + 1
 					continue
 				}
+			} else if fence, closeEnd := markerLineFence(input, line, lineEnd, afterBlank || anchor >= 0); closeEnd >= 0 {
+				anchor, afterBlank = -1, false
+				if !loneCR(input[start:closeEnd]) {
+					mask(out[start+fence : closeEnd])
+				}
+				if closeEnd == len(input) {
+					break
+				}
+				start = closeEnd + 1
+				continue
 			} else {
 				column, ok := topLevelItem(line)
 				if ok && (afterBlank || anchor >= 0) {
@@ -167,12 +177,41 @@ func fenceStart(line []byte, limit int) (int, bool) {
 	return start, columns <= limit && start < len(line) && (line[start] == '`' || line[start] == '~')
 }
 
+// markerLineFence handles a top-level list item whose content opens a fence
+// (`- ```bash`). It returns the fence's byte offset in line and the end offset
+// of the closer, or -1 unless a closer at the item's content column follows
+// and every line before it stays inside the item. Without this, an indented
+// closer would reopen a top-level fence and mask the rest of the file.
+// Ordered items other than 1 cannot interrupt a paragraph, so they need
+// separated (a preceding blank line or list item).
+func markerLineFence(input, line []byte, lineEnd int, separated bool) (int, int) {
+	column, next, ok := itemContent(line)
+	if !ok || (!separated && line[0] >= '2' && line[0] <= '9') {
+		return 0, -1
+	}
+	marker, width, ok := openingFence(line[next:], 0)
+	if !ok {
+		return 0, -1
+	}
+	return next, listFenceEnd(input, lineEnd, marker, width, column, column)
+}
+
 // topLevelItem returns the content column of a list item whose marker sits at
 // column 0 and whose content is neither another list marker, a heading marker,
 // a fence nor part of a thematic break.
 func topLevelItem(line []byte) (int, bool) {
-	if len(line) < 2 || isThematicBreak(line) {
+	column, next, ok := itemContent(line)
+	if !ok || startsBlock(line[next:]) {
 		return 0, false
+	}
+	return column, true
+}
+
+// itemContent returns the content column and byte offset of a list item whose
+// marker sits at column 0.
+func itemContent(line []byte) (int, int, bool) {
+	if len(line) < 2 || isThematicBreak(line) {
+		return 0, 0, false
 	}
 	markerEnd := 1
 	switch c := line[0]; {
@@ -180,10 +219,10 @@ func topLevelItem(line []byte) (int, bool) {
 	case c >= '1' && c <= '9' && line[1] == '.':
 		markerEnd = 2
 	default:
-		return 0, false
+		return 0, 0, false
 	}
 	if markerEnd >= len(line) || (line[markerEnd] != ' ' && line[markerEnd] != '\t') {
-		return 0, false
+		return 0, 0, false
 	}
 	column, next := markerEnd, markerEnd
 	for next < len(line) && (line[next] == ' ' || line[next] == '\t') {
@@ -194,10 +233,10 @@ func topLevelItem(line []byte) (int, bool) {
 		}
 		next++
 	}
-	if next == len(line) || column-markerEnd > 4 || startsBlock(line[next:]) {
-		return 0, false
+	if next == len(line) || column-markerEnd > 4 {
+		return 0, 0, false
 	}
-	return column, true
+	return column, next, true
 }
 
 // startsBlock reports content that opens a list marker, heading or fence.

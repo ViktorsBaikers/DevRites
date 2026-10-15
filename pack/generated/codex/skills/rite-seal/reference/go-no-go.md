@@ -28,3 +28,5 @@ Important findings remain. Proceed to seal? [y/N]
 ```
 
 Default NO-GO. `y` accepts named Important risks only, never Critical/missing proof.
+Only a human answers `y`: an unattended (AFK/autocomplete) run keeps N and, if Important
+findings remain after its recovery, stops for the human.

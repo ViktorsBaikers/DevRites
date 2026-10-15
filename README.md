@@ -56,6 +56,14 @@ install and run DevRites. Development in this repository (`npm ci`, which
 npx devrites@latest
 ```
 
+Or paste this to your coding agent:
+
+```text
+Install DevRites in this project: run `npx devrites@latest` from the repository
+root, then run /rite-doctor ($rite-doctor in Codex) and report any FAIL line
+with its fix.
+```
+
 The installer adds project-local support for Claude Code, Codex, omp, pi, and
 Devin CLI. It does not write skills, agents, or hooks to `~/.claude`,
 `~/.codex`, `~/.pi`, or `~/.config/devin`.
@@ -299,7 +307,7 @@ Run `npx devrites@latest --help` for common flags and
 | `--no-devin` | Skip `.devin` skills, agents, and the Devin `AGENTS.md` block. |
 | `--no-agents` | Skip hook-free native specialist profiles. |
 | `--no-skills` | Skip skills and their bundled standards. |
-| `--no-binary` | Do not keep the shared `devrites-engine` binary in a user or system bin directory. |
+| `--no-binary` | Do not keep the shared `devrites-engine` binary in a user or system bin directory. On `uninstall`, keep the existing binary. |
 | `--short-aliases=all` | Add `/define`, `/build`, `/prove`, and `/seal` aliases. |
 
 </details>
@@ -370,9 +378,12 @@ The installer records every managed project file and its SHA-256 in
 `.claude/devrites.manifest`. Before an update or uninstall changes anything, it
 checks every managed path. It preserves customized files and tells you to retry
 with `--force`; legacy manifests without hashes also require `--force`.
-`--force --dry-run` lists the exact destructive actions. Marker-merged files
-keep user content outside the DevRites block, and `.devrites/` runtime state
-stays in place. The installer refuses symlinks, junctions, and paths that
+`--force --dry-run` lists the exact destructive actions. Every settings and
+marker merge is checked before the first write, so a rejected merge (such as a
+Codex config that already sets top-level `default_permissions`) leaves the project untouched.
+Marker-merged files keep user content outside the DevRites block, and
+`.devrites/` runtime state stays in place. `update` reuses the install flags
+recorded in the manifest; flags you pass explicitly win and are recorded. The installer refuses symlinks, junctions, and paths that
 escape the target.
 
 The optional shared `devrites-engine` binary is the only artifact installed
@@ -416,15 +427,18 @@ that the intended publishing step produced it. See
 | --- | --- | --- | --- | --- |
 | **Claude Code** | `.claude/skills/` | `.claude/agents/` | Native root permissions merged into `.claude/settings.json` | `/rite-spec` |
 | **Codex** | `.agents/skills/` | `.codex/agents/` | Permissions in `.codex/config.toml`, marked block in `AGENTS.md` | `$rite-spec` or `/skills` |
-| **omp** | `.omp/skills/` | `.omp/agents/` | Command stubs in `.omp/commands/` | `/rite-spec` or `/skill:rite-spec` |
-| **pi** | `.pi/skills/` | `.pi/agents/` | Prompt commands in `.pi/prompts/`, marked block in `AGENTS.md` | `/rite-spec` or `/skill:rite-spec` |
+| **omp** | `.omp/skills/` | `.omp/agents/` | Command stubs in `.omp/commands/`; `.omp/config.yml` hiding duplicate DevRites skills (only if absent) | `/rite-spec` or `/skill:rite-spec` |
+| **pi** | `.pi/skills/` | `.pi/agents/` | Prompt commands in `.pi/prompts/`, marked block in `AGENTS.md`; with Codex, `.pi/settings.json` skipping the `.agents/skills` copies (only if absent) | `/rite-spec` or `/skill:rite-spec` |
 | **Devin CLI** | `.devin/skills/` | `.devin/agents/` | Marked block in `AGENTS.md` | `/rite-spec` |
 
 On every host, among the lifecycle `devrites-*` specialists only
 `devrites-slice-wright` is writable and the rest are read-only and hook-free;
 the shipped profiles are the full role-to-permission map, and `/rite-doctor`
 step 3 checks them. Existing
-settings and user content stay in place. On Devin CLI, dispatch goes through
+settings and user content stay in place; when `.omp/config.yml` or
+`.pi/settings.json` already exists, the installer leaves it unchanged and
+prints the setting to add. Once you edit one the installer created, it is
+yours: update, uninstall, and `--force` leave it in place. On Devin CLI, dispatch goes through
 `run_subagent` with the exact `devrites-<role>` profile, and a missing profile
 stops for HITL instead of substituting `subagent_general`. Profiles load when a
 session starts, so reopen the project after installing.
@@ -492,7 +506,8 @@ traces. DevRites detects these tools but does not install them.
   binds proof, review, and verdict to the strict project candidate rather than
   to modification times
   ([ADR-0026](docs/adr/0026-content-bound-proof-and-bounded-inputs.md)).
-- The installer never writes `defaultMode: bypassPermissions`. Skills use
+- The installer never sets a Claude `permissions.defaultMode`; it keeps yours, and an
+  update removes the `plan` mode older DevRites versions wrote. Skills use
   networked research only through host tools you invoke or configure.
 
 Read [`SECURITY.md`](SECURITY.md) for the threat model, managed deployment

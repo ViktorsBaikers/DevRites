@@ -984,3 +984,27 @@ func TestRequireWorkspaceSchemaRefusesUnsafeStateFile(t *testing.T) {
 		})
 	}
 }
+
+// A .devrites symlink into a nested directory of the project still names that
+// project: Dir(root) is where commands read subjects and run git.
+func TestResolveRootSymlinkedDevritesKeepsProjectDir(t *testing.T) {
+	project := t.TempDir()
+	store := filepath.Join(project, "state", "store")
+	if err := os.MkdirAll(store, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join("state", "store"), filepath.Join(project, ".devrites")); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	physicalProject, err := filepath.EvalSymlinks(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := ResolveRoot(project)
+	if err != nil {
+		t.Fatalf("ResolveRoot: %v", err)
+	}
+	if filepath.Dir(got) != physicalProject {
+		t.Fatalf("ResolveRoot = %q; Dir is not the project %q", got, physicalProject)
+	}
+}

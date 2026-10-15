@@ -20,10 +20,12 @@ gen_codex_markdown_file() {
     -e 's#\.claude/skills/#.agents/skills/#g' \
     -e 's#\.claude/agents/([A-Za-z0-9_-]+)\.md#.codex/agents/\1.toml#g' \
     -e 's#\.claude/agents/#.codex/agents/#g' \
+    -e 's#\]\(((\.\./)+)agents/([A-Za-z0-9_-]+)\.md#](\1../.codex/agents/\3.toml#g' \
     -e 's#(\.\./)+agents/([A-Za-z0-9_-]+)\.md#.codex/agents/\2.toml#g' \
     -e 's#\.codex/agents/([A-Za-z0-9_-]+)\.md#.codex/agents/\1.toml#g' \
     -e 's#Host mapping: Claude Code uses `Agent` \(`Task` is its legacy alias\); Codex uses#Host mapping: Codex fresh-context dispatch uses#g' \
     -e 's#`Agent` call#`spawn_agent` call#g' \
+    -e 's#^Claude: N concurrent Task wrights \(`acceptEdits`, cwd=worktree\)\. Codex: require#Codex: require#' \
     -e 's#Task breakdown#Work-item breakdown#g' \
     -e 's#(^|[^A-Za-z0-9_])Task([^A-Za-z0-9_]|$)#\1spawn_agent\2#g' \
     -e 's#dispatch `devrites-source-driven`#invoke `devrites-source-driven`#g' \
@@ -77,7 +79,9 @@ gen_codex_agent() {
       echo "gen_codex_agent: $(basename "$_src") body contains ''' (unrepresentable in a TOML literal string)" >&2
       return 1
     fi
-    cat "$_body_codex"
+    # Agent instructions have no file base and Codex has no .codex/skills;
+    # address skill files by their installed project path.
+    sed -E 's#\]\((\.\./)+skills/#](.agents/skills/#g' "$_body_codex"
     printf "\n%s\n" "'''"
   } > "$_out"
 }

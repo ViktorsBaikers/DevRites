@@ -2,7 +2,9 @@
 
 Feature truth: `.devrites/work/<slug>/`, discovered by `state.md`; remnants/archives
 are inactive. Spec writes optional `README.md`. Use canonical filenames; both released
-cursor forms remain valid. `/rite-upgrade` audits without path/alias/format migration.
+cursor forms remain readable, but a cursor with no `schema` row needs
+`devrites-engine migrate <slug>` before the engine accepts it. `/rite-upgrade` audits
+without path/alias/format migration.
 
 ## Slug identity
 
@@ -27,7 +29,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | vet/build/converge | plan artifacts plus `eng-review.md`, `test-plan.md`, `gates.md`; Build creates and maintains `touched-files.md` after its first green slice |
 | prove/polish/review | vetted plan artifacts plus `evidence.md`, `touched-files.md` |
 | seal/ship/done | proof artifacts plus `review.md`, `seal.md`; Ship writes `ship.md` |
-| conditional | `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `drift.md` for drift; `polish-report.md` for polish; `handoff.md` only when requested; `references.md` + `references/` when references exist; `investigation-map.md` for pressure-test; `dogfood.md` for dogfood; `windows.md` when the diff introduces deferral markers (waiver ledger for `check windows`); `packets/` for by-reference dispatch packets and admitted accounts (≤ 64 KiB each; older closed rounds may be deleted; never transcripts); `history/` for verbatim relocated checkpoint narrative (append-only, never a read-next); `readiness-inputs.json` as the advisory per-input drift baseline written by `check drift --record` after Vet's binding (never a gate input; regenerated, not hand-edited); `notes.md` for anchored notes bound to verbatim code quotes (engine-regraded; non-exact anchors block seal) |
+| conditional | `checklists/<domain>.md` per spec-covered domain (Spec writes; Define gates on it); `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `devex.md` when a developer-facing surface is in scope; `drift.md` for drift; `polish-report.md` for polish; `handoff.md` only when requested; `references.md` + `references/` when references exist; `investigation-map.md` for pressure-test; `dogfood.md` for dogfood; `windows.md` when the diff introduces deferral markers (waiver ledger for `check windows`); `packets/` for by-reference dispatch packets and admitted accounts (≤ 64 KiB each; older closed rounds may be deleted; never transcripts); `history/` for verbatim relocated checkpoint narrative (append-only, never a read-next); `readiness-inputs.json` as the advisory per-input drift baseline written by `check drift --record` after Vet's binding (never a gate input; regenerated, not hand-edited); `notes.md` for anchored notes bound to verbatim code quotes (engine-regraded; non-exact anchors block seal) |
 
 ## What each file owns
 
@@ -43,7 +45,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `visual/<name>.html` | optional portable human-viewable visualization; pair with sibling `.outline.md`; self-contained preferred | 400 lines (advisory; not gate-checked) |
 | `visual/<name>.outline.md` | required machine dual-read companion for the sibling HTML; outline wins on conflict; never a candidate path | 200 lines (advisory; not gate-checked) |
 | `visual/README.md` | optional index of visuals in the workspace | 80 lines (advisory; not gate-checked) |
-| `decisions.md` | ADR-style `DEC-###` log: status, context, options, decision, consequences, related IDs; optional `Files:`/`Tags:` fields make entries queryable by path or theme | 200 lines |
+| `decisions.md` | ADR-style `DEC-###` log: status, context, options, decision, consequences, related IDs; optional `Files:`/`Tags:` fields make entries queryable by path or theme; Build's `## Carry-forward constraints` lines (rule, source slice, evidence, `Files:`) | 200 lines |
 | `assumptions.md` | assumptions with confidence, owner, validation status | 160 lines |
 | `questions.md` | current `q-YYYY-MM-DD-NNN` (or released `Q-###`) open/resolved questions, gate, answer, impact | 180 lines |
 | `plan.md` | technical approach, slice strategy, canonical shared-contract proof, validation strategy, rollback | 220 lines |
@@ -61,7 +63,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `handoff.md` | resume objective/last slice/next action/blockers/read-next; sections hold content or `Nothing yet`; unevidenced recollections: `Not tried yet`, never results | 120 lines |
 | `polish-report.md` | polish axis deltas, re-verification lines, residual subjective preferences | 200 lines |
 | `ship.md` | ship preflight, disclosed Git plan, commit/push/tag/PR record | 120 lines |
-| `review.md` | reconciled Review verdict: `## Spec` and `## Code review` accounts, deferred-finding labels/actions, drift | 240 lines |
+| `review.md` | reconciled Review verdict: `## Spec` and `## Code review` accounts, triggered frontend/security/performance accounts or `Not-applicable` lines, deferred-finding labels/actions, drift | 240 lines |
 | `seal.md` | seal preflight, exact reviewer roster accounts, GO/NO-GO verdict and disclosures | 200 lines |
 | `ai-spec.md` | model/RAG/agent/eval/LLM-output scope for AI surfaces | 160 lines |
 | `windows.md` | deferral/bar-lowering waiver ledger: one `- path | marker | reason` row per introduced marker; `check windows` fails on unwaived hits | 120 lines |
@@ -206,7 +208,7 @@ Mode: <AFK | HITL>
 Gate: <advisory | validating | blocking | escalating>
 SLA: <15m | 4h | 24h | none>
 Checkpoint: <question + why it needs unavailable pre-code evidence or action-time approval | none>
-Dependencies: <SLICE-### list | none>
+Dependencies: <SLICE-### (via <interface it consumes>) list | none>
 depends_on: [<SLICE-### IDs>]
 Consumes / Produces: <interfaces read and exposed>
 Known-Gotchas: <ordering hazards and framework footguns | none>
@@ -228,7 +230,9 @@ Done condition: <checkable, exhaustive completion criterion>
 <!-- canonical-slice:end -->
 
 `depends_on` is the machine-readable mirror of `Dependencies`; keep the sets
-identical and cycle-free. `Gate`, `SLA`, and `Checkpoint` are required for HITL
+identical and cycle-free. Each dependency names what crosses it (`check task-graph` advises).
+Define and `/rite-plan` repair write `Prior-slice learnings`, folding Build's
+`decisions.md` carry-forward constraints; Build never edits `tasks.md`. `Gate`, `SLA`, and `Checkpoint` are required for HITL
 slices; use `none` when they do not apply. Complexity above 3 triggers reslicing
 unless the stated reason makes the boundary irreducible. A Writer allowlist of 12+
 files prints an engine `ADVISORY size:` line (`check task-graph`, `check slice`;
@@ -239,7 +243,7 @@ the inseparable capability.
 
 Run `devrites-engine next <slug>` at phase entry for the minimal remaining path
 (current phase, open questions, missing artifacts, next `/rite-*` command), then
-read the phase row below — or hand `devrites-engine context <slug> --phase <p>`
+read the phase row below — or hand `devrites-engine context --skills-root .devin/skills <slug> --phase <p>`
 to the engine and read the bundle it emits.
 
 | Phase | Read |

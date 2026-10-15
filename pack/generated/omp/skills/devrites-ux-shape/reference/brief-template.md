@@ -39,12 +39,12 @@ The single most important thing the user does or understands here. Everything el
 
 ## 3. Design direction
 - Color strategy: Restrained | Committed | Multi-role | Saturated — why (from the scene, not the category).
-- Calibration: density Airy | Balanced | Dense · motion Minimal | Standard | Expressive — from the scene (`../../devrites-frontend-craft/reference/quality-standards.md` — Calibration).
+- Calibration: density Airy | Balanced | Dense · motion Minimal | Standard | Expressive — from the scene (`skill://devrites-frontend-craft/reference/quality-standards.md` — Calibration).
 - Scene sentence: "<who uses it, where, under what light, in what mood>".
 - Visual thesis: <focal point + 1st/2nd/3rd hierarchy> · memorable move: <one | none — system continuity>.
 - References by role: targets <R-ids> · constraints <R-ids> · inspiration <R-ids>.
 - Locks: one accent <token> · one radius scale · one theme — held page-wide
-  (`../../devrites-frontend-craft/reference/quality-standards.md` — Consistency locks).
+  (`skill://devrites-frontend-craft/reference/quality-standards.md` — Consistency locks).
 - Rejected direction: <the obvious-but-wrong direction + why>.
 - Departure: default (preserve identity) | departing because <explicit signal>.
 
@@ -78,7 +78,7 @@ SVG-CSS / icon library / accepted omission) and the shippable provenance/usage r
 
 ## 9. Responsive & a11y
 Reflow 320→1440 (what stacks / collapses / scrolls); focus order, labels, contrast,
-keyboard, target size. Floor: `../../devrites-frontend-craft/reference/quality-standards.md`.
+keyboard, target size. Floor: `skill://devrites-frontend-craft/reference/quality-standards.md`.
 
 ## 10. Visual-direction probe
 Which probe ran (figma / images / prototype / skipped — no tool), which direction won, what

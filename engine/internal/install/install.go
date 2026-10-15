@@ -43,6 +43,9 @@ type Options struct {
 	UpdateCheck bool
 	Stdout      io.Writer
 	Stderr      io.Writer
+	// args are the raw CLI flags; update re-applies them over the manifest's
+	// recorded install flags so explicit flags win.
+	args []string
 }
 
 type stats struct {
@@ -99,6 +102,7 @@ func Run(args []string, stdout, stderr io.Writer, mode Mode) int {
 	opts := DefaultOptions(mode)
 	opts.Stdout = stdout
 	opts.Stderr = stderr
+	opts.args = args
 	if err := parseArgs(args, &opts); err != nil {
 		if errors.Is(err, errHelp) {
 			fmt.Fprint(stdout, usage(mode))
@@ -353,24 +357,30 @@ func (r *runner) validatePayload() error {
 	return nil
 }
 
+// isGlobalTarget compares the symlink-resolved target with $HOME and each
+// global agent home, both as spelled and symlink-resolved, so a symlinked
+// $HOME (or ~/.claude) cannot bypass the guard.
 func isGlobalTarget(target string) bool {
 	home, _ := os.UserHomeDir()
-	if target == home {
-		return true
+	homes := []string{home}
+	if resolved, err := filepath.EvalSymlinks(home); err == nil {
+		homes = append(homes, resolved)
 	}
-	for _, global := range []string{
-		filepath.Join(home, ".claude"),
-		filepath.Join(home, ".codex"),
-		filepath.Join(home, ".omp"),
-		filepath.Join(home, ".omp", "agent"),
-		filepath.Join(home, ".pi"),
-		filepath.Join(home, ".pi", "agent"),
-		filepath.Join(home, ".devin"),
-		filepath.Join(home, ".config", "devin"),
-		filepath.Join(home, ".agents"),
-	} {
-		if target == global || strings.HasPrefix(target, global+string(os.PathSeparator)) {
+	for _, h := range homes {
+		if target == h {
 			return true
+		}
+		for _, rel := range []string{".claude", ".codex", ".omp", ".pi", ".devin", filepath.Join(".config", "devin"), ".agents"} {
+			global := filepath.Join(h, rel)
+			globals := []string{global}
+			if resolved, err := filepath.EvalSymlinks(global); err == nil {
+				globals = append(globals, resolved)
+			}
+			for _, g := range globals {
+				if target == g || strings.HasPrefix(target, g+string(os.PathSeparator)) {
+					return true
+				}
+			}
 		}
 	}
 	return false

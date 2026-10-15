@@ -4,7 +4,7 @@ AFK mode is active when `.devrites/AFK` exists. It lets `/rite-build` chain slic
 without per-slice user input. The rules below limit that unattended work.
 
 Load the shared
-[`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#the-sentinel-devritesafk)
+[`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md#the-sentinel-devritesafk)
 contract for the sentinel schema, defaults, gate ceiling, and mutable-counter
 ownership. This file owns only Build's dispatch, charging, and red-path behavior.
 

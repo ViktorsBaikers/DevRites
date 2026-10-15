@@ -584,6 +584,9 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 		inScratch := sl.WorktreePath != "" && ownedWorktreePath(repoRoot, lease.BatchID, sl)
 		owned := inScratch && createdWorktree(registered, sl.WorktreePath)
 		if sl.WorktreePath != "" && !owned {
+			// Never salvaged, so the batch sweep must not delete this slice's
+			// scratch entry either (e.g. a --root spelled through a symlink).
+			keptWorktrees[sl.ID] = true
 			if inScratch {
 				warnf("slice %s worktree_path %q is not a worktree git registered; leaving it untouched",
 					sl.ID, sl.WorktreePath)

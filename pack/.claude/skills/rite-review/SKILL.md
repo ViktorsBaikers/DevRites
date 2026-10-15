@@ -77,7 +77,8 @@ Pull these via `Read` when the diff demands them:
    Read `touched-files.md` `## Review trail` and `eng-review.md` `## Deferred findings`:
    every deferred row is an input finding for the step-3 cohort (quoted in the owning
    reviewer's brief without severity) and ends in `review.md` with its own label and
-   action tag — never silently dropped.
+   action tag — never silently dropped. Hand each lane reviewer the
+   `devrites-engine recall --paths <its touched paths>` pointers as prior context, not findings.
 2. **Review tests first:** do they prove the acceptance criteria? Missing,
    weak, or wrong tests are the first findings.
    **Completion:** every acceptance criterion maps to a proven test or a labeled finding.

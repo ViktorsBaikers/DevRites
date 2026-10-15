@@ -30,7 +30,7 @@ func rootModeFor(command string, args []string) rootMode {
 	}
 	subcommand := firstRootOperand(args)
 	switch command {
-	case "secret-scan", "open-visual", "detect":
+	case "secret-scan", "open-visual", "detect", "recall":
 		return rootLenient
 	case "state":
 		switch subcommand {

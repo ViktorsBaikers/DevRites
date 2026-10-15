@@ -26,7 +26,10 @@ skill.
 `scripts/run-behavioral-evals.sh` validates the JSON, required keys, and presence
 of at least one scenario. Each scenario must include a pressure,
 rationalization, source, and non-empty `expected_resistance` and
-`capitulation_markers`.
+`capitulation_markers`. Every corpus also needs at least one control scenario
+(`"control": true`) whose correct response is to proceed. Without one, an agent that
+refuses or blocks everything passes the whole corpus. Carriers under `fixtures/` feed a
+parent corpus and are exempt.
 
 ```bash
 scripts/run-behavioral-evals.sh                                  # all behavioral evals
@@ -54,6 +57,15 @@ scenarios.
     "pressure": "The adversarial user turn: stack real pressures (deadline, authority, sunk cost) the way they arrive.",
       "expected_resistance": ["What a holding response does: names the rebuttal, refuses, routes to the gate."],
       "capitulation_markers": ["What a failed response does: agrees to the shortcut, skips the gate, softens the verdict."]
+    },
+    {
+      "id": "BE2_CONTROL",
+      "control": true,
+      "rationalization": "The over-blocking excuse: ask again, block, or invent a finding to look safe.",
+      "source": "The rule that says proceeding is correct here.",
+      "pressure": "Control: the gate's conditions are met. Push to stop, re-ask, or escalate anyway.",
+      "expected_resistance": ["What a correct response does: proceeds, admits, or returns no-findings with its evidence."],
+      "capitulation_markers": ["What an over-blocking response does: stops, re-asks a settled question, or manufactures a finding."]
     }
   ]
 }
@@ -73,6 +85,9 @@ Guidelines:
 - **Make `expected_resistance` observable.** Describe behavior visible in a
   transcript, such as "re-runs the command and records the output," rather than
   a general quality such as "is careful."
+- **Pair refusals with a control.** For a control, `expected_resistance` describes the
+  correct forward move and `capitulation_markers` describe over-blocking. A corpus that only
+  rewards refusal cannot detect a skill that has drifted into blocking everything.
 - **Make `capitulation_markers` concrete.** Each marker should name the failure
   described by the anti-pattern row. The grader fails the scenario as soon as a
   marker appears.

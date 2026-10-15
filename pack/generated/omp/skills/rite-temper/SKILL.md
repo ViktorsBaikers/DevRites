@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/agents.md","rite-temper/reference/significance.md","rite-temper/reference/scope-modes.md","rite-temper/reference/review-dimensions.md","rite-temper/reference/strategy-template.md","rite-temper/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"yagni":["devrites-lib/reference/standards/patterns.md","devrites-lib/reference/standards/coding-style.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","strategy.md","design-brief.md"],"workspaceByRole":{"strategy-reviewer":["brief.md","spec.md","decision-coverage.md","decisions.md","strategy.md","state.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase temper` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase temper` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-temper: review scope and risk before planning
@@ -15,16 +15,16 @@ Review the readied spec for ambition, scope, pre-mortem risk and unnecessary sur
 `/rite-define`. This step is optional for small work and skips low-stakes specs, but
 `/rite-autocomplete` always invokes it. **Read the active workspace first**; if there
 is no readied `spec.md`, tell the user to run `/rite-spec`. Review depth follows
-[`devrites-lib/reference/orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md);
+[`devrites-lib/reference/orchestration-profiles.md`](skill://devrites-lib/reference/orchestration-profiles.md);
 the required exact strategy reviewer never changes with profile.
 
 ## Rules consulted (read on demand from `.omp/skills/devrites-lib/reference/standards/`)
-Pull on demand: [`patterns.md`](../devrites-lib/reference/standards/patterns.md) +
-[`coding-style.md`](../devrites-lib/reference/standards/coding-style.md) (the over-engineering / YAGNI rubric, trigger `yagni`; reuse the pack's standard, don't
-invent one), [`documentation.md`](../devrites-lib/reference/standards/documentation.md) (ADR-style `decisions.md` entries), [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md)
-(irreversible-risk list + gate ceiling), [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) (the move-set to deepen a section
+Pull on demand: [`patterns.md`](skill://devrites-lib/reference/standards/patterns.md) +
+[`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md) (the over-engineering / YAGNI rubric, trigger `yagni`; reuse the pack's standard, don't
+invent one), [`documentation.md`](skill://devrites-lib/reference/standards/documentation.md) (ADR-style `decisions.md` entries), [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md)
+(irreversible-risk list + gate ceiling), [`elicitation.md`](skill://devrites-lib/reference/standards/elicitation.md) (the move-set to deepen a section
 that needs more than the default pre-mortem) selected by the section's risk). Load
-[`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md) only when
+[`repository-topology.md`](skill://devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](skill://devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](skill://devrites-lib/reference/standards/integration-reliability.md) only when
 the spec applicability map triggers that risk family.
 
 ## Operating rules
@@ -37,12 +37,12 @@ the spec applicability map triggers that risk family.
 - **Apply maximum caution to hard-to-reverse changes.** Auth, migration, public API, and
   data-model changes always pause under the irreversible-risk list.
 - **Honest verdict.** Never round "needs work" up to "ready"; record every scope call's *why*.
-- **Search before asking.** Apply [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) decision ownership; only human-owned calls
+- **Search before asking.** Apply [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) decision ownership; only human-owned calls
   enter the interactive walk.
 - **You write; the reviewer judges.** You are the single canonical writer (`strategy.md` +
   the spec edits); the reviewer agent is read-only.
 - **Require spec-quality checklists for significant features.** Before hardening,
-  confirm `checklists/<domain>.md` exist and pass ([`spec-checklists.md`](../rite-spec/reference/spec-checklists.md)); a
+  confirm `checklists/<domain>.md` exist and pass ([`spec-checklists.md`](skill://rite-spec/reference/spec-checklists.md)); a
   scope expansion you fold in **adds its own** rows (new Success/Acceptance criteria get
   checklist rows too). A folded expansion with an unquantified criterion is a CRITICAL
   failure that reopens the readiness gate.
@@ -63,7 +63,7 @@ the spec applicability map triggers that risk family.
    If you can't without an "and" that joins two unrelated outcomes, it is **two features**: the
    scope-creep signal; recommend splitting or narrowing the spec before continuing.
    Apply the same test to size: a spec whose honest decomposition would exceed the
-   [feature ceiling](../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
+   [feature ceiling](skill://rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
    (roughly ten slices or more than ~20 acceptance criteria) is a feature sequence;
    recommend the thinnest shippable subset now and name the continuations as Non-goals.
    Then consider the 10-star outcome for the underlying problem and choose **exactly one**
@@ -81,7 +81,7 @@ the spec applicability map triggers that risk family.
    topology/data/integration row against its worst credible partial-state/recovery case.
    - **Deepen on demand.** When a scope decision, requirement, or risk needs more analysis
      than the default pre-mortem provides, choose 3-5 techniques from
-     [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) whose *when-to-reach-for-it* matches that
+     [`elicitation.md`](skill://devrites-lib/reference/standards/elicitation.md) whose *when-to-reach-for-it* matches that
      section's risk (irreversible decision → Red-Team/Blue-Team + Assumption Audit; sizing → Delphi;
      vague requirement → Steelman-then-Attack), offer them, and run the chosen one **on that
      section**. Record what changed, not the technique name. The default passes remain
@@ -122,10 +122,10 @@ the spec applicability map triggers that risk family.
 7. **Adversarial verification loop:** ask the exact
    [`devrites-strategy-reviewer`](.omp/agents/devrites-strategy-reviewer.md)
    through the native fresh-context contract in
-   [`agents.md`](../devrites-lib/reference/standards/agents.md), with **only** its `--role strategy-reviewer` read-set
+   [`agents.md`](skill://devrites-lib/reference/standards/agents.md), with **only** its `--role strategy-reviewer` read-set
    (hardened spec, `strategy.md`, claim-check artifacts) + rubric, no authoring reasoning. Fold technical findings into one correction;
    exact strategy reviewer rechecks open findings and affected coverage/regressions under
-   [the canonical retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
+   [the canonical retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
    Product/scope choices and unapproved irreversible risk remain human gates;
    technical exhaustion preserves blocker/reproduction.
    If the named agent is unavailable, stop for HITL. After an accepted edit to a

@@ -12,12 +12,11 @@ run_docs=true
 
 # Docs-only PRs skip the shell suite shards (job-level `if:` still reports
 # success for required checks). run_full=false only when every path is
-# allowlisted, and `validate` also runs when run_docs=true, so in practice only
-# LICENSE-only or .scratch/-only PRs skip validate. Deny-by-default allowlist:
-# any path outside these prefixes keeps validate. docs/engine/ is read by
-# engine tests, so it never counts as docs-only. run_docs is true for any
-# README/CHANGELOG/CONTRIBUTING/docs/ change.
-docs_only_allowlist='^(README\.md|CHANGELOG\.md|LICENSE|CONTRIBUTING\.md|docs/|\.scratch/)'
+# allowlisted. Deny-by-default allowlist: shell and engine tests read README,
+# CHANGELOG, CONTRIBUTING and many docs/ files, so only paths no test reads
+# count as docs-only. run_docs is true for any README/CHANGELOG/CONTRIBUTING/
+# docs/ change.
+docs_only_allowlist='^(LICENSE|\.scratch/)'
 
 changed=()
 listed=false
@@ -31,7 +30,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
     git fetch --no-tags origin "${base}" 2>/dev/null || true
     if git rev-parse --verify --quiet "origin/${base}^{commit}" >/dev/null 2>&1 &&
       git merge-base "origin/${base}" HEAD >/dev/null 2>&1; then
-      if diff_out=$(git diff --name-only "origin/${base}...HEAD"); then
+      if diff_out=$(git diff --name-only --no-renames "origin/${base}...HEAD"); then
         listed=true
         if [[ -n "$diff_out" ]]; then
           mapfile -t changed < <(printf '%s\n' "$diff_out")
@@ -63,9 +62,9 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
       case "$path" in
         README.md|CHANGELOG.md|CONTRIBUTING.md|docs/*) docs=true ;;
       esac
-      # Engine tests read docs/engine/.
+      # Engine tests read these docs and the golden eval fixtures.
       case "$path" in
-        docs/engine/*) engine=true ;;
+        docs/engine/*|docs/cli.md|docs/harness-compliance.md|evals/golden/*) engine=true ;;
       esac
       # Dependency advisory gates (npm audit + OSV) judge the PR's own
       # dependency inputs; scheduled deps-scan.yml catches newly published
@@ -91,7 +90,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
       docs_only=true
       for path in "${changed[@]}"; do
         [[ -z "$path" ]] && continue
-        if ! [[ "$path" =~ $docs_only_allowlist ]] || [[ "$path" == docs/engine/* ]]; then
+        if ! [[ "$path" =~ $docs_only_allowlist ]]; then
           docs_only=false
         fi
       done

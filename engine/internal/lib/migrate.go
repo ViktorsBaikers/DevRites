@@ -31,7 +31,7 @@ type migratePlan struct {
 	questions []migrateQuestion
 }
 
-// Migrate normalizes a pre-v5 feature workspace to the current schema: it
+// Migrate normalizes an older-schema feature workspace to the current schema: it
 // converts legacy bullet cursor fields into canonical table rows, records the
 // schema row, and creates missing required artifacts as empty stubs. Bound
 // proof files are preserved byte-exact; content is never synthesized. The
@@ -130,6 +130,23 @@ func Migrate(root string, args []string, stdout, stderr io.Writer) int {
 			return nil
 		}
 
+		next := lines
+		for _, step := range plan.steps {
+			if step.kind == "phase" {
+				next = state.UpsertCursorField(next, state.CursorPhase, plan.phase)
+			}
+		}
+		if converted, changed := state.ConvertCursorToTable(next); changed {
+			next = converted
+		}
+		next = state.UpsertCursorField(next, state.CursorSchema, fmt.Sprint(state.SchemaVersion))
+		// Upserts silently decline what they cannot write (for example after
+		// an unclosed fence), so confirm the schema row reads back before
+		// touching anything.
+		if value, ok := state.CursorField(next, state.CursorSchema); !ok || strings.TrimSpace(value) != fmt.Sprint(state.SchemaVersion) {
+			return fmt.Errorf("state.md cannot be normalized: the schema row does not read back (check for an unclosed fence or malformed cursor); nothing written")
+		}
+
 		// New stub files go first: they are idempotent, never bound, and
 		// state.md is the commit point written last.
 		for _, step := range plan.steps {
@@ -145,16 +162,6 @@ func Migrate(root string, args []string, stdout, stderr io.Writer) int {
 			}
 			applied++
 		}
-		next := lines
-		for _, step := range plan.steps {
-			if step.kind == "phase" {
-				next = state.UpsertCursorField(next, state.CursorPhase, plan.phase)
-			}
-		}
-		if converted, changed := state.ConvertCursorToTable(next); changed {
-			next = converted
-		}
-		next = state.UpsertCursorField(next, state.CursorSchema, fmt.Sprint(state.SchemaVersion))
 		if err := fsutil.WriteFileAtomic(ledger, []byte(strings.Join(next, "\n")), 0o644); err != nil {
 			return err
 		}
@@ -175,6 +182,7 @@ func buildMigratePlan(root, slug string, lines []string, answered map[string]str
 	phase, hasPhase := state.CursorField(lines, state.CursorPhase)
 
 	if value, ok := answered["phase"]; ok {
+		value = phaseWord(value)
 		plan.steps = append(plan.steps, migrateStep{kind: "phase", detail: "record phase " + value + " from answer"})
 		phase, hasPhase = value, true
 	}
@@ -183,11 +191,12 @@ func buildMigratePlan(root, slug string, lines []string, answered map[string]str
 			prompt: "state.md records no phase; re-run with --answer phase=<phase>"})
 		return plan
 	}
-	if _, ok := state.PolicyFor(state.Phase(phase)); !ok {
+	if _, ok := state.PolicyFor(state.Phase(phaseWord(phase))); !ok {
 		plan.questions = append(plan.questions, migrateQuestion{id: "phase",
 			prompt: "state.md records unknown phase " + phase + "; re-run with --answer phase=<phase>"})
 		return plan
 	}
+	phase = phaseWord(phase)
 	plan.phase = phase
 
 	if state.CursorForm(lines) == "legacy" {
@@ -207,6 +216,15 @@ func buildMigratePlan(root, slug string, lines []string, answered map[string]str
 		plan.steps = append(plan.steps, migrateStep{kind: "stub", path: name, detail: "create missing " + name + " as an empty stub"})
 	}
 	return plan
+}
+
+// phaseWord reads a cursor phase the way the engine does: lower-cased first
+// word, so "Build" and "build (slice 2)" both mean build.
+func phaseWord(value string) string {
+	if fields := strings.Fields(strings.ToLower(value)); len(fields) > 0 {
+		return fields[0]
+	}
+	return ""
 }
 
 // stringSlice collects repeated string flag values.

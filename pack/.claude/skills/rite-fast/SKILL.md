@@ -69,7 +69,9 @@ installed and no fresh context is available, stop with `Stopped: fast-* agents m
    record `unproven: no commands` and continue. PROVE will report it.
 3. Pick a short kebab-case slug from the task. If the argument names an existing
    `.devrites/work/<slug>/plan.md` with `Lane: fast`, **resume**: read the ledger and
-   continue at the first phase or slice that is not complete.
+   continue at the first phase or slice that is not complete. If `.devrites/work/<slug>/`
+   exists without `Lane: fast`, or `.devrites/archive/<slug>/` exists, pick a new slug;
+   if the user named that slug, stop instead — never overwrite another workspace.
 
 ## 1. Shape: spec, plan, questions
 

@@ -554,3 +554,64 @@ func TestSecretScanFailsClosedOnUnreadableStagedBlob(t *testing.T) {
 		t.Fatalf("stderr = %q, want redacted fail-closed diagnostic %q", got, want)
 	}
 }
+
+// Git quotes non-ASCII paths by default; a quoted name cannot be opened and was
+// skipped as deleted, so a secret in café.go passed.
+func TestSecretScanScansNonASCIIChangedPath(t *testing.T) {
+	project := t.TempDir()
+	runSecretScanGit(t, project, "init", "-q")
+	runSecretScanGit(t, project, "config", "user.email", "tests@example.invalid")
+	runSecretScanGit(t, project, "config", "user.name", "DevRites Tests")
+	path := "café.go"
+	testutil.WriteFile(t, filepath.Join(project, path), "package cafe\n")
+	runSecretScanGit(t, project, "add", "--", path)
+	runSecretScanGit(t, project, "commit", "-qm", "baseline")
+	secret := "ghp_" + strings.Repeat("c", 32)
+	testutil.WriteFile(t, filepath.Join(project, path), secret+"\n")
+
+	var out, err bytes.Buffer
+	if code := SecretScan(filepath.Join(project, ".devrites"), nil, strings.NewReader(""), &out, &err); code != 3 {
+		t.Fatalf("want block rc=3 got %d stdout=%q stderr=%q", code, out.String(), err.String())
+	}
+	if strings.Contains(out.String()+err.String(), secret) {
+		t.Fatal("secret material disclosed")
+	}
+}
+
+func TestSecretScanWithoutSlugCoversStagedAndUntrackedFiles(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		commit bool
+		stage  bool
+	}{
+		{name: "staged", commit: true, stage: true},
+		{name: "untracked", commit: true},
+		{name: "staged unborn", stage: true},
+		{name: "untracked unborn"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			project := t.TempDir()
+			runSecretScanGit(t, project, "init", "-q")
+			runSecretScanGit(t, project, "config", "user.email", "tests@example.invalid")
+			runSecretScanGit(t, project, "config", "user.name", "DevRites Tests")
+			if test.commit {
+				testutil.WriteFile(t, filepath.Join(project, "base.txt"), "safe\n")
+				runSecretScanGit(t, project, "add", "--", "base.txt")
+				runSecretScanGit(t, project, "commit", "-qm", "baseline")
+			}
+			secret := "ghp_" + strings.Repeat("u", 32)
+			testutil.WriteFile(t, filepath.Join(project, "new.txt"), secret+"\n")
+			if test.stage {
+				runSecretScanGit(t, project, "add", "--", "new.txt")
+			}
+
+			var out, err bytes.Buffer
+			if code := SecretScan(filepath.Join(project, ".devrites"), nil, strings.NewReader(""), &out, &err); code != 3 {
+				t.Fatalf("want block rc=3 got %d stdout=%q stderr=%q", code, out.String(), err.String())
+			}
+			if strings.Contains(out.String()+err.String(), secret) {
+				t.Fatal("secret material disclosed")
+			}
+		})
+	}
+}

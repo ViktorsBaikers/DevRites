@@ -148,7 +148,9 @@ func writeHandoffLedger(featureDir string, stdout io.Writer) {
 // writeHandoffDeadEnds replays the decisions.md "## Dead ends" bullets so a
 // resuming agent does not retry approaches already ruled out.
 func writeHandoffDeadEnds(featureDir string, stdout io.Writer) {
-	data := readWorkspaceFile(featureDir, "decisions.md")
+	// Lstat-checked: a symlinked decisions.md could replay lines from any
+	// file outside the workspace.
+	data, _ := readBoundedRegularFile(filepath.Join(featureDir, "decisions.md"), workspaceArtifactLimit)
 	ends := deadEnds(data)
 	if len(ends) == 0 {
 		fmt.Fprintln(stdout, "dead_ends: none")
@@ -164,14 +166,21 @@ func deadEnds(data []byte) []string {
 	inSection := false
 	for _, line := range strings.Split(string(data), "\n") {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "##") {
-			inSection = strings.EqualFold(trimmed, "## Dead ends")
+		rest := strings.TrimLeft(trimmed, "#")
+		if level := len(trimmed) - len(rest); level > 0 && (rest == "" || rest[0] == ' ' || rest[0] == '\t') {
+			// Only a level-one or level-two heading leaves the section; a
+			// ### subheading inside it does not.
+			if level <= 2 {
+				inSection = strings.EqualFold(trimmed, "## Dead ends")
+			}
 			continue
 		}
-		if !inSection || !strings.HasPrefix(trimmed, "-") {
+		// A bullet needs "- "; a "---" rule is not an entry.
+		entry, ok := strings.CutPrefix(trimmed, "- ")
+		if !inSection || !ok || strings.TrimSpace(entry) == "" {
 			continue
 		}
-		ends = append(ends, strings.TrimSpace(strings.TrimPrefix(trimmed, "-")))
+		ends = append(ends, strings.TrimSpace(entry))
 	}
 	if len(ends) > deadEndCap {
 		ends = ends[len(ends)-deadEndCap:]

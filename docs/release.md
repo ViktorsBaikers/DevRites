@@ -11,8 +11,9 @@ version and run these steps:
 2. Regenerates `CHANGELOG.md` from the commits.
 3. Syncs the new version into `package.json` and the README status line (`scripts/sync-version.sh`), then stages only those known overlays plus the generated changelog so the release index owns their bytes.
 4. Builds `dist/devrites-v<version>.tar.gz` and `dist/install.sh`, each with an exact-filename SHA-256 sidecar, via `scripts/build-release-tarball.sh`. Payload paths and bytes are materialized from the repository-root Git index; the build fails outside that index and never copies a divergent live worktree file. A stdlib Go packager sorts member names and normalizes ownership, modes, timestamps, and the gzip header, so identical indexed sources produce identical archives. `SOURCE_DATE_EPOCH` selects the canonical timestamp and defaults to `0`. The bundle includes the checked-in host-native Claude/Codex artifacts under `pack/generated/`; symlinks and other non-regular payload entries are rejected.
-5. Cross-compiles five `devrites-engine` release binaries (macOS arm64/amd64, Linux arm64/amd64, Windows amd64) plus a SHA-256 sidecar for each.
-6. Publishes the `devrites` package to npm through `@semantic-release/npm` with
+5. Cross-compiles six `devrites-engine` release binaries (macOS, Linux and Windows, each arm64/amd64) plus a SHA-256 sidecar for each.
+6. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates tag `v<version>`, and publishes a GitHub Release with the tarball, verified installer, binaries, and every checksum sidecar attached. The GitHub Release is published before npm, so a published npm version always finds its release assets; if the GitHub step fails, npm is not published. The release job then attests the artifacts with build provenance (`actions/attest-build-provenance`), independent of npm provenance.
+7. Publishes the `devrites` package to npm through `@semantic-release/npm` with
    provenance attestation. The job requests OIDC (`id-token: write`) so a
    future npm Trusted Publisher can take over, and today authenticates with
    `secrets.NPM_TOKEN` because npm's OIDC exchange still returns
@@ -20,12 +21,11 @@ version and run these steps:
    `devrites`. This is what `npx devrites@latest` resolves. `npm publish`
    ships the committed, validate-checked `pack/generated/` (the repo `.npmrc`
    sets `ignore-scripts=true`, so no lifecycle script runs).
-7. Commits the version bump + changelog as `chore(release): <version> [skip ci]`, creates tag `v<version>`, and publishes a GitHub Release with the tarball, verified installer, binaries, and every checksum sidecar attached. The release job then attests the artifacts with build provenance (`actions/attest-build-provenance`), independent of npm provenance.
 
 The release archive
 consumes the validated generated files from the same Git index as the rest of
 its payload. Package and release installs validate and copy
-`pack/generated/{claude,codex}`. When a shell install or update shim runs from a
+`pack/generated/{claude,codex,omp,pi,devin}`. When a shell install or update shim runs from a
 source checkout whose generated payload is incomplete, the shim may regenerate
 the missing host payload before handing that local candidate to the engine. The
 engine itself only validates and copies host payloads; it never generates them.

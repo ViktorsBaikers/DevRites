@@ -229,6 +229,6 @@ isolation cannot be established.
 
 ## Host
 
-Claude: N concurrent spawn_agent wrights (`acceptEdits`, cwd=worktree). Codex: require
+Codex: require
 host-explicit concurrent worktree writers + native reconcile; else force serial.
 Never two writers in one worktree; never root-emulated concurrency.

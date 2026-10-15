@@ -18,7 +18,7 @@ Authority: `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-r
 Before implementation review, check for work beyond the settled spec.
 
 1. **What exists?** Find reusable code/flows via
-   [`tooling.md`](../../devrites-lib/reference/standards/tooling.md). Reuse → extend →
+   [`tooling.md`](skill://devrites-lib/reference/standards/tooling.md). Reuse → extend →
    build new; list missed reuse instead of planning parallel work.
 2. **Minimum diff.** Find the smallest contract-complete change. Flag non-blocking work;
    use the marked action for topology cuts.
@@ -26,7 +26,7 @@ Before implementation review, check for work beyond the settled spec.
    complexity gate; otherwise harden to the smallest contract-complete plan. Use the
    marked action for topology reduction.
    **Feature ceiling.** A plan over the
-   [feature ceiling](../../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
+   [feature ceiling](skill://rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
    (over-budget `tasks.md`/`plan.md` from slice or AC count) is a scope finding, not a
    `Budget override`: route to `/rite-plan course-correct` (`MVP cut`) with the
    continuation sequence named; do not vet the whole epic. An `ADVISORY size:`
@@ -42,7 +42,7 @@ Before implementation review, check for work beyond the settled spec.
    decisions with live seams. A false `not applicable` or an `applies` row without the
    focused standard's owner, failure/recovery, deployment order, and proof output is `broken`.
 8. **Decision horizons.** Independently apply
-   [`plan-template.md`](../../rite-define/reference/plan-template.md#decision-horizons) to the
+   [`plan-template.md`](skill://rite-define/reference/plan-template.md#decision-horizons) to the
    plan, questions, assumptions, decisions, and checkpoints; no known item may disappear.
    Reject `local` for blockers or public contracts, security/data invariants, acceptance,
    migration/rollback, dependencies, or cross-slice interfaces. Local/checkpoint deferral
@@ -89,7 +89,7 @@ presentation never caps the inventory or hides the ninth substantive defect.
 - Implied modules and planned cross-slice repetition.
 - Error-handling + edge cases the plan names, and the ones it doesn't (call those out explicitly).
 - Over-engineering (premature abstraction, an extension point with no second caller) vs
-  under-engineering (fragile / hacky) relative to [`patterns.md`](../../devrites-lib/reference/standards/patterns.md) + [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md).
+  under-engineering (fragile / hacky) relative to [`patterns.md`](skill://devrites-lib/reference/standards/patterns.md) + [`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md).
 - Tech-debt hotspots and diagrams the change makes stale.
 
 ### 3. Test-coverage design
@@ -134,7 +134,7 @@ acceptance criteria covered ✓" and continue.
 
 - N+1 / unbounded queries and DB access patterns; memory concerns; caching opportunities;
   high-complexity hot paths.
-- Per [`performance.md`](../../devrites-lib/reference/standards/performance.md): name a number to measure or a budget: don't recommend speculative
+- Per [`performance.md`](skill://devrites-lib/reference/standards/performance.md): name a number to measure or a budget: don't recommend speculative
   micro-tuning. A perf finding is "measure X against budget Y", not "this feels slow".
 
 ---

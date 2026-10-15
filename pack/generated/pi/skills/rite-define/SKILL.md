@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/spec-grammar.md","rite-define/reference/plan-template.md","rite-define/reference/gates.md","rite-define/reference/anti-patterns.md","rite-plan/reference/slicing.md","rite-plan/reference/task-breakdown.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/state-workspace.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"agents":["devrites-lib/reference/standards/agents.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"frontend":["devrites-frontend-craft/reference/fullstack.md"],"principles":["devrites-lib/reference/standards/principles.md"],"visual":["devrites-lib/reference/visual-playbooks/index.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","strategy.md","design-brief.md","references.md"],"workspaceByRole":{"plan-drafter":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","strategy.md","design-brief.md","references.md","state.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase define` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase define` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-define: plan from the spec
@@ -106,6 +106,8 @@ Pull these via `Read` when shaping the plan:
    capability end to end; first is the thinnest useful path, ordered by dependency then
    risk. Apply the slice-count and broad-refactor rules above plus
    [`slicing.md`](../rite-plan/reference/slicing.md) and [`task-breakdown.md`](../rite-plan/reference/task-breakdown.md).
+   Run `devrites-engine recall --paths <files likely touched>`; fold each relevant prior
+   decision, carry-forward constraint, or finding into that slice's `Prior-slice learnings`.
    Mark per slice: **Frontend craft required**
    and **Browser proof required** (UI), and whether it's **fullstack** (FE+BE → contract
    first, see [`fullstack.md`](../devrites-frontend-craft/reference/fullstack.md)). **For UI slices, name which
@@ -169,8 +171,7 @@ Pull these via `Read` when shaping the plan:
    `Plan sanity` (slice count + riskiest boundary/gate), `Expected build interruptions`
    (`none` or only justified action-time gates), and `Build exactly this?` (yes → approve;
    no → `/rite-plan revise`). When the human confirms the plan, write `Plan approved: <iso>` to
-   `state.md` (see [state-workspace](../rite-spec/reference/state-workspace.md)); `/rite-build`
-   checks this exists before building.
+   `state.md` (see [state-workspace](../rite-spec/reference/state-workspace.md)).
 
 ## tasks.md slice format
 

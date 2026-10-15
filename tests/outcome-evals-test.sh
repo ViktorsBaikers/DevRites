@@ -13,7 +13,7 @@ trap 'rm -rf "$tmp"' EXIT
 
 output="$(bash "$ROOT/scripts/run-outcome-evals.sh")"
 printf '%s\n' "$output"
-grep -Fq "Outcome evals passed: native boundary + 15 isolated final-outcome negatives + candidate/readiness content binding + removed-command rejections + 2 adversarial fixtures." <<<"$output"
+grep -Fq "Outcome evals passed: native boundary + 17 isolated final-outcome negatives + candidate/readiness content binding + removed-command rejections + 2 adversarial fixtures." <<<"$output"
 grep -Fq "PASS content_identity     unchanged-touch=pass restored-mtime-byte-change=blocked" <<<"$output"
 grep -Fq "all 19 retired top-level commands are unknown (no aliases)" <<<"$output"
 grep -Fq "wrong_ac_id" <<<"$output"

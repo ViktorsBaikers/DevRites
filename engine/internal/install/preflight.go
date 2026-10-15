@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -41,6 +42,13 @@ func (r *runner) preflightInstall() error {
 		if err != nil {
 			return err
 		}
+		if !snapshot.missing && r.isPinnedAlias(rel) {
+			// scripts/pin.sh aliases are not in the payload; carry them
+			// forward (hashed) so prune keeps them and uninstall removes them.
+			r.addManifest(rel)
+			r.addInstallRecord(rel, snapshot.hash)
+			continue
+		}
 		if !snapshot.missing {
 			if kind := managedConflict(record, snapshot); kind != "" && !r.opts.Force {
 				conflicts = append(conflicts, fmt.Sprintf("%s: %s", kind, rel))
@@ -48,6 +56,9 @@ func (r *runner) preflightInstall() error {
 		}
 		if merge, ok := hostpack.ManagedMergeForMarker(rel); ok {
 			if _, err := r.rememberPath(merge.TargetRel); err != nil {
+				return err
+			}
+			if err := dryRunStripMarker(map[string][]byte{}, r.target, merge); err != nil {
 				return err
 			}
 		}
@@ -60,7 +71,42 @@ func (r *runner) preflightInstall() error {
 	if _, err := r.rememberPath(ManifestName); err != nil {
 		return err
 	}
-	return managedConflictError(conflicts)
+	if err := managedConflictError(conflicts); err != nil {
+		return err
+	}
+	return r.preflightMerges()
+}
+
+// preflightMerges computes every config merge against the current files, so
+// a merge the installer would reject fails before anything is written.
+func (r *runner) preflightMerges() error {
+	if !r.opts.WithSkills {
+		return nil
+	}
+	for _, m := range []struct {
+		enabled bool
+		merge   hostpack.MarkerMerge
+	}{
+		{r.opts.WithCodex, hostpack.CodexAgentsMerge},
+		{r.opts.WithPi, hostpack.PiAgentsMerge},
+		{r.opts.WithDevin, hostpack.DevinAgentsMerge},
+	} {
+		if !m.enabled {
+			continue
+		}
+		if _, _, err := r.markerMergeNext(m.merge); err != nil {
+			return fmt.Errorf("merge %s: %w", m.merge.TargetRel, err)
+		}
+	}
+	if r.opts.WithCodex {
+		if _, err := r.codexConfigNext(); err != nil {
+			return fmt.Errorf("merge %s: %w", hostpack.CodexConfigMerge.TargetRel, err)
+		}
+	}
+	if _, _, err := r.claudeSettingsNext(); err != nil {
+		return fmt.Errorf("seed claude settings: %w", err)
+	}
+	return nil
 }
 
 func (r *runner) preflightUninstall(entries []string) error {
@@ -89,6 +135,27 @@ func (r *runner) preflightUninstall(entries []string) error {
 		return err
 	}
 	return managedConflictError(conflicts)
+}
+
+// isPinnedAlias reports whether a dropped manifest entry is a scripts/pin.sh
+// alias wrapper: <skills>/<name>/SKILL.md for a name that is not a built-in
+// alias, delegating with the alias description.
+func (r *runner) isPinnedAlias(rel string) bool {
+	var name string
+	for _, prefix := range []string{hostpack.ClaudeSkillsTarget, hostpack.CodexSkillsTarget} {
+		if rest, ok := strings.CutPrefix(rel, prefix+"/"); ok {
+			name, ok = strings.CutSuffix(rest, "/SKILL.md")
+			if !ok || strings.Contains(name, "/") {
+				return false
+			}
+		}
+	}
+	if name == "" || slices.ContainsFunc(hostpack.Aliases, func(a hostpack.Alias) bool { return a.Name == name }) {
+		return false
+	}
+	// #nosec G304 -- manifest entry under the operator target, path-checked by rememberPath
+	data, err := os.ReadFile(filepath.Join(r.target, filepath.FromSlash(rel)))
+	return err == nil && strings.Contains(string(data), "\ndescription: Alias of DevRites /")
 }
 
 func (r *runner) desiredInstallPaths() (map[string]bool, error) {
@@ -131,6 +198,9 @@ func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	}
 	if r.opts.WithSkills {
 		out[hostpack.ClaudeSettingsMerge.MarkerRel] = true
+	}
+	for _, config := range r.hostConfigs() {
+		out[config.Rel] = true
 	}
 	return out, nil
 }

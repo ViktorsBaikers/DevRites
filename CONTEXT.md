@@ -104,10 +104,12 @@ is a native, preservation-first workflow edit. See
   network-free (ADR-0028).
 - Public rites are the authoritative orchestrators. Fresh-context leaves run
   at depth one through exact named profiles; there is no generic-agent
-  fallback. Reviewer leaves are natively read-only. Claude keeps the root in
-  plan mode; Codex uses a workspace-capable root (a child cannot elevate
-  above its parent), so the root's source/test non-writing boundary is
-  instruction-enforced there. Both hosts make only the exact slice-wright
+  fallback. Reviewer leaves get no Edit/Write tools (Claude's reviewer
+  `permissionMode: plan` is best-effort). On both hosts the root's
+  source/test non-writing boundary is instruction-enforced: Claude's root
+  must write `.devrites/**`, so it is not in plan mode (ADR-0035), and Codex
+  uses a workspace-capable root because a child cannot elevate above its
+  parent. Both hosts make only the exact slice-wright
   writable among specialists; the task states its exact paths and the root
   rejects an out-of-scope diff. The explicit `/overhaul` skill's eight `overhaul-*`
   agents are outside this lifecycle roster and keep every tool (ADR-0031);

@@ -225,7 +225,8 @@ done
 grep -q '.pi/skills/devrites-lib/reference/standards/core.md' "$OUT/pi/skills/rite-build/SKILL.md" &&
   ok "pi skill artifact uses mirrored rules path" ||
   no "pi skill artifact missing mirrored rules path"
-grep -q '.pi/agents/devrites-slice-wright.md' "$OUT/pi/skills/rite-build/SKILL.md" &&
+grep -qF '](../../agents/devrites-slice-wright.md)' "$OUT/pi/skills/rite-build/SKILL.md" &&
+  [ -f "$OUT/pi/skills/rite-build/../../agents/devrites-slice-wright.md" ] &&
   ok "pi skill artifact references pi agent markdown" ||
   no "pi skill artifact missing pi agent markdown"
 if grep -qE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/' \
@@ -309,7 +310,8 @@ done
 grep -q '.devin/skills/devrites-lib/reference/standards/core.md' "$OUT/devin/skills/rite-build/SKILL.md" &&
   ok "Devin skill artifact uses mirrored rules path" ||
   no "Devin skill artifact missing mirrored rules path"
-grep -q '.devin/agents/devrites-slice-wright.md' "$OUT/devin/skills/rite-build/SKILL.md" &&
+grep -qF '](../../agents/devrites-slice-wright.md)' "$OUT/devin/skills/rite-build/SKILL.md" &&
+  [ -f "$OUT/devin/skills/rite-build/../../agents/devrites-slice-wright.md" ] &&
   ok "Devin skill artifact references Devin agent markdown" ||
   no "Devin skill artifact missing Devin agent markdown"
 if grep -qE 'mirror on Codex|\.claude/skills|\.claude/agents|\.codex/skills|\.codex/agents|\.agents/skills|\.omp/|\.pi/' \
@@ -531,6 +533,22 @@ else
 fi
 
 echo ""
+# devrites-engine context must bundle each host's own tree: every call in a
+# non-Claude host names its skills root, including calls wrapped across lines.
+for pair in codex:.agents/skills omp:.omp/skills pi:.pi/skills devin:.devin/skills; do
+  host="${pair%%:*}" root="${pair#*:}"
+  if find "$OUT/$host/skills" -name '*.md' -exec cat {} + |
+    perl -0ne '$f = 1 if /devrites-engine\s+context(?!\s+--skills-root)(?=\s+[<\[-])/; END { exit !$f }'; then
+    no "$host context calls without --skills-root $root"
+  elif grep -rqF "context --skills-root $root" "$OUT/$host/skills/rite-converge/SKILL.md"; then
+    ok "$host context calls name $root"
+  else
+    no "$host context calls missing --skills-root $root"
+  fi
+done
+grep -rqF -- '--skills-root .' "$OUT/claude/skills" && no "Claude skills pin a host skills root" ||
+  ok "Claude skills keep the default skills root"
+
 if [ "$fail" -eq 0 ]; then
   echo "host-artifacts-test: PASS"
 else

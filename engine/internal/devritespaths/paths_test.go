@@ -126,3 +126,26 @@ func TestExistingFeatureDirCheckedMissingNamesSlugAndMatchesNotExist(t *testing.
 		t.Fatalf("err = %q, want it to name the slug", err.Error())
 	}
 }
+
+// An override names an existing workspace; it must not let a mutating command
+// conjure one (lock, notes.md, gates.md) where no state.md exists.
+func TestExistingFeatureDirCheckedOverrideRequiresWorkspace(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, DevritesRootName)
+	empty := filepath.Join(root, "work", "empty")
+	if err := os.MkdirAll(empty, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, slug := range []string{"ghost", "empty"} {
+		t.Setenv("DEVRITES_WORKSPACE", filepath.Join(DevritesRootName, "work", slug))
+		if got, err := ExistingFeatureDirChecked(root, slug); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("%s: ExistingFeatureDirChecked = %q, %v; want not-exist", slug, got, err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(empty, "state.md"), []byte("# State\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExistingFeatureDirChecked(root, "empty"); err != nil {
+		t.Fatalf("existing workspace refused: %v", err)
+	}
+}

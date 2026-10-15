@@ -5,7 +5,7 @@ This project has DevRites installed for Devin CLI.
 
 ## Devin usage
 
-- DevRites workflow skills live in `.devin/skills`. Run them as `/rite`, `/rite-spec`, and the other `/rite-*` slash commands.
+- DevRites workflow skills live in `.devin/skills`. Run them as `/rite`, `/rite-spec`, and the other `/rite-*` slash commands. Devin also imports the Claude Code copies of these skills as `claude:*`; when a name is ambiguous, use the `devin:` form (`/devin:rite-build`) and never load a `claude:` DevRites skill.
 - Before using any DevRites workflow skill, read `.devin/skills/devrites-lib/reference/standards/core.md`. Load other `.devin/skills/devrites-lib/reference/standards/*.md` files when the skill or rule index asks for them.
 - DevRites specialist agents live in `.devin/agents` as custom subagent profiles offered to `run_subagent`. If a required `devrites-<role>` profile is not among the offered profiles, stop for HITL - never skip the role, never substitute `subagent_general`, `subagent_explore`, or another generic profile, never inline the specialist prompt, and never execute the specialist role in the root context.
 - In DevRites guidance, **invoke** means run a skill inline in the current context; **dispatch** means start a fresh agent with `run_subagent` using the exact `profile` name, wait for it with `read_subagent`, and reconcile its result.

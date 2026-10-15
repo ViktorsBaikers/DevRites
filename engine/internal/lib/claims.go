@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -159,14 +160,17 @@ func normalizeClaimPaths(raw []string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		if norm == ".devrites" || strings.HasPrefix(norm, ".devrites/") ||
-			norm == ".git" || strings.HasPrefix(norm, ".git/") {
+		// Fold case: on a case-insensitive filesystem .DEVRITES is the control
+		// tree and A.go and a.go are one file.
+		folded := strings.ToLower(norm)
+		if folded == ".devrites" || strings.HasPrefix(folded, ".devrites/") ||
+			folded == ".git" || strings.HasPrefix(folded, ".git/") {
 			return nil, fmt.Errorf("path must not claim control-tree or git internals: %q", norm)
 		}
-		if _, dup := seen[norm]; dup {
+		if _, dup := seen[folded]; dup {
 			return nil, fmt.Errorf("duplicate path %q", norm)
 		}
-		seen[norm] = struct{}{}
+		seen[folded] = struct{}{}
 		out = append(out, norm)
 	}
 	sort.Strings(out)
@@ -186,25 +190,29 @@ func validSession(s string) bool {
 	return true
 }
 
-// claimConflicts returns live claims by other sessions covering any path.
+// claimConflicts returns live claims by other sessions overlapping any path: a
+// claimed directory covers every path beneath it, and vice versa.
 func claimConflicts(live []*claimRecord, session string, paths []string) []*claimRecord {
-	want := map[string]struct{}{}
-	for _, p := range paths {
-		want[p] = struct{}{}
-	}
 	var out []*claimRecord
 	for _, rec := range live {
 		if rec.Session == session {
 			continue
 		}
-		for _, p := range rec.Paths {
-			if _, hit := want[p]; hit {
-				out = append(out, rec)
-				break
-			}
+		if slices.ContainsFunc(rec.Paths, func(held string) bool {
+			return slices.ContainsFunc(paths, func(p string) bool { return claimPathsOverlap(held, p) })
+		}) {
+			out = append(out, rec)
 		}
 	}
 	return out
+}
+
+// claimPathsOverlap folds case always: on a case-sensitive filesystem a false
+// overlap only serializes two writers, while a missed one on macOS/Windows
+// lets both edit the same file.
+func claimPathsOverlap(a, b string) bool {
+	a, b = strings.ToLower(a), strings.ToLower(b)
+	return a == b || strings.HasPrefix(a, b+"/") || strings.HasPrefix(b, a+"/")
 }
 
 // An unreadable line may be a live claim, so the conflict gates refuse to
@@ -250,6 +258,10 @@ func claimAdd(root string, args []string, stdout, stderr io.Writer) int {
 			ttl = min(max(n, claimMinTTL), claimMaxTTL)
 			i++
 		default:
+			if strings.HasPrefix(args[i], "-") {
+				fmt.Fprintf(stderr, "claim: unknown flag %q\n", args[i])
+				return 2
+			}
 			raw = append(raw, args[i])
 		}
 	}
@@ -420,6 +432,10 @@ func claimCheck(root string, args []string, stdout, stderr io.Writer) int {
 			session = argAt(args, i+1)
 			i++
 		default:
+			if strings.HasPrefix(args[i], "-") {
+				fmt.Fprintf(stderr, "claim: unknown flag %q\n", args[i])
+				return 2
+			}
 			raw = append(raw, args[i])
 		}
 	}

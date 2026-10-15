@@ -289,3 +289,28 @@ func TestOpenVisualMissingWorkspaceNamesResolvedPath(t *testing.T) {
 		t.Fatalf("open-visual missing workspace = %d, want exit 2 naming %q\n%s", code, want, stderr.String())
 	}
 }
+
+// A visual/ directory that is itself a symlink out of the workspace escapes it.
+func TestOpenVisualRefusesSymlinkedVisualDir(t *testing.T) {
+	root, html := writeOpenVisualFixture(t, true)
+	t.Setenv("DEVRITES_WORKSPACE", filepath.Join(root, "work", "feature"))
+	visual := filepath.Dir(html)
+	outside := t.TempDir()
+	writeBasenameFile(t, outside, filepath.Base(html), "<!doctype html><title>escape</title>\n")
+	if err := os.RemoveAll(visual); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, visual); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	restore := swapOpenVisualOpener(func(string) error {
+		t.Fatal("opener must not run for escaped visual dir")
+		return nil
+	})
+	defer restore()
+
+	var stdout, stderr bytes.Buffer
+	if code := OpenVisual(root, []string{"demo"}, &stdout, &stderr); code != 2 || !strings.Contains(stderr.String(), "escapes workspace") {
+		t.Fatalf("code=%d stderr=%q", code, stderr.String())
+	}
+}

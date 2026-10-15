@@ -52,12 +52,12 @@ the same decisions from it.
 | False binary contrast. "It's not X, it's Y", "The question isn't X. It's Y", "not just X but Y" | State Y directly. Drop the negation. |
 | Fake profundity. "Let that sink in", "This is the deepest problem", "make no mistake" | Show the thing; trust the reader to weigh it. |
 | Vague declaratives. "The implications are significant", "the reasons are structural" | Name the specific implication or reason. |
-| Marketing adjectives *selling* the work: "a robust, scalable, seamless, production-ready solution" | Say what it does and what proves it. (Calibrated: "robust"/"scalable"/"comprehensive" are legitimate in a precise technical claim ("robust to a dropped connection, see `evidence.md`"); slop only when they sell. Canonical tiering: [`banned-phrases.md`](../../../devrites-prose-craft/reference/banned-phrases.md) § AI vocabulary.) |
+| Marketing adjectives *selling* the work: "a robust, scalable, seamless, production-ready solution" | Say what it does and what proves it. (Calibrated: "robust"/"scalable"/"comprehensive" are legitimate in a precise technical claim ("robust to a dropped connection, see `evidence.md`"); slop only when they sell. Canonical tiering: [`banned-phrases.md`](skill://devrites-prose-craft/reference/banned-phrases.md) § AI vocabulary.) |
 | Hedging stacks. "It's important to note that, generally, in most cases" | Make the claim, or cut it. |
 | False agency: "the data tells us", "the complaint becomes a fix", "the decision emerges" | Name who did it. "The grader reads X and returns Y." |
 | Meta-narration, "In this section we'll…", "Let me walk you through…", "as we'll see" | Let the text move; delete the announcement. |
 | Reasoning-chain scaffolding. "Let me think step by step", "Breaking this down", "First, let's consider" | State the conclusion, then the evidence. |
-| Assistant leaks. Cutoff disclaimers, unfilled placeholders, chatbot citation markup, `utm_source=chatgpt.com` | Delete the leak; keep the fact. See [`banned-phrases.md`](../../../devrites-prose-craft/reference/banned-phrases.md). |
+| Assistant leaks. Cutoff disclaimers, unfilled placeholders, chatbot citation markup, `utm_source=chatgpt.com` | Delete the leak; keep the fact. See [`banned-phrases.md`](skill://devrites-prose-craft/reference/banned-phrases.md). |
 
 ## Voice (prose register)
 
@@ -67,7 +67,7 @@ the same decisions from it.
   case when you know it.
 - **Vary rhythm.** Don't stack three staccato fragments or three same-length sentences in a row.
 - **Skip em and en dashes** — a repeated AI tell in DevRites prose (product UI copy is
-  only a lead, per [`rite-polish/reference/anti-ai-slop.md`](../../../rite-polish/reference/anti-ai-slop.md));
+  only a lead, per [`rite-polish/reference/anti-ai-slop.md`](skill://rite-polish/reference/anti-ai-slop.md));
   use a comma, period, colon, or parentheses instead.
 - **Trust the reader.** Skip the softening preamble and the recap of what you just said.
 
@@ -86,7 +86,7 @@ the same decisions from it.
 
 Comments and identifiers are prose too; the comment-noise / generic-naming tells live in
 [`coding-style.md`](coding-style.md) and the code section of
-[`rite-polish/reference/anti-ai-slop.md`](../../../rite-polish/reference/anti-ai-slop.md).
+[`rite-polish/reference/anti-ai-slop.md`](skill://rite-polish/reference/anti-ai-slop.md).
 The one-line rule: **a comment must justify its existence in one sentence (intent, trade-off,
 non-obvious constraint, or a dragon warning). If it restates the code, delete it and let the
 name carry the meaning.**

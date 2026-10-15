@@ -5,13 +5,13 @@ import re
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-TARGETS = ["README.md", "docs", "pack", "scripts", "install.sh", "update.sh", "uninstall.sh", "package.json"]
+TARGETS = ["README.md", "bin", "docs", "engine", "pack", "scripts", "install.sh", "update.sh", "uninstall.sh", "package.json"]
 PATTERNS = [
     re.compile(r"/Users/(?!runner|homebrew|shared/)[A-Za-z0-9._-]+"),
     re.compile(r"/home/(?!runner|circleci|github|vscode|node)[A-Za-z0-9._-]+"),
     re.compile(r"C:\\\\Users\\\\(?!runner|Public)[A-Za-z0-9._-]+", re.I),
 ]
-TEXT_EXTS = {"", ".md", ".sh", ".py", ".js", ".mjs", ".json", ".yaml", ".yml", ".toml", ".txt"}
+TEXT_EXTS = {"", ".md", ".sh", ".py", ".js", ".mjs", ".json", ".yaml", ".yml", ".toml", ".txt", ".go", ".tmpl"}
 ALLOW = {"scripts/check-no-personal-paths.py"}
 
 findings = []

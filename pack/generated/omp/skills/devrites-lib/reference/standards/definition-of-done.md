@@ -19,7 +19,7 @@ re-judge from this table alone.
 | Open hard gates closed | [`afk-hitl.md`](afk-hitl.md), `rite-seal` | HITL, red tests, drift, or NO-GO still open |
 | Rollback named for risky work | [`data-integrity.md`](data-integrity.md) | "revert if needed" with no trigger/procedure/proof |
 | Docs/ADR for public behavior | [`documentation.md`](documentation.md) | Command or contract changed; docs did not |
-| Written artifacts re-read from disk before handoff | [`workspace-artifact-schema.md`](../workspace-artifact-schema.md), phase owner | Report describes a spec/plan/evidence state the file on disk does not contain |
+| Written artifacts re-read from disk before handoff | [`workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md), phase owner | Report describes a spec/plan/evidence state the file on disk does not contain |
 | Recipient-path execution | [`verification-methods.md`](verification-methods.md), `rite-prove` | Tests run against the working tree; the packaged artifact was never installed, opened, or navigated as its recipient would |
 
 Use from `rite-vet`, `rite-build`, `rite-prove`, `rite-seal`, and `rite-quick`.

@@ -140,6 +140,14 @@ for i, s in enumerate(scenarios):
             errors.append(f"scenario {where} missing non-empty {k} list")
         elif not all(isinstance(x, str) and x.strip() for x in v):
             errors.append(f"scenario {where} {k} has an empty / non-string entry")
+    if "control" in s and not isinstance(s["control"], bool):
+        errors.append(f"scenario {where} control must be true or false")
+
+# A corpus of refusals alone passes an agent that refuses everything. Each
+# corpus needs one control scenario where proceeding is the correct response.
+# Carriers under fixtures/ feed a parent corpus, which holds the controls.
+if scenarios and "fixtures" not in path.parent.parts and not any(isinstance(s, dict) and s.get("control") is True for s in scenarios):
+    errors.append('no control scenario: add one with "control": true where proceeding is correct')
 
 if errors:
     for e in errors:
@@ -154,7 +162,8 @@ print(f"__COUNT__ {len(scenarios)}")
 PY
     ); then rc=0; else rc=$?; fi
   else
-    if OUT=$(jq -r '
+    carrier=0; [[ "$file" == */fixtures/* ]] && carrier=1
+    if OUT=$(jq -r --arg carrier "$carrier" '
       if (.skill and .description and (.scenarios|type=="array") and (.scenarios|length > 0)) then
         ( [ .scenarios[]
             | select(
@@ -166,9 +175,11 @@ PY
                 and ((.capitulation_markers|type=="array") and (.capitulation_markers|length>0))
               ) ] | length
         ) as $ok
-        | if $ok == (.scenarios|length)
-          then "  skill: \(.skill)\n  scenarios: \(.scenarios|length)\n__COUNT__ \(.scenarios|length)"
-          else "  FAIL: \((.scenarios|length) - $ok) scenario(s) missing required fields"
+        | if $ok != (.scenarios|length)
+          then "  FAIL: \((.scenarios|length) - $ok) scenario(s) missing required fields"
+          elif $carrier != "1" and ([.scenarios[] | select(.control == true)] | length) == 0
+          then "  FAIL: no control scenario: add one with \"control\": true where proceeding is correct"
+          else "  skill: \(.skill)\n  scenarios: \(.scenarios|length)\n__COUNT__ \(.scenarios|length)"
           end
       else
         "  FAIL: missing required keys or empty scenarios"

@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/devrites/devrites/internal/lib"
 	"github.com/devrites/devrites/internal/notes"
 	"github.com/devrites/devrites/internal/overhaul"
 	"github.com/devrites/devrites/internal/parallel"
@@ -20,12 +21,12 @@ const (
   check path-disjoint [--root <dir>] [<json-file>|-]
   check task-graph <slug>
   check slice <slug> <SLICE-ID>
-  check diff-scope <slug> --allow <csv> | --allow-file <path> [--worktree|--staged|--base <ref>]
+  check diff-scope <slug> --allow <csv> | --allow-file <path> [--worktree|--staged|--base <ref>] [--allow-empty] [--cwd <dir>]
   check skill-trust <path>
   check indexes [--root <dir>]
   check regression <slug> [--update]
   check drift <slug> [--record]
-  check windows <slug> [--worktree|--staged|--base <ref>]
+  check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]
   check dup [slug] [--all|--worktree|--staged|--base <ref>]
 `
 
@@ -50,13 +51,13 @@ const (
 	orientUsage  = "usage: devrites-engine orient [slug]"
 	nextUsage    = "usage: devrites-engine next [slug]"
 	handoffUsage = "usage: devrites-engine handoff [slug]"
-	contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--trigger a,b] [--skills-root <dir>] [--out <path>]`
+	contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--trigger a,b] [--skills-root <dir>] [--out <path>]`
 	metricsUsage = `usage: devrites-engine metrics <record|summary> ...
 
   metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
-  metrics summary [slug]
+  metrics summary [slug] [--by-slice]
 `
-	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s]`
+	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>]`
 	claimUsageText = `usage: devrites-engine claim <add|release|list|check> ...
 
   claim add --session <id> [--ttl <minutes>] [--reason <s>] <path>...
@@ -131,6 +132,7 @@ func takesSubcommand(command string) bool {
 var valueFlags = map[string]map[string]bool{
 	"claim":    {"--session": true, "--reason": true, "--ttl": true, "--id": true},
 	"dispatch": {"--phase": true, "--wave": true, "--role": true, "--handle": true, "--reason": true},
+	"recall":   {"--paths": true, "--limit": true},
 }
 
 // hasHelpFlag reports whether args (the arguments after the command word) are a
@@ -168,7 +170,7 @@ func shouldPrintHelp(args []string) bool {
 		return true
 	}
 	switch args[0] {
-	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate", "overhaul", "next", "dispatch", "secret-scan", "open-visual":
+	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate", "overhaul", "next", "dispatch", "secret-scan", "open-visual", "recall":
 		return len(args) >= 2 && args[1] == "help"
 	default:
 		return false
@@ -212,6 +214,8 @@ func commandHelp(args []string) (string, bool) {
 		return nextUsage, true
 	case "handoff":
 		return handoffUsage, true
+	case "recall":
+		return lib.RecallUsage, true
 	case "context":
 		return contextUsage, true
 	case "metrics":

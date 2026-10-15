@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/state"
 )
 
 // MetricsFile is the per-feature append-only event ledger. One JSON object per
@@ -150,6 +151,16 @@ func recordMetric(root, slug, phase, event, role string, bytes int64) {
 	_ = f.Close()
 }
 
+// cursorPhase is the feature's recorded cursor phase, or "" when state.md is
+// unreadable; engine checks label their metrics with it.
+func cursorPhase(root, slug string) string {
+	report, err := state.Status(root, slug)
+	if err != nil {
+		return ""
+	}
+	return string(report.Phase)
+}
+
 func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 	bySlice := slices.Contains(args, "--by-slice")
 	args = slices.DeleteFunc(slices.Clone(args), func(a string) bool { return a == "--by-slice" })
@@ -170,9 +181,13 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		return sliceCostSummary(root, slug, stdout, stderr)
 	}
 	f, err := os.Open(filepath.Join(dir, MetricsFile)) // #nosec G304 -- dir is a validated workspace and filename is fixed
-	if err != nil {
+	if os.IsNotExist(err) {
 		fmt.Fprintf(stdout, "metrics: no events recorded for %s\n", slug)
 		return 0
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "metrics: ledger unreadable: %v\n", err)
+		return 2
 	}
 	defer func() { _ = f.Close() }()
 
@@ -190,11 +205,20 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 	totalBytes := int64(0)
 	totalEvents := 0
 	bad := 0
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 64<<10), 1<<20)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+	// A reader, not a Scanner: one event line carries an unbounded --note. A
+	// final line without a newline is handled, then the next read is ("", EOF).
+	reader := bufio.NewReader(f)
+	for {
+		raw, readErr := reader.ReadString('\n')
+		if readErr != nil && readErr != io.EOF {
+			fmt.Fprintf(stderr, "metrics: ledger unreadable after %d events: %v\n", totalEvents, readErr)
+			return 2
+		}
+		line := strings.TrimSpace(raw)
 		if line == "" {
+			if readErr == io.EOF {
+				break
+			}
 			continue
 		}
 		var ev metricEvent
@@ -221,10 +245,6 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		totalEvents++
 		totalBytes += ev.Bytes
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(stderr, "metrics: ledger unreadable after %d events: %v\n", totalEvents, err)
-		return 2
 	}
 	if len(phases) == 0 && bad == 0 {
 		fmt.Fprintf(stdout, "metrics: no events recorded for %s\n", slug)

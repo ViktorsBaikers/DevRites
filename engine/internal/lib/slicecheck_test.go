@@ -164,7 +164,7 @@ func TestSliceSizeAdvisoryNeverBlocks(t *testing.T) {
 func TestSliceSizeRationaleSilencesAdvisory(t *testing.T) {
 	root := sliceWorkspace(t, bigSliceTasks("Size rationale: one generated golden set moves together\n"), "## Acceptance criteria\n- AC-001 works\n")
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
-	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 || strings.Contains(stdout.String(), "ADVISORY") {
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 || strings.Contains(stdout.String(), "ADVISORY size") {
 		t.Fatalf("rationale must silence advisory: code=%d\n%s", code, stdout)
 	}
 }

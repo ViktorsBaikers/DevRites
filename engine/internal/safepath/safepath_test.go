@@ -67,3 +67,27 @@ func TestWithinResolvedDoesNotInventCaseFolding(t *testing.T) {
 		t.Fatalf("%s filesystem is case-sensitive; containment folded case", runtime.GOOS)
 	}
 }
+
+// A dangling symlink is judged by where it points: writing through it creates
+// its target, so a link to a missing path outside the parent is outside.
+func TestWithinResolvedFollowsDanglingSymlinks(t *testing.T) {
+	base := t.TempDir()
+	parent := filepath.Join(base, "real")
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(parent, "out")
+	if err := os.Symlink(filepath.Join(base, "outside", "missing"), out); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	in := filepath.Join(parent, "in")
+	if err := os.Symlink("new/file", in); err != nil {
+		t.Fatal(err)
+	}
+	if WithinResolved(out, parent) || WithinResolved(filepath.Join(out, "x"), parent) {
+		t.Fatal("dangling symlink to outside judged within")
+	}
+	if !WithinResolved(in, parent) {
+		t.Fatal("dangling relative symlink to inside judged outside")
+	}
+}

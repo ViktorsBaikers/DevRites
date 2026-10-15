@@ -147,7 +147,7 @@ func SecretScan(root string, args []string, stdin io.Reader, stdout, stderr io.W
 		}
 	}
 	if !staged && slug == "" && !readStdin {
-		changed, err := gitDiffNames(project)
+		changed, err := gitChangedAndUntrackedNames(project)
 		if err != nil {
 			fmt.Fprintln(stderr, "secret-scan: cannot inspect changed paths")
 			return 2
@@ -189,6 +189,29 @@ func SecretScan(root string, args []string, stdin io.Reader, stdout, stderr io.W
 		return left.Offset < right.Offset
 	})
 	return writeSecretScanResult(findings, stdout, stderr)
+}
+
+// gitChangedAndUntrackedNames lists every path that differs from HEAD (staged
+// or not) plus untracked, non-ignored files. On an unborn branch every tracked
+// path is staged, so the index diff stands in for the HEAD diff. Both lists
+// are relative to project, which scanWorktreePaths joins them onto.
+func gitChangedAndUntrackedNames(project string) ([]string, error) {
+	changed, err := gitDiffNames(project, "--relative", "HEAD", "--")
+	if err != nil {
+		if changed, err = gitDiffNames(project, "--relative", "--cached"); err != nil {
+			return nil, err
+		}
+	}
+	out, err := runGitCommand(project, nil, "ls-files", "--others", "--exclude-standard", "-z")
+	if err != nil {
+		return nil, err
+	}
+	for _, path := range strings.Split(string(out), "\x00") {
+		if path != "" {
+			changed = append(changed, path)
+		}
+	}
+	return changed, nil
 }
 
 func projectDir(root string) string {

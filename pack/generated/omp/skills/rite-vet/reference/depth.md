@@ -17,12 +17,12 @@ Authority: `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-r
 <!-- END RESLICE ROUTE-TO-ACTION -->
 
 ## Full pass when ANY trips
-- **Irreversible-risk contact:** the plan touches anything on the [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) irreversible-risk
+- **Irreversible-risk contact:** the plan touches anything on the [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) irreversible-risk
   list: destructive data migration, auth/authz boundary, public-API break, external-service
   contract, filesystem destruction outside the workspace.
 - **Data model:** new/changed entities, relationships, or persistence shape.
 - **Cross-module blast radius:** the impact (from a code-intelligence index if available (see
-  `../../devrites-lib/reference/standards/tooling.md`) or an honest estimate) crosses
+  `skill://devrites-lib/reference/standards/tooling.md`) or an honest estimate) crosses
   module/service boundaries or has many dependents.
 - **Complexity:** `plan.md` touches **>8 files** or adds **>2 new services/modules/classes**.
 - **Multi-slice / multi-day work**, new dependency/pattern/design system. Slice count alone never creates a human pause.
@@ -54,6 +54,6 @@ triggers above, **never skipped**. Under the AFK gate ceiling:
   (these never grow acceptance). Record the rationale in `decisions.md`.
 - **Topology findings:** marked action; slice count alone never pauses.
 - **Stops:** human-owned irreversible-risk findings pause. Technical recovery follows
-  [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve),
+  [the canonical retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve),
   with no depth-specific round limit; no-progress exhaustion blocks, never grants readiness.
 - **Cross-model** is off by default; it runs only if `--cross-model` was explicitly armed.

@@ -2,7 +2,7 @@
 
 > Applies when: dispatching or admitting any devrites-* role; the source-writing boundary.
 
-Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
+Follow DevRites policy and [`depth profiles`](skill://devrites-lib/reference/orchestration-profiles.md).
 
 ## Authority
 
@@ -33,7 +33,7 @@ Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
 | `devrites-retrospector` |
 | `devrites-slice-wright` |
 
-Files own briefs; [`parallel-dispatch.md`](../parallel-dispatch.md) owns rosters.
+Files own briefs; [`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md) owns rosters.
 
 ## Native invocation
 
@@ -41,7 +41,7 @@ Skills name exact fresh roles, omit native fields;
 hosts spawn/wait/deliver. Root MUST NOT advance/claim completion before admitting required results;
 running/orphaned/unavailable = `gap` — no root/generic substitute.
 Where a feature workspace exists, every fresh dispatch to a named `devrites-*`
-role — wave or solo — builds its read-set with `devrites-engine context <slug>
+role — wave or solo — builds its read-set with `devrites-engine context --skills-root .omp/skills <slug>
 --phase <p> --role <role>` and tracks the launch through `devrites-engine
 dispatch <slug> open|start|seal|return` (a solo dispatch is a wave of one;
 start/return auto-record metrics). Without a workspace the plain host dispatch
@@ -52,7 +52,7 @@ Workflow-named skills (e.g. devrites-source-driven) are invoked inline in the ro
 
 omp: only the wright's `tools` allowlist has `edit`/`write`; the root stays source-read-only by instruction. Claude grants only wright `acceptEdits`; Codex root is workspace-capable (children cannot elevate). Wright alone `:workspace`; others `:read-only`. Wright gets the smallest exact project-relative source/test list — no directories/globs, traversal, or `.devrites/**`; no scope widening; root rejects `git diff --name-only` extras. Never patch product source/tests in root, bypass/substitute wright, accept drift, or recreate a dispatch bridge.
 
-Isolated-worktree pilot only under [`wright-dispatch.md`](../../../rite-build/reference/wright-dispatch.md#isolated-writer-worktree-pilot): one writer, committed/clean baseline, non-submodule parent, exact transfer commit, candidate reconciliation — never parallel writers nor weaker exact-path admission. Root may materialize only exact Vet-ready workflow-artifact paths per [`workflow-artifacts.md`](workflow-artifacts.md) — not a writer dispatch or candidate mutation.
+Isolated-worktree pilot only under [`wright-dispatch.md`](skill://rite-build/reference/wright-dispatch.md#isolated-writer-worktree-pilot): one writer, committed/clean baseline, non-submodule parent, exact transfer commit, candidate reconciliation — never parallel writers nor weaker exact-path admission. Root may materialize only exact Vet-ready workflow-artifact paths per [`workflow-artifacts.md`](workflow-artifacts.md) — not a writer dispatch or candidate mutation.
 
 Each job gets objective/exclusions, exact paths/immutable candidate, rubric/result shape, a **stop condition** (when to return), and the exact result shape; a dispatch missing them is malformed and re-issued. Briefs MUST NOT seed verdict/severity cap/conclusion/suppression. Results state status/scope, outcome, commands/escalation; wright adds paths, changed files, gates, stood decisions; results never widen scope.
 
@@ -63,7 +63,7 @@ starts, it records an advisory claim — `devrites-engine claim add --session
 <id> <paths>` — retains the returned `<claim-id>`, then checks the same paths
 with `devrites-engine claim check --session <id> <paths>`; a held claim from a
 live foreign session is a stop-and-report, not a merge-later problem. On every
-host-confirmed terminal path after `add` ([unknown outcomes keep it](../parallel-dispatch.md#cancellation-and-terminal-reconciliation)) — return,
+host-confirmed terminal path after `add` ([unknown outcomes keep it](skill://devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)) — return,
 rejected result, stop, or a launch refused with no handle — run
 `devrites-engine claim release --session <id> --id <claim-id>`. Claims expire
 by TTL only as crash recovery; `claim list` shows who holds what. Claims are
@@ -151,7 +151,7 @@ return is the bundle the root writes) and the wright's change evidence.
 Root rejects stale/out-of-scope work, dedupes by root cause, records
 accepted conclusions, and reruns only affected proof/review. Reconciliation runs
 only after every dispatch reaches a terminal classification
-([parallel-dispatch.md](../parallel-dispatch.md)); findings that do not survive stay
+([parallel-dispatch.md](skill://devrites-lib/reference/parallel-dispatch.md)); findings that do not survive stay
 visible as `withdrawn: <n> (<reason>)` in the account rather than being silently
 dropped, so a later reader can audit what was discarded and why.
 Route defects before correction: product/acceptance → Spec Drift Guard/Clarify;

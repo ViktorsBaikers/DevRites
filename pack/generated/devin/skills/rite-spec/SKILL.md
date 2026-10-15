@@ -5,7 +5,7 @@ argument-hint: "<feature or idea>"
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/standards/agents.md","rite-spec/reference/investigation.md","rite-spec/reference/question-protocol.md","rite-spec/reference/spec-template.md","rite-spec/reference/spec-checklists.md","rite-spec/reference/state-workspace.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/interview-patterns.md","rite-spec/reference/ai-spec-template.md","rite-spec/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"edge-cases":["devrites-lib/reference/standards/edge-case-trace.md"],"frontend":["rite-build/reference/frontend-trigger.md"],"grammar":["devrites-lib/reference/standards/spec-grammar.md"],"principles":["devrites-lib/reference/standards/principles.md"],"references":["rite-spec/reference/references-intake.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md"],"workspaceByRole":{"evidence-scout":["brief.md","spec.md","state.md","questions.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase spec` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --phase spec` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-spec: investigate and write the spec
@@ -57,7 +57,10 @@ load a routed standard to discover required behavior, not to prescribe implement
    **Completion:** it includes both, and every ask is listed. **Failing case:** "CSV export
    and an email digest" yields a CSV-only spec; the digest is neither Non-goal nor question.
 1a. **Dedupe.** Search local issues/PRDs, work, and archive. On a close match ask
-   extend/adopt/new, then record the choice; otherwise continue silently.
+   extend/adopt/new, then record the choice; otherwise continue silently. A slug handed
+   off by `/rite-adopt` extends that adopted workspace without asking. Adopting a
+   pressure-test provisional slug turns each `Hold:` in its `investigation-map.md` into an
+   open `gate: blocking` question in `questions.md`.
    A recorded [feature-sequence continuation](../rite-plan/reference/slicing.md#continuation-workspaces)
    is a **new** workspace (`<parent>-2`): carry the parent slug and position into
    `brief.md`, read the parent artifacts as design input, and do not route to

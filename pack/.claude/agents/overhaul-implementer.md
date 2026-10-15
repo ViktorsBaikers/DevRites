@@ -1,6 +1,7 @@
 ---
 name: overhaul-implementer
 description: Implements one approved /overhaul repair task test-first inside its exact allowed paths. Dispatched only by the /overhaul skill after the user approves the plan; returns a patch receipt.
+permissionMode: acceptEdits
 ---
 
 <!-- include:_shared/untrusted-input.md -->

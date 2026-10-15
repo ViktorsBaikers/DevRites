@@ -40,6 +40,7 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "unknown state command", command: "state", args: []string{"unknown"}, want: rootUnused},
 		{name: "secret scan", command: "secret-scan", want: rootLenient},
 		{name: "open visual", command: "open-visual", want: rootLenient},
+		{name: "recall reads the archive without a workspace", command: "recall", want: rootLenient},
 		{name: "overhaul tools take explicit paths", command: "overhaul", args: []string{"records"}, want: rootUnused},
 	}
 

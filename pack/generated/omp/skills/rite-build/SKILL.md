@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/agents.md","rite-build/reference/phase-contract.md","rite-build/reference/one-slice-cycle.md","rite-build/reference/wright-dispatch.md","rite-build/reference/checkpoint.md","rite-build/reference/spec-drift-guard.md","rite-build/reference/output.md","rite-build/reference/anti-patterns.md"],"rootOnly":["rite-build/reference/phase-contract.md","rite-build/reference/wright-dispatch.md","rite-build/reference/checkpoint.md","rite-build/reference/output.md","rite-build/reference/afk-discipline.md","rite-build/reference/checkpoint-protocol.md","rite-build/reference/parallel-batch.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/workflow-artifacts.md"],"triggers":{"afk":["rite-build/reference/afk-discipline.md","devrites-lib/reference/standards/afk-hitl.md","rite-build/reference/checkpoint-protocol.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"coding":["devrites-lib/reference/standards/coding-style.md"],"debug-recovery":["devrites-lib/reference/standards/debug-recovery.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"frontend":["rite-build/reference/frontend-trigger.md"],"parallel":["rite-build/reference/parallel-batch.md"],"patterns":["devrites-lib/reference/standards/patterns.md"],"principles":["devrites-lib/reference/standards/principles.md"],"security":["devrites-lib/reference/standards/security.md"],"tdd":["rite-build/reference/tdd.md","devrites-lib/reference/standards/testing.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","strategy.md"],"workspaceByRole":{"code-reviewer":["spec.md","plan.md","tasks.md","test-plan.md","architecture.md","decisions.md","state.md"],"doubt-reviewer":["spec.md","plan.md","tasks.md","state.md","decisions.md"],"slice-wright":["brief.md","spec.md","architecture.md","plan.md","tasks.md","test-plan.md","state.md","decisions.md","assumptions.md","questions.md"],"test-analyst":["spec.md","tasks.md","test-plan.md","state.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase build` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase build` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-build: one verified slice
@@ -21,7 +21,7 @@ caps and pause rules. Every wright returns after one slice.
 Root owns gates/bookkeeping; fresh
 [`devrites-slice-wright`](.omp/agents/devrites-slice-wright.md) writes source/tests.
 Workflow Artifacts use
-[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
+[`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md)
 (trigger `workflow-artifacts` — only when the plan declares them).
 Execute [`reference/phase-contract.md`](reference/phase-contract.md)
 ([`one-slice-cycle.md`](reference/one-slice-cycle.md),
@@ -48,15 +48,15 @@ Wright applies anti-slop; root verifies returns and never patches source. Refuse
   adjacent issues. An adjacent issue or non-obvious rationale bound to specific
   code anchors as a note — `devrites-engine note add <slug> <file> "<verbatim
   quote>" <title>` — so refactors regrade it instead of losing it
-  ([`notes.md`](../devrites-lib/reference/workspace-artifact-schema.md#anchored-notes)).
+  ([`notes.md`](skill://devrites-lib/reference/workspace-artifact-schema.md#anchored-notes)).
 - Re-prove affected behavior after edits (core.md #6); reuse observations only
-  under [evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).
+  under [evidence validity](skill://devrites-lib/reference/candidate-integrity.md#evidence-validity).
 - Unplanned dependency/design-system/gap/repair → Vet/Spec Drift Guard batch
   sweep: every contract-assumption violation recorded before one folded
   repair+vet. Ask only for licensing/cost/security/product or explicit
   architecture-policy decisions (core.md #8).
 - Root never edits product source/tests (`.devrites/` + Workflow Artifact only;
-  [agents.md](../devrites-lib/reference/standards/agents.md) source-writing
+  [agents.md](skill://devrites-lib/reference/standards/agents.md) source-writing
   boundary). Wright is sole product writer; extras in returned paths/`git diff
   --name-only` hard-stop via `check diff-scope`.
 - Principles bind; irreversible conflict needs human exception or stop.
@@ -65,7 +65,7 @@ Wright applies anti-slop; root verifies returns and never patches source. Refuse
   [`spec-drift-guard.md`](reference/spec-drift-guard.md); checkpoint →
   [`checkpoint.md`](reference/checkpoint.md).
 - Async readiness waits during slice work follow
-  [`debug-recovery.md`](../devrites-lib/reference/standards/debug-recovery.md)
+  [`debug-recovery.md`](skill://devrites-lib/reference/standards/debug-recovery.md)
   (bounded poll + last-signal artifact; no blind sleep as primary strategy).
 
 ## Workflow Artifact branch
@@ -103,7 +103,7 @@ Run every step in `reference/phase-contract.md`: readiness, one target, dispatch
 or canonical transaction, return inspection, independent code/doubt/test analysis,
 approved fail-on-red proof, record, AFK accounting, and stop. Use
 [`reference/output.md`](reference/output.md) plus the shared
-[`reply contract`](../devrites-lib/reference/reply-contract.md). HITL never starts
+[`reply contract`](skill://devrites-lib/reference/reply-contract.md). HITL never starts
 the next slice automatically; AFK obeys remaining budget; Prove requires all slices built.
 
 ## Phase exit

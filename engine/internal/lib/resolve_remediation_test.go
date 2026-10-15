@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/devrites/devrites/internal/gate"
 	"github.com/devrites/devrites/internal/testutil"
 )
 
@@ -188,5 +189,145 @@ func TestResolveBatchAppliesUnterminatedFinalLine(t *testing.T) {
 	}
 	if text := readQuestions(t, root); strings.Contains(text, "status: open") {
 		t.Fatalf("a question stayed open:\n%s", text)
+	}
+}
+
+func TestResolveAcceptsCRLFQuestions(t *testing.T) {
+	root := resolveWorkspace(t, "## q-1 blocking\r\nstatus: open\r\n")
+	var stdout, stderr bytes.Buffer
+
+	if code := Resolve(root, []string{"q-1", "postgres"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code = %d, want 0; stderr=%q", code, stderr.String())
+	}
+	if text := readQuestions(t, root); !strings.Contains(text, "status: answered") {
+		t.Fatalf("question not answered:\n%s", text)
+	}
+}
+
+func TestResolveHumanFlagAnywhere(t *testing.T) {
+	root := resolveWorkspace(t, "## q-5 blocking\nstatus: open\n")
+	var stdout, stderr bytes.Buffer
+
+	if code := Resolve(root, []string{"q-5", "ans", "--human"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code = %d, want 0; stderr=%q", code, stderr.String())
+	}
+	if text := readQuestions(t, root); !strings.Contains(text, "answered_by: human") || !strings.Contains(text, "answer: ans") {
+		t.Fatalf("trailing --human not honoured:\n%s", text)
+	}
+}
+
+func TestResolveRejectsMalformedArguments(t *testing.T) {
+	for _, args := range [][]string{
+		{"q-1", "--human"},
+		{"q-1", "ans", "extra"},
+		{"--dorp", "q-1"},
+		{"q-1", "--force"},
+		{"--drop", "q-1", "reason", "extra"},
+		{"--drop", "--human-ish"},
+	} {
+		root := resolveWorkspace(t, "## q-1 blocking\nstatus: open\n")
+		var stdout, stderr bytes.Buffer
+		if code := Resolve(root, args, &stdout, &stderr); code != 5 {
+			t.Fatalf("%v: code = %d, want 5; stderr=%q", args, code, stderr.String())
+		}
+		if text := readQuestions(t, root); !strings.Contains(text, "status: open") {
+			t.Fatalf("%v: question mutated:\n%s", args, text)
+		}
+	}
+}
+
+func TestResolveBatchIsAllOrNothing(t *testing.T) {
+	for _, tc := range []struct {
+		batch string
+		want  int
+	}{
+		{"q-1: yes\nq-2 no colon\n", 5},
+		{"q-1: yes\n--drop q-2\n", 5},
+		{"q-1: yes\nq-9: unknown\n", 3},
+		{"q-1: yes\nq-1: again\n", 4},
+	} {
+		root := resolveWorkspace(t, "## q-1 blocking\nstatus: open\n## q-2 blocking\nstatus: open\n")
+		file := filepath.Join(t.TempDir(), "batch.txt")
+		testutil.WriteFile(t, file, tc.batch)
+		var stdout, stderr bytes.Buffer
+		if code := Resolve(root, []string{"--batch", file}, &stdout, &stderr); code != tc.want {
+			t.Fatalf("%q: code = %d, want %d; stderr=%q", tc.batch, code, tc.want, stderr.String())
+		}
+		if text := readQuestions(t, root); strings.Count(text, "status: open") != 2 {
+			t.Fatalf("%q: batch partially applied:\n%s", tc.batch, text)
+		}
+	}
+}
+
+func TestResolveQuestionBlockEndsAtAnyLevelTwoHeading(t *testing.T) {
+	root := resolveWorkspace(t, "## q-1 blocking\nstatus: open\n\n## Notes\nanswer: keep me\n")
+	var stdout, stderr bytes.Buffer
+	if code := Resolve(root, []string{"q-1", "yes"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code = %d, want 0; stderr=%q", code, stderr.String())
+	}
+	if text := readQuestions(t, root); !strings.Contains(text, "## Notes\nanswer: keep me\n") || !strings.Contains(text, "answer: yes\n## Notes") {
+		t.Fatalf("answer written outside the question block:\n%s", text)
+	}
+
+	root = resolveWorkspace(t, "## q-1 blocking\n\n## Notes\nstatus: draft\n")
+	stderr.Reset()
+	if code := Resolve(root, []string{"q-1", "yes"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("a status line under ## Notes blocked q-1: code = %d; stderr=%q", code, stderr.String())
+	}
+	if text := readQuestions(t, root); !strings.Contains(text, "## Notes\nstatus: draft\n") {
+		t.Fatalf("## Notes status rewritten:\n%s", text)
+	}
+}
+
+func TestResolveAgreesWithGateOnStatusSpelling(t *testing.T) {
+	for _, status := range []string{"status: Open", "status: open ", "Status: OPEN\t"} {
+		body := "## q-1 blocking\n" + status + "\ngate: blocking\n"
+		if gates := gate.OpenBlockingQuestionGates([]byte(body)); len(gates) != 1 {
+			t.Fatalf("%q: gate sees %v, want one open gate", status, gates)
+		}
+		root := resolveWorkspace(t, body)
+		var stdout, stderr bytes.Buffer
+		if code := Resolve(root, []string{"q-1", "yes"}, &stdout, &stderr); code != 0 {
+			t.Fatalf("%q: code = %d, want 0; stderr=%q", status, code, stderr.String())
+		}
+		if gates := gate.OpenBlockingQuestionGates([]byte(readQuestions(t, root))); len(gates) != 0 {
+			t.Fatalf("%q: gate still open after resolve: %v\n%s", status, gates, readQuestions(t, root))
+		}
+	}
+}
+
+func TestResolveBatchToleratesCRLFAndWhitespaceLines(t *testing.T) {
+	root := resolveWorkspace(t, "## q-1 blocking\nstatus: open\n## q-2 blocking\nstatus: open\n")
+	file := filepath.Join(t.TempDir(), "batch.txt")
+	testutil.WriteFile(t, file, "  q-1: yes\r\n   \r\n\r\n\t--drop q-2: obsolete\r\n")
+	var stdout, stderr bytes.Buffer
+	if code := Resolve(root, []string{"--batch", file}, &stdout, &stderr); code != 0 {
+		t.Fatalf("code = %d, want 0; stderr=%q", code, stderr.String())
+	}
+	if text := readQuestions(t, root); strings.Contains(text, "status: open") || !strings.Contains(text, "answer: yes\n") {
+		t.Fatalf("batch not applied cleanly:\n%s", text)
+	}
+}
+
+func TestResolveSkipsFencedExampleQuestionBlocks(t *testing.T) {
+	fence := "```md\n## Q-001 blocking\nstatus: open\nanswer:\n```\n"
+	body := "# Questions\n\nExample:\n\n" + fence + "\n## Q-001 blocking\nstatus: open\ngate: blocking\n"
+	for _, args := range [][]string{{"Q-001", "yes"}, {"--drop", "Q-001", "obsolete"}, {"--batch", ""}} {
+		root := resolveWorkspace(t, body)
+		if args[0] == "--batch" {
+			args[1] = filepath.Join(t.TempDir(), "batch.txt")
+			testutil.WriteFile(t, args[1], "Q-001: yes\n")
+		}
+		var stdout, stderr bytes.Buffer
+		if code := Resolve(root, args, &stdout, &stderr); code != 0 {
+			t.Fatalf("%v: code = %d, want 0; stderr=%q", args, code, stderr.String())
+		}
+		text := readQuestions(t, root)
+		if !strings.Contains(text, "Example:\n\n"+fence+"\n") {
+			t.Fatalf("%v: fenced example changed:\n%s", args, text)
+		}
+		if gates := gate.OpenBlockingQuestionGates([]byte(text)); len(gates) != 0 {
+			t.Fatalf("%v: real question left open (%v):\n%s", args, gates, text)
+		}
 	}
 }

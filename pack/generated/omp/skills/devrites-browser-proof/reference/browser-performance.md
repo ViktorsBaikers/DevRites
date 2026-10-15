@@ -6,7 +6,7 @@ risk is visible. Detect existing tooling; do not install any.
 1. Chrome DevTools MCP: capture Lighthouse LCP/CLS as `Lab (Lighthouse)` and
    performance-trace attribution as `Trace (DevTools)`. A navigation-only run has no
    INP: record `not measured (no interaction)` unless a timespan or trace drives a
-   named interaction ([`performance.md`](../../devrites-lib/reference/standards/performance.md)
+   named interaction ([`performance.md`](skill://devrites-lib/reference/standards/performance.md)
    § Frontend).
 2. Playwright MCP: read LCP/CLS from the live page, and INP only after a scripted
    interaction; label it `Trace (DevTools)`. Pair with Lighthouse when both are available.

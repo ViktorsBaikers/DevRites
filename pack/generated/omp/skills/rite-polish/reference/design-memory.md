@@ -6,7 +6,7 @@ copy proven, reusable design rules into the project-level `DESIGN.md` for later
 features.
 
 `devrites-ux-shape` §1 and
-[`design-references.md`](../../devrites-frontend-craft/reference/design-references.md) read `DESIGN.md` when present.
+[`design-references.md`](skill://devrites-frontend-craft/reference/design-references.md) read `DESIGN.md` when present.
 This step writes that file from real feature evidence before Review.
 
 ## When it runs
@@ -14,8 +14,8 @@ This step writes that file from real feature evidence before Review.
 - **During Polish, after initial proof and before candidate closure.** Any update
   enters the candidate manifest and is proved and reviewed with the feature.
 - **Opt in and confirm.** A project-wide artifact is outside feature scope
-  ([`core.md`](../../devrites-lib/reference/standards/core.md) rule 7), so never write it silently. Present a ranked option set
-  (see [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md), "Option set");
+  ([`core.md`](skill://devrites-lib/reference/standards/core.md) rule 7), so never write it silently. Present a ranked option set
+  (see [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md), "Option set");
   **default is skip**. The user opts to persist.
 - **AFK:** first-time `DESIGN.md` creation is a `validating` gate because it adds a
   persistent project artifact. Propose and queue it; do not create it automatically. An append to an

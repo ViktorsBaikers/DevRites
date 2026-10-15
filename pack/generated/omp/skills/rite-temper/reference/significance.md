@@ -6,15 +6,17 @@ optional `/rite-temper` path and the always-run (significance-gated) `/rite-auto
 so they agree on when it fires.
 
 ## Fire the FULL review when ANY trips
-- **Irreversible-risk contact:** the slice/spec touches anything on the [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)
+- **Irreversible-risk contact:** the slice/spec touches anything on the [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md)
   irreversible-risk list: destructive data migration, auth/authz boundary, public-API break,
   external-service contract, filesystem destruction outside the workspace.
 - **Data model:** new/changed entities, relationships, or persistence shape.
 - **Cross-module blast radius:** the impact (from a code-intelligence index if available (see
-  `../../devrites-lib/reference/standards/tooling.md`) or an honest estimate) crosses
+  `skill://devrites-lib/reference/standards/tooling.md`) or an honest estimate) crosses
   module/service boundaries or has many dependents.
 - **Greenfield / ambiguous scope:** a new surface with no existing seam to follow, or a spec
   whose "right size" is genuinely open (multiple defensible scopes).
+- **Low detectability:** no existing test, gate, or monitor would show a wrong result
+  in the affected area (no suite there, silent data change), so a mistake ships unseen.
 - **Multi-slice / multi-day:** the work decomposes into several slices (large enough that a
   wrong scope call is expensive to unwind).
 - **The user asked:** "think bigger", "is this ambitious enough", "scope check", "pre-mortem",

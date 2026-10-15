@@ -53,7 +53,7 @@ The normative rules the root checks:
 ## Behavior first: WHAT, not HOW
 
 A spec requirement describes observable behavior, not the implementation that delivers it
-(the spec stays technology-agnostic: see [`spec-template.md`](../../../rite-spec/reference/spec-template.md)). "**THEN**
+(the spec stays technology-agnostic: see [`spec-template.md`](skill://rite-spec/reference/spec-template.md)). "**THEN**
 respond 401" is behavior; "**THEN** call `AuthGuard.reject()`" leaks the design and locks the
 plan before `/rite-define` has chosen it. Name the input, the observable output, and the state
 change, not the function, class, or library. Implementation belongs in `plan.md`, not the
@@ -147,7 +147,7 @@ Requirement/Scenario rows to inspect.
 The Requirement / Scenario block is the unit the **capability ledger** stores: the living
 `.devrites/specs/<capability>/spec.md` record of *what the system does now*, folded during
 Polish before Review
-([ledger reference](../../../rite-polish/reference/ledger.md)). When a feature changes behavior a
+([ledger reference](skill://rite-polish/reference/ledger.md)). When a feature changes behavior a
 ledger already describes, write its spec as **deltas against the ledger** instead of a flat
 snapshot, so the change (not merely the end state) is explicit and the fold is unambiguous.
 
@@ -180,7 +180,7 @@ above: names are unique and a rename is a remove + add), so the section MUST use
 header text for MODIFIED / REMOVED.
 
 For **MODIFIED**, compare the complete current requirement block with the proposed full
-replacement under the lossless rule in [`ledger.md`](../../../rite-polish/reference/ledger.md). An unexplained
+replacement under the lossless rule in [`ledger.md`](skill://rite-polish/reference/ledger.md). An unexplained
 omission blocks readiness; it is not cleanup.
 
 - **The `— capability: <name>` suffix is the fold target.** Omit it and the fold defaults to the

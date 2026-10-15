@@ -41,10 +41,10 @@ version is an unknown on the card, not a default.
 
 ## Composition
 
-A card's checks are assembled from: shared review contract ([`code-review.md`](../code-review.md) +
+A card's checks are assembled from: shared review contract ([`code-review.md`](skill://devrites-lib/reference/standards/code-review.md) +
 `default.md`) + lane + language/version + runtime/platform + framework/version +
 storage/transport/trust + project conventions + risk overlays. This is composition,
-not authority: conflicts resolve under [`core.md`](../core.md#precedence) § Precedence.
+not authority: conflicts resolve under [`core.md`](skill://devrites-lib/reference/standards/core.md#precedence) § Precedence.
 A project convention selects form; it never overrides language semantics or excuses a
 proven vulnerability. Add a risk overlay only when the diff shows the boundary it covers.
 
@@ -98,7 +98,7 @@ type/value at compile time only; it proves no serialized value, authorization, o
 ## Tool coverage
 
 A tool row counts only under
-[`verification-methods.md`](../verification-methods.md#tool-coverage-states): its
+[`verification-methods.md`](skill://devrites-lib/reference/standards/verification-methods.md#tool-coverage-states): its
 processed set, not its exit code, bounds what it covers. A tool that does not support
 the component's language, dialect, or version covers nothing there, even on exit 0;
 an embedded region the tool dropped stays unreviewed.
@@ -107,9 +107,9 @@ an embedded region the tool dropped stays unreviewed.
 
 When a card names a serialized crossing, add one contract record: producer, consumer,
 serialized shape, and the round-trip proof the serialized-boundary rule in
-[`testing.md`](../testing.md) requires. A type shared by both sides proves compile-time
+[`testing.md`](skill://devrites-lib/reference/standards/testing.md) requires. A type shared by both sides proves compile-time
 agreement only. Lane ownership of the record follows
-[`parallel-dispatch.md`](../../parallel-dispatch.md) § Engineering lanes.
+[`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md) § Engineering lanes.
 
 ## Where cards live
 

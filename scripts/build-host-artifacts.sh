@@ -64,6 +64,13 @@ copy_tree() {
   cp -R "$_src" "$_dest"
 }
 
+# devrites-engine context defaults to .claude/skills; each host's bundles must
+# come from its own installed tree, so every call (even one wrapped across
+# lines) in that host's Markdown names it. $1 rendered tree, $2 skills root.
+pin_context_skills_root() {
+  find "$1" -type f -name '*.md' -exec perl -0pi -e 's#devrites-engine(\s+)context(?!\s+--skills-root)(?=\s+[<\[-])#devrites-engine${1}context --skills-root '"$2"'#g' {} +
+}
+
 render_codex_skill_tree() {
   _sd="$1"
   _dest="$2"
@@ -92,6 +99,7 @@ render_codex_skill_tree() {
       ;;
     esac
   done < <(find "$_sd" -type f)
+  pin_context_skills_root "$_dest" .agents/skills
 }
 
 render_omp_skill_tree() {
@@ -105,15 +113,18 @@ render_omp_skill_tree() {
     case "$_r" in
     SKILL.md)
       gen_omp_skill_file "$f" "$_out"
+      omp_rewrite_skill_refs "$_out" "$(basename "$_dest")/$_r"
       ;;
     *.md)
       gen_omp_markdown_file "$f" "$_out"
+      omp_rewrite_skill_refs "$_out" "$(basename "$_dest")/$_r"
       ;;
     *)
       cp "$f" "$_out"
       ;;
     esac
   done < <(find "$_sd" -type f)
+  pin_context_skills_root "$_dest" .omp/skills
 }
 
 render_pi_skill_tree() {
@@ -136,6 +147,7 @@ render_pi_skill_tree() {
       ;;
     esac
   done < <(find "$_sd" -type f)
+  pin_context_skills_root "$_dest" .pi/skills
 }
 
 render_devin_skill_tree() {
@@ -158,6 +170,7 @@ render_devin_skill_tree() {
       ;;
     esac
   done < <(find "$_sd" -type f)
+  pin_context_skills_root "$_dest" .devin/skills
 }
 
 mkdir -p "$OUT_ROOT/claude" "$OUT_ROOT/codex" "$OUT_ROOT/omp" "$OUT_ROOT/pi" "$OUT_ROOT/devin"

@@ -14,7 +14,7 @@ If it does not, do not merge it.
   (~1000+ total lines) is an inspection signal: extract the helper or module *first*,
   then add.
 - To self-split: **stack** (land the smallest standalone piece, build on top) or cut a
-  **thinner vertical slice** ([`slicing.md`](../../../rite-plan/reference/slicing.md)). Whole-file deletions and
+  **thinner vertical slice** ([`slicing.md`](skill://rite-plan/reference/slicing.md)). Whole-file deletions and
   mechanical refactors may run large: review intent, not every line.
 
 ## What to check (tests first)
@@ -33,7 +33,7 @@ If it does not, do not merge it.
    `devrites-engine check windows` flags the mechanical subset (suppressions,
    skip/focus, stubs, empty catch, deleted tests, stripped assertions) against
    `windows.md` waivers; loosened thresholds remain this sweep's judgment.
-3. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
+3. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. A join, match, upsert, or dedupe keyed on a mutable or non-unique attribute (email, name, title) instead of a stable ID is a finding ([`data-integrity.md`](data-integrity.md)). For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
 4. **Readability:** names, function size, control flow, intent obvious without the author.
 5. **Architecture:** right seam, coupling/cohesion, fits existing patterns, no premature
    abstraction. Check how it fits the larger system as well as its local behavior.
@@ -168,7 +168,7 @@ at `/rite-review` / `/rite-seal`:
    human-approved exception** is a **Critical** finding and a **NO-GO** at seal, the same standing
    as an unproven acceptance criterion. Check the diff against each principle's scope; an absent
    or empty file means none are declared (gate passes).
-2. **The anti-slop charter** ([`anti-ai-slop.md`](../../../rite-polish/reference/anti-ai-slop.md)
+2. **The anti-slop charter** ([`anti-ai-slop.md`](skill://rite-polish/reference/anti-ai-slop.md)
    UI + code lists; [`prose-style.md`](prose-style.md) for prose). [`coding-style.md`](coding-style.md)
    points at the code list — it is not a second catalog. **Failing case:** a backend-only
    diff is charged UI anti-slop (Inter / lavender / gradient); those fire only when a

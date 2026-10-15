@@ -4,7 +4,7 @@ Load this when tempted to skip clarify, assume product choices, or write
 `Decision coverage: CLEAR` before every material row has an owner.
 
 Pack-wide rationalizations: see
-[standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
+[standards/anti-patterns.md](skill://devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 

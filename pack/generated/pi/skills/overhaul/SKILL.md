@@ -101,24 +101,24 @@ deployment, or anything the user did not start with this command.
 
 ## Step 1 — Audit
 
-1. Dispatch `recon` ([`overhaul-recon`](.pi/agents/overhaul-recon.md)); admit its inventory,
+1. Dispatch `recon` ([`overhaul-recon`](../../agents/overhaul-recon.md)); admit its inventory,
    components, lanes, partitions, contract seeds and journeys into `coverage.json`,
    `stack-profiles.json` and `contracts.json`, and record the applicability matrix
    in `coverage.json` ([`references/audit-domains.md`](references/audit-domains.md#applicability-matrix)).
 2. Compose profiles per component ([`references/stack-profiles.md`](references/stack-profiles.md));
    research unknown stacks through the unknown-stack procedure.
 3. Launch the concurrent engineering wave: when both lanes apply,
-   [`overhaul-frontend-engineer`](.pi/agents/overhaul-frontend-engineer.md) and
-   [`overhaul-backend-engineer`](.pi/agents/overhaul-backend-engineer.md) go out in the same dispatch
+   [`overhaul-frontend-engineer`](../../agents/overhaul-frontend-engineer.md) and
+   [`overhaul-backend-engineer`](../../agents/overhaul-backend-engineer.md) go out in the same dispatch
    batch before you await either. Fill remaining slots with
-   [`overhaul-boundary`](.pi/agents/overhaul-boundary.md), [`overhaul-craft`](.pi/agents/overhaul-craft.md) and
-   [`overhaul-specialist`](.pi/agents/overhaul-specialist.md) in bounded waves; reserve verifier and
+   [`overhaul-boundary`](../../agents/overhaul-boundary.md), [`overhaul-craft`](../../agents/overhaul-craft.md) and
+   [`overhaul-specialist`](../../agents/overhaul-specialist.md) in bounded waves; reserve verifier and
    critic capacity first. Domain floor: [`references/audit-domains.md`](references/audit-domains.md).
    Without real concurrency: `BLOCKED_PARALLEL_CAPABILITY`; offer degraded
    sequential review only when fresh contexts can still be started one at a time.
 4. Admit every receipt with `devrites-engine overhaul admit receipt`; anchor every
    quoted location with `devrites-engine overhaul admit anchor`; send serious or
-   ambiguous candidates to [`overhaul-verifier`](.pi/agents/overhaul-verifier.md) (`finding-verify`)
+   ambiguous candidates to [`overhaul-verifier`](../../agents/overhaul-verifier.md) (`finding-verify`)
    in lane batches of up to 8. Run coverage critics after waves, launch the gaps they
    name without waiting for verifiers, and run a final-clean critic before calling
    coverage complete.
@@ -143,7 +143,7 @@ deployment, or anything the user did not start with this command.
    reconfirmation otherwise), the re-hashed plan digest, the task closure, the current
    plan revision, no later stop, and for PR or branch scope a checked-out `HEAD` equal
    to the pinned head. Record it in `approval.json`.
-2. Execute the approved DAG with [`overhaul-implementer`](.pi/agents/overhaul-implementer.md): one
+2. Execute the approved DAG with [`overhaul-implementer`](../../agents/overhaul-implementer.md): one
    writer per path, independent frontend and backend tasks concurrently, TDD per
    [`references/repair-and-measurement.md`](references/repair-and-measurement.md).
    Admit patches only when observed changed paths equal the contract.
@@ -166,14 +166,14 @@ revocation stays in force.
 
 | Role | Agent | Mode |
 | --- | --- | --- |
-| Reconnaissance and coverage mapper | [`overhaul-recon`](.pi/agents/overhaul-recon.md) | read-only |
-| Frontend engineering reviewer | [`overhaul-frontend-engineer`](.pi/agents/overhaul-frontend-engineer.md) | read-only |
-| Backend engineering reviewer | [`overhaul-backend-engineer`](.pi/agents/overhaul-backend-engineer.md) | read-only |
-| Boundary and contract reviewer | [`overhaul-boundary`](.pi/agents/overhaul-boundary.md) | read-only |
-| Frontend craft, interaction and accessibility | [`overhaul-craft`](.pi/agents/overhaul-craft.md) | read-only |
-| Language, risk and other-lane specialist | [`overhaul-specialist`](.pi/agents/overhaul-specialist.md) | read-only |
-| Frontend or backend remediation implementer | [`overhaul-implementer`](.pi/agents/overhaul-implementer.md) | writes approved paths only |
-| Verifier, critic and final challenger | [`overhaul-verifier`](.pi/agents/overhaul-verifier.md) | read-only |
+| Reconnaissance and coverage mapper | [`overhaul-recon`](../../agents/overhaul-recon.md) | read-only |
+| Frontend engineering reviewer | [`overhaul-frontend-engineer`](../../agents/overhaul-frontend-engineer.md) | read-only |
+| Backend engineering reviewer | [`overhaul-backend-engineer`](../../agents/overhaul-backend-engineer.md) | read-only |
+| Boundary and contract reviewer | [`overhaul-boundary`](../../agents/overhaul-boundary.md) | read-only |
+| Frontend craft, interaction and accessibility | [`overhaul-craft`](../../agents/overhaul-craft.md) | read-only |
+| Language, risk and other-lane specialist | [`overhaul-specialist`](../../agents/overhaul-specialist.md) | read-only |
+| Frontend or backend remediation implementer | [`overhaul-implementer`](../../agents/overhaul-implementer.md) | writes approved paths only |
+| Verifier, critic and final challenger | [`overhaul-verifier`](../../agents/overhaul-verifier.md) | read-only |
 
 Dispatch each role as its named agent with a packet
 ([`references/orchestration.md`](references/orchestration.md)). The agents keep every

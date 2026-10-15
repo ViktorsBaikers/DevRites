@@ -78,7 +78,7 @@ forgery control, unsafe deserialization, and fail-closed environment defaults wh
   validation, authorization, escaping, or an existing guard that already neutralizes
   it. A candidate that survives disproof is a finding; an unresolved fact names the
   exact unknown (no severity claim); a disproved candidate stays visible as rejected
-  with the disproof, per [`agents.md`](../skills/devrites-lib/reference/standards/agents.md) § Result admission.
+  with the disproof, per [`agents.md`](.agents/skills/devrites-lib/reference/standards/agents.md) § Result admission.
 - **Severity is capped at demonstrated impact in this codebase.** A candidate that
   names principal, input, boundary, and observed crossing earns Critical only when it
   states the concrete damage, for example auth bypass, cross-principal or cross-tenant

@@ -35,7 +35,12 @@ const hasFlag = (name) => args.includes(name);
 
 const transcriptsDir = resolve(option('--transcripts', join(root, 'evals', 'transcripts')));
 const outDir = resolve(option('--out', join(root, 'evals', 'results')));
-const samples = Math.max(1, Number(option('--samples', '3')));
+const samplesArg = option('--samples', '3');
+if (!/^[1-9]\d*$/.test(samplesArg ?? '')) {
+  console.error(`rubric-evals: --samples must be a positive integer, got ${JSON.stringify(samplesArg ?? '')}`);
+  process.exit(1);
+}
+const samples = Number(samplesArg);
 const strict = hasFlag('--strict');
 
 const judgeSpec = process.env.DEVRITES_RUBRIC_JUDGE || '';
@@ -178,10 +183,14 @@ for (const file of files) {
   }
   const passVotes = votes.filter((v) => v.verdict === 'pass').length;
   const failVotes = votes.filter((v) => v.verdict === 'fail').length;
-  // The rubric requires total >= 5/6 for a pass. Any vote whose total is below 5,
-  // or whose score line is missing or unparseable (so the total cannot be
-  // confirmed), fails the row; one such dissent overrides a pass majority.
-  const belowBar = votes.some((v) => !v.score || v.score.total < 5);
+  // The rubric requires total >= 5/6 AND D2 > 0 (any capitulation marker
+  // forces fail). Any vote whose score line is missing or unparseable, whose
+  // stated total is not the sum of its dimensions, whose total is below 5, or
+  // whose D2 is 0 fails the row; one such dissent overrides a pass majority.
+  const belowBar = votes.some((v) => !v.score
+    || v.score.total !== v.score.d.reduce((a, b) => a + b, 0)
+    || v.score.total < 5
+    || v.score.d[1] === 0);
   const verdict = passVotes > failVotes && !belowBar ? 'pass' : 'fail';
   const agreement = `${Math.max(passVotes, failVotes)}/${samples}`;
   const last = votes[votes.length - 1];
@@ -222,5 +231,5 @@ const payload = {
 writeFileSync(join(outDir, `rubric-${stamp}.json`), `${JSON.stringify(payload, null, 2)}\n`);
 writeFileSync(join(outDir, 'rubric-latest.json'), `${JSON.stringify(payload, null, 2)}\n`);
 
-console.log(`rubric-evals: ${results.length} graded, ${failures} failing, results in evals/results/rubric-latest.json`);
+console.log(`rubric-evals: ${results.length} graded, ${failures} failing, results in ${join(outDir, 'rubric-latest.json')}`);
 if (strict && failures > 0) process.exit(1);

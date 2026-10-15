@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/devrites/devrites/internal/hostpack"
@@ -25,6 +26,11 @@ func (r *runner) uninstall() error {
 		fmt.Fprintln(r.opts.Stdout, "  (dry run - no changes)")
 	}
 	fmt.Fprintln(r.opts.Stdout)
+	kept, err := r.relinquishEditedHostConfigs()
+	if err != nil {
+		return err
+	}
+	entries = slices.DeleteFunc(entries, func(rel string) bool { return kept[rel] })
 	if err := r.preflightUninstall(entries); err != nil {
 		return err
 	}
@@ -57,7 +63,7 @@ func (r *runner) uninstall() error {
 			continue
 		}
 		if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
-			if err := r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), true); err != nil {
+			if err := r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
 				return fmt.Errorf("strip DevRites settings from %s: %w", merge.TargetRel, err)
 			}
 			continue

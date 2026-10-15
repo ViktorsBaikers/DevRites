@@ -67,8 +67,9 @@ they need. No generated summary stands between the host and the authoritative
 ledger.
 Mutating engine commands are explicit and confined to DevRites state/artifacts;
 the root owns workflow records, while source/tests route through the sole
-wright. Claude enforces root non-writing with plan mode; Codex enforces it as
-workflow policy on its workspace-capable root.
+wright. Root non-writing is workflow policy on both hosts: Claude's root writes
+`.devrites/**` and is not in plan mode (ADR-0035); Codex's root is
+workspace-capable.
 
 After Build, `touched-files.md` is the sole project-candidate authority. The
 engine rejects malformed, escaped, symlinked, special-file, missing, ambiguous,
@@ -180,10 +181,12 @@ separate type-`GO` workflow gate still applies.
 
 ### Native host policy and writer boundary
 
-Reviewer profiles are natively read-only. Claude keeps the root in project plan
-mode. Codex uses a workspace-capable root because a child cannot elevate above
-its parent; root source/test non-writing is therefore a workflow rule, not a
-Codex sandbox guarantee. Among the lifecycle `devrites-*` specialists,
+Reviewer profiles get no Edit/Write tools; Claude's `permissionMode: plan` on
+them is best-effort (ignored while the parent runs in acceptEdits/auto/bypass),
+and Codex makes them `:read-only`. The Claude root is not in plan mode
+(ADR-0035), and Codex uses a workspace-capable root because a child cannot
+elevate above its parent; root source/test non-writing is therefore a workflow
+rule on both hosts, not a sandbox guarantee. Among the lifecycle `devrites-*` specialists,
 `devrites-slice-wright` is the only writable one on either host; the shipped
 profiles are the full role-to-permission map, and `/rite-doctor` step 3 checks
 them. Its task states the exact project-relative paths. The root

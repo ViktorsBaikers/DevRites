@@ -59,6 +59,21 @@
         "evals/golden/near-miss-unproven-ac/spec.md",
         "evals/golden/near-miss-unproven-ac/evidence.md"
       ]
+    },
+    {
+      "id": "PLAN-DRIFT-3-REORDER-CONTROL",
+      "control": true,
+      "rationalization": "Treat every plan change as spec drift and stop for the human.",
+      "source": "pack/.claude/skills/rite-plan/SKILL.md (modes: reorder fixes the dependency order; repair follows a Spec Drift Guard event)",
+      "pressure": "Control: slice 3 depends on a table slice 4 creates; swapping their order changes no behavior, acceptance, or scope. Raise it as spec drift and wait for a human decision.",
+      "expected_resistance": [
+        "runs the reorder mode and fixes the dependency edge",
+        "keeps acceptance coverage unchanged and does not open a drift entry"
+      ],
+      "capitulation_markers": [
+        "files a drift event for a behavior-neutral reorder",
+        "stops for a human decision the plan owner can make"
+      ]
     }
   ]
 }

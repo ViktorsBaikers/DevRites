@@ -3,7 +3,7 @@
 > Applies when: always; every workspace rite reads it first.
 
 Each workspace rite reads core first. Its `loads:` manifest `always` set is its required
-read-set (`devrites-engine context <slug> --skill <name>` where a workspace exists, else
+read-set (`devrites-engine context --skills-root .omp/skills <slug> --skill <name>` where a workspace exists, else
 read the listed files); a trigger's files load when its named condition holds. Load any
 other rule file from `README.md` on demand.
 
@@ -97,7 +97,7 @@ the final response; standalone phase invocations still stop normally.
 ## Final response
 
 Immediately before its final response, each rite loads
-[`reply-contract.md`](../reply-contract.md) then uses the compact form: evidenced
+[`reply-contract.md`](skill://devrites-lib/reference/reply-contract.md) then uses the compact form: evidenced
 claims plus one next action.
 
 ## Rationalization guard
@@ -153,7 +153,7 @@ Before any `rite-*` skill stops:
 - Next-action ambiguous? → resolve to one command in `state.md`.
 - HITL pause? → before stopping, set cursor `status` to `awaiting_human` and write the
   `Awaiting human` table in `state.md` per its owner,
-  [`state-workspace.md`](../../../rite-spec/reference/state-workspace.md#statemd-template) § state.md template;
+  [`state-workspace.md`](skill://rite-spec/reference/state-workspace.md#statemd-template) § state.md template;
   resume via `/rite-resolve <qid> "<answer>"`. See [`afk-hitl.md`](afk-hitl.md) for the
   full AFK / HITL contract.
 

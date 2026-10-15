@@ -33,7 +33,7 @@ If it does not, do not merge it.
    `devrites-engine check windows` flags the mechanical subset (suppressions,
    skip/focus, stubs, empty catch, deleted tests, stripped assertions) against
    `windows.md` waivers; loosened thresholds remain this sweep's judgment.
-3. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
+3. **Correctness:** logic, edge cases, error paths, race conditions, wrong assumptions. A join, match, upsert, or dedupe keyed on a mutable or non-unique attribute (email, name, title) instead of a stable ID is a finding ([`data-integrity.md`](data-integrity.md)). For branching or boundary changes, run the [`edge-case trace`](edge-case-trace.md): relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion contracts with an evidence disposition.
 4. **Readability:** names, function size, control flow, intent obvious without the author.
 5. **Architecture:** right seam, coupling/cohesion, fits existing patterns, no premature
    abstraction. Check how it fits the larger system as well as its local behavior.

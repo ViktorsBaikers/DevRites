@@ -27,6 +27,8 @@ A drift event stopped the build. Steps:
 1. Read the `drift.md` entries and their classifications. Fold EVERY open entry
    and accepted finding for the affected artifacts in ONE pass, never serially.
 2. If the user answered a drift question, encode that decision in `decisions.md`.
+   Fold each `decisions.md` carry-forward constraint into `Prior-slice learnings`
+   of the remaining slices it affects.
 3. Update `spec.md` (only the affected sections) and `plan.md`/`tasks.md` to match
    reality. Adjust acceptance criteria if they were wrong.
    **Write the pointer, not the history.** Name the findings a fold closes by ID, one line

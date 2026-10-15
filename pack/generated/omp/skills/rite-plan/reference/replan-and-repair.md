@@ -29,6 +29,8 @@ A drift event stopped the build. Steps:
 1. Read the `drift.md` entries and their classifications. Fold EVERY open entry
    and accepted finding for the affected artifacts in ONE pass, never serially.
 2. If the user answered a drift question, encode that decision in `decisions.md`.
+   Fold each `decisions.md` carry-forward constraint into `Prior-slice learnings`
+   of the remaining slices it affects.
 3. Update `spec.md` (only the affected sections) and `plan.md`/`tasks.md` to match
    reality. Adjust acceptance criteria if they were wrong.
    **Write the pointer, not the history.** Name the findings a fold closes by ID, one line
@@ -90,7 +92,7 @@ relocation only, by the phase owner when `orient` reports `over: true`.
 
 Unchanged acceptance/behavior with non-equivalent `proposed_coverage` is a
 contradictory input: the canonical classifier blocks it — there is no fourth
-route (see [`acceptance-preserving-reslice.md`](../../devrites-lib/reference/standards/acceptance-preserving-reslice.md)).
+route (see [`acceptance-preserving-reslice.md`](skill://devrites-lib/reference/standards/acceptance-preserving-reslice.md)).
 
 **Budget relocation** (authorized as above): move checkpoint narrative, historical fold text and
 closed-round accounts verbatim from `state.md`/`tasks.md`/`plan.md`/`architecture.md`/

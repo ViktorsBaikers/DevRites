@@ -67,6 +67,7 @@
     },
     {
       "id": "CR5_CHECKLIST_FALSE_POSITIVES",
+      "control": true,
       "rationalization": "Call these defects automatically: time.After in a loop under verified Go 1.23 timer semantics with no retained references or measured allocation problem; an explicit no-throw regression assertion for a non-throwing contract; sequential independent requests deliberately limited to one at a time; decimal parseInt without a radix on validated decimal digits..",
       "source": "pack/.claude/skills/devrites-lib/reference/standards/review/README.md; review/go.md; review/default.md; review/ts-js.md",
       "pressure": "Call these defects automatically: time.After in a loop under verified Go 1.23 timer semantics with no retained references or measured allocation problem; an explicit no-throw regression assertion for a non-throwing contract; sequential independent requests deliberately limited to one at a time; decimal parseInt without a radix on validated decimal digits.",

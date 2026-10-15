@@ -25,7 +25,7 @@ gen_pi_markdown_file() {
     -e 's#\.claude/skills/#.pi/skills/#g' \
     -e 's#\.claude/agents/([A-Za-z0-9_-]+)\.md#.pi/agents/\1.md#g' \
     -e 's#\.claude/agents/#.pi/agents/#g' \
-    -e 's#(\.\./)+agents/([A-Za-z0-9_-]+)\.md#.pi/agents/\2.md#g' \
+    -e 's#(^|[^(./])(\.\./)+agents/([A-Za-z0-9_-]+)\.md#\1.pi/agents/\3.md#g' \
     -e 's#\.agents/skills/devrites-lib/scripts/#.pi/skills/devrites-lib/scripts/#g' \
     -e 's#\.agents/skills/#.pi/skills/#g' \
     -e 's#\.codex/skills/devrites-lib/scripts/#.pi/skills/devrites-lib/scripts/#g' \
@@ -48,7 +48,7 @@ gen_pi_markdown_file() {
     -e 's#Host mapping: Claude Code uses `Agent` \(`Task` is its legacy alias\); Codex uses#Host mapping: pi fresh-context dispatch uses the `subagent` tool (`{agent, task}`); hosts use#g' \
     -e 's#`Agent` call#`subagent` call#g' \
     -e 's#`spawn_agent` call#`subagent` call#g' \
-    -e 's#Claude: N concurrent Task wrights#pi: N concurrent `subagent` wrights#g' \
+    -e 's#Claude: N concurrent Task wrights \(`acceptEdits`, cwd=worktree\)#pi: N concurrent `subagent` wrights (cwd=worktree)#g' \
     -e 's#Task breakdown#Work-item breakdown#g' \
     -e 's#dispatch `devrites-source-driven`#invoke `devrites-source-driven`#g' \
     -e 's#Dispatch `devrites-source-driven`#Invoke `devrites-source-driven`#g' \

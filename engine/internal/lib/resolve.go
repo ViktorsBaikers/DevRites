@@ -6,10 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/devrites/devrites/internal/fsutil"
+	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/workflow"
 )
@@ -39,16 +41,17 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 		return fail(stderr, err.Error(), 3)
 	}
 
-	human := argAt(args, 0) == "--human"
-	if human {
-		args = args[1:]
-	}
+	const usage = `Usage: devrites-engine state resolve [--human] <qid> "<answer>"  |  state resolve [--human] --drop <qid> ["<reason>"]  |  state resolve [--human] --batch <file>`
+	human := slices.Contains(args, "--human")
+	args = slices.DeleteFunc(slices.Clone(args), func(arg string) bool { return arg == "--human" })
 	var mode, qid, payload string
+	maxArgs := 2
 	switch first := argAt(args, 0); first {
 	case "--drop":
 		mode = "drop"
 		qid = argAt(args, 1)
 		payload = argAt(args, 2)
+		maxArgs = 3
 		if payload == "" {
 			payload = "dropped"
 		}
@@ -59,7 +62,7 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 			return fail(stderr, "Batch file not found: "+payload, 5)
 		}
 	case "":
-		return fail(stderr, `Usage: devrites-engine state resolve [--human] <qid> "<answer>"  |  state resolve [--human] --drop <qid> ["<reason>"]  |  state resolve [--human] --batch <file>`, 5)
+		return fail(stderr, usage, 5)
 	default:
 		mode = "answer"
 		qid = first
@@ -67,6 +70,11 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 		if payload == "" {
 			return fail(stderr, "Answer text required for "+qid, 5)
 		}
+	}
+	// An unknown flag or a stray argument must never be recorded as a qid or
+	// an answer.
+	if len(args) > maxArgs || strings.HasPrefix(qid, "-") || mode != "batch" && strings.HasPrefix(payload, "--") {
+		return fail(stderr, usage, 5)
 	}
 
 	code := 0
@@ -107,31 +115,49 @@ func resolveMutation(mode, qid, payload, qfile, sfile string, human bool, stdout
 		if err != nil {
 			return fail(stderr, "Batch file not found: "+payload, 5)
 		}
+		// Every line is parsed and applied in memory first, so a bad line
+		// leaves questions.md untouched instead of half-resolved.
+		type batchEntry struct{ qid, status, text string }
+		var entries []batchEntry
 		for _, line := range batchLines(data) {
+			line = strings.TrimSpace(line)
 			if line == "" || strings.HasPrefix(line, "#") {
 				continue
 			}
-			if strings.HasPrefix(line, "--drop") {
-				rest := strings.TrimPrefix(line, "--drop ")
-				bid, reason := splitColon(rest)
-				reason = strings.TrimPrefix(reason, " ")
-				if code := resolveQuestion(qfile, bid, "dropped", reason, human, stderr); code != 0 {
-					return code
-				}
-				if err := clearAwaiting(sfile, bid); err != nil {
-					return fail(stderr, err.Error(), 1)
-				}
-				fmt.Fprintf(stdout, "Dropped:  %s: %s\n", bid, reason)
+			status := "answered"
+			if rest, ok := strings.CutPrefix(line, "--drop "); ok {
+				status, line = "dropped", rest
+			}
+			bid, text, ok := strings.Cut(line, ":")
+			bid = strings.TrimSpace(bid)
+			if !ok || bid == "" || strings.HasPrefix(bid, "-") {
+				return fail(stderr, "Malformed batch line (want `<qid>: <answer>` or `--drop <qid>: <reason>`): "+line, 5)
+			}
+			entries = append(entries, batchEntry{bid, status, strings.TrimPrefix(text, " ")})
+		}
+		// #nosec G304 -- questions.md path inside the feature workspace
+		qdata, err := os.ReadFile(qfile)
+		if err != nil {
+			return fail(stderr, "questions.md missing at "+qfile, 2)
+		}
+		lines := splitLinesNoTrailing(qdata)
+		for _, entry := range entries {
+			var code int
+			if lines, code = applyResolution(lines, entry.qid, entry.status, entry.text, human, stderr); code != 0 {
+				return code
+			}
+		}
+		if err := fsutil.WriteFileAtomic(qfile, joinRecords(lines), 0o644); err != nil {
+			return fail(stderr, err.Error(), 1)
+		}
+		for _, entry := range entries {
+			if err := clearAwaiting(sfile, entry.qid); err != nil {
+				return fail(stderr, err.Error(), 1)
+			}
+			if entry.status == "dropped" {
+				fmt.Fprintf(stdout, "Dropped:  %s: %s\n", entry.qid, entry.text)
 			} else {
-				bid, ans := splitColon(line)
-				ans = strings.TrimPrefix(ans, " ")
-				if code := resolveQuestion(qfile, bid, "answered", ans, human, stderr); code != 0 {
-					return code
-				}
-				if err := clearAwaiting(sfile, bid); err != nil {
-					return fail(stderr, err.Error(), 1)
-				}
-				fmt.Fprintf(stdout, "Resolved: %s\n", bid)
+				fmt.Fprintf(stdout, "Resolved: %s\n", entry.qid)
 			}
 		}
 	}
@@ -171,16 +197,6 @@ func batchLines(data []byte) []string {
 	return lines
 }
 
-// splitColon splits s at the first ':', returning the parts before and after it
-// (both the whole string when there is no ':').
-func splitColon(s string) (before, after string) {
-	before, after, ok := strings.Cut(s, ":")
-	if !ok {
-		return s, s
-	}
-	return before, after
-}
-
 // clockNow is the resolve command's single wall-clock read. DEVRITES_NOW accepts
 // an RFC-3339 timestamp or YYYY-MM-DD date so tests can keep date-derived
 // question IDs stable. See ADR-0006.
@@ -210,16 +226,9 @@ func resolveQuestion(qfile, qid, status, answer string, human bool, stderr io.Wr
 	if err != nil {
 		return fail(stderr, "questions.md missing at "+qfile, 2)
 	}
-	ts := nowUTC()
-	answer = oneLine(answer)
-	target := regexp.MustCompile(`^## ` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)
-
-	updated, found, notOpen := rewriteQuestionFields(splitLinesNoTrailing(data), target, status, answer, ts, human)
-	if !found {
-		return fail(stderr, "qid not found: "+qid, 3)
-	}
-	if notOpen {
-		return fail(stderr, "qid not open (already answered/dropped): "+qid, 4)
+	updated, code := applyResolution(splitLinesNoTrailing(data), qid, status, answer, human, stderr)
+	if code != 0 {
+		return code
 	}
 	if err := fsutil.WriteFileAtomic(qfile, joinRecords(updated), 0o644); err != nil {
 		return fail(stderr, err.Error(), 1)
@@ -228,10 +237,35 @@ func resolveQuestion(qfile, qid, status, answer string, human bool, stderr io.Wr
 	return 0
 }
 
+// applyResolution rewrites the <qid> block in the questions.md lines in memory.
+// Returns 0, or 3 (qid not found) / 4 (qid not open), writing the message on
+// failure.
+func applyResolution(lines []string, qid, status, answer string, human bool, stderr io.Writer) ([]string, int) {
+	// Locate blocks on the fence-masked text, as the readiness gate does, so a
+	// fenced example is never rewritten and never shadows the real question.
+	var visible []string
+	if len(lines) > 0 {
+		masked, err := markdowntext.Structural([]byte(strings.Join(lines, "\n")))
+		if err != nil {
+			return nil, fail(stderr, "questions.md is not readable Markdown: "+err.Error(), 1)
+		}
+		visible = strings.Split(string(masked), "\n")
+	}
+	target := regexp.MustCompile(`^## ` + regexp.QuoteMeta(qid) + `([[:space:]]|$)`)
+	updated, found, notOpen := rewriteQuestionFields(lines, visible, target, status, oneLine(answer), nowUTC(), human)
+	if !found {
+		return nil, fail(stderr, "qid not found: "+qid, 3)
+	}
+	if notOpen {
+		return nil, fail(stderr, "qid not open (already answered/dropped): "+qid, 4)
+	}
+	return updated, 0
+}
+
 var (
 	qHeaderRe    = regexp.MustCompile(`(?i)^## q-`)
-	statusLineRe = regexp.MustCompile(`^status:`)
-	statusStrip  = regexp.MustCompile(`^status:[[:space:]]*`)
+	statusLineRe = regexp.MustCompile(`(?i)^status:`)
+	statusStrip  = regexp.MustCompile(`(?i)^status:[[:space:]]*`)
 	answeredAtRe = regexp.MustCompile(`^answered_at:`)
 	answerRe     = regexp.MustCompile(`^answer:`)
 	answeredByRe = regexp.MustCompile(`(?i)^[[:space:]]*answered_by:`)
@@ -241,8 +275,9 @@ var (
 // block, sets status and rewrites any answered_at/answer lines already present. It
 // reports whether the block was found and whether it was already not open (an
 // attempt to re-answer). A target block with no status line at all gets a full set
-// of closing fields appended.
-func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer, ts string, human bool) (out []string, found, notOpen bool) {
+// of closing fields appended. Structure is matched on visible (lines with
+// fenced blocks masked, same length); unmatched lines are copied from lines.
+func rewriteQuestionFields(lines, visible []string, target *regexp.Regexp, status, answer, ts string, human bool) (out []string, found, notOpen bool) {
 	inQ := false
 	statusSeen, answeredAtSeen, answerSeen, answeredBySeen := false, false, false, false
 	closeBlock := func() {
@@ -262,7 +297,8 @@ func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer
 			out = append(out, "answered_by: human")
 		}
 	}
-	for _, line := range lines {
+	for i, original := range lines {
+		line := visible[i]
 		switch {
 		case qHeaderRe.MatchString(line):
 			closeBlock()
@@ -271,11 +307,18 @@ func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer
 			if inQ {
 				found = true
 			}
-			out = append(out, line)
+			out = append(out, original)
+		case inQ && hdrSpaceRe.MatchString(line):
+			// Any level-two heading ends the question block, as the gate reads it.
+			closeBlock()
+			inQ = false
+			out = append(out, original)
 		case inQ && statusLineRe.MatchString(line):
 			statusSeen = true
 			cur := statusStrip.ReplaceAllString(line, "")
-			if cur != "open" {
+			// Trim and fold case the way the readiness gate does, so a
+			// question the gate counts as open is always resolvable.
+			if !strings.EqualFold(strings.TrimSpace(cur), "open") {
 				out = append(out, "status: "+cur)
 				inQ = false
 				notOpen = true
@@ -294,7 +337,7 @@ func rewriteQuestionFields(lines []string, target *regexp.Regexp, status, answer
 				out = append(out, "answered_by: human")
 			}
 		default:
-			out = append(out, line)
+			out = append(out, original)
 		}
 	}
 	closeBlock()

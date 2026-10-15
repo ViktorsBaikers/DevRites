@@ -89,7 +89,7 @@ Let connected watchers settle after edits; if still stale, use the provider's re
 
 ## Library docs: context7
 
-When an external library's current API/version behavior matters, use context7 if available: `resolve-library-id` → `query-docs`. It complements [`devrites-source-driven`](../../../devrites-source-driven/SKILL.md); installed/pinned source still wins for the running version (staleness rule below). A lookup is a cited source recorded in `decisions.md`/`evidence.md`, not a memory.
+When an external library's current API/version behavior matters, use context7 if available: `resolve-library-id` → `query-docs`. It complements [`devrites-source-driven`](skill://devrites-source-driven/SKILL.md); installed/pinned source still wins for the running version (staleness rule below). A lookup is a cited source recorded in `decisions.md`/`evidence.md`, not a memory.
 
 ## Web facts: search
 

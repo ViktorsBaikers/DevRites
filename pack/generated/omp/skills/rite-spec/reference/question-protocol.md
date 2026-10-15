@@ -3,7 +3,7 @@
 For vague or unknown intent, invoke `devrites-interview` for ordered one-question turns,
 recommendations, option sets, pass limits, reframing, and closure.
 This file owns only Spec-specific coverage and recording. Render through
-[`Option set`](../../devrites-lib/reference/standards/afk-hitl.md#option-set-how-every-gap-is-presented).
+[`Option set`](skill://devrites-lib/reference/standards/afk-hitl.md#option-set-how-every-gap-is-presented).
 
 ## Coverage gate: am I done asking?
 Each dimension MUST be **resolved** or **explicitly deferred** (logged, non-blocking),

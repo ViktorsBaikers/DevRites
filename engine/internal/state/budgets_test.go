@@ -133,3 +133,16 @@ func TestAcceptanceSectionIgnoresMalformedMarkdown(t *testing.T) {
 		t.Fatalf("malformed input carries no usable section: ids=%v problems=%v", got.SpecIDs, got.Problems)
 	}
 }
+
+// Engine-owned machine files and documented conditional artifacts grow in the
+// workspace root by design; they must never trip the placement gate.
+func TestSanctionedRootFileCoversEngineAndConditionalFiles(t *testing.T) {
+	for _, name := range []string{"dispatch.json", "readiness-inputs.json", "devex.md"} {
+		if !SanctionedRootFile(name) {
+			t.Errorf("%s is not sanctioned in the workspace root", name)
+		}
+	}
+	if SanctionedRootFile("stray-transcript.md") {
+		t.Error("an undocumented root file is sanctioned")
+	}
+}

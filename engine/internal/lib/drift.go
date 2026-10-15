@@ -12,6 +12,7 @@ import (
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/gate"
+	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -104,7 +105,7 @@ func recordDriftBaseline(root, slug, baselinePath string, digests []gate.Readine
 		return 2
 	}
 	fmt.Fprintf(stdout, "check drift: baseline recorded (%d inputs, %s)\n", len(digests), binding)
-	recordMetric(root, slug, "", "drift-baseline", "", 0)
+	recordMetric(root, slug, cursorPhase(root, slug), "drift-baseline", "", 0)
 	return 0
 }
 
@@ -147,8 +148,14 @@ func compareDriftFallback(workspace, binding string, stdout io.Writer) int {
 		fmt.Fprintf(stdout, "check drift: unproven — no %s baseline and no readable eng-review.md; run `check drift <slug> --record` after Vet writes the binding\n", driftBaselineFile)
 		return 0
 	}
+	// Fenced examples of the binding line are documentation, not the record.
+	masked, err := markdowntext.Structural(raw)
+	if err != nil {
+		fmt.Fprintf(stdout, "check drift: unproven — eng-review.md unreadable: %v\n", err)
+		return 0
+	}
 	recorded := ""
-	for _, line := range strings.Split(string(raw), "\n") {
+	for _, line := range strings.Split(string(masked), "\n") {
 		if strings.Contains(line, "Readiness inputs SHA-256: ") {
 			recorded = strings.TrimSpace(line)
 		}

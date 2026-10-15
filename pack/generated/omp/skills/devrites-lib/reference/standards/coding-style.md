@@ -22,7 +22,7 @@ Handle unwanted cases first and return early; keep the success path flat.
 ## Comments explain *why*, not *what*
 - Self-explanatory code beats a comment restating it; delete commented-out code. The
   full comment do-not list (what-comments, tutorial noise, ownerless TODOs, edit-narration,
-  hedging) is owned by [`anti-ai-slop.md`](../../../rite-polish/reference/anti-ai-slop.md)
+  hedging) is owned by [`anti-ai-slop.md`](skill://rite-polish/reference/anti-ai-slop.md)
   § Code anti-slop — one canonical list, consumed by build, polish, and review.
 
 ## Simplicity

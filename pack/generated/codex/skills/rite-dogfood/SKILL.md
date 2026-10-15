@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-frontend-craft/reference/quality-standards.md","devrites-lib/reference/reply-contract.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"testing":["devrites-lib/reference/standards/testing.md"],"tooling":["devrites-lib/reference/standards/tooling.md"]},"workspace":["state.md","questions.md","dogfood.md"]} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-dogfood` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill rite-dogfood` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # $rite-dogfood: diff-scoped browser QA
 
@@ -26,7 +26,7 @@ Step 0: Read `.agents/skills/devrites-lib/reference/standards/core.md`, then [`t
 2. **Map changed journeys.** Read the diff and relevant routes/components. Write or update `.devrites/work/<slug>/dogfood.md` with Mermaid flowcharts for each touched user journey. Completion: every user-visible changed surface appears in at least one flow or is marked non-browser-testable.
 3. **Build matrix.** Turn flow nodes and branches into scenarios: happy, error, empty, permission, responsive, accessibility basics, and persona paper cuts. Completion: every flow branch has a scenario row.
 4. **Run browser.** Start/reuse the dev server (honor `--port N` when given), visit each route, capture screenshot/console/network notes, and mark each scenario `Pass`, `Fail`, `Fixed`, `Blocked (human verify)`, or `Blocked (human decision)`.
-5. **Safe fix loop.** For `Fail` or sharp paper cut: fix only if obvious and contained; add a regression test or record why a replay/screenshot is the only meaningful check; re-run the scenario. Otherwise record the decision for a human.
+5. **Safe fix loop.** For `Fail` or sharp paper cut: fix only if obvious and contained; add a regression test or record why a replay/screenshot is the only meaningful check; re-run the scenario. Otherwise record the decision for a human. The root never edits source/tests: each fix goes to exact `devrites-slice-wright` with an exact-path contract per [wright-dispatch.md § Standalone correction](../rite-build/reference/wright-dispatch.md#standalone-correction); reject any returned path outside it.
 6. **Finalize.** Run the relevant test command once, update `dogfood.md`, and add follow-ups to `questions.md` only for real human decisions.
 
 ## Output

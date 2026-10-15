@@ -190,6 +190,11 @@ dr_acquire_engine() {
     return 1
   }
   umask "$_dr_old_umask"
+  # A git checkout's payload can be ahead of the published engine of the same
+  # version, so a checkout builds its own engine before downloading one.
+  if [ -e "$_dr_source_dir/.git" ] && dr_build_engine "$_dr_source_dir" "$DR_ENGINE_TMP/devrites-engine"; then
+    dr_engine_compatible "$DR_ENGINE_TMP/devrites-engine" "$_dr_source_dir" "$_dr_subcommand" && { DR_ENGINE_PATH="$DR_ENGINE_TMP/devrites-engine"; return 0; }
+  fi
   if command -v curl >/dev/null 2>&1; then
     if dr_download_engine "$_dr_source_dir" "$_dr_repo" "$DR_ENGINE_TMP/devrites-engine"; then
       dr_engine_compatible "$DR_ENGINE_TMP/devrites-engine" "$_dr_source_dir" "$_dr_subcommand" && { DR_ENGINE_PATH="$DR_ENGINE_TMP/devrites-engine"; return 0; }

@@ -24,7 +24,7 @@ gen_devin_markdown_file() {
     -e 's#\.claude/skills/#.devin/skills/#g' \
     -e 's#\.claude/agents/([A-Za-z0-9_-]+)\.md#.devin/agents/\1.md#g' \
     -e 's#\.claude/agents/#.devin/agents/#g' \
-    -e 's#(\.\./)+agents/([A-Za-z0-9_-]+)\.md#.devin/agents/\2.md#g' \
+    -e 's#(^|[^(./])(\.\./)+agents/([A-Za-z0-9_-]+)\.md#\1.devin/agents/\3.md#g' \
     -e 's#\.agents/skills/devrites-lib/scripts/#.devin/skills/devrites-lib/scripts/#g' \
     -e 's#\.agents/skills/#.devin/skills/#g' \
     -e 's#\.codex/skills/devrites-lib/scripts/#.devin/skills/devrites-lib/scripts/#g' \
@@ -50,7 +50,8 @@ gen_devin_markdown_file() {
     -e 's#Host mapping: Claude Code uses `Agent` \(`Task` is its legacy alias\); Codex uses#Host mapping: Devin fresh-context dispatch uses `run_subagent` with `profile`; hosts use#g' \
     -e 's#`Agent` call#`run_subagent` call#g' \
     -e 's#`spawn_agent` call#`run_subagent` call#g' \
-    -e 's#Claude: N concurrent Task wrights#Devin: N concurrent `run_subagent` wrights#g' \
+    -e 's#Claude: N concurrent Task wrights \(`acceptEdits`, cwd=worktree\)\.#Devin: `run_subagent` takes no worktree cwd, so force serial.#g' \
+    -e 's#`AskUserQuestion`#`ask_user_question`#g' \
     -e 's#Task breakdown#Work-item breakdown#g' \
     -e 's#dispatch `devrites-source-driven`#invoke `devrites-source-driven`#g' \
     -e 's#Dispatch `devrites-source-driven`#Invoke `devrites-source-driven`#g' \
@@ -202,7 +203,7 @@ This project has DevRites installed for Devin CLI.
 
 ## Devin usage
 
-- DevRites workflow skills live in `.devin/skills`. Run them as `/rite`, `/rite-spec`, and the other `/rite-*` slash commands.
+- DevRites workflow skills live in `.devin/skills`. Run them as `/rite`, `/rite-spec`, and the other `/rite-*` slash commands. Devin also imports the Claude Code copies of these skills as `claude:*`; when a name is ambiguous, use the `devin:` form (`/devin:rite-build`) and never load a `claude:` DevRites skill.
 - Before using any DevRites workflow skill, read `.devin/skills/devrites-lib/reference/standards/core.md`. Load other `.devin/skills/devrites-lib/reference/standards/*.md` files when the skill or rule index asks for them.
 - DevRites specialist agents live in `.devin/agents` as custom subagent profiles offered to `run_subagent`. If a required `devrites-<role>` profile is not among the offered profiles, stop for HITL - never skip the role, never substitute `subagent_general`, `subagent_explore`, or another generic profile, never inline the specialist prompt, and never execute the specialist role in the root context.
 - In DevRites guidance, **invoke** means run a skill inline in the current context; **dispatch** means start a fresh agent with `run_subagent` using the exact `profile` name, wait for it with `read_subagent`, and reconcile its result.

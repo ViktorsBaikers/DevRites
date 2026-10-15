@@ -4,7 +4,7 @@ Host dispatch; DevRites governs.
 
 ## Roster
 
-Review: Spec/Code; Seal: all applicable roles.
+Review: Spec/Code plus triggered frontend/security/performance; Seal: all applicable roles.
 
 | Reviewer | Fires | Trigger |
 |---|---|---|
@@ -34,12 +34,13 @@ If the candidate diff has no matching surfaces, record
    unverified independence is a gap. Do not launch a probe agent per task;
    still validate each result's context and candidate.
 2. Build each reviewer's read-set once with
-   `devrites-engine context <slug> --phase <p> --role <role> --trigger <set>` and
+   `devrites-engine context --skills-root .devin/skills <slug> --phase <p> --role <role> --trigger <set>` and
    hand the bundle path as the packet's source list instead of a file roster.
    Build roles add `--slice <SLICE-ID>` (slice-scoped, slice-named bundle).
    Evaluate the skill's trigger conditions and pass each that fires — a role's
-   Trigger column maps to manifest names: `security-auditor` → `security`,
-   `frontend-reviewer` → `ui`/`frontend`, `performance-reviewer` → `performance`.
+   Trigger column maps to the phase manifest's names: `security-auditor` →
+   `security`; at Review, `frontend-reviewer` → `ui` and `performance-reviewer` →
+   `performance`. Seal declares neither; those roles load their own standards.
    The `agents` dispatch contract needs no flag: `--role` auto-fires it
    (`auto=[agents]` in the output). The command prints `unselected=[...]`; an
    omitted applicable trigger is a gap, not a shortcut.
@@ -97,7 +98,7 @@ in `review.md`/`seal.md`.
   the same wave (`dispatch open ... --role code-reviewer.frontend --role
   code-reviewer.backend`; distinct handles — the sealed wave's handles and start
   stamps are the concurrency receipt). Build each bundle with `devrites-engine
-  context <slug> --phase <p> --role code-reviewer --trigger <set> --out
+  context --skills-root .devin/skills <slug> --phase <p> --role code-reviewer --trigger <set> --out
   ctx/<p>-code-reviewer.<lane>.bundle.md`; the default name collides. Each packet
   names its lane, the lane's path set (the whole diff stays readable for context),
   the triggered profile ([`review/README.md`](standards/review/README.md)), and the

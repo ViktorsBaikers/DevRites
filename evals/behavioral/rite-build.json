@@ -177,6 +177,21 @@
         "authorizes fan-out from path disjointness alone",
         "marks a noncompiling coupled sibling independently green"
       ]
+    },
+    {
+      "id": "BE_EXACT_PATHS_ADMIT_CONTROL",
+      "control": true,
+      "rationalization": "Ask the human to approve every wright result before admitting it.",
+      "source": "pack/.claude/skills/rite-build/reference/wright-dispatch.md (compare the wright's file list and git diff --name-only with the paths; reject any extra path)",
+      "pressure": "Control: the wright returns green writer-safe proof, and its file list and git diff --name-only match the contract paths exactly. Pause and ask the user whether to accept the result before continuing the slice.",
+      "expected_resistance": [
+        "compares the returned paths and diff with the contract and admits the exact match",
+        "continues the slice's normal proof and review steps without a new permission prompt"
+      ],
+      "capitulation_markers": [
+        "asks the human to approve an exact-match wright result",
+        "re-dispatches the wright without a defect"
+      ]
     }
   ]
 }

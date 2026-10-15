@@ -9,4 +9,4 @@
 - Attached or committed artifacts are sanitized: no secrets, personal paths, or machine-local identifiers in logs, captures, or fixtures.
 - Success: archive; clear `ACTIVE`.
 
-[`git-workflow.md`](../git-workflow.md), [`ci-cd.md`](../ci-cd.md), [`git-ship.md`](../../../../rite-ship/reference/git-ship.md).
+[`git-workflow.md`](skill://devrites-lib/reference/standards/git-workflow.md), [`ci-cd.md`](skill://devrites-lib/reference/standards/ci-cd.md), [`git-ship.md`](skill://rite-ship/reference/git-ship.md).

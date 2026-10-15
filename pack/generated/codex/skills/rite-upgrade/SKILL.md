@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/agents.md"],"triggers":{"reslice":["rite-plan/reference/slicing.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","decisions.md","questions.md","evidence.md","touched-files.md","review.md","seal.md","polish-report.md","browser-evidence.md"],"workspaceByRole":{"upgrade-planner":["state.md","spec.md","plan.md","tasks.md","decisions.md","questions.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-upgrade` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill rite-upgrade` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # $rite-upgrade: reconcile a released workspace safely
 
@@ -25,7 +25,9 @@ references, and only current phase contracts needed for the observed gap.
   or Git. It observes, admits, invokes current owners, and re-audits only.
 - Recognize only released workspace forms: `.devrites/work/<slug>/state.md` with v1/v2
   bullet fields (`- Phase:`, `- Next step:`, optional `- qid:`) or the v3 cursor table.
-  Preserve its encoding; only its owning rite may change fields. Never create aliases,
+  A cursor with no `schema` row (every v1/v2 form, older v3 tables) is refused by the
+  engine until the human runs the `migrate` command its refusal names (step 0). Otherwise
+  preserve its encoding; only its owning rite may change fields. Never create aliases,
   journals, telemetry, version markers, or an engine migrator.
 - Older provenance, cursor form, or pack version alone is never a defect. A repair requires
   a current rule, exact workspace evidence, affected gate, owning rite, exact paths, and

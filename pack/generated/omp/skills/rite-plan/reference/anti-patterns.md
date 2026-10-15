@@ -3,7 +3,7 @@
 Load this when standing a non-trivial re-plan decision, or when the agent
 feels reluctance toward asking the user before a behavior change.
 
-Pack-wide rationalizations + red flags: see [standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
+Pack-wide rationalizations + red flags: see [standards/anti-patterns.md](skill://devrites-lib/reference/standards/anti-patterns.md).
 
 Authority: `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 

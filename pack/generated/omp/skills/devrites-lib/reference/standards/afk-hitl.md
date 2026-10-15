@@ -108,12 +108,12 @@ candidate manifest to cover the whole recorded chain — run
 `devrites-engine state merge-manifest <slug>` before Prove.
 
 - Only continuations recorded in the parent's `decisions.md` sequence
-  ([slicing.md § Continuation workspaces](../../../rite-plan/reference/slicing.md#continuation-workspaces))
+  ([slicing.md § Continuation workspaces](skill://rite-plan/reference/slicing.md#continuation-workspaces))
   qualify; no recorded next entry, or the cap/review-queue bound reached, stops
   with the winning reason.
 - Milestones are **not** shipped: they stay sealed and unarchived in `.devrites/work/`
   with `Next step: /rite-ship` preserved. Local `WIP(<slug>):` checkpoints still
-  land ([checkpoint.md](../../../rite-build/reference/checkpoint.md)), so the tree
+  land ([checkpoint.md](skill://rite-build/reference/checkpoint.md)), so the tree
   stays clean and crash-safe.
 - Git stays human-gated. The release ship is one disclosed plan, one literal `GO`, and
   one native approval; it collapses the sequence's `WIP` commits into the single
@@ -132,13 +132,14 @@ from `--max-slices`. **Failing case:** `/rite-autocomplete --parallel 5` honors 
 leftover `max_parallel: 1` and stays serial.
 Unattended runs take the largest eligible set ≤ that cap and recompute after
 every completed round (serial slice or parallel integrate)
-([parallel-batch.md § Dynamic selection and re-batching](../../../rite-build/reference/parallel-batch.md#dynamic-selection-and-re-batching)).
+([parallel-batch.md § Dynamic selection and re-batching](skill://rite-build/reference/parallel-batch.md#dynamic-selection-and-re-batching)).
 
 ## Unattended resource envelope
 
-AFK writer admission needs a bounded input queue, effective slice cap, and valid
-`max_agents`, `max_minutes`, and `max_review_queue`. Existing sentinels
-that declare writer admission but miss/malform these fail closed; cold resume keeps the
+Outside `/rite-autocomplete`, AFK writer admission needs a bounded input queue,
+effective slice cap, and valid `max_agents`, `max_minutes`, and `max_review_queue`.
+Existing sentinels that declare writer admission but miss/malform these fail closed
+(Autocomplete's sentinel omits them as unlimited; see below); cold resume keeps the
 state-owned slice counter. A leftover `expires_at` is ignored and never rewritten.
 Read-only watchers use equivalent native caps from [`loop-operations.md`](loop-operations.md).
 
@@ -148,7 +149,7 @@ counts open validating questions plus unresolved admitted Critical/Important fin
 Above it stop; at it run only reconciliation that reduces the queue. Optional
 `max_tokens`/`max_cost_usd` lower enforceable native caps; if declared but unobservable, stop.
 `/rite-autocomplete` deliberately ignores `max_slices`, `max_agents`, `max_minutes` and
-`max_review_queue` ([stop-conditions.md](../../../rite-autocomplete/reference/stop-conditions.md));
+`max_review_queue` ([stop-conditions.md](skill://rite-autocomplete/reference/stop-conditions.md));
 there they are not a ceiling.
 
 Numeric limits are nonnegative decimals. Before costly checks, fan-out, or writing,
@@ -168,7 +169,7 @@ To leave AFK, delete the file. The next skill invocation reverts to HITL.
 ## The four gates
 
 Every `Mode: HITL` slice declares a `Gate:` and an `SLA:`. See
-[`.omp/skills/rite-define/reference/gates.md`](../../../rite-define/reference/gates.md)
+[`.omp/skills/rite-define/reference/gates.md`](skill://rite-define/reference/gates.md)
 for the full taxonomy. Summary:
 
 | Gate | Stakes | Pause? | SLA | AFK auto-handle when in `allow_gates`? |
@@ -290,7 +291,7 @@ boundary owns any such request and requires explicit user approval.
 When a HITL gate fires, `/rite-build` sets cursor `status` to `awaiting_human` and
 `next_action` to `/rite-resolve <qid> "<answer>"`, then writes the `Awaiting human` table
 (`question_id`, `gate`, `blocking_slices`) owned by
-[`state-workspace.md`](../../../rite-spec/reference/state-workspace.md#statemd-template) § state.md template.
+[`state-workspace.md`](skill://rite-spec/reference/state-workspace.md#statemd-template) § state.md template.
 The question text, `proposed` answer, and `raised_at` live in the `questions.md` entry.
 Legacy `- Status:`/`- Next step:`/`- qid:` bullet keys are engine-accepted aliases, not
 the authoring format.
@@ -304,7 +305,7 @@ Three shapes:
 ```
 /rite-resolve <qid> "<answer>"
 /rite-resolve --drop <qid> ["<reason>"]
-/rite-resolve --batch <path-to-yaml>
+/rite-resolve --batch <plain-text-file>
 ```
 
 `/rite-resolve` is the canonical writer for **async** resume: a gate that already paused and
@@ -358,7 +359,7 @@ access, safety and irreversible-action boundaries independently stop work.
   recovery. Initial discovery and expected test-first RED are not corrections;
   total rounds, re-batches and distinct-finding counts never exhaust recovery.
   Every 5 Build wright rounds on one slice, the next first needs a reslice review
-  ([`wright-dispatch.md`](../../../rite-build/reference/wright-dispatch.md#run)).
+  ([`wright-dispatch.md`](skill://rite-build/reference/wright-dispatch.md#run)).
 - **Rechecks are scoped; late findings never reopen the round.** *Late* applies only
   from a phase's **second** review pass (Vet 1b, Build's recheck after the first repair,
   Review step 7); an initial pass has no late findings and every supported finding is
@@ -412,7 +413,7 @@ AFK changes which decisions are automatic. It changes nothing else.
 - Workflow integration: `/rite-build` (`.omp/skills/rite-build/SKILL.md`),
   the readiness / HITL pre-flight stages before dispatch, and the DOUBT → PROVE
   (fail-on-red) → RECORD stages on the wright's return
-  ([`one-slice-cycle.md`](../../../rite-build/reference/one-slice-cycle.md)).
+  ([`one-slice-cycle.md`](skill://rite-build/reference/one-slice-cycle.md)).
 - Render contract: `.omp/skills/rite-build/reference/checkpoint-protocol.md`.
 - Loop discipline: `.omp/skills/rite-build/reference/afk-discipline.md`.
 - Gate taxonomy: `.omp/skills/rite-define/reference/gates.md`.

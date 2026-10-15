@@ -16,7 +16,7 @@ criterion from an opened screenshot:
 `PASS` matches, `PARTIAL` is present but off, `FAIL` is missing, wrong, or broken, and
 `n/a` needs a reason and leaves the denominator. An acceptance-mapped FAIL is Critical; a
 declared-state FAIL is Important; cosmetic drift is Suggestion. An anti-slop row without
-the mismatch evidence of the [admission rule](../../rite-polish/reference/anti-ai-slop.md)
+the mismatch evidence of the [admission rule](skill://rite-polish/reference/anti-ai-slop.md)
 is AES: `PARTIAL` at most, never `FAIL`.
 
 Overall derives from the rows only: `FAIL (n)` if any non-AES row fails; otherwise

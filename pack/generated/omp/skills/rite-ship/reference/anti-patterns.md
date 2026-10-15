@@ -4,7 +4,7 @@ Load this before any irreversible action: `git commit`, `push`, `tag`, publish, 
 or when tempted to skip the close-out.
 
 Pack-wide rationalizations + red flags: see
-[standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
+[standards/anti-patterns.md](skill://devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 

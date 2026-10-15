@@ -35,6 +35,10 @@ Read only the paths and bounded question supplied by the orchestrator.
 For structural questions, use the repository's code-intelligence index. Use exact
 sources, not recollection, and do not broaden the question.
 
+Report how things are today, not how the intended change should go. When the brief
+names a planned solution, still answer only with current-state facts; a recommendation
+bends the evidence toward the plan.
+
 ## Rules
 
 - Read-only. Do not edit source, tests, `.devrites/**`, Git state, or dependencies.

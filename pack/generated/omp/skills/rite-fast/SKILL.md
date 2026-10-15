@@ -7,7 +7,7 @@ disable-model-invocation: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/definition-of-done.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/standards/spec-grammar.md","rite-fast/reference/artifacts.md","rite-fast/reference/check-and-triage.md"],"triggers":{"risk":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/security.md"],"testing":["devrites-lib/reference/standards/testing.md"]},"workspace":["spec.md","plan.md","evidence.md"]} -->
-> Read-set manifest: `devrites-engine context <slug> --phase fast` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase fast` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # /rite-fast: shortened lane for mid-size work
 
@@ -62,14 +62,16 @@ installed and no fresh context is available, stop with `Stopped: fast-* agents m
 
 ## 0. Orient
 
-1. Read [`core.md`](../devrites-lib/reference/standards/core.md). Run `git status --short`; keep the output
+1. Read [`core.md`](skill://devrites-lib/reference/standards/core.md). Run `git status --short`; keep the output
    as the baseline.
 2. Resolve the project's real commands with `devrites-engine detect commands`. If the
    engine is missing, read them from the project's manifests; if none are found,
    record `unproven: no commands` and continue. PROVE will report it.
 3. Pick a short kebab-case slug from the task. If the argument names an existing
    `.devrites/work/<slug>/plan.md` with `Lane: fast`, **resume**: read the ledger and
-   continue at the first phase or slice that is not complete.
+   continue at the first phase or slice that is not complete. If `.devrites/work/<slug>/`
+   exists without `Lane: fast`, or `.devrites/archive/<slug>/` exists, pick a new slug;
+   if the user named that slug, stop instead — never overwrite another workspace.
 
 ## 1. Shape: spec, plan, questions
 
@@ -79,7 +81,7 @@ installed and no fresh context is available, stop with `Stopped: fast-* agents m
 2. **Risk check.** Risk is present when the planner or you find any of: auth or
    authorization, a data migration, a public API or contract change, a destructive or
    data-loss path, security-sensitive input, an item on the irreversible-risk list in
-   [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) (trigger `risk`), or a task that needs more than 10 slices.
+   [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) (trigger `risk`), or a task that needs more than 10 slices.
    Risk does not stop the lane. It **deepens** it:
    - Tell the user in one line what the risk is and that the lane goes deeper.
    - Dispatch `fast-planner` again in `deepen` mode for a pre-mortem: three ways this
@@ -88,16 +90,16 @@ installed and no fresh context is available, stop with `Stopped: fast-* agents m
      returns (rollback and recovery, compatibility, authorization model, data loss,
      blast radius).
    - Write risky ACs as `### Requirement` with `#### Scenario` WHEN/THEN per
-     [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md).
+     [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md).
    - More than 10 slices: offer a split into several `/rite-fast` runs, core first, or
      a merge of slices. Park the rest in `plan.md` `## Deferred`. Never exceed 10.
-   - Load [`security.md`](../devrites-lib/reference/standards/security.md) and pass it to the builder and critic.
+   - Load [`security.md`](skill://devrites-lib/reference/standards/security.md) and pass it to the builder and critic.
 3. **Ask.** Ask only decisions; the repo answers facts. Up to 5 questions (10 with
    risk), highest impact first: scope, then security and data, then user-visible
    behavior, then technical choice. Batch independent questions in the host's question
    tool; each is multiple choice with the recommended option first and its trade-off.
    Offer "accept all recommendations". Follow the asking mechanics in
-   [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md). An unanswered question is `unanswered`, never
+   [`elicitation.md`](skill://devrites-lib/reference/standards/elicitation.md). An unanswered question is `unanswered`, never
    approval: it becomes an explicit assumption only when it cannot change scope,
    security, or data; otherwise stop and ask again.
 4. **Write** `spec.md` and `plan.md` in the formats in
@@ -167,7 +169,7 @@ installed and no fresh context is available, stop with `Stopped: fast-* agents m
 ## 6. Report
 
 Use the reply contract in
-[`reply-contract.md`](../devrites-lib/reference/reply-contract.md): `Done` only with
+[`reply-contract.md`](skill://devrites-lib/reference/reply-contract.md): `Done` only with
 green proof and every AC mapped; otherwise `Stopped` with the blocking item. List the
 changed files, the evidence commands, assumptions, deferred items, and anything
 `unproven`. Offer one commit (Conventional Commits) of exactly the feature paths;
@@ -179,5 +181,5 @@ commit only after the user confirms. Never push.
 | --- | --- |
 | Writing `spec.md`, `plan.md`, `evidence.md` | [`reference/artifacts.md`](reference/artifacts.md) |
 | Check run, gap triage, fix rounds | [`reference/check-and-triage.md`](reference/check-and-triage.md) |
-| Testing rules for the builder packet (trigger `testing`) | [`testing.md`](../devrites-lib/reference/standards/testing.md) |
-| Done bar | [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md) |
+| Testing rules for the builder packet (trigger `testing`) | [`testing.md`](skill://devrites-lib/reference/standards/testing.md) |
+| Done bar | [`definition-of-done.md`](skill://devrites-lib/reference/standards/definition-of-done.md) |

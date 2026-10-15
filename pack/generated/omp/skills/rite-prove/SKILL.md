@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/candidate-integrity.md","devrites-lib/reference/standards/testing.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/test-proof-checklist.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/gates.md","devrites-lib/reference/standards/verification-methods.md","rite-prove/reference/acceptance-proof.md","rite-prove/reference/proof-ladder.md","rite-prove/reference/failure-triage.md","rite-prove/reference/test-command-discovery.md","rite-prove/reference/anti-patterns.md","rite-build/reference/checkpoint.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"browser":["devrites-lib/reference/standards/browser-proof-checklist.md","rite-prove/reference/browser-proof.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"observability":["devrites-lib/reference/standards/observability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md","touched-files.md","browser-evidence.md"],"workspaceByRole":{"proof-runner":["spec.md","test-plan.md","tasks.md","gates.md","evidence.md","touched-files.md","browser-evidence.md","state.md"],"spec-reviewer":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","state.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase prove` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase prove` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-prove: prove the completed feature
@@ -15,23 +15,23 @@ Prove the assembled feature once. No workspace: use `/verify` or `/run`;
 pending tasks: stop for `/rite-build`.
 Never assert unobserved passes. After Polish/Review edits, repeat affected
 criteria/dependencies and bind under
-[evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).
+[evidence validity](skill://devrites-lib/reference/candidate-integrity.md#evidence-validity).
 Initial full feature proof and required mutable observations still run.
 
 ## Rules
 
-Read the applicable standards: [`testing.md`](../devrites-lib/reference/standards/testing.md), [`test-proof-checklist.md`](../devrites-lib/reference/standards/test-proof-checklist.md),
-[`browser-proof-checklist.md`](../devrites-lib/reference/standards/browser-proof-checklist.md) for UI, [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md), [`performance.md`](../devrites-lib/reference/standards/performance.md),
-[`observability.md`](../devrites-lib/reference/standards/observability.md), topology/data/integration rules named by the plan,
-[`developer-experience.md`](../devrites-lib/reference/standards/developer-experience.md), [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md), [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md), and
-[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md). Developer surfaces require an observed flow, measured
+Read the applicable standards: [`testing.md`](skill://devrites-lib/reference/standards/testing.md), [`test-proof-checklist.md`](skill://devrites-lib/reference/standards/test-proof-checklist.md),
+[`browser-proof-checklist.md`](skill://devrites-lib/reference/standards/browser-proof-checklist.md) for UI, [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md), [`performance.md`](skill://devrites-lib/reference/standards/performance.md),
+[`observability.md`](skill://devrites-lib/reference/standards/observability.md), topology/data/integration rules named by the plan,
+[`developer-experience.md`](skill://devrites-lib/reference/standards/developer-experience.md), [`definition-of-done.md`](skill://devrites-lib/reference/standards/definition-of-done.md), [`one-shot-actions.md`](skill://devrites-lib/reference/standards/one-shot-actions.md), and
+[`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md). Developer surfaces require an observed flow, measured
 TTHW, and exact signal-bearing errors; never assert DX (trigger `devex`).
 
 - Each claim needs an executed positive, discriminating assertion and decisive
   signal; green commands alone are unproven. Methods must be genuinely distinct
   and coverage counted against an explicit denominator — apply
-  [`verification-methods.md`](../devrites-lib/reference/standards/verification-methods.md).
-- Follow [`candidate-integrity.md`](../devrites-lib/reference/candidate-integrity.md). Prove owns proof binding, not candidate
+  [`verification-methods.md`](skill://devrites-lib/reference/standards/verification-methods.md).
+- Follow [`candidate-integrity.md`](skill://devrites-lib/reference/candidate-integrity.md). Prove owns proof binding, not candidate
   grammar/hashing. Spec Drift Guard owns revealed contract drift.
 - Root runs vetted gates/browser and records immutable evidence; proof runner
   validates it. Only the bounded wright fixes product source/tests.
@@ -78,7 +78,7 @@ test changes.
    candidate and require identical digest/no source mutation. Reject substituted
    commands, malformed manifests, zero-test/skipped/filtered behavioral claims,
    exit-status-only claims, status-masking forms, and source drift. A retry-only
-   pass is `flaky` per [`testing.md`](../devrites-lib/reference/standards/testing.md#determinism-no-flaky-tests),
+   pass is `flaky` per [`testing.md`](skill://devrites-lib/reference/standards/testing.md#determinism-no-flaky-tests),
    never green. Static gates prove only their named
    static criterion.
    Run the acceptance ledger: `devrites-engine gates run <slug>` executes every
@@ -89,11 +89,11 @@ test changes.
    human's own words or source; placeholder notes are unmet and an AFK run never
    self-attests. Only gates manual at Vet are attested; runnable-to-manual
    conversion, EXPECT loosening, or CHECK/CWD/row change here is Plan repair plus
-   re-Vet ([`gates.md`](../devrites-lib/reference/standards/gates.md)). An impossible outcome
+   re-Vet ([`gates.md`](skill://devrites-lib/reference/standards/gates.md)). An impossible outcome
    is `gates abandon` plus a handoff, never a deleted row or a false pass.
    `gates status <slug>` must reduce to `all-met` before Prove records green.
 5. **Gate consumptive actions.** Immediately before execution, apply
-   [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md): current retained identity, bounds/sanitization,
+   [`one-shot-actions.md`](skill://devrites-lib/reference/standards/one-shot-actions.md): current retained identity, bounds/sanitization,
    injective boundary map, per-seam fault fixtures, collision mutant, terminal
    fixtures, and cleanup-survival proof must be green. Missing/stale/disposable-
    only evidence returns to Vet without spending an attempt. Record the admitted artifact identity before execution.
@@ -128,7 +128,7 @@ test changes.
 10. **Record.** Root updates `evidence.md`, optional `browser-evidence.md`,
     traceability, and state, with exactly one observed candidate binding.
     After independent validators are green, checkpoint remaining candidate
-    diffs per [`checkpoint.md`](../rite-build/reference/checkpoint.md). A wright
+    diffs per [`checkpoint.md`](skill://rite-build/reference/checkpoint.md). A wright
     correction during Recover red does not commit on control until this step.
 
 > Do not claim an unobserved pass, skip browser proof, or proceed with pending

@@ -15,6 +15,8 @@ Measure first. An optimization without a measurement is a guess that adds comple
 ## Optimize responsibly
 - Fix the **measured** bottleneck, then **re-measure** to prove the win (before/after).
   An optimization that doesn't move the number is just added complexity: revert it.
+  A win counts only while behavior proof stays green on an unchanged workload; tuning
+  the benchmark, fixture, or workload to the candidate games the number and is a finding.
   Keep compact failed and neutral experiment notes in the existing evidence:
   hypothesis, change, comparable measurements, and keep/revert decision. Do not
   create a separate experiment framework or ledger.

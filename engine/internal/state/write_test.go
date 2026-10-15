@@ -134,3 +134,18 @@ func TestFeatureLockRefusesInvalidSlug(t *testing.T) {
 		}
 	}
 }
+
+// Locking a closed (archived) workspace must not recreate it.
+func TestWithFeatureLockRefusesClosedWorkspace(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "archive", "feat"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ran := false
+	if err := WithFeatureLock(root, "feat", func() error { ran = true; return nil }); err == nil || ran {
+		t.Fatalf("lock on a missing workspace: err=%v ran=%v, want refused", err, ran)
+	}
+	if _, err := os.Lstat(filepath.Join(root, "work", "feat")); !os.IsNotExist(err) {
+		t.Fatalf("work/feat recreated by the lock: %v", err)
+	}
+}

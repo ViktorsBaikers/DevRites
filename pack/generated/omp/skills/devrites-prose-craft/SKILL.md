@@ -4,7 +4,7 @@ description: Rewrite prose to remove AI tells while preserving meaning and voice
 user-invocable: false
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/prose-style.md"],"triggers":{"word-choice":["devrites-prose-craft/reference/banned-phrases.md"],"structure":["devrites-prose-craft/reference/structures.md"],"examples":["devrites-prose-craft/reference/examples.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill devrites-prose-craft` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill devrites-prose-craft` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # devrites-prose-craft: prose that reads human
 
@@ -41,13 +41,13 @@ In detect-only, report Tier 1A (figurative filler) separately from Tier 1B (word
    the source text itself. Fall back to flat, direct prose. Done when every section has a
    register and one voice baseline.
 2. **Protect.** Apply the preservation contract in
-   [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md) before changing words.
+   [`prose-style.md`](skill://devrites-lib/reference/standards/prose-style.md) before changing words.
    Leave tables, YAML frontmatter, URLs, and file paths untouched unless the caller asked to
    change them. Scan for clusters of tells; one isolated marker is not a verdict. Done when
    every claim, constraint, identifier, example, quotation, and deliberate uncertainty is
    accounted for. Admitted reviewer rows (`Finding:`/`Basis:`), `Outcome:`/`Verdict:`
    lines, counts, and the candidate binding are technical register: skip them, because
-   [`agents.md`](../devrites-lib/reference/standards/agents.md#return-budget) § Return budget
+   [`agents.md`](skill://devrites-lib/reference/standards/agents.md#return-budget) § Return budget
    (the root never rewrites an admitted row) wins over this skill.
 3. **Rewrite.** Remove P0/P1 tells and P2 when the caller asked for a full pass. Match the
    baseline's vocabulary and cadence without inventing facts, opinions, or quirks. Done when the
@@ -61,7 +61,7 @@ In detect-only, report Tier 1A (figurative filler) separately from Tier 1B (word
 
 ## References
 
-- Always read [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md) for the two
+- Always read [`prose-style.md`](skill://devrites-lib/reference/standards/prose-style.md) for the two
   registers, preservation contract, and core checks.
 - Load [`reference/banned-phrases.md`](reference/banned-phrases.md) when word choice or tone is
   the problem (trigger `word-choice`).

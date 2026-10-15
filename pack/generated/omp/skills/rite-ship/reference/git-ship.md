@@ -33,7 +33,7 @@ Rules:
 
 ## The candidate-safe Git ladder
 
-Follow [`git-workflow.md`](../../devrites-lib/reference/standards/git-workflow.md) and project convention; invent no release flow.
+Follow [`git-workflow.md`](skill://devrites-lib/reference/standards/git-workflow.md) and project convention; invent no release flow.
 Candidate identity always comes from `devrites-engine check candidate`; do not
 implement a Git-side hash.
 
@@ -50,7 +50,7 @@ Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
    `WIP(<slug>):` prefix for the validated active slug — or, for a release ship of a
    deferred-ship sequence, for a slug recorded in the parent's `decisions.md`
    sequence whose workspace is sealed in this run
-   ([afk-hitl.md § Sequence continuation](../../devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces));
+   ([afk-hitl.md § Sequence continuation](skill://devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces));
    disclose the exact slug set. A different slug, missing colon, broad `WIP(` match,
    ordinary commit, or mixed history blocks; never reinterpret the range. The recorded
    ship commit of a resumed ship (step 7a) is not an ordinary commit for that rerun.

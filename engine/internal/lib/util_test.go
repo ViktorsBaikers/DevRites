@@ -82,8 +82,8 @@ func initGitRepository(t *testing.T, path string) string {
 	return path
 }
 
-// cappedGitOutput is installed as both cmd.Stdout and cmd.Stderr; this drives
-// two concurrent writers at it so -race flags any unsynchronized access.
+// cappedGitOutput must stay safe for concurrent writers; this drives two at it
+// so -race flags any unsynchronized access.
 func TestCappedGitOutputConcurrentWriters(t *testing.T) {
 	const writes, size = 2000, 64
 	chunk := []byte(strings.Repeat("x", size))
@@ -146,3 +146,115 @@ func TestRunGitCommandRejectsTruncatedOutput(t *testing.T) {
 type zeroReader struct{}
 
 func (zeroReader) Read(p []byte) (int, error) { return len(p), nil }
+
+func diffScopeRepo(t *testing.T) string {
+	t.Helper()
+	repo := initGitRepository(t, t.TempDir())
+	runDiffScopeGit(t, repo, "config", "user.email", "tests@example.invalid")
+	runDiffScopeGit(t, repo, "config", "user.name", "DevRites Tests")
+	return repo
+}
+
+// A rename must report the deleted source too: with git's default rename
+// detection only the new name surfaced, so moving a file out from under the
+// allowlist passed.
+func TestDiffScopeReportsRenameSourceInDiffModes(t *testing.T) {
+	root, _ := newWorkspace(t, "build")
+	repo := diffScopeRepo(t)
+	writeFile(t, filepath.Join(repo, "secret.txt"), "classified\n")
+	runDiffScopeGit(t, repo, "add", "-A")
+	runDiffScopeGit(t, repo, "commit", "-qm", "base")
+	runDiffScopeGit(t, repo, "mv", "secret.txt", "src_moved.txt")
+	check := func(mode ...string) {
+		t.Helper()
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		args := append([]string{"feat", "--allow", "src_moved.txt", "--cwd", repo}, mode...)
+		code := RunCheckDiffScope(root, args, stdout, stderr)
+		if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: secret.txt outside allowlist") {
+			t.Fatalf("%v: code=%d, want rename source blocked\n%s%s", mode, code, stdout.String(), stderr.String())
+		}
+	}
+	check("--staged")
+	runDiffScopeGit(t, repo, "commit", "-qm", "move")
+	check("--base", "HEAD~1")
+}
+
+// Git diagnostics on stderr are never parsed as changed paths.
+func TestDiffScopeIgnoresGitStderrWarnings(t *testing.T) {
+	root, _ := newWorkspace(t, "build")
+	repo := diffScopeRepo(t)
+	runDiffScopeGit(t, repo, "config", "core.autocrlf", "true")
+	writeFile(t, filepath.Join(repo, "f.txt"), "a\n")
+	runDiffScopeGit(t, repo, "add", "-A")
+	runDiffScopeGit(t, repo, "commit", "-qm", "base")
+	writeFile(t, filepath.Join(repo, "f.txt"), "a\nb\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	code := RunCheckDiffScope(root, []string{"feat", "--allow", "f.txt", "--base", "HEAD", "--cwd", repo}, stdout, stderr)
+	if code != 0 || strings.Contains(stdout.String(), "warning") {
+		t.Fatalf("code=%d, want ok without stderr noise\n%s%s", code, stdout.String(), stderr.String())
+	}
+}
+
+// The engine's own .devrites machine files are never task paths, even when
+// the control tree is not gitignored.
+func TestDiffScopeIgnoresProjectDevritesTree(t *testing.T) {
+	repo := diffScopeRepo(t)
+	root := filepath.Join(repo, ".devrites")
+	machine := []string{
+		"claims.jsonl", "claims.jsonl.lock",
+		"work/feat/dispatch.json", "work/feat/metrics.jsonl", "work/feat/.lock",
+		"work/feat/readiness-inputs.json", "work/feat/regression-baseline.json",
+		"work/feat/parallel-lease.md", "work/feat/ctx/build.bundle.md",
+		"work/feat/ctx/build.bundle.md.sha256", "work/other/dispatch.json",
+	}
+	for _, rel := range machine {
+		writeFile(t, filepath.Join(root, filepath.FromSlash(rel)), "{}\n")
+	}
+	writeFile(t, filepath.Join(repo, "src", "ok.go"), "package ok\n")
+	check := func(mode ...string) {
+		t.Helper()
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		code := RunCheckDiffScope(root, append([]string{"feat", "--allow", "src"}, mode...), stdout, stderr)
+		if code != 0 || !strings.Contains(stdout.String(), "1 changed") {
+			t.Fatalf("%v: code=%d, want only src/ok.go\n%s%s", mode, code, stdout.String(), stderr.String())
+		}
+	}
+	check("--worktree")
+	runDiffScopeGit(t, repo, "add", "-A")
+	check("--staged")
+	runDiffScopeGit(t, repo, "commit", "-qm", "base")
+	for _, rel := range machine {
+		writeFile(t, filepath.Join(root, filepath.FromSlash(rel)), "{\"wave\":1}\n")
+	}
+	writeFile(t, filepath.Join(repo, "src", "ok.go"), "package ok // changed\n")
+	check("--base", "HEAD")
+}
+
+// Only engine machine files are exempt: a writer editing principles, another
+// feature's workspace, or the active workspace's evidence or gates is
+// reported like any other out-of-allowlist path.
+func TestDiffScopeReportsDevritesArtifactEdits(t *testing.T) {
+	for _, rel := range []string{"principles.md", "work/feat/evidence.md", "work/feat/gates.md", "work/other/spec.md"} {
+		t.Run(rel, func(t *testing.T) {
+			repo := diffScopeRepo(t)
+			root := filepath.Join(repo, ".devrites")
+			path := filepath.Join(root, filepath.FromSlash(rel))
+			writeFile(t, path, "a\n")
+			writeFile(t, filepath.Join(repo, "src", "ok.go"), "package ok\n")
+			check := func(mode ...string) {
+				t.Helper()
+				stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+				code := RunCheckDiffScope(root, append([]string{"feat", "--allow", "src"}, mode...), stdout, stderr)
+				if code != 3 || !strings.Contains(stdout.String(), "BLOCKED: .devrites/"+rel+" outside allowlist") {
+					t.Fatalf("%v: code=%d, want .devrites/%s BLOCKED\n%s%s", mode, code, rel, stdout.String(), stderr.String())
+				}
+			}
+			check("--worktree")
+			runDiffScopeGit(t, repo, "add", "-A")
+			check("--staged")
+			runDiffScopeGit(t, repo, "commit", "-qm", "base")
+			writeFile(t, path, "b\n")
+			check("--base", "HEAD")
+		})
+	}
+}
