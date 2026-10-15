@@ -9,7 +9,9 @@ contract for the sentinel schema, defaults, gate ceiling, and mutable-counter
 ownership. This file owns only Build's dispatch, charging, and red-path behavior.
 
 Rules: green before `built`; hard `max_slices` cap; gates before the action they
-control; irreversible work (destructive/auth/public API) always pauses.
+control; irreversible work (destructive/auth/public API) always pauses; a tick
+never ends with an open or sealed wave — wait for its returns or
+`dispatch abandon --reason`.
 
 ## Iteration cap
 

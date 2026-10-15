@@ -51,6 +51,7 @@ type ObserveSummary struct {
 	ArtifactBudgets   []ArtifactBudget       `json:"artifact_budgets,omitempty"`
 	BulkFiles         []BulkFile             `json:"bulk_files,omitempty"`
 	Sequence          *ObserveSequenceCursor `json:"sequence,omitempty"`
+	InflightWaves     []InflightWave         `json:"inflight_waves,omitempty"`
 }
 
 // ObserveSummaryFor builds a summary for one feature slug.
@@ -90,6 +91,13 @@ func ObserveSummaryFor(root, slug string) (ObserveSummary, error) {
 			Problems:   append([]string(nil), graph.Problems...),
 			OK:         len(graph.Problems) == 0,
 		}
+	}
+	// Open or sealed waves are agents whose results the root never recorded;
+	// a resume reconciles them before starting new work.
+	if waves, _, err := loadDispatch(root, slug); err == nil {
+		summary.InflightWaves = inflightWaves(waves)
+	} else {
+		summary.Unreadable = append(summary.Unreadable, "dispatch.json")
 	}
 	if report.SequenceParent != "" || report.SequencePosition != "" || report.SequenceWorkspacesRemaining != "" || report.SequenceRole != "" {
 		summary.Sequence = &ObserveSequenceCursor{
