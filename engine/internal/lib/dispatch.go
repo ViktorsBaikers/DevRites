@@ -56,9 +56,10 @@ type dispatchWave struct {
 }
 
 type dispatchRole struct {
-	Handle    string `json:"handle,omitempty"`
-	StartedAt string `json:"started,omitempty"`
-	Returned  bool   `json:"returned,omitempty"`
+	Handle     string `json:"handle,omitempty"`
+	StartedAt  string `json:"started,omitempty"`
+	Returned   bool   `json:"returned,omitempty"`
+	ReturnedAt string `json:"returned_at,omitempty"`
 }
 
 func dispatchPath(root, slug string) string {
@@ -270,7 +271,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if r.Returned {
 			return fail("role %q already returned", role)
 		}
-		r.Returned = true
+		r.Returned, r.ReturnedAt = true, nowStamp()
 		all := true
 		for _, o := range w.Roles {
 			if !o.Returned {

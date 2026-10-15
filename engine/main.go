@@ -51,7 +51,7 @@ Usage:
   devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <id>] [--trigger a,b]
                                          Emit one deduplicated read-set bundle for a phase, skill, or dispatch role
   devrites-engine metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
-  devrites-engine metrics summary [slug]   Summarize the per-feature metrics.jsonl event ledger
+  devrites-engine metrics summary [slug] [--by-slice]  Summarize the metrics ledger, or per-slice rounds and agent-minutes
   devrites-engine dispatch <slug> <sub>    Launch-wave barrier for parallel dispatch: open/start/seal/return/status/abandon (build wright waves: --slice, round cap)
   devrites-engine claim <add|release|list|check>   Advisory session-scoped file claims for same-tree concurrent sessions (.devrites/claims.jsonl)
   devrites-engine note <subcommand> <slug>         Anchored workspace notes bound to verbatim code quotes; drift regrades them (notes.md)

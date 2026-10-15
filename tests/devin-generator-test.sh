@@ -197,10 +197,20 @@ if command -v devin >/dev/null 2>&1; then
   cp -R "$ROOT/pack/generated/devin/skills/." "$proj/.devin/skills/"
   cp "$ROOT"/pack/generated/devin/agents/*.md "$proj/.devin/agents/"
   if [ -d "$proj/.devin/skills/rite" ] && [ -f "$proj/.devin/agents/devrites-slice-wright.md" ]; then
-    if (cd "$proj" && devin doctor 2>&1 | grep -q "29 profile(s) loaded"); then
+    # User-global Devin plugins add their own profiles to the total, so check
+    # that every generated profile is in the loaded list instead.
+    loaded="$(cd "$proj" && devin doctor 2>&1 | grep 'profile(s) loaded:' || true)"
+    loaded=", ${loaded#*loaded: }, "
+    generated=0 missing=""
+    for agent in "$proj"/.devin/agents/*.md; do
+      name="$(basename "$agent" .md)"
+      generated=$((generated + 1))
+      case "$loaded" in *", $name, "*) ;; *) missing="$missing $name" ;; esac
+    done
+    if [ "$generated" -eq 29 ] && [ -z "$missing" ]; then
       ok "devin doctor loads all 29 generated profiles"
     else
-      no "devin doctor did not load all 29 generated profiles"
+      no "devin doctor did not load all 29 generated profiles (generated=$generated missing:${missing:- none})"
     fi
     if (cd "$proj" && devin skills list --json 2>/dev/null | grep -q '"name": "rite-build"'); then
       ok "devin skills list discovers generated skills"

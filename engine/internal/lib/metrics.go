@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,7 +24,7 @@ const MetricsFile = "metrics.jsonl"
 const metricsUsage = `usage: devrites-engine metrics <record|summary> ...
 
   metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
-  metrics summary [slug]
+  metrics summary [slug] [--by-slice]
 `
 
 type metricEvent struct {
@@ -150,6 +151,8 @@ func recordMetric(root, slug, phase, event, role string, bytes int64) {
 }
 
 func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
+	bySlice := slices.Contains(args, "--by-slice")
+	args = slices.DeleteFunc(slices.Clone(args), func(a string) bool { return a == "--by-slice" })
 	slug, code, err := ActiveSlug(root, args)
 	if err != nil {
 		fmt.Fprintf(stderr, "metrics: %v\n", err)
@@ -162,6 +165,9 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		fmt.Fprintf(stderr, "metrics: %v\n", err)
 		return 2
+	}
+	if bySlice {
+		return sliceCostSummary(root, slug, stdout, stderr)
 	}
 	f, err := os.Open(filepath.Join(dir, MetricsFile)) // #nosec G304 -- dir is a validated workspace and filename is fixed
 	if err != nil {
@@ -256,5 +262,72 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, " unparsed=%d", bad)
 	}
 	fmt.Fprintln(stdout)
+	return 0
+}
+
+// sliceCostSummary reports, per slice named on dispatch waves, the build wright
+// rounds, slice-bound Vet rechecks, and agent-minutes (role start to return; a
+// wave naming several slices splits its minutes evenly). Abandoned waves are
+// excluded, and waves recorded before returns were timestamped count rounds only.
+func sliceCostSummary(root, slug string, stdout, stderr io.Writer) int {
+	f, _, err := loadDispatch(root, slug)
+	if err != nil {
+		fmt.Fprintf(stderr, "metrics: %v\n", err)
+		return 2
+	}
+	type cost struct {
+		wright, vet int
+		minutes     float64
+		timed       bool
+	}
+	per := map[string]*cost{}
+	for _, w := range f.Waves {
+		kind := roundKind(w)
+		if kind == "" || w.State == "abandoned" {
+			continue
+		}
+		minutes, timed := 0.0, false
+		for _, r := range w.Roles {
+			start, startErr := time.Parse(time.RFC3339, r.StartedAt)
+			end, endErr := time.Parse(time.RFC3339, r.ReturnedAt)
+			if startErr == nil && endErr == nil && !end.Before(start) {
+				minutes += end.Sub(start).Minutes()
+				timed = true
+			}
+		}
+		for _, id := range w.Slices {
+			c := per[id]
+			if c == nil {
+				c = &cost{}
+				per[id] = c
+			}
+			if kind == "wright" {
+				c.wright++
+			} else {
+				c.vet++
+			}
+			if timed {
+				c.minutes += minutes / float64(len(w.Slices))
+				c.timed = true
+			}
+		}
+	}
+	if len(per) == 0 {
+		fmt.Fprintf(stdout, "metrics: no slice-tagged dispatch waves for %s\n", slug)
+		return 0
+	}
+	ids := make([]string, 0, len(per))
+	for id := range per {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		c := per[id]
+		minutes := "n/a"
+		if c.timed {
+			minutes = strconv.FormatFloat(c.minutes, 'f', 0, 64)
+		}
+		fmt.Fprintf(stdout, "metrics: %s wright_rounds=%d vet_rechecks=%d agent_minutes=%s\n", id, c.wright, c.vet, minutes)
+	}
 	return 0
 }
