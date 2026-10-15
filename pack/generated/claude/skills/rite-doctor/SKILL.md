@@ -5,7 +5,7 @@ argument-hint: ""
 user-invocable: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["state.md"]} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-doctor` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context <slug> --skill rite-doctor` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # /rite-doctor: DevRites diagnostics
 
@@ -27,12 +27,18 @@ Read-only: never repair files, advance a feature, or diagnose the application.
    For enabled surfaces, require the canonical Claude skills/settings and the
    generated Codex skills, exact agent profiles, config, and AGENTS bridge.
    Cross-check the loaded/effective host configuration when the host exposes it:
-   Claude root plan mode with only `devrites-slice-wright` writable; Codex root
-   `devrites-orchestrator`, wright `:workspace`, all reviewers `:read-only`.
-   Also allowed as writers: `fast-builder` (`acceptEdits` / `:workspace`) and the
-   `overhaul-*` agents (every tool); the other `fast-*` roles are read-only.
+   Claude read-only roles keep a tools allowlist without Edit/Write plus
+   `permissionMode: plan`, which Claude honors only while the parent is not in
+   acceptEdits/auto/bypass — the guarantee is tools + instructions, the mode is
+   best-effort; only `devrites-slice-wright` (`acceptEdits`) writes in the
+   lifecycle. Codex root `devrites-orchestrator`, wright `:workspace`, all
+   reviewers `:read-only`. Also allowed as writers: `fast-builder` (`acceptEdits`
+   / `:workspace`) and the `overhaul-*` agents (every tool; `overhaul-implementer`
+   `acceptEdits`); the other `fast-*` roles are read-only.
    File presence without effective loading is `WARN`; wrong permissions or a
-   missing required profile is `FAIL`.
+   missing required profile is `FAIL`. A project or local Claude
+   `permissions.defaultMode: plan` blocks the root's `.devrites` writes:
+   `FAIL`, remediation: remove it.
 4. **Inspect workspace topology.** Read `.devrites/ACTIVE` if present. An empty
    cursor is `OK` (no active feature). Otherwise require one safe slug, a
    contained regular `.devrites/work/<slug>/state.md`, and no symlink in the

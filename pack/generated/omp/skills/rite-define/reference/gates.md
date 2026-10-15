@@ -78,7 +78,7 @@ it's `blocking`.
 
 ## Picking the gate
 
-First apply [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) decision ownership: an objective implementation/tooling failure
+First apply [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) decision ownership: an objective implementation/tooling failure
 or reversible technical choice is agent work and gets no human gate. Then apply this
 decision tree per HITL slice:
 
@@ -121,7 +121,7 @@ defaults and the always-pause rules:
 the [`blocking`](#blocking) gate rule above. Red tests/types/lint remain hard build gates and
 must clear bounded recovery before the next slice; only a resulting human-owned ambiguity
 becomes a pause. The irreversible-risk list is owned by
-[`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#irreversible-risk-list-always-pause);
+[`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md#irreversible-risk-list-always-pause);
 every item on it pauses regardless of `allow_gates`.
 
 `escalating` is never in `allow_gates`: specialist routing is not something AFK can

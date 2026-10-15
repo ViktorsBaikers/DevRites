@@ -61,7 +61,7 @@ the §0 findings and proceed to Axis 1. A human-owned unresolved choice still pa
 ## Four axes (complete inventory, bounded presentation)
 
 Fold verified technical findings into the plan; present each human-owned decision in one
-`AskUserQuestion` packet. Combine support only for one owner/trade-off. HITL pauses; AFK
+`ask_user_question` packet. Combine support only for one owner/trade-off. HITL pauses; AFK
 uses `depth.md`. Never invent findings.
 Report every supported Critical/Important before repair. Group duplicates; compact
 presentation never caps the inventory or hides the ninth substantive defect.
@@ -173,7 +173,7 @@ already-pinned clauses.
 
 ## Present human-owned decisions
 
-Use standard `AskUserQuestion`:
+Use standard `ask_user_question`:
 
 - **One decision = one call.** Never ask about agent work or batch unrelated choices.
 - Concrete: name the plan/task section + the quoted line.

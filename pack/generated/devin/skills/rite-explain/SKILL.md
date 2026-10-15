@@ -6,7 +6,7 @@ triggers:
   - user
 ---
 <!-- loads: {"always":["rite-explain/reference/intake.md"],"triggers":{"repo":["devrites-lib/reference/standards/tooling.md"],"style":["devrites-lib/reference/standards/prose-style.md"],"principles":["devrites-lib/reference/standards/principles.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-explain` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-explain` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # /rite-explain: the human half of the learning loop
 
@@ -47,7 +47,7 @@ composition. Getting the shape wrong wastes the whole artifact.
 mechanics per shape. Do not improvise classification from this file; the detail lives there so this
 one stays legible, and skipping it means guessing the shape.
 
-**Bare invocation** (no input): ask **one** blocking question (`AskUserQuestion` when the harness
+**Bare invocation** (no input): ask **one** blocking question (`ask_user_question` when the harness
 has it, else the harness's blocking-question tool: `request_user_input` on Codex; no interactive
 question tool → render the ranked options as a plain numbered list and end the turn
 (afk-hitl.md)). "What should I
@@ -116,7 +116,7 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
 ### 4. Offer the check-in (optional, active recall)
 
 Retention comes from *retrieving*, not re-reading. After the explainer, offer one check-in via the
-harness's blocking-question tool (`AskUserQuestion`, or `request_user_input` on Codex; no
+harness's blocking-question tool (`ask_user_question`, or `request_user_input` on Codex; no
 interactive question tool → render the ranked options as a plain numbered list and end the turn
 (afk-hitl.md)): the user
 answers **first**, then you confirm or correct. The shape sets the

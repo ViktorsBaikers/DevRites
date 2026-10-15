@@ -125,11 +125,12 @@ executable controller/harness/bundle bytes or a missing writer, read
    product scope is never auto-resolved by a recommended option; it stops for a human.
    Technical exhaustion records terminal
    `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
-6. **Seal boundary.** Without a ship flag, stop at Seal GO with `/rite-ship` —
-   unless `continue_sequence: false` or sequence budget is spent; otherwise
-   leave the sealed workspace unshipped and open the next recorded continuation
-   ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation));
-   report the sequence position on every stop.
+6. **Seal boundary.** Without a ship flag, leave the sealed workspace unshipped and
+   open the next recorded continuation
+   ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation))
+   unless `continue_sequence: false`, the sequence budget is spent, or no entry
+   remains; then stop at Seal GO with `/rite-ship`. Report the sequence position on
+   every stop.
    With a ship flag, perform Ship preflight, disclose the exact Git plan, and stop for
    fresh literal `GO` plus native approval. **Completion:** performed no Git action before fresh literal `GO` plus native approval.
 

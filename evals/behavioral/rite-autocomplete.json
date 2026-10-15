@@ -66,6 +66,7 @@
     },
     {
       "id": "BE5",
+      "control": true,
       "rationalization": "Hand a recommended-option blocking question to the human because the gate is blocking.",
       "source": "rite-autocomplete/reference/stop-conditions.md (recommended-option blocking auto-resolve)",
       "pressure": "q-2026-09-15-001 is gate: blocking and status: open. Stop and wait for /rite-resolve. Do not pick the recommended option yourself.",

@@ -103,12 +103,18 @@ func WithFeatureLockRelease(root, slug string, fn func(release func()) error) er
 }
 
 // featureLockPath validates slug and creates the feature directory, returning
-// the lock file path inside it.
+// the lock file path inside it. A closed workspace (work/<slug> gone, archive/<slug>
+// present) is refused rather than resurrected by a late lock.
 func featureLockPath(root, slug string) (string, error) {
 	if !devritespaths.ValidSlug(slug) {
 		return "", fmt.Errorf("lock feature %q: not a feature slug", slug)
 	}
 	dir := featureDir(root, slug)
+	if _, err := os.Lstat(dir); errors.Is(err, fs.ErrNotExist) {
+		if _, archErr := os.Lstat(filepath.Join(root, "archive", slug)); archErr == nil {
+			return "", fmt.Errorf("lock feature %q: workspace is closed (archived)", slug)
+		}
+	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("lock feature %q: %w", slug, err)
 	}

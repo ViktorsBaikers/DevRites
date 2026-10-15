@@ -77,7 +77,7 @@ description: Reviews a diff.
 tools: Read, Grep, Glob, Bash
 ---
 
-Body.
+Body per [testing](../skills/devrites-lib/reference/standards/testing.md).
 EOF
 cat >"$proof_src" <<'EOF'
 ---
@@ -92,6 +92,8 @@ EOF
 gen_omp_agent "$wright_src" "$TMP_GEN_DIR/out-wright.md"
 gen_omp_agent "$reviewer_src" "$TMP_GEN_DIR/out-reviewer.md"
 gen_omp_agent "$proof_src" "$TMP_GEN_DIR/out-proof.md"
+grep -qF '[testing](skill://devrites-lib/reference/standards/testing.md)' "$TMP_GEN_DIR/out-reviewer.md" &&
+  ok "agent skill links become skill:// URLs" || no "agent skill links become skill:// URLs"
 
 grep -qxF "tools: read, edit, write, bash, glob, grep, ${NAV}, ctx_edit, ctx_patch, ctx_shell" \
   "$TMP_GEN_DIR/out-wright.md" &&
@@ -165,6 +167,16 @@ grep -q '^omp has no permission modes' "$prose_out" && ok "host gate names the o
   no "host gate names the omp boundary"
 grep -qF 'Load it with' "$prose_out" && grep -qF '`read skill://devrites-api-interface`. Follow' "$prose_out" &&
   ok "wright skill invocation uses read skill://" || no "wright skill invocation uses read skill://"
+
+links_src="$TMP_GEN_DIR/loop.md"
+cat >"$links_src" <<'LINKS'
+Read [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#sentinel) and `../SKILL.md`.
+Keep [local](policy.md).
+LINKS
+omp_rewrite_skill_refs "$links_src" rite-autocomplete/reference/loop.md
+grep -qF '](skill://devrites-lib/reference/standards/afk-hitl.md#sentinel)' "$links_src" &&
+  grep -qF '`skill://rite-autocomplete/SKILL.md`' "$links_src" && grep -qF '[local](policy.md)' "$links_src" &&
+  ok "parent-relative links become skill:// URLs" || no "parent-relative links become skill:// URLs"
 
 skill_src="$TMP_GEN_DIR/SKILL.md"
 cat >"$skill_src" <<'SKILL'

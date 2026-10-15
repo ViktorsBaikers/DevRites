@@ -23,9 +23,10 @@ root reconciles semantics; engine checks deterministic structure/state/safety
 - Build maintains the strict candidate manifest. Prove, Review, and Seal bind
   their artifacts to the engine-computed digest; Polish owns final durable
   rollups and affected re-proof; Ship is candidate-read-only.
-- The root never writes source or tests. Claude enforces that with plan mode;
-  Codex enforces it as workflow policy because the parent must be
-  workspace-capable for its writer child to execute.
+- The root never writes source or tests. Both hosts enforce that as workflow
+  policy (ADR-0035): Claude's root is not in plan mode because it must write
+  `.devrites/**`, and Codex's parent must be workspace-capable for its writer
+  child to execute.
 - The role catalog has one source/test writer, `devrites-slice-wright`. Claude
   and Codex make only that exact specialist writable.
 - Leaves never invoke leaves, ask the human, change phase, push, deploy, migrate live
@@ -45,7 +46,7 @@ inserted between a skill and the host's native agent call.
 
 ## Native permission boundary
 
-Claude project settings use `permissions.defaultMode: plan`; its slice-wright
+Claude project settings set no `defaultMode` (ADR-0035); its slice-wright
 profile uses `permissionMode: acceptEdits`. Codex uses a workspace-capable root
 because children cannot elevate above the parent permission ceiling. Its exact
 slice-wright uses `default_permissions = ":workspace"` and the other 16

@@ -3,7 +3,7 @@
 > Applies when: always; every workspace rite reads it first.
 
 Each workspace rite reads core first. Its `loads:` manifest `always` set is its required
-read-set (`devrites-engine context <slug> --skill <name>` where a workspace exists, else
+read-set (`devrites-engine context --skills-root .agents/skills <slug> --skill <name>` where a workspace exists, else
 read the listed files); a trigger's files load when its named condition holds. Load any
 other rule file from `README.md` on demand.
 

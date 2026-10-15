@@ -1,7 +1,7 @@
 # Per-language review checklists
 
 > Applies when: reviewing a diff that touches source files. Companion to
-> [`code-review.md`](../code-review.md) — these are file-level probes, not a
+> [`code-review.md`](skill://devrites-lib/reference/standards/code-review.md) — these are file-level probes, not a
 > second severity scale.
 
 Load `default.md` for every reviewed file, plus the file matching the file's

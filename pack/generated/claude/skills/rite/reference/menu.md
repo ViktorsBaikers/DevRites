@@ -32,14 +32,15 @@ Phase-ordered `/rite` reference. Load only for command detail or phase connectio
   `/rite-define` (plan) → `/rite-vet` (engineering review; light or full) →
   `/rite-build` ×N (all slices) → `/rite-prove` (once all built) →
   `/rite-polish` (always: code + UI if UI) → `/rite-review` → `/rite-seal` → `/rite-ship`.
-- **Existing codebase**: `/rite-adopt` → `/rite-clarify` → `/rite-define` → `/rite-vet` → build.
+- **Existing codebase**: `/rite-adopt` → `/rite-spec` → `/rite-clarify` → `/rite-define` → `/rite-vet` → build.
 - **Drift mid-build**: classify → bounded recovery for objective defects, `/rite-plan`
   repair for a wrong durable plan, or one user decision for real product/risk drift.
 - **Older workspace cannot resume**: `/rite-upgrade` audits first → only proven gaps use
-  Clarify/Plan repair/Converge/Vet or Prove/Polish/Review/Seal → resume. It never
-  migrates cursor format or invents a prior pass.
-- **Resumed / adopted / stalled**: `/rite-converge` (assess live code vs intent → append the
-  remaining slices) → `/rite-vet` → `/rite-build` ×N → continue at `/rite-prove`.
+  Clarify/Plan repair/Converge/Vet or Prove/Polish/Review/Seal → resume. A cursor with
+  no `schema` row needs `devrites-engine migrate <slug>` first; upgrade never migrates
+  cursor format itself or invents a prior pass.
+- **Resumed / stalled, or adopted after Define** (has `plan.md` + `tasks.md`): `/rite-converge`
+  (assess live code vs intent → append the remaining slices) → `/rite-vet` → `/rite-build` ×N → continue at `/rite-prove`.
 
 ## Rules this menu obeys
 

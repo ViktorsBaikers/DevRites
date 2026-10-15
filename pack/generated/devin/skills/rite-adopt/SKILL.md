@@ -4,7 +4,7 @@ description: Adopt an existing codebase into DevRites by reverse-engineering cur
 argument-hint: "[path or area to adopt] [+ what you want to build next]"
 ---
 <!-- loads: {"always":["rite-adopt/reference/adoption.md","rite-adopt/reference/anti-patterns.md","rite-polish/reference/ledger.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-adopt` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-adopt` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # /rite-adopt: onboard existing code
 
@@ -47,7 +47,8 @@ parallel convention system.
    resistance. Never create convention bands, scores, or a command cache.
 6. A genuine non-negotiable invariant may be proposed for
    `.devrites/principles.md`; the human must ratify it.
-7. Set the next step to `/rite-clarify` and stop. Do not plan or build.
+7. Set the next step to `/rite-spec <slug>` and stop; Spec extends this workspace and owns
+   `brief.md`, `checklists/`, and `spec_gate`. Do not plan or build.
 
 > Refuse the rationalizations in [`anti-patterns`](reference/anti-patterns.md).
 
@@ -58,5 +59,5 @@ Done: adopted <scope> into <slug>.
 Changed: <workspace artifacts>; project guidance <proposed | unchanged>
 Evidence: <source/CI paths inspected>
 Open: <questions | none>
-Next: /rite-clarify
+Next: /rite-spec <slug>
 ```

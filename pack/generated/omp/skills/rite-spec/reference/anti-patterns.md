@@ -4,7 +4,7 @@ Load this when standing a non-trivial decision in `/rite-spec`, or when the
 agent feels reluctance toward investigation depth, gap-closing, or
 placement decisions.
 
-Pack-wide rationalizations + red flags: see [standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
+Pack-wide rationalizations + red flags: see [standards/anti-patterns.md](skill://devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 

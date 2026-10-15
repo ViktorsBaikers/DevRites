@@ -197,7 +197,10 @@ mutate_final() {
     missing_seal) rm "$ws/seal.md" ;;
     non_go) replace_once "$ws/seal.md" "Verdict: GO" "Verdict: NO-GO" ;;
     unresolved_blocker)
-      replace_once "$ws/seal.md" $'## Blockers\nnone' $'## Blockers\n- release blocker'
+      replace_once "$ws/seal.md" "Blockers: none" $'Blockers:\n- release blocker'
+      ;;
+    unlabelled_blocker)
+      replace_once "$ws/seal.md" $'## Blockers / Follow-ups\n' $'## Blockers / Follow-ups\n- release blocker\n'
       ;;
     open_question)
       replace_once "$ws/questions.md" "| Q-001 | answered |" "| Q-001 | open |"
@@ -207,6 +210,7 @@ mutate_final() {
       replace_once "$ws/state.md" "| status | done |" "| status | awaiting_human |"
       ;;
     blocked_status) replace_once "$ws/state.md" "| status | done |" "| status | blocked |" ;;
+    blocked_status_titlecase) replace_once "$ws/state.md" "| status | done |" "| status | Blocked |" ;;
     unchecked_ac) replace_once "$ws/seal.md" "- [x] AC-001:" "- [ ] AC-001:" ;;
     wrong_ac_id) replace_once "$ws/seal.md" "AC-003:" "AC-999:" ;;
     noncanonical_ac) replace_once "$ws/seal.md" "AC-001:" "AC1:" ;;
@@ -222,12 +226,12 @@ mutation_path() {
   case "$id" in
     missing_review) printf '.devrites/work/%s/review.md\n' "$slug" ;;
     missing_evidence|empty_evidence) printf '.devrites/work/%s/evidence.md\n' "$slug" ;;
-    missing_seal|non_go|unresolved_blocker|unchecked_ac|wrong_ac_id|noncanonical_ac|duplicate_ac)
+    missing_seal|non_go|unresolved_blocker|unlabelled_blocker|unchecked_ac|wrong_ac_id|noncanonical_ac|duplicate_ac)
       printf '.devrites/work/%s/seal.md\n' "$slug"
       ;;
     empty_ac) printf '.devrites/work/%s/spec.md\n' "$slug" ;;
     open_question) printf '.devrites/work/%s/questions.md\n' "$slug" ;;
-    wrong_phase|awaiting_human|blocked_status)
+    wrong_phase|awaiting_human|blocked_status|blocked_status_titlecase)
       printf '.devrites/work/%s/state.md\n' "$slug"
       ;;
     *) fail "unknown mutation path $id" ;;
@@ -370,10 +374,12 @@ run_final_case empty_evidence final.evidence.missing-or-empty 3 DRV-GATE-SEAL-MI
 run_final_case missing_seal final.seal.missing 3 DRV-GATE-SEAL-MISSING
 run_final_case non_go final.verdict.not-go 0 DRV-GATE-SEAL-PASSED
 run_final_case unresolved_blocker final.blockers.unresolved 0 DRV-GATE-SEAL-PASSED
+run_final_case unlabelled_blocker final.blockers.unresolved 0 DRV-GATE-SEAL-PASSED
 run_final_case open_question final.questions.open 3 DRV-GATE-SEAL-MISSING
 run_final_case wrong_phase final.state.phase 0 DRV-GATE-SEAL-PASSED
 run_final_case awaiting_human final.state.status 0 DRV-GATE-SEAL-PASSED
 run_final_case blocked_status final.state.status 0 DRV-GATE-SEAL-PASSED
+run_final_case blocked_status_titlecase final.state.status 0 DRV-GATE-SEAL-PASSED
 run_final_case unchecked_ac final.acceptance.unchecked 0 DRV-GATE-SEAL-PASSED
 run_final_case wrong_ac_id final.acceptance.ids 0 DRV-GATE-SEAL-PASSED
 run_final_case noncanonical_ac final.acceptance.ids 0 DRV-GATE-SEAL-PASSED
@@ -411,12 +417,21 @@ run_capture env DEVRITES_ROOT="$base_project" "$ENGINE" state resolve next-qid "
 [ "$CAPTURE_CODE" -ne 0 ] || fail "state resolve next-qid unexpectedly generated an id: $CAPTURED"
 printf '  PASS: removed nested policy forms cannot execute\n'
 
-printf '\n== compatibility examples ==\n'
-for legacy in blocked-feature near-miss-unproven-ac; do
+printf '\n== compatibility examples (legacy seal layout) ==\n'
+# The canonical fixture uses the current "## Blockers / Follow-ups" template and
+# grades GO with a listed follow-up; these old-layout seals pin the legacy
+# "## Blockers" + "## Non-blocking Follow-ups" path: "none" passes, bullets block.
+assert_legacy() {
+  local legacy="$1"
+  local want_rules="$2"
   run_capture bash "$GRADER" --json "$ROOT/evals/golden/$legacy"
   [ "$CAPTURE_CODE" -eq 1 ] || fail "$legacy should remain NO-GO"
-  printf '  PASS: %s remains NO-GO\n' "$legacy"
-done
+  assert_grade "NO-GO" "$want_rules"
+  printf '  PASS: %s remains NO-GO rules=%s\n' "$legacy" "$want_rules"
+}
+assert_legacy blocked-feature \
+  "final.verdict.not-go,final.acceptance.unchecked,final.blockers.unresolved,final.questions.open,final.state.status"
+assert_legacy near-miss-unproven-ac "final.acceptance.unchecked"
 
 printf '\n== adversarial negative fixtures ==\n'
 run_capture bash "$GRADER" --json "$ROOT/evals/golden/unauthorized-spec-drift"
@@ -471,4 +486,4 @@ run_capture env DEVRITES_ROOT="$writer_project" "$ENGINE" check candidate "out-o
 [ -f "$writer_project/src/utils/format.ts" ] || fail "out-of-scope-writer-diff extra product file missing"
 printf '  PASS: out-of-scope-writer-diff extra candidate path is not in tasks.md Writer allowlist (check slice rejects; shippable-feature accepts)\n'
 
-printf '\nOutcome evals passed: native boundary + 15 isolated final-outcome negatives + candidate/readiness content binding + removed-command rejections + 2 adversarial fixtures.\n'
+printf '\nOutcome evals passed: native boundary + 17 isolated final-outcome negatives + candidate/readiness content binding + removed-command rejections + 2 adversarial fixtures.\n'

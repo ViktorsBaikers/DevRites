@@ -26,8 +26,10 @@ import (
 const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
-role has a distinct handle; return fails before seal; status exits nonzero
-while a wave is open, sealed, or abandoned.
+role has a distinct handle; return fails before seal. status --wave exits
+nonzero until that wave is complete; bare status lists every wave and exits
+nonzero while any wave is open or sealed (abandoned waves are listed only).
+A complete wave cannot be abandoned.
 
 A build wave with a wright role must name its slice(s) with --slice; a vet
 wave may (slice-bound recheck). Every 5 rounds of one kind on one slice, the
@@ -53,6 +55,15 @@ type dispatchWave struct {
 	Slices          []string                 `json:"slices,omitempty"`
 	ResliceReview   string                   `json:"reslice_review,omitempty"`
 	ResliceReviewed []string                 `json:"reslice_reviewed,omitempty"`
+}
+
+func waveStarted(w *dispatchWave) bool {
+	for _, r := range w.Roles {
+		if r != nil && r.StartedAt != "" {
+			return true
+		}
+	}
+	return false
 }
 
 type dispatchRole struct {
@@ -294,7 +305,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			for _, name := range sortedKeys(f.Waves) {
 				w := f.Waves[name]
 				fmt.Fprintf(stdout, "dispatch: wave %s state=%s roles=%d\n", name, w.State, len(w.Roles))
-				if w.State != "complete" {
+				if w.State == "open" || w.State == "sealed" {
 					incomplete = append(incomplete, name)
 				}
 			}
@@ -335,6 +346,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if w == nil {
 			return fail("no wave %q", wave)
 		}
+		if w.State == "complete" {
+			return fail("wave %q is complete; a complete wave cannot be abandoned", wave)
+		}
 		if strings.TrimSpace(reason) == "" {
 			return fail("--reason is required (non-empty, recorded in dispatch.json)")
 		}
@@ -363,7 +377,7 @@ func roundKind(w *dispatchWave) string {
 }
 
 func isBuildWrightWave(w *dispatchWave) bool {
-	if w.Phase != "build" {
+	if !strings.EqualFold(w.Phase, "build") {
 		return false
 	}
 	for r := range w.Roles {
@@ -403,16 +417,17 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 		prior, reviews := 0, 0
 		var unreturned []string
 		for name, other := range f.Waves {
-			if other.State == "abandoned" || roundKind(other) != kind {
+			// An abandoned wave spends its round once any role started.
+			if (other.State == "abandoned" && !waveStarted(other)) || roundKind(other) != kind {
 				continue
 			}
-			if slices.Contains(other.Slices, id) {
+			if containsSlice(other.Slices, id) {
 				prior++
 				if other.State == "open" || other.State == "sealed" {
 					unreturned = append(unreturned, name)
 				}
 			}
-			if slices.Contains(other.ResliceReviewed, id) {
+			if containsSlice(other.ResliceReviewed, id) {
 				reviews++
 			}
 		}
@@ -458,6 +473,18 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 	}
 	w.ResliceReview, w.ResliceReviewed = review, overCap
 	return lines, 0
+}
+
+// containsSlice reports whether ids names the same slice as id, ignoring
+// zero padding (SLICE-1 == SLICE-001) so a respelling cannot reset the cap.
+func containsSlice(ids []string, id string) bool {
+	return slices.ContainsFunc(ids, func(other string) bool {
+		return sliceNumber(other) == sliceNumber(id)
+	})
+}
+
+func sliceNumber(id string) string {
+	return strings.TrimLeft(strings.TrimPrefix(id, "SLICE-"), "0")
 }
 
 // driftHeading returns the drift.md level-2 heading line for id, or "".

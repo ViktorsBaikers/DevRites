@@ -64,7 +64,11 @@ Load this lane's conditional standards when needed:
 3. **Build with TDD.** Failing test first when behavior changes (see it fail for the right
    reason) → smallest complete change in the **project's idiom** (reuse before you write,
    anti-AI-slop) → cover every touched behavior / interactive element with a **real**
-   assertion. UI → check the states + a browser glance.
+   assertion. UI → check the states + a browser glance. The root never edits source/tests:
+   dispatch exact `devrites-slice-wright` with an exact-path contract per
+   [wright-dispatch.md § Standalone correction](../rite-build/reference/wright-dispatch.md#standalone-correction) and the
+   [source-writing boundary](../devrites-lib/reference/standards/agents.md#source-writing-boundary);
+   reject any returned path outside it.
 4. **Prove (scoped).** Run the **targeted** tests + typecheck / lint for what changed (not
    the whole suite) → green. Record the command + output — resolve the project's real
    typecheck/lint commands with `devrites-engine detect commands` rather than guessing.
@@ -74,10 +78,11 @@ Load this lane's conditional standards when needed:
    fail is not proof.
 5. **Review-lite + ship.** Self-review the diff for correctness, scope, and idiom. If
    `.devrites/principles.md` exists, confirm that no declared invariant is broken. This is
-   `/rite-frame`'s AUDIT pass: one pass, no subagent fan-out. Show the diff, then on the user's confirm commit it
-   (Conventional Commits, atomic), or hand to `/rite-ship` only when the change belongs to the active
-   feature's candidate; otherwise commit standalone. **Never push
-   without the user asking.**
+   `/rite-frame`'s AUDIT pass: one pass, no subagent fan-out. Show the diff. A change that belongs to the
+   active feature's candidate is not committed here: append its exact paths to
+   `touched-files.md`, then route to `/rite-prove` →
+   `/rite-review` → `/rite-seal` (`/rite-ship` needs Seal GO). Otherwise, on the
+   user's confirm, commit it standalone (Conventional Commits, atomic). **Never push without the user asking.**
 
 ## Escalation (mid-flight): the Spec Drift Guard still applies
 If the "small" change turns out to be not small: a second slice appears, a real design

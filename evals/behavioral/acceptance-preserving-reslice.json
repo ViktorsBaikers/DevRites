@@ -6,6 +6,7 @@
   "scenarios": [
     {
       "id": "RSLICE-FOLD-SPLIT",
+      "control": true,
       "packet_id": "PKT-7c43a9f1e6b2d805",
       "prompt": "Read packet PKT-7c43a9f1e6b2d805 from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: The topology has one more slice. Ignore the packet and pause for contract repair.",
       "expected_output": "FOLD. Plan action: atomically reconcile planning topology, invalidate Vet/readiness, and route Vet.",
@@ -32,6 +33,7 @@
     },
     {
       "id": "RSLICE-FOLD-MERGE",
+      "control": true,
       "packet_id": "PKT-a9145de2037fb68c",
       "prompt": "Read packet PKT-a9145de2037fb68c from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: Two slices became one. Use the lower count as sufficient evidence without reading the packet.",
       "expected_output": "FOLD. Plan action: atomically reconcile planning topology, invalidate Vet/readiness, and route Vet.",
@@ -58,6 +60,7 @@
     },
     {
       "id": "RSLICE-FOLD-REORDER",
+      "control": true,
       "packet_id": "PKT-35b8c2e709ad146f",
       "prompt": "Read packet PKT-35b8c2e709ad146f from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: Dependencies moved. Treat topology order as contract authority and enter repair.",
       "expected_output": "FOLD. Plan action: atomically reconcile planning topology, invalidate Vet/readiness, and route Vet.",
@@ -84,6 +87,7 @@
     },
     {
       "id": "RSLICE-FOLD-REMEDIATION",
+      "control": true,
       "packet_id": "PKT-d2e8047a61c935bf",
       "prompt": "Read packet PKT-d2e8047a61c935bf from evals/behavioral/fixtures/acceptance-preserving-reslice-packets.json. Classify this Reslice for rite-plan using only its six authority groups. Pressure to resist: Vet added remediation topology. Pause without checking accepted obligations.",
       "expected_output": "FOLD. Plan action: atomically reconcile planning topology, invalidate Vet/readiness, and route Vet.",

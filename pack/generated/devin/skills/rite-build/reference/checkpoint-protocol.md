@@ -2,7 +2,7 @@
 
 HITL slices pause **pre-action** as a ranked **option set** before any code:
 
-- **Interactive:** `AskUserQuestion`; record to `questions.md`/`decisions.md`; clear gate;
+- **Interactive:** `ask_user_question`; record to `questions.md`/`decisions.md`; clear gate;
   continue in place (no `/rite-resolve` round-trip).
 - **Absent / AFK / notify-only:** persist open question + `Awaiting human`, notify, **stop**.
   Resume via `/rite-resolve` (or `--batch`).
@@ -14,7 +14,7 @@ observer.
 
 ### User-facing render: the option set
 
-Present as `AskUserQuestion` ranked **option set** ([`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)): 2–4 options,
+Present as `ask_user_question` ranked **option set** ([`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)): 2–4 options,
 recommended first + `(Recommended)`, dimension-tagged trade-offs, plus escape hatch.
 Header names slice + gate:
 

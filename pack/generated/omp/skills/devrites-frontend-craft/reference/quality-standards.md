@@ -33,8 +33,8 @@ these are the floor, not the ceiling.
 ## Responsive
 - Fluid layouts; no fixed widths that break. Verify at **320 / 768 / 1024 / 1440** px;
   preserve content and controls at **200% text zoom** and **400% browser zoom from
-  1280 px** (320 CSS px). This is the canonical viewport set for UI evidence: [`ui.md`](../../rite-polish/reference/ui.md), [`browser-proof-checklist.md`](../../devrites-lib/reference/standards/browser-proof-checklist.md), and
-  [`browser-polish-evidence.md`](../../rite-polish/reference/browser-polish-evidence.md) cite it rather than restating it.
+  1280 px** (320 CSS px). This is the canonical viewport set for UI evidence: [`ui.md`](skill://rite-polish/reference/ui.md), [`browser-proof-checklist.md`](skill://devrites-lib/reference/standards/browser-proof-checklist.md), and
+  [`browser-polish-evidence.md`](skill://rite-polish/reference/browser-polish-evidence.md) cite it rather than restating it.
 - **No page-level horizontal scroll anywhere in 320–1920.** Sweep between checkpoints:
   a `1fr` track given a 1024 px image can overflow at 900 px. Fix intrinsic sizing
   (for example `minmax(0, 1fr)`), wrapping and media constraints; root clipping is
@@ -58,7 +58,7 @@ website by section 7") is a tell: **one declared color strategy and role budget*
 
 ## Numerical bar (enforceable specifics)
 
-These are the hard numbers that move "good UI" from opinion to checkable. Project tokens win when stricter. Contrast, target size, focus and reflow numbers are A11Y floors; the rest are DS build defaults. A review finding against a DS default needs the mismatch evidence of the [admission rule](../../rite-polish/reference/anti-ai-slop.md).
+These are the hard numbers that move "good UI" from opinion to checkable. Project tokens win when stricter. Contrast, target size, focus and reflow numbers are A11Y floors; the rest are DS build defaults. A review finding against a DS default needs the mismatch evidence of the [admission rule](skill://rite-polish/reference/anti-ai-slop.md).
 
 ### Color
 - **OKLCH-only** for new tokens: perceptually uniform, predictable lightness
@@ -241,10 +241,10 @@ rung that carries the structure.
   token.
 - **No decorative glass.** `backdrop-filter: blur(...)` is for a fixed/sticky surface over
   moving content (a sticky header, a sheet over scroll), never a default panel look
-  ([`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md)).
+  ([`anti-ai-slop.md`](skill://rite-polish/reference/anti-ai-slop.md)).
 
 ### NEVER (UI numerical bar)
-- Never reintroduce anything [`rite-polish` anti-ai-slop](../../rite-polish/reference/anti-ai-slop.md) bans (review findings follow its admission rule).
+- Never reintroduce anything [`rite-polish` anti-ai-slop](skill://rite-polish/reference/anti-ai-slop.md) bans (review findings follow its admission rule).
 - Never hard-code a spacing value the 4 pt scale or project tokens cover.
 - Never animate an exit at 100 % of enter duration (feels uncontrolled).
 - Never use raw `z-index` numbers outside the semantic scale.
@@ -263,19 +263,19 @@ rung that carries the structure.
 - [ ] **Responsive** at the canonical viewport set (§ Responsive); no lost content or
       controls, no page overflow; bounded exceptions tested; zoom-safe
 - [ ] **No accessibility violations** (axe or equivalent, WCAG 2.2 tags enabled for a 2.2 AA claim); every `incomplete` result resolved as a manual row, `inapplicable` read as not exercised: zero violations alone never ticks this
-- [ ] Meets the **CWV budget** above (measure, don't assume; lab vs field status per [`performance.md`](../../devrites-lib/reference/standards/performance.md) § Frontend)
+- [ ] Meets the **CWV budget** above (measure, don't assume; lab vs field status per [`performance.md`](skill://devrites-lib/reference/standards/performance.md) § Frontend)
 - [ ] Aligned to the **design system** (tokens, components, type, spacing)
 - [ ] **Focus indicator** passes SC 2.4.7/1.4.11 (DS focus token where declared); no custom scrollbar the DS lacks (§ Browser chrome)
 - [ ] Clickables show `cursor: pointer` + a hover state; icons are SVG from the one set
       (no emoji); nothing trapped under fixed/sticky bars
 - [ ] **Consistency locks hold** (declared color strategy/roles / one radius scale / one theme) and the
-      mechanical pre-flight's ENG/DS rows pass ([`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md))
+      mechanical pre-flight's ENG/DS rows pass ([`anti-ai-slop.md`](skill://rite-polish/reference/anti-ai-slop.md))
 
 ## Craft convergence bar
 
 Craft work terminates; it does not loop. Findings classify as **Critical /
 Important / Suggestion** on the pack's severity scale, owned by
-[`code-review.md`](../../devrites-lib/reference/standards/code-review.md): done
+[`code-review.md`](skill://devrites-lib/reference/standards/code-review.md): done
 means zero Critical, zero Important, and every remaining Suggestion accepted **in
 writing** (owner + reason) in `polish-report.md` — an unwritten suggestion is an
 ignored finding, not an accepted one. AES proposals are capped at Suggestion and

@@ -31,14 +31,14 @@ What `browser-evidence.md` must capture for a UI slice. Delegates to
 ```
 
 ## Rules
-- The `## Visual Verdict` table follows [visual-verdict.md](../../devrites-browser-proof/reference/visual-verdict.md),
+- The `## Visual Verdict` table follows [visual-verdict.md](skill://devrites-browser-proof/reference/visual-verdict.md),
   which owns its rows, verdict values and severity mapping.
 - Open every screenshot path and describe it: never assert from the filename.
 - Read `design-brief.md` + `references.md` first. Compare fidelity only with references
   classified **target**; check constraints as rules and never pixel-match inspiration.
 - Render every proof target named by the brief/slice using the canonical viewport
-  set and state coverage in [quality-standards.md](../../devrites-frontend-craft/reference/quality-standards.md).
-  Apply [capture admissibility](../../devrites-lib/reference/standards/browser-proof-checklist.md)
+  set and state coverage in [quality-standards.md](skill://devrites-frontend-craft/reference/quality-standards.md).
+  Apply [capture admissibility](skill://devrites-lib/reference/standards/browser-proof-checklist.md)
   before assigning a visual verdict; invalid captures leave proof `cannot_verify`.
 - Compare structure before decoration: hierarchy/layout → responsive/state behavior →
   type/spacing/color → polish. Record each material delta, fix it, and re-render. A visual

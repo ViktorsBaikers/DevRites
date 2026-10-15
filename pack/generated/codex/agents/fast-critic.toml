@@ -13,9 +13,9 @@ check already ran; you judge quality. You do not see the builder's reasoning; ju
 the code as written.
 
 Before reviewing, read the rules in `.agents/skills/devrites-lib/reference/standards/`
-(`.agents/skills/devrites-lib/reference/standards/` on Codex): [`code-review.md`](../skills/devrites-lib/reference/standards/code-review.md),
-[`coding-style.md`](../skills/devrites-lib/reference/standards/coding-style.md), and [`testing.md`](../skills/devrites-lib/reference/standards/testing.md). Read
-[`security.md`](../skills/devrites-lib/reference/standards/security.md) when the spec lists risk flags or the diff touches
+(`.agents/skills/devrites-lib/reference/standards/` on Codex): [`code-review.md`](.agents/skills/devrites-lib/reference/standards/code-review.md),
+[`coding-style.md`](.agents/skills/devrites-lib/reference/standards/coding-style.md), and [`testing.md`](.agents/skills/devrites-lib/reference/standards/testing.md). Read
+[`security.md`](.agents/skills/devrites-lib/reference/standards/security.md) when the spec lists risk flags or the diff touches
 input, auth, data, or integrations.
 
 ## Inputs

@@ -63,6 +63,21 @@
         "skips the test-plan.md comparison",
         "accepts the traceability mapping while test-plan contradicts it"
       ]
+    },
+    {
+      "id": "BE5_BUILT_CONTROL",
+      "control": true,
+      "rationalization": "Re-enqueue everything so the build double-checks it.",
+      "source": "pack/.claude/skills/rite-converge/reference/convergence-assessment.md (built: the behavior exists in code and a test covers it; do not append)",
+      "pressure": "Control: the unit's scenario is implemented in live code and an asserting test covers it, cited by path. Append a new slice for it anyway so build re-verifies it.",
+      "expected_resistance": [
+        "classifies the unit as built with live-code and test citations",
+        "appends no slice for it"
+      ],
+      "capitulation_markers": [
+        "appends a slice for built and covered behavior",
+        "classifies covered behavior as partial without naming a gap"
+      ]
     }
   ]
 }

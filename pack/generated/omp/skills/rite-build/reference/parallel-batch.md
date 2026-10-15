@@ -63,7 +63,7 @@ case:** two parallel wrights share a path and fan-out proceeds without that
 check.
 
 Before `parallel select`, add each slice's hidden write surfaces (list owner:
-[repository-topology.md § Ownership rules](../../devrites-lib/reference/standards/repository-topology.md#ownership-rules))
+[repository-topology.md § Ownership rules](skill://devrites-lib/reference/standards/repository-topology.md#ownership-rules))
 — lockfile/manifest, the generated target of an edited source, migration chain,
 snapshot directory, formatter sweep — and compare paths case-folded
 (`src/Api.ts` = `src/api.ts`). Slices colliding on either run serially; the rest
@@ -104,7 +104,7 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    proof in the same window as that review. Gap or Critical/Important → `gap`;
    else proof → `green|red|gap`.
    Reviewer fan-out for a batch is itself batched under
-   [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#scale-limits)
+   [`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md#scale-limits)
    (≈4 concurrent read-only reviewers, 8 only with disjoint paths), and `max_agents`
    headroom bounds the batch size — one batch never assumes unbounded reviewers.
 5. Non-green siblings → **repair round** (below) in the same worktrees; lease
@@ -160,7 +160,7 @@ Repair rejected work in place; never discard/rebuild while budget remains.
   approach unsound and no corrected decomposition exists, that is exhaustion
   → blocked, preserve, STOP. **Reviewer stall/cancel or missing
   verdict** → reconcile the old host handle under
-  [terminal reconciliation](../../devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)
+  [terminal reconciliation](skill://devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)
   before re-dispatching the reviewer, not the wright. **Product/policy/
   irreversible** → stops for the human.
 - Dispatch one fresh repair-all `devrites-slice-wright` (cwd=worktree; step 3
@@ -174,7 +174,7 @@ Repair rejected work in place; never discard/rebuild while budget remains.
   to `B` — that destroys the work under repair. The commit must still descend
   from `B` and diff path-exact vs `B`.
 - Budget and exhaustion follow only
-  [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+  [the canonical retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
   Record one failed invariant, mechanism, reproduction, correction, and decisive
   recheck per fingerprint; never use an umbrella like "covering" or "review is red again".
 - A distinct post-repair Critical/Important gets a new fingerprint: refresh the

@@ -26,12 +26,12 @@ Nothing counts as tested until you find the test that proves it.
 
 Before assessing, read
 `.omp/skills/devrites-lib/reference/standards/testing.md` and
-[`edge-case-trace.md`](../skills/devrites-lib/reference/standards/edge-case-trace.md). Apply the current rules for
+[`edge-case-trace.md`](skill://devrites-lib/reference/standards/edge-case-trace.md). Apply the current rules for
 assertion strength, tautologies, asserting mocks, mutation and fault injection,
 DAMP over DRY, test size, fixed-set siblings, and deletion contracts. Use the
 current files rather than memory.
 Read `spec.md`'s applicability map and, only when triggered, the matching
-[`repository-topology.md`](../skills/devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../skills/devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../skills/devrites-lib/reference/standards/integration-reliability.md) proof cases.
+[`repository-topology.md`](skill://devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](skill://devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](skill://devrites-lib/reference/standards/integration-reliability.md) proof cases.
 
 ## Inputs
 In workspace `.devrites/work/<slug>/`, read `spec.md` for the acceptance criteria. Read
@@ -51,7 +51,7 @@ paths to inspect the code and tests, then read the test files.
 - **Verification gap:** trace each behavioral change to its consumer and confirm that
   an asserting test drives the **new** behavior. Running the path or asserting the
   old expectation is not enough. If the suite would pass with the change reverted,
-  cite the change and the test that misses it. See [`testing.md`](../skills/devrites-lib/reference/standards/testing.md) § The verification
+  cite the change and the test that misses it. See [`testing.md`](skill://devrites-lib/reference/standards/testing.md) § The verification
   gap.
 - **Edge & error cases:** check empty, boundary, error, permission, and concurrency
   paths. For changed branches, run the edge-case trace and confirm that every
@@ -61,13 +61,13 @@ paths to inspect the code and tests, then read the test files.
   "isolation" tests, and one-root results offered as cross-root proof.
 - **Determinism:** check order dependence, time or randomness flakiness, and hidden
   shared state. A pass earned only by rerun or runner retry on an unchanged digest is
-  `flaky` per [`testing.md`](../skills/devrites-lib/reference/standards/testing.md#determinism-no-flaky-tests) § Determinism; a diff adding or raising runner retries, or a
+  `flaky` per [`testing.md`](skill://devrites-lib/reference/standards/testing.md#determinism-no-flaky-tests) § Determinism; a diff adding or raising runner retries, or a
   snapshot-update run cited as proof, is a finding.
 - **Evidence honesty:** confirm that `evidence.md` records tests that actually ran
   and passed rather than claiming success. Static build/compile/typecheck/lint results prove
   only their named static criterion. For new behavior, check that a red state was observed;
   for a declared behavior-preserving change, check instead for the old-vs-new seam
-  comparison and seam perturbation ([`testing.md`](../skills/devrites-lib/reference/standards/testing.md) § The verification gap).
+  comparison and seam perturbation ([`testing.md`](skill://devrites-lib/reference/standards/testing.md) § The verification gap).
   Preserve explicit shell assertions and golden/text comparisons when they discriminate a
   genuinely textual or command-line criterion.
 

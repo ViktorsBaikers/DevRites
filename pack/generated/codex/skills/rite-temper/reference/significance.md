@@ -15,6 +15,8 @@ so they agree on when it fires.
   module/service boundaries or has many dependents.
 - **Greenfield / ambiguous scope:** a new surface with no existing seam to follow, or a spec
   whose "right size" is genuinely open (multiple defensible scopes).
+- **Low detectability:** no existing test, gate, or monitor would show a wrong result
+  in the affected area (no suite there, silent data change), so a mistake ships unseen.
 - **Multi-slice / multi-day:** the work decomposes into several slices (large enough that a
   wrong scope call is expensive to unwind).
 - **The user asked:** "think bigger", "is this ambitious enough", "scope check", "pre-mortem",

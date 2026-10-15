@@ -24,7 +24,7 @@ and only the orchestrator-supplied changed paths.
 
 1. Match command/cwd/prerequisite/exit/decisive log exactly to `test-plan.md`;
    reject missing, synthesized, or unapproved commands and unexecuted or exit-only evidence.
-   Apply [`testing.md`](../skills/devrites-lib/reference/standards/testing.md) (Preserve producer failure, No manufactured green,
+   Apply [`testing.md`](.agents/skills/devrites-lib/reference/standards/testing.md) (Preserve producer failure, No manufactured green,
    Determinism): reject a behavioral row whose named test is absent from the
    executed set, whose selector, runner counts, or attempt record is missing or
    contradictory, whose output and exit come from different executions, whose
@@ -52,7 +52,7 @@ and only the orchestrator-supplied changed paths.
    baseline for the same command/cwd/prerequisites/material environment; it stays a
    named blocker, never a pass. Otherwise use `cannot_verify`.
 8. A manual gate whose `gates.md` note lacks the human's own words or source, is a
-   placeholder, or was runnable at Vet is `cannot_verify` ([`gates.md`](../skills/devrites-lib/reference/standards/gates.md)).
+   placeholder, or was runnable at Vet is `cannot_verify` ([`gates.md`](.agents/skills/devrites-lib/reference/standards/gates.md)).
 9. Recheck supplied before/after candidate identities. A mismatch or unexpected
    repository mutation fails the side-effect boundary.
 

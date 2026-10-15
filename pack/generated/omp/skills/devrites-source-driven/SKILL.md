@@ -4,7 +4,7 @@ description: Verify uncertain framework or library behavior in installed source 
 user-invocable: false
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/tooling.md"],"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]},"workspace":["state.md","spec.md","plan.md","decisions.md","evidence.md","references.md"],"workspaceByRole":{"evidence-scout":["state.md","spec.md","plan.md","references.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill devrites-source-driven` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill devrites-source-driven` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # devrites-source-driven: verify, don't guess
 
@@ -21,7 +21,7 @@ authoritative documentation before relying on it.
 ## How
 1. **Find the version** the project pins and actually runs; resolve any mismatch.
 2. **Apply the hierarchy, citation, and currentness contract** in
-   [`tooling.md`](../devrites-lib/reference/standards/tooling.md#research-provenance-staleness-and-cost).
+   [`tooling.md`](skill://devrites-lib/reference/standards/tooling.md#research-provenance-staleness-and-cost).
    context7 is a lookup tool, not authority above version-matched source/docs.
 3. **Confirm the specific fact:** the signature, the default, the edge behavior, not a
    general impression.
@@ -31,7 +31,7 @@ authoritative documentation before relying on it.
 ## Delegate broad research
 When the question is an *area* (a library surface, unfamiliar subsystem, or migration
 guide), the **root orchestrator** uses the fresh-context dispatch contract in
-[`agents.md`](../devrites-lib/reference/standards/agents.md) to give one bounded
+[`agents.md`](skill://devrites-lib/reference/standards/agents.md) to give one bounded
 question to `devrites-evidence-scout`. Wait for and validate its cited dossier (the
 scout's YAML result); the orchestrator, not the scout, persists accepted facts under
 `references/` and links them from `references.md`.

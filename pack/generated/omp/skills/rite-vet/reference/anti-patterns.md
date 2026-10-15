@@ -1,6 +1,6 @@
 # /rite-vet: anti-patterns
 
-Read [universal anti-patterns](../../devrites-lib/reference/standards/anti-patterns.md).
+Read [universal anti-patterns](skill://devrites-lib/reference/standards/anti-patterns.md).
 
 Authority: `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
@@ -35,7 +35,7 @@ Authority: `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-r
 - Acceptance/product-behavior growth auto-applied in AFK, or an orthogonal human-owned gate that did not pause.
 - A failure-mode table with rows but no verdict column filled: a "no test + no handling + silent" row not marked Critical.
 - Repeating an exhausted causal failure under the shared no-progress rule in
-  [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md), or stopping a
+  [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md), or stopping a
   distinct cause solely because the total review round exceeds three.
 - The reviewer / cross-model being handed the author's reasoning as independent
   evidence (defeats the fresh-context point).

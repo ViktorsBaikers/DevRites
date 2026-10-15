@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/overhaul/ovio"
+	"github.com/devrites/devrites/internal/overhaul/score"
 	"github.com/devrites/devrites/internal/overhaul/snapshot"
 )
 
@@ -65,6 +66,9 @@ var (
 	required     = []string{"run.json", "coverage.json", "findings.json", "evidence.json", "dispatch.json",
 		"approval.json", "cycles.json"}
 	channels = set("conversation", "host-structured-action")
+	// finishedVerdict is the readiness verdict each finished-repair outcome requires.
+	finishedVerdict = map[string]string{"READY_FOR_USER_REVIEW": "MEETS_TARGETS",
+		"COMPLETED_WITH_APPROVED_DEGRADATION": "MEETS_TARGETS_WITH_APPROVED_DEGRADATION"}
 )
 
 // Repr renders a decoded JSON value the way Python's repr() does, so rule
@@ -198,19 +202,38 @@ func BadPath(p any, repo string) string {
 	if path.Clean(s) != s || strings.Split(s, "/")[0] == ".." {
 		return "not normalized or escapes the repository"
 	}
-	for _, part := range strings.Split(s, "/") {
-		if part == ".git" {
-			return "names a directory or git metadata"
-		}
-	}
-	if strings.HasPrefix(s, snapshot.RunAreaDir) {
-		return "names the overhaul run area"
+	if why := reserved(s); why != "" {
+		return why
 	}
 	if isDir(join(repo, s)) {
 		return "names a directory or git metadata"
 	}
 	if !inside(repo, s) {
 		return "resolves outside the repository (symlink or traversal)"
+	}
+	// A symlink alias must not reach git metadata or the run area either.
+	root := realpath(repo)
+	full := realpath(join(root, s))
+	if why := reserved(filepath.ToSlash(strings.TrimPrefix(full, root+string(os.PathSeparator)))); why != "" {
+		return why
+	}
+	if area := realpath(join(root, snapshot.RunAreaDir)); strings.HasPrefix(strings.ToLower(full), strings.ToLower(area)+string(os.PathSeparator)) {
+		return "names the overhaul run area"
+	}
+	return ""
+}
+
+// reserved names why a repository-relative path is off limits: any .git
+// component or the run area, compared case-folded for case-insensitive filesystems.
+func reserved(rel string) string {
+	l := strings.ToLower(rel)
+	for _, part := range strings.Split(l, "/") {
+		if part == ".git" {
+			return "names a directory or git metadata"
+		}
+	}
+	if strings.HasPrefix(l, snapshot.RunAreaDir) {
+		return "names the overhaul run area"
 	}
 	return ""
 }
@@ -586,6 +609,27 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 			add("run.json: readiness_verdict differs from scorecard.json")
 		}
 	}
+	// A finished repair claims readiness only on a complete, passing scorecard.
+	outcome := str(rj, "execution_outcome")
+	if want := finishedVerdict[outcome]; want != "" {
+		if !isFile(scp) {
+			add("run.json: %s needs scorecard.json", outcome)
+		} else if sc, err := ovio.LoadObject(scp); err != nil {
+			return nil, err
+		} else {
+			if !eq(sc["readiness_verdict"], want) || !eq(rj["readiness_verdict"], want) {
+				add("run.json: %s needs readiness_verdict %s in run.json and scorecard.json", outcome, want)
+			}
+			gates := ovio.Obj(sc["gates"])
+			for _, g := range score.GateIDs(!ovio.Truthy(rj["assessment_only"])) {
+				st := str(gates, g)
+				waived := g == "G-CONCURRENCY" && st == "WAIVED_OPERATIONAL" && want == "MEETS_TARGETS_WITH_APPROVED_DEGRADATION"
+				if st != "PASS" && st != "NOT_APPLICABLE" && !waived {
+					add("run.json: %s needs gate %s to pass in scorecard.json (got %s)", outcome, g, Repr(gates[g]))
+				}
+			}
+		}
+	}
 	if err := consistency(run, genDir, R, add); err != nil {
 		return nil, err
 	}
@@ -686,7 +730,7 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 		if set("returned", "admitted", "rejected")[status] && !(str(x, "receipt") != "" && isFile(join(run, str(x, "receipt")))) {
 			add("attempt %s: receipt file missing", xid)
 		}
-		if set("dispatched", "running", "returned")[status] {
+		if !set("admitted", "rejected", "cancelled")[status] {
 			unsettled = append(unsettled, xid)
 		}
 		if !writers[str(x, "role")] {
@@ -721,7 +765,6 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 			}
 		}
 	}
-	outcome := str(rj, "execution_outcome")
 	if outcome != "RUNNING" && len(unsettled) > 0 {
 		add("attempts must be admitted, rejected or cancelled before the run leaves RUNNING: %s", Repr(unsettled[:min(5, len(unsettled))]))
 	}

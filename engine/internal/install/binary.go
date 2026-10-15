@@ -178,6 +178,10 @@ func (r *runner) removeBinary() error {
 		fmt.Fprintln(r.opts.Stdout, "  kept the global devrites-engine binary (--keep-binary).")
 		return nil
 	}
+	if !r.opts.WithBinary {
+		fmt.Fprintln(r.opts.Stdout, "  kept the global devrites-engine binary (--no-binary).")
+		return nil
+	}
 	if os.Getenv("DEVRITES_NO_BINARY") == "1" {
 		fmt.Fprintln(r.opts.Stdout, "  kept the global devrites-engine binary (DEVRITES_NO_BINARY=1).")
 		return nil

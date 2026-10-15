@@ -67,21 +67,25 @@ func validateSlicePaths(paths []string, label, root string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", label, err)
 		}
+		// Comparisons fold case always: on a case-insensitive filesystem
+		// (macOS, Windows) .DEVRITES is the control tree and A.go is a.go; on a
+		// case-sensitive one a false overlap only serializes the slices.
+		folded := strings.ToLower(path)
 		// Parallel eligibility must reject workspace control metadata so slices
 		// cannot claim control-tree / SSOT files (docs: ".devrites/**").
-		if path == ".devrites" || strings.HasPrefix(path, ".devrites/") {
+		if folded == ".devrites" || strings.HasPrefix(folded, ".devrites/") {
 			return nil, fmt.Errorf("%s: path must not include .devrites: %q", label, path)
 		}
 		// Same for git internals: a transfer commit can never carry .git/**
 		// anyway, and inside a worktree .git is a file, so claiming it is
 		// pure footgun.
-		if path == ".git" || strings.HasPrefix(path, ".git/") {
+		if folded == ".git" || strings.HasPrefix(folded, ".git/") {
 			return nil, fmt.Errorf("%s: path must not include .git: %q", label, path)
 		}
-		if _, ok := seen[path]; ok {
+		if _, ok := seen[folded]; ok {
 			return nil, fmt.Errorf("%s: duplicate path %q", label, path)
 		}
-		seen[path] = struct{}{}
+		seen[folded] = struct{}{}
 		normalized = append(normalized, path)
 		if root != "" {
 			// Check every component, not just the leaf: a symlinked directory
@@ -122,6 +126,7 @@ func CheckPathDisjoint(slices []SlicePaths, root string) ([]string, error) {
 			return nil, err
 		}
 		for _, path := range paths {
+			path = strings.ToLower(path) // see validateSlicePaths: overlap folds case
 			owners[path] = append(owners[path], label)
 		}
 	}

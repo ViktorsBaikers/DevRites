@@ -1,6 +1,7 @@
 package safepath
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 )
@@ -28,9 +29,10 @@ func WithinResolved(candidate, parent string) bool {
 
 // ResolveExisting resolves symlinks in the longest existing path prefix, then
 // appends any missing tail without allowing it to change the resolved parent.
+// A dangling symlink is followed to its target: creating through it writes there.
 func ResolveExisting(filename string) (string, error) {
 	var tail []string
-	for {
+	for hops := 0; ; {
 		resolved, err := filepath.EvalSymlinks(filename)
 		if err == nil {
 			for i := len(tail) - 1; i >= 0; i-- {
@@ -40,6 +42,20 @@ func ResolveExisting(filename string) (string, error) {
 		}
 		if !os.IsNotExist(err) {
 			return "", err
+		}
+		if info, lerr := os.Lstat(filename); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
+			target, rerr := os.Readlink(filename)
+			if rerr != nil {
+				return "", rerr
+			}
+			if hops++; hops > 255 {
+				return "", &os.PathError{Op: "resolve", Path: filename, Err: errors.New("too many symlinks")}
+			}
+			if !filepath.IsAbs(target) {
+				target = filepath.Join(filepath.Dir(filename), target)
+			}
+			filename = target
+			continue
 		}
 		parent := filepath.Dir(filename)
 		if parent == filename {

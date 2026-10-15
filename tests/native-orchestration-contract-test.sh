@@ -242,6 +242,8 @@ for required in (
 
 settings = json.loads((canonical / "settings.json").read_text())
 allowed = set(settings["permissions"]["allow"])
+if "defaultMode" in settings["permissions"]:
+    raise SystemExit("Claude settings must not set permissions.defaultMode")
 expected = {
     "Bash(devrites-engine check candidate *)",
     "Bash(devrites-engine check readiness *)",
@@ -259,6 +261,7 @@ expected = {
     "Bash(devrites-engine orient *)",
     "Bash(devrites-engine next *)",
     "Bash(devrites-engine handoff *)",
+    "Bash(devrites-engine recall *)",
     "Bash(devrites-engine context *)",
     "Bash(devrites-engine metrics *)",
     "Bash(devrites-engine dispatch *)",
@@ -287,6 +290,7 @@ expected = {
     "Bash(devrites-engine gates lint *)",
     "Bash(devrites-engine gates attest *)",
     "Bash(devrites-engine gates abandon *)",
+    "Bash(devrites-engine overhaul *)",
     "mcp__codegraph__*",
     "mcp__codebase-memory-mcp__*",
     "mcp__codebase-memory__*",
@@ -300,8 +304,7 @@ expected = {
     "Bash(git show *)",
     "Bash(git rev-parse *)",
     "Bash(git merge-base *)",
-    "Edit(.devrites/**)",
-    "Write(.devrites/**)",
+    "Edit(/.devrites/**)",
     "Bash(devrites-engine secret-scan)",
     "Bash(devrites-engine secret-scan *)",
     "Bash(devrites-engine open-visual *)",
@@ -516,7 +519,7 @@ if documented != actual:
         f"{documented}; the agents tree has {actual}"
     )
 pin(
-    "that root from editing source/tests. "
+    "the root from editing source/tests. "
     f"Among the lifecycle `devrites-*` specialists, both hosts expose only `{writable}` as a writable one. "
     "The shipped profiles are the full role-to-permission map; `/rite-doctor` step 3 checks them."
 )
@@ -529,9 +532,9 @@ codex_writers = [
 ]
 compliance_flat = " ".join((root / "docs/harness-compliance.md").read_text().split())
 for claim in (
-    "Claude lifecycle `devrites-*` reviewer profiles use permissionMode plan",
+    "Claude lifecycle `devrites-*` reviewer profiles have no Edit/Write tools",
     'Codex lifecycle `devrites-*` reviewer profiles use `default_permissions = ":read-only"`',
-    "its root no-source-writing boundary is instruction-enforced",
+    "root no-source-writing boundary is instruction-enforced",
     "both hosts dispatch the exact slice-wright while every other lifecycle `devrites-*` specialist remains read-only",
 ):
     if claim not in compliance_flat:

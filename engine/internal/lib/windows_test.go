@@ -418,3 +418,109 @@ func TestCheckWindowsRenamedTestIsNotDeleted(t *testing.T) {
 		t.Fatalf("rename flagged: code=%d out=%q err=%q", code, out.String(), errBuf.String())
 	}
 }
+
+// A --base value that looks like a flag must never reach git as an option.
+func TestCheckWindowsAndDiffScopeRejectFlagLikeBase(t *testing.T) {
+	project := t.TempDir()
+	initWindowsRepo(t, project)
+	root := windowsWorkspace(t, project, "feat")
+	testutil.WriteFile(t, filepath.Join(project, "a.go"), "package a\n")
+	runSecretScanGit(t, project, "add", "--", "a.go")
+	runSecretScanGit(t, project, "commit", "-qm", "baseline")
+	leak := filepath.Join(t.TempDir(), "leak.txt")
+	var out, errBuf bytes.Buffer
+	if code := RunCheckWindows(root, []string{"feat", "--base", "--output=" + leak}, &out, &errBuf); code != 2 {
+		t.Fatalf("windows: code=%d out=%q err=%q", code, out.String(), errBuf.String())
+	}
+	if code := RunCheckDiffScope(root, []string{"feat", "--allow", "a.go", "--base", "--output=" + leak}, &out, &errBuf); code != 2 {
+		t.Fatalf("diff-scope: code=%d out=%q err=%q", code, out.String(), errBuf.String())
+	}
+	if _, err := os.Stat(leak); err == nil {
+		t.Fatal("--base value was passed to git as an option")
+	}
+}
+
+// Repository diff configuration (color, external diff, mnemonic prefixes) and
+// quoted non-ASCII paths must not hide, misattribute or duplicate markers.
+func TestCheckWindowsIgnoresDiffConfigAndUnquotesPaths(t *testing.T) {
+	project := t.TempDir()
+	initWindowsRepo(t, project)
+	root := windowsWorkspace(t, project, "feat")
+	testutil.WriteFile(t, filepath.Join(project, "a.go"), "package a\n")
+	testutil.WriteFile(t, filepath.Join(project, "café.go"), "package a\n")
+	runSecretScanGit(t, project, "add", "--", "a.go", "café.go")
+	runSecretScanGit(t, project, "commit", "-qm", "baseline")
+	for _, kv := range [][2]string{{"color.ui", "always"}, {"diff.external", "true"}, {"diff.mnemonicPrefix", "true"}} {
+		runSecretScanGit(t, project, "config", kv[0], kv[1])
+	}
+	testutil.AppendFile(t, filepath.Join(project, "a.go"), "// TODO: hidden by config\n")
+	testutil.AppendFile(t, filepath.Join(project, "café.go"), "// FIXME: accent\n")
+	runSecretScanGit(t, project, "add", "--", "a.go")
+	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "windows.md"), "- a.go | TODO | tracked follow-up\n")
+
+	var out, errBuf bytes.Buffer
+	// Staged mode has no whole-file fallback: only the diff can see the marker.
+	if code := RunCheckWindows(root, []string{"feat", "--staged"}, &out, &errBuf); code != 0 || !strings.Contains(out.String(), "waived: a.go:2 TODO") {
+		t.Fatalf("staged: code=%d out=%q err=%q", code, out.String(), errBuf.String())
+	}
+	out.Reset()
+	if code := RunCheckWindows(root, []string{"feat"}, &out, &errBuf); code != 3 {
+		t.Fatalf("code=%d out=%q err=%q", code, out.String(), errBuf.String())
+	}
+	got := out.String()
+	if !strings.Contains(got, "waived: a.go:2 TODO") || strings.Count(got, "unwaived: café.go:2 FIXME") != 1 || strings.Contains(got, `\303`) {
+		t.Fatalf("out=%q", got)
+	}
+}
+
+func TestWindowsMarkersRespectWordBoundaries(t *testing.T) {
+	for _, line := range []string{"os.Exit(1)", "benefit(x)", "x := mytodo!(y)", "profit(a)"} {
+		if got := windowsMarkers(line); len(got) != 0 {
+			t.Fatalf("%q: markers=%v want none", line, got)
+		}
+	}
+	for line, want := range map[string]string{"xit('later', fn)": "xit(", "  fit('focus', fn)": "fit(", "@pytest.mark.skipif(x)": "pytest.mark.skip", "    pytest.skip(\"flaky\")": "pytest.skip(", "pytest.xfail(\"later\")": "pytest.xfail("} {
+		if got := windowsMarkers(line); len(got) != 1 || got[0] != want {
+			t.Fatalf("%q: markers=%v want [%s]", line, got, want)
+		}
+	}
+}
+
+// A project nested in a repository subdirectory: its own workspace is never
+// scanned, and windows.md rows use project-relative paths.
+func TestCheckWindowsNestedProject(t *testing.T) {
+	repo := t.TempDir()
+	initWindowsRepo(t, repo)
+	project := filepath.Join(repo, "sub")
+	root := windowsWorkspace(t, project, "feat")
+	testutil.WriteFile(t, filepath.Join(project, "a.go"), "package a\n")
+	runSecretScanGit(t, repo, "add", "--", "sub/a.go")
+	runSecretScanGit(t, repo, "commit", "-qm", "baseline")
+	testutil.AppendFile(t, filepath.Join(project, "a.go"), "// TODO: waived\n")
+	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "notes.md"), "TODO: workspace prose\n")
+	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "windows.md"), "- a.go | TODO | tracked follow-up\n")
+
+	var out, errBuf bytes.Buffer
+	if code := RunCheckWindows(root, []string{"feat"}, &out, &errBuf); code != 0 {
+		t.Fatalf("code=%d out=%q err=%q", code, out.String(), errBuf.String())
+	}
+	if strings.Contains(out.String(), ".devrites") {
+		t.Fatalf("own workspace scanned: %q", out.String())
+	}
+}
+
+// The metric carries the workspace's cursor phase, not a hard-coded "seal".
+func TestCheckWindowsRecordsCursorPhase(t *testing.T) {
+	project := t.TempDir()
+	initWindowsRepo(t, project)
+	root := windowsWorkspace(t, project, "feat")
+	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "state.md"), "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | build |\n| status | running |\n")
+	var out, errBuf bytes.Buffer
+	if code := RunCheckWindows(root, []string{"feat"}, &out, &errBuf); code != 0 {
+		t.Fatalf("code=%d out=%q err=%q", code, out.String(), errBuf.String())
+	}
+	raw, err := os.ReadFile(filepath.Join(root, "work", "feat", MetricsFile))
+	if err != nil || !strings.Contains(string(raw), `"phase":"build","event":"windows"`) {
+		t.Fatalf("metrics=%q err=%v", raw, err)
+	}
+}

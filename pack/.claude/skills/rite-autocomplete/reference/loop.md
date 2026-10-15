@@ -51,7 +51,8 @@ and parallel AFK headroom as stop conditions. Pass this invocation's
 that already name a ranked recommended option (recommended pick via
 `devrites-engine state resolve`) instead of queuing them or handing
 `/rite-resolve` to the user. Escalating, irreversible-risk, access, and
-blocking with no recommended option still pause.
+blocking with no recommended option still pause, as does Seal's judgment-only
+validating question (`slice: seal`).
 
 ## Phase arc
 

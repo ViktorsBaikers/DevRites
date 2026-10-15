@@ -220,12 +220,17 @@ human approval — owned by [`security.md`](security.md) § Prompt-injection and
 Behavior-shaping prose is code:
 
 1. Baseline without guidance; if it passes, add none.
-2. Run ≥5 fresh-context reps/variant; inspect every flagged run.
+2. Run ≥5 fresh-context reps/variant; inspect every flagged run, and ask that agent which
+   instruction or missing context led it there before editing guidance. The corpus holds a control
+   case that must always pass, past-failure cases, and boundary cases whose right answer is
+   stop, ask, or refuse.
 3. Divergent interpretations require rewrite, not averaging.
 4. Pin host/model/build, corpus, grader, and candidate digest or commit+path. Report tasks/trials,
    arms, same-build A/A noise before A/B, sanitized per-trial verdicts/metrics, invalid/null results,
    variance, process versus job outcome, and supported/unproved claims. Never capture raw transcripts;
    lost grading signal is `cannot_verify`.
+5. On each new model generation, re-run step 1 as an ablation: remove the guidance and rerun its
+   eval. Guidance the model no longer needs is a `$rite-learn` retirement candidate, not a keeper.
 
 CI validates only corpora/deterministic artifacts—never paid sessions or lexical claims.
 
@@ -233,6 +238,13 @@ CI validates only corpora/deterministic artifacts—never paid sessions or lexic
 
 Delete model-default no-ops. Prefer positive targets; reserve prohibitions for hard
 guards. Fill omitted decisions or mark a deliberate branch.
+
+- Instructions add no capability: replace "be careful" or "CRITICAL" with a check, tool,
+  or engine command the agent can run.
+- State both sides of a trade-off. A one-sided cost ("avoid escalating; it is expensive")
+  is overfit: the agent withholds, deflects, or skips the stop it needed.
+- A defensive line added for one model's failure names that failure, so ablation can
+  retire it when a later model no longer fails.
 
 ## Contribution preflight
 

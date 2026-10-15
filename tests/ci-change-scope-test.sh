@@ -44,10 +44,14 @@ expect $'engine/main.go\nengine/go.mod' run_tests true
 expect $'engine/main.go\nengine/go.mod' run_engine true
 expect $'engine/main.go\nengine/go.mod' run_full true
 expect $'engine/main.go\ntests/eval-coverage-ledger-test.sh' run_tests true
-expect $'README.md\ndocs/release.md' run_full false
-expect $'README.md\ndocs/release.md' run_tests false
-# Docs-only PRs skip the shell test shards but still run the validate job
-# (run_docs=true), which checks README, CHANGELOG and docs/.
+# Shell and engine tests read README, CONTRIBUTING and docs/, so those edits
+# keep the full suite; only LICENSE/.scratch/ edits skip it.
+expect $'README.md\ndocs/release.md' run_full true
+expect $'README.md\ndocs/release.md' run_tests true
+expect $'CONTRIBUTING.md' run_tests true
+expect $'LICENSE' run_tests false
+expect $'.scratch/x/notes.md' run_full false
+# Docs edits still run the validate job (run_docs=true).
 expect $'README.md' run_docs true
 expect $'CHANGELOG.md' run_docs true
 expect $'CONTRIBUTING.md' run_docs true
@@ -55,9 +59,12 @@ expect $'docs/release.md' run_docs true
 expect $'engine/main.go\nREADME.md' run_docs true
 expect $'engine/main.go' run_docs false
 expect $'pack/.claude/skills/rite-build/SKILL.md' run_docs false
-# Engine tests read docs/engine/, so those edits must run the engine job and
-# the shell suite even though other docs/ edits skip both.
+# Engine tests read docs/engine/, docs/cli.md, docs/harness-compliance.md and
+# evals/golden/, so those edits must run the engine job.
 expect $'docs/engine/commands.md' run_engine true
+expect $'docs/cli.md' run_engine true
+expect $'docs/harness-compliance.md' run_engine true
+expect $'evals/golden/shippable-feature/state.md' run_engine true
 expect $'docs/engine/commands.md' run_full true
 expect $'docs/engine/commands.md' run_tests true
 expect $'docs/release.md' run_engine false

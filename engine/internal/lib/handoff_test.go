@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -79,5 +80,37 @@ func TestDeadEndsBoundsAndSectionScope(t *testing.T) {
 	ends := deadEnds([]byte(body))
 	if len(ends) != 2 || ends[0] != "one" || ends[1] != "two" {
 		t.Fatalf("ends=%v", ends)
+	}
+}
+
+func TestCountOpenQuestionsIgnoresFencedExamples(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "questions.md")
+	writeFile(t, path, "# Questions\n\nExample:\n\n```md\n## Q-009\nstatus: open\n| Q-009 | open | blocking |\n```\n\n## Q-001\nstatus: open\n")
+	if got := countOpenQuestions(path); got != 1 {
+		t.Fatalf("countOpenQuestions = %d, want 1", got)
+	}
+}
+
+func TestDeadEndsKeepSubheadingsAndSkipRules(t *testing.T) {
+	body := "## Dead ends\n\n- one\n\n### Older\n\n- two\n\n---\n\n# Next\n- not a dead end\n"
+	ends := deadEnds([]byte(body))
+	if len(ends) != 2 || ends[0] != "one" || ends[1] != "two" {
+		t.Fatalf("ends=%q", ends)
+	}
+}
+
+func TestHandoffDoesNotFollowSymlinkedDecisions(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	outside := filepath.Join(t.TempDir(), "outside.md")
+	writeFile(t, outside, "## Dead ends\n- outside secret\n")
+	if err := os.Symlink(outside, filepath.Join(featureDir, "decisions.md")); err != nil {
+		t.Skip("symlinks unavailable:", err)
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunHandoff(root, []string{"feat"}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d err=%s", code, stderr.String())
+	}
+	if out := stdout.String(); strings.Contains(out, "outside secret") || !strings.Contains(out, "dead_ends: none") {
+		t.Fatalf("symlinked decisions.md was followed:\n%s", out)
 	}
 }

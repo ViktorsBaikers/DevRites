@@ -5,7 +5,7 @@ argument-hint: "<security | perf | simplify>"
 user-invocable: false
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/parallel-dispatch.md","devrites-lib/reference/standards/agents.md"],"triggers":{"audit-coverage":["devrites-lib/reference/standards/audit-coverage.md"],"architecture-health":["devrites-lib/reference/standards/architecture-health.md"]},"workspace":["spec.md","plan.md","tasks.md","touched-files.md","evidence.md","state.md","decisions.md"],"workspaceByRole":{"performance-reviewer":["spec.md","plan.md","tasks.md","state.md","touched-files.md","evidence.md"],"security-auditor":["spec.md","plan.md","tasks.md","state.md","touched-files.md","evidence.md"],"simplifier-reviewer":["spec.md","plan.md","tasks.md","state.md","touched-files.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill devrites-audit` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill devrites-audit` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # devrites-audit: read-only audit dispatch
 
@@ -24,17 +24,17 @@ If no axis is supplied, infer only when intent is unambiguous; otherwise the roo
 the human before dispatch.
 
 When scope is a surface larger than the feature diff — subsystem, protocol surface,
-repo sweep — apply [`audit-coverage.md`](../devrites-lib/reference/standards/audit-coverage.md)
+repo sweep — apply [`audit-coverage.md`](skill://devrites-lib/reference/standards/audit-coverage.md)
 (trigger `audit-coverage`). When the audit calls for a whole-codebase structural
 score and a code index is present, apply
-[`architecture-health.md`](../devrites-lib/reference/standards/architecture-health.md)
+[`architecture-health.md`](skill://devrites-lib/reference/standards/architecture-health.md)
 (trigger `architecture-health`).
 
 ## Gather and dispatch
 
 1. Resolve `.devrites/ACTIVE`; require `spec.md` and `touched-files.md`.
 2. Follow the bounded fresh-context native dispatch contract in
-   [`agents.md`](../devrites-lib/reference/standards/agents.md).
+   [`agents.md`](skill://devrites-lib/reference/standards/agents.md).
 3. Include `spec.md`, `decisions.md` when present,
    `evidence.md` for performance, `touched-files.md`, and the immutable diff.
 4. Objective: derive expected behavior independently, apply the role's documented
@@ -45,7 +45,7 @@ score and a code index is present, apply
 
 Use one task per axis. If several axes are requested, keep their inputs separate with
 no cross-pollination; batch or serialize per
-[`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md) when readers
+[`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md) when readers
 exceed ~3 per wave.
 
 ## Fallback and scope

@@ -25,6 +25,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/devrites/devrites/internal/overhaul/ovio"
+	"github.com/devrites/devrites/internal/overhaul/packet"
 	"github.com/devrites/devrites/internal/overhaul/records"
 )
 
@@ -46,22 +47,15 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	var code int
 	var err error
 	switch {
-	case len(args) >= 3 && args[0] == "receipt":
-		observed, hasObserved := "", false
-		for i, a := range args {
-			if a == "--observed" {
-				if i+1 >= len(args) {
-					fmt.Fprint(stderr, usage)
-					return 2
-				}
-				observed, hasObserved = args[i+1], true
-				break
-			}
+	case len(args) >= 3 && args[0] == "receipt" && (len(args) == 3 || len(args) == 5 && args[3] == "--observed"):
+		observed, hasObserved := "", len(args) == 5
+		if hasObserved {
+			observed = args[4]
 		}
 		code, err = receipt(args[1], args[2], observed, hasObserved, stdout)
 	case len(args) == 3 && args[0] == "packet":
 		code, err = packetAdmit(args[1], args[2], stdout)
-	case len(args) >= 3 && args[0] == "anchor":
+	case len(args) == 3 && args[0] == "anchor":
 		code, err = anchor(args[1], args[2], stdout, stderr)
 	default:
 		fmt.Fprint(stderr, usage)
@@ -227,6 +221,16 @@ func receipt(run, path, observed string, hasObserved bool, stdout io.Writer) (in
 		if s := ovio.Str(x["status"]); s == "admitted" || s == "rejected" || s == "cancelled" {
 			verdict(stdout, "DUPLICATE_OR_LATE", "attempt_status", x["status"])
 			return 3, nil
+		}
+		// Only the attempt's own receipt file counts: not a copy elsewhere (such
+		// as in the target repository) and not a symlink to one.
+		canon := filepath.Join(realpath(run), "receipts", packet.Name(map[string]any{"run_id": rj["run_id"],
+			"task_id": x["task_id"], "attempt_id": x["attempt_id"], "role": x["role"]})+".json")
+		if realpath(path) != canon {
+			why = append(why, "receipt must be the attempt's file <run>/receipts/<run_id>__<task_id>__<attempt_id>__<role>.json")
+		}
+		if r := ovio.Str(x["receipt"]); r != "" && realpath(join(run, r)) != canon {
+			why = append(why, "receipt differs from the dispatched attempt's receipt")
 		}
 		for _, k := range []string{"role", "lane", "snapshot"} {
 			if !eq(rc[k], x[k]) {

@@ -33,7 +33,7 @@ installed version). `(perf)` marks probes the performance reviewer also applies.
   needs profiler evidence; a removal needs a test that effect run counts stay unchanged.
 - `[next app-router]` **`'use server'` exports are public entry points.** Each
   authenticates, authorizes, and validates inside the action — judge under
-  [`security.md`](../security.md). Proof: call it with no session and as another user.
+  [`security.md`](skill://devrites-lib/reference/standards/security.md). Proof: call it with no session and as another user.
 - `[next app-router]` (perf) **Server→client props** carry unused or sensitive fields
   into the serialized page payload.
 - `[next app-router]` **`ssr: false` inside a Server Component** fails the build

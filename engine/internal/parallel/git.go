@@ -108,18 +108,17 @@ func isAncestor(repo, ancestor, descendant string) (bool, error) {
 }
 
 func diffNames(repo, a, b string) ([]string, error) {
-	out, err := git(repo, "diff", "--name-only", a, b)
+	// --no-renames reports a rename's source as a deletion; -z keeps paths raw
+	// instead of C-quoted.
+	out, err := git(repo, "diff", "--name-only", "--no-renames", "-z", a, b)
 	if err != nil {
 		return nil, err
 	}
+	out = strings.TrimSuffix(out, "\x00")
 	if out == "" {
 		return nil, nil
 	}
-	lines := strings.Split(out, "\n")
-	for i := range lines {
-		lines[i] = strings.TrimSpace(lines[i])
-	}
-	return lines, nil
+	return strings.Split(out, "\x00"), nil
 }
 
 func headSHA(repo string) (string, error) {

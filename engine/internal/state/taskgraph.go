@@ -3,16 +3,20 @@ package state
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode"
 
 	"github.com/devrites/devrites/internal/markdowntext"
 )
 
-// TaskSlice is one SLICE-### block parsed from tasks.md.
+// TaskSlice is one SLICE-### block parsed from tasks.md. Via maps a dependency
+// ID to the interface its `(via <text>)` suffix names; bare edges are absent.
 type TaskSlice struct {
-	ID           string
-	Dependencies []string
+	ID               string
+	Dependencies     []string
+	Via              map[string]string
+	ConsumesProduces string
 }
 
 // TaskGraphResult is the deterministic outcome of parsing a tasks.md slice graph.
@@ -26,8 +30,12 @@ type TaskGraphResult struct {
 var (
 	sliceHeaderRE  = regexp.MustCompile(`(?m)^##\s+(SLICE-\d+)\b`)
 	anyH2HeaderRE  = regexp.MustCompile(`(?m)^##\s`)
-	dependenciesRE = regexp.MustCompile(`(?m)^Dependencies:\s*(.+)\s*$`)
-	dependsOnRE    = regexp.MustCompile(`(?m)^depends_on:\s*(.+)\s*$`)
+	dependenciesRE = regexp.MustCompile(`(?m)^Dependencies:[ \t]*(.+)[ \t]*$`)
+	dependsOnRE    = regexp.MustCompile(`(?m)^depends_on:[ \t]*(.+)[ \t]*$`)
+	consumesRE     = regexp.MustCompile(`(?m)^Consumes / Produces:[ \t]*(.+)[ \t]*$`)
+	// viaSuffixRE matches a Dependencies `(via <text>)` suffix; group 2 is
+	// empty when the parenthetical is unclosed. Nested parentheses are unsupported.
+	viaSuffixRE    = regexp.MustCompile(`\([ \t]*via\b([^()]*)(\))?`)
 	sliceIDValidRE = regexp.MustCompile(`^SLICE-\d+$`)
 )
 
@@ -92,10 +100,10 @@ func ParseTaskGraph(tasksMarkdown []byte) TaskGraphResult {
 			end = headers[i+1][0]
 		}
 		block := text[start:end]
-		deps, problems := parseSliceGraph(id, block)
+		slice, problems := parseSliceGraph(id, block)
 		result.Problems = append(result.Problems, problems...)
-		result.Slices = append(result.Slices, TaskSlice{ID: id, Dependencies: deps})
-		for _, dep := range deps {
+		result.Slices = append(result.Slices, slice)
+		for _, dep := range slice.Dependencies {
 			if !known[dep] {
 				result.Unknown = append(result.Unknown, dep)
 				result.Problems = append(result.Problems, fmt.Sprintf("%s depends on unknown slice %s", id, dep))
@@ -121,13 +129,19 @@ func structuralTaskText(tasksMarkdown []byte) string {
 	return string(masked)
 }
 
-func parseSliceGraph(id, block string) ([]string, []string) {
+func parseSliceGraph(id, block string) (TaskSlice, []string) {
 	var problems []string
 	depsLine := firstLineValue(dependenciesRE, block)
 	mirrorLine := firstLineValue(dependsOnRE, block)
-	deps, malformed := parseIDList(depsLine)
-	for _, token := range malformed {
+	bare, via, malformed := splitDependencyVia(depsLine)
+	deps, malformedIDs := parseIDList(bare)
+	for _, token := range append(malformed, malformedIDs...) {
 		problems = append(problems, fmt.Sprintf("%s has malformed dependency %q", id, token))
+	}
+	for dep := range via {
+		if !slices.Contains(deps, dep) {
+			delete(via, dep) // its ID token is already reported malformed
+		}
 	}
 	mirror, mirrorMalformed := parseIDList(mirrorLine)
 	for _, token := range mirrorMalformed {
@@ -142,7 +156,48 @@ func parseSliceGraph(id, block string) ([]string, []string) {
 	if depsLine == "" {
 		deps = mirror
 	}
-	return deps, problems
+	return TaskSlice{ID: id, Dependencies: deps, Via: via, ConsumesProduces: firstLineValue(consumesRE, block)}, problems
+}
+
+// splitDependencyVia strips each `(via <text>)` suffix from a Dependencies
+// value, returning the bare ID list, the via text keyed by the ID it follows,
+// and any suffix that is empty, unclosed, or not directly after an ID.
+func splitDependencyVia(raw string) (string, map[string]string, []string) {
+	var bare strings.Builder
+	var via map[string]string
+	var malformed []string
+	last := 0
+	for _, m := range viaSuffixRE.FindAllStringSubmatchIndex(raw, -1) {
+		before := raw[last:m[0]]
+		bare.WriteString(before)
+		last = m[1]
+		text := strings.TrimSpace(raw[m[2]:m[3]])
+		dep := precedingSliceID(before)
+		if m[4] < 0 || text == "" || dep == "" {
+			malformed = append(malformed, strings.TrimSpace(raw[m[0]:m[1]]))
+			continue
+		}
+		if via == nil {
+			via = make(map[string]string)
+		}
+		if _, seen := via[dep]; !seen {
+			via[dep] = text
+		}
+	}
+	bare.WriteString(raw[last:])
+	return bare.String(), via, malformed
+}
+
+// precedingSliceID returns the SLICE-### token that ends s, separated from what
+// follows only by blanks, or "" when s ends in a separator or a non-ID token.
+func precedingSliceID(s string) string {
+	s = strings.TrimRight(s, " \t")
+	start := strings.LastIndexAny(s, ",; \t") + 1
+	id := strings.Trim(s[start:], "`'\"(){}[]")
+	if !sliceIDValidRE.MatchString(id) {
+		return ""
+	}
+	return id
 }
 
 func firstLineValue(re *regexp.Regexp, block string) string {

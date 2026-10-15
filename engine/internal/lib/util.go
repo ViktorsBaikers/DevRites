@@ -94,13 +94,15 @@ func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, a
 		"PAGER=cat",
 		"LC_ALL=C",
 	)
-	var output cappedGitOutput
+	// stderr gets its own buffer: git warnings (e.g. core.autocrlf) must never
+	// be parsed as output, only reported when the command fails.
+	var output, errOutput cappedGitOutput
 	if stdout == nil {
 		cmd.Stdout = &output
 	} else {
 		cmd.Stdout = stdout
 	}
-	cmd.Stderr = &output
+	cmd.Stderr = &errOutput
 	err := cmd.Run()
 	if err == nil {
 		if output.truncated {
@@ -116,8 +118,8 @@ func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, a
 	if ctx.Err() != nil {
 		err = ctx.Err()
 	}
-	detail := output.String()
-	if output.truncated {
+	detail := errOutput.String()
+	if errOutput.truncated {
 		detail += "\n[git output truncated]"
 	}
 	return nil, &gitCommandError{
@@ -130,13 +132,21 @@ func runGitCommandIO(dir string, env []string, input []byte, stdout io.Writer, a
 
 // gitDiffNames lists the paths that differ, relative to gitRoot. With one ref it
 // diffs the working tree against that ref; with two it diffs the two tree objects.
+// Renames are split into their deletion and addition so both names surface, and
+// -z keeps non-ASCII paths unquoted.
 func gitDiffNames(gitRoot string, refs ...string) ([]string, error) {
-	args := append([]string{"diff", "--name-only"}, refs...)
+	args := append([]string{"diff", "--name-only", "--no-renames", "-z"}, refs...)
 	out, err := runGitCommand(gitRoot, nil, args...)
 	if err != nil {
 		return nil, err
 	}
-	return splitLinesNoTrailing(out), nil
+	var paths []string
+	for _, path := range strings.Split(string(out), "\x00") {
+		if path != "" {
+			paths = append(paths, path)
+		}
+	}
+	return paths, nil
 }
 
 // argAt returns args[i] or "": the Go analogue of bash's ${N:-} positional reads.
@@ -159,8 +169,9 @@ func activeSlug(root string) string {
 	return slug
 }
 
+// splitLinesNoTrailing splits data into lines, treating CRLF as LF.
 func splitLinesNoTrailing(data []byte) []string {
-	value := strings.TrimSuffix(string(data), "\n")
+	value := strings.TrimSuffix(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 	if value == "" {
 		return nil
 	}

@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-frame/reference/failure-modes.md"],"triggers":{"principles":["devrites-lib/reference/standards/principles.md"],"simplify":["devrites-lib/reference/standards/coding-style.md","devrites-lib/reference/standards/patterns.md"],"testing":["devrites-lib/reference/standards/testing.md"]},"workspace":[]} -->
-> Read-set manifest: `devrites-engine context <slug> --phase frame` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase frame` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-frame: frame the goal, audit the diff

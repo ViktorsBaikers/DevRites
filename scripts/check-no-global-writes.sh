@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# check-no-global-writes.sh: static guard that the installer/uninstaller never
-# writes to the user's global ~/.claude or ~/.codex, and that the global guard is present.
+# check-no-global-writes.sh: static guard that the installer/uninstaller (shell
+# scripts, the npx entry point, and the Go installer) never writes to the user's
+# global ~/.claude or ~/.codex, and that the global guard is present.
 # Exits non-zero on violation.
 
 set -u
@@ -152,6 +153,31 @@ for f in "${SCRIPTS[@]}"; do
   fi
 done
 [ "$fail" -eq 0 ] && echo "ok: no write operations target system bin dirs (except the sanctioned devrites-engine binary)"
+
+# 4) the npx entry point and the Go installer resolve home/system-bin paths only in
+#    the sanctioned places: binaryDest/binaryCandidates (the devrites-engine binary)
+#    and isGlobalTarget (the refusal guard). bin/devrites.mjs never resolves them.
+GO_HOME_RE='UserHomeDir[(]|"/usr/local/bin"|"[.]local"'
+GO_ALLOWED_FUNCS='binaryDest binaryCandidates isGlobalTarget'
+for f in "$ROOT"/engine/internal/install/*.go "$ROOT"/engine/internal/release/*.go; do
+  case "$f" in *_test.go) continue ;; esac
+  hits="$(RE="$GO_HOME_RE" ALLOWED=" $GO_ALLOWED_FUNCS " awk '
+    /^func / { name = $0; sub(/^func ([(][^)]*[)] )?/, "", name); sub(/[(].*/, "", name) }
+    $0 ~ ENVIRON["RE"] && $0 !~ /^[[:space:]]*\/\// && index(ENVIRON["ALLOWED"], " " name " ") == 0 { print FNR ": " $0 }
+  ' "$f")"
+  if [ -n "$hits" ]; then
+    echo "FAIL: home/system-bin path outside the sanctioned engine-binary/guard functions in ${f#"$ROOT"/}:"
+    printf '%s\n' "$hits" | sed 's/^/    /'
+    fail=1
+  fi
+done
+hits="$(grep -nE 'homedir|USERPROFILE|process\.env\.HOME|\.local/bin|/usr/local/bin|~/\.' "$ROOT/bin/devrites.mjs" || true)"
+if [ -n "$hits" ]; then
+  echo "FAIL: bin/devrites.mjs resolves a home or system-bin path (it must stay temp-dir only):"
+  printf '%s\n' "$hits" | sed 's/^/    /'
+  fail=1
+fi
+[ "$fail" -eq 0 ] && echo "ok: npx entry point and Go installer resolve global paths only where sanctioned"
 
 if [ "$fail" -eq 0 ]; then
   echo "PASS: no global-write risks detected"

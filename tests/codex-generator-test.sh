@@ -156,6 +156,21 @@ else
   ok "generated agent TOML parse skipped (python3 not found)"
 fi
 
+links_src="$TMP_GEN_DIR/links.md"
+cat >"$links_src" <<'LINKS'
+See [`../../agents/overhaul-boundary.md`](../../agents/overhaul-boundary.md).
+Claude: N concurrent Task wrights (`acceptEdits`, cwd=worktree). Codex: require
+LINKS
+gen_codex_markdown_file "$links_src" "$TMP_GEN_DIR/links.codex.md"
+grep -qF '[`.codex/agents/overhaul-boundary.toml`](../../../.codex/agents/overhaul-boundary.toml)' "$TMP_GEN_DIR/links.codex.md" &&
+  ok "agent link resolves from the installed skill" || no "agent link resolves from the installed skill"
+grep -qx 'Codex: require' "$TMP_GEN_DIR/links.codex.md" &&
+  ok "Claude-only parallel host sentence dropped" || no "Claude-only parallel host sentence dropped"
+linked="$TMP_GEN_DIR/devrites-linked-reviewer.md"
+printf -- '---\nname: devrites-linked-reviewer\ndescription: Review.\n---\n\nSee [testing](../skills/devrites-lib/reference/standards/testing.md).\n' > "$linked"
+gen_codex_agent "$linked" "$TMP_GEN_DIR/linked.toml"
+grep -qF '[testing](.agents/skills/devrites-lib/reference/standards/testing.md)' "$TMP_GEN_DIR/linked.toml" &&
+  ok "agent skill links use the installed .agents path" || no "agent skill links use the installed .agents path"
 echo ""
 [ "$fail" -eq 0 ] && echo "codex-generator-test: PASS" || echo "codex-generator-test: FAIL"
 exit "$fail"

@@ -81,7 +81,7 @@ hotspot → `no-findings` naming the files measured.
   when the packet asks for a repo-wide pass. Read both units before proposing a
   merge — convergent code is a keep, not a dedupe. Report each actionable
   cluster with its hash per
-  [`duplicate-code.md`](../skills/devrites-lib/reference/standards/duplicate-code.md).
+  [`duplicate-code.md`](skill://devrites-lib/reference/standards/duplicate-code.md).
 - **Delete dead code:** remove only unreachable code added by this feature.
 
 ## Output

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -641,5 +642,28 @@ func TestGitReturnsWhenHookGrandchildHoldsPipe(t *testing.T) {
 	}
 	if limit := gitTimeout + gitWaitDelay + 3*time.Second; elapsed > limit {
 		t.Fatalf("git returned after %v, want within %v", elapsed, limit)
+	}
+}
+
+// TestDiffNamesReportsRenameSourceAndRawPaths proves the exact-path proof sees
+// both sides of a rename (a slice declaring only the target must not delete
+// the source unnoticed) and gets non-ASCII paths unquoted.
+func TestDiffNamesReportsRenameSourceAndRawPaths(t *testing.T) {
+	repo, base := setupRepo(t)
+	gitOk(t, repo, "mv", "src/a.go", "src/c.go")
+	if err := os.WriteFile(filepath.Join(repo, "src", "café.go"), []byte("package main\n\nfunc Cafe() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gitOk(t, repo, "add", ".")
+	gitOk(t, repo, "commit", "-m", "rename and add")
+	got, err := diffNames(repo, base, "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"src/a.go", "src/c.go", "src/café.go"}
+	sort.Strings(got)
+	sort.Strings(want)
+	if !pathListsEqual(want, got) {
+		t.Fatalf("diffNames = %q, want %q", got, want)
 	}
 }

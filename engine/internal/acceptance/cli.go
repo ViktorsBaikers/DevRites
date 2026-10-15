@@ -90,7 +90,10 @@ func loadTestPlan(testPlanPath string) []ApprovedCommand {
 }
 
 func parseSlug(args []string) (string, bool) {
-	return args[0], len(args) == 1 && args[0] != "" && !strings.HasPrefix(args[0], "-")
+	if len(args) != 1 {
+		return "", false
+	}
+	return args[0], args[0] != "" && !strings.HasPrefix(args[0], "-")
 }
 
 // oneLine flattens an argument to a single ledger line so a pasted newline

@@ -40,6 +40,7 @@ devrites-engine orient <slug>
 devrites-engine observe slice <slug> <SLICE-ID>
 devrites-engine next [slug]
 devrites-engine handoff [slug]
+devrites-engine recall --paths <p1,p2,...> [--limit n]
 devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>]
 devrites-engine metrics record <slug> --phase <p> --event <e>
 devrites-engine metrics summary [slug]
@@ -92,8 +93,10 @@ canonical command names.
 
 Use `npx devrites update --check` to perform the equivalent adapter-level
 comparison without changing the installation. Use
-`npx devrites uninstall --keep-binary` to remove managed host artifacts while
-retaining the shared `devrites-engine` binary.
+`npx devrites uninstall --keep-binary` (or `--no-binary`) to remove managed host
+artifacts while retaining the shared `devrites-engine` binary. `update` reuses
+the install flags recorded in the manifest; host and binary flags passed to
+`update` override them and are recorded for the next run.
 
 If an older direct engine reports `missing codex/hooks.json` or asks for
 `--source-dir`, run `npx devrites@latest update`, or use a release `install.sh` that is
@@ -170,6 +173,26 @@ self-contained updater.
   `ambiguous`/`lost` by relocating the quote repo-wide (dependency and workspace
   trees excluded); `check --repair` rewrites a `moved` subject; `rm` deletes by
   `NOTE-###`. `check seal` refuses a malformed file or any non-`exact` anchor.
+- `recall --paths <p1,p2,...> [--limit n]` points planning and review at what
+  earlier archived features decided or found about the same files. It lists
+  each `.devrites/archive/<slug>/` whose candidate manifest covers a queried
+  path (exact or directory prefix, case-folded), ranked by overlap, then newest
+  archive-directory mtime, then slug, with up to 8 pointers per feature:
+  `decisions.md` `DEC-###` entries and carry-forward constraints whose `Files:`
+  overlap, and `review.md`/`seal.md`/`drift.md` lines naming a queried path.
+  It is computed on every read and never writes, caches, or indexes. Output:
+
+  ```text
+  recall: 1 archived feature(s) touched these paths
+  feature add-csv-export overlap=1 paths=src/routes
+    archive/add-csv-export/decisions.md:5  ## DEC-001 — Reuse the route and stream CSV
+    archive/add-csv-export/decisions.md:11  - Close the stream on every error path — from SLICE-002 (EVID-003); Files: src/routes/transactions/export.ts
+    archive/add-csv-export/review.md:3  - `src/routes/transactions/export.ts:41` closes the stream on error
+  ```
+
+  `recall: no archive` and `recall: no archived feature touched these paths`
+  exit `0`; an unreadable archive file prints `unreadable: <file> (<reason>)`
+  and the scan continues; usage errors exit `2`.
 
 Semantic readiness, traceability, acceptance interpretation, evidence quality,
 doubt, test quality, reviewer reconciliation, and capability interpretation

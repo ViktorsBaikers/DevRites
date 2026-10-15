@@ -1,14 +1,14 @@
 # rite-build phase contract
 
 Apply [`one-slice-cycle.md`](one-slice-cycle.md) and
-[`candidate-integrity.md`](../../devrites-lib/reference/candidate-integrity.md).
+[`candidate-integrity.md`](skill://devrites-lib/reference/candidate-integrity.md).
 Opt-in `--parallel N` replaces steps 2–8 with [`parallel-batch.md`](parallel-batch.md);
 Spec Drift Guard still applies.
 
 1. **Gate.** Read core, `.devrites/ACTIVE`, then `devrites-engine orient <slug>`
    (`devrites-engine next <slug>` prints the minimal remaining path) and the
    Build read-next in
-   [`workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md#read-next-by-phase):
+   [`workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md#read-next-by-phase):
    the selected slice via `devrites-engine observe slice <slug> <SLICE-ID>`, not whole
    `tasks.md`; over-budget or `bulk_files` artifacts are read by anchor only. Require
    `Implementation readiness: READY`, current `Readiness inputs SHA-256`, exact
@@ -23,7 +23,7 @@ Spec Drift Guard still applies.
    Verify relevant assumptions live; falsified acceptance/architecture/scope/proof
    routes through Spec Drift Guard. Resolve human-owned/irreversible gates before
    source work; AFK follows its ceiling. Vet-ready Workflow Artifacts use
-   [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md).
+   [`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md).
 3. **Dispatch.** Apply [`wright-dispatch.md`](wright-dispatch.md). Put the smallest
    exact project-relative source/test path list directly in the task;
    dispatch the exact `devrites-slice-wright` fresh. Root never writes product
@@ -48,7 +48,7 @@ Spec Drift Guard still applies.
    same-environment baseline; otherwise unresolved.
 
    Technical failure uses `devrites-debug-recovery` and
-   [canonical recovery](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+   [canonical recovery](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
    Reapply host admission before correction; affected proof/evidence follows candidate
    integrity. Human gates remain product/irreversible/access decisions.
 7. **Record green.** Upsert actual scoped `present`/`deleted` rows in `touched-files.md`;
@@ -75,7 +75,7 @@ and one exact `devrites-doubt-reviewer` per stood decision that meets
 `devrites-doubt` § When to use (boundary, data model, auth, public API, migration,
 user flow, assumption tests cannot prove); other stood decisions are recorded in
 `decisions.md` without dispatch. Bundles take `--slice <SLICE-ID>`. Dispatch fresh,
-read-only under [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md).
+read-only under [`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md).
 Wait for every required account to become terminal; missing/gap needs a valid result.
 Fold supported in-scope Critical/Important findings by cause into one inventory.
 Dispatch one repair-all wright instructed to fix every finding, then attack its own
@@ -90,7 +90,7 @@ and unchanged-coverage evidence under candidate integrity; include newly trigger
 roles. A changed contract or uncertain impact requires the full inventory.
 Collect all required rechecks before another folded correction. Canonical recovery
 owns fingerprints/budget and the
-[late-finding rule](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
+[late-finding rule](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
 a recheck's `Late:` rows on hunks unchanged since that role's previous pass go to
 `touched-files.md` `## Review trail` for `/rite-review`, not into another slice
 repair, unless Critical with a failure path. Evidenced scope coverage never

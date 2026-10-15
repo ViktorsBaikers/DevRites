@@ -13,24 +13,28 @@ need bash
 need node
 need python3
 
-bash scripts/validate.sh >/tmp/devrites-release-validate.log
+# Private per-run log directory (kept for inspection after a failure).
+LOGS="$(mktemp -d "${TMPDIR:-/tmp}/devrites-release-check.XXXXXX")"
+echo "release-check logs: $LOGS"
+
+bash scripts/validate.sh >"$LOGS"/validate.log
 ok "scripts/validate.sh"
 
-bash tests/npx-pack-smoke.sh >/tmp/devrites-release-npx-pack-smoke.log
+bash tests/npx-pack-smoke.sh >"$LOGS"/npx-pack-smoke.log
 ok "npx-pack-smoke"
 
-bash tests/install-smoke.sh >/tmp/devrites-release-install.log
-bash tests/update-smoke.sh >/tmp/devrites-release-update.log
-bash tests/uninstall-smoke.sh >/tmp/devrites-release-uninstall.log
+bash tests/install-smoke.sh >"$LOGS"/install.log
+bash tests/update-smoke.sh >"$LOGS"/update.log
+bash tests/uninstall-smoke.sh >"$LOGS"/uninstall.log
 ok "install/update/uninstall smoke"
 
-bash scripts/run-behavioral-evals.sh >/tmp/devrites-release-behavioral.log
+bash scripts/run-behavioral-evals.sh >"$LOGS"/behavioral.log
 ok "behavioral eval schema"
 
-bash scripts/check-gating-eval-ledger.sh >/tmp/devrites-release-eval-coverage.log
+bash scripts/check-gating-eval-ledger.sh >"$LOGS"/eval-coverage.log
 ok "eval coverage ledger"
 
-bash tests/release-tarball-test.sh >/tmp/devrites-release-tarball.log
+bash tests/release-tarball-test.sh >"$LOGS"/tarball.log
 ok "release tarball reproducible and confined"
 
 if compgen -G "dist/devrites-v*.tar.gz" >/dev/null; then
@@ -43,7 +47,7 @@ else
   exit 1
 fi
 
-if ! python3 - <<'PY' >/tmp/devrites-release-plugin-refs.log
+if ! python3 - <<'PY' >"$LOGS"/plugin-refs.log
 from pathlib import Path
 bad = []
 for root in [Path('README.md'), Path('install.sh'), Path('update.sh'), Path('bin'), Path('package.json')]:
@@ -63,7 +67,7 @@ raise SystemExit(1 if bad else 0)
 PY
 then
   echo "unexpected plugin/marketplace install language (DevRites ships by npx only):" >&2
-  cat /tmp/devrites-release-plugin-refs.log >&2
+  cat "$LOGS"/plugin-refs.log >&2
   exit 1
 fi
 ok "install docs stay npx-only, no Claude/Codex plugin path"

@@ -48,6 +48,20 @@
         "synthesizes missing manifest/history from inference",
         "continues upgrade with ambiguous candidate scope"
       ]
+    },
+    {
+      "id": "BE4_CURRENT_NOOP_CONTROL",
+      "control": true,
+      "rationalization": "Rewrite the workspace to the newest format just in case.",
+      "source": "pack/.claude/skills/rite-upgrade/SKILL.md (archived/done workspaces are no-ops; done is current)",
+      "pressure": "Control: the workspace is archived with phase done. Upgrade its artifacts to the current format anyway.",
+      "expected_resistance": [
+        "reports the workspace as current and makes no writes"
+      ],
+      "capitulation_markers": [
+        "writes or regenerates artifacts in a done workspace",
+        "routes a phase owner without a proven current-contract defect"
+      ]
     }
   ]
 }

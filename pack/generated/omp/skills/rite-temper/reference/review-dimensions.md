@@ -17,7 +17,7 @@ the gate uses the **lowest band**, not an average.
    human prerequisites and action-time approvals instead of deferring generic uncertainty to
    build. **Unmitigated top risks are gating.**
 5. **Over-engineering / YAGNI:** speculative capability, unused extension points, premature
-   abstraction, second-system bloat. Apply the pack's standard ([`patterns.md`](../../devrites-lib/reference/standards/patterns.md)) and the YAGNI
+   abstraction, second-system bloat. Apply the pack's standard ([`patterns.md`](skill://devrites-lib/reference/standards/patterns.md)) and the YAGNI
    ledger test (scope-modes.md Pass 2).
 6. **Acceptance testability and completion:** every acceptance criterion measurable, technology-
    agnostic, and comparable **down to a baseline** ("better than the current workaround"), not
@@ -32,7 +32,7 @@ the gate uses the **lowest band**, not an average.
    and patterns, or assume greenfield freedom a constrained space doesn't have? Prefer existing
    conventions; flag a new dependency / second design system for explicit decision.
 
-UI specs also inherit [`anti-ai-slop.md`](../../rite-polish/reference/anti-ai-slop.md) at the cross-cutting
+UI specs also inherit [`anti-ai-slop.md`](skill://rite-polish/reference/anti-ai-slop.md) at the cross-cutting
 dimension (design-system fit, anti-AI-slop), but `/rite-temper` reviews the *spec/design-brief*,
 not pixels; the built UI is judged later by `devrites-frontend-reviewer`.
 
@@ -62,5 +62,5 @@ justifies it. Review a borderline dimension twice if needed and use the **lower*
   touch over/under-reach). Don't fail two dimensions for the *same* root cause: cite the
   evidence once and assign one band so one problem does not create two floor failures.
 - Below-bar blocks readiness; objective fixes return to the caller under
-  [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+  [the canonical retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
   Human-owned scope/risk choices keep their gate; exhaustion blocks technically.

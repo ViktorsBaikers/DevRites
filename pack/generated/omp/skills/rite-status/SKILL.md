@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["state.md","tasks.md","questions.md"]} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-status` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite-status` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # /rite-status: active feature status
 
@@ -19,7 +19,7 @@ Use the supplied slug or `.devrites/ACTIVE`; require its authoritative
 artifacts only as needed. Never infer lifecycle state from `README.md` or chat.
 
 If no workspace exists: when archived workspaces record an unfinished
-[continuation sequence](../rite-plan/reference/slicing.md#continuation-workspaces),
+[continuation sequence](skill://rite-plan/reference/slicing.md#continuation-workspaces),
 list each next command (`/rite-spec <parent>-<n> "<objective>"`); otherwise
 recommend `/rite-spec <feature>`. Then stop.
 

@@ -16,8 +16,8 @@ merges native Codex configuration and guidance. Devin CLI receives skills under
 `.devin/skills`, custom subagent profiles under `.devin/agents`, and a marked
 guidance block in `AGENTS.md`.
 
-The root and reviewers never write source. Claude enforces the root boundary in
-plan mode. Codex uses a workspace-capable root so its sole write-capable
+The root and reviewers never write source. On Claude the root boundary is
+workflow policy (ADR-0035). Codex uses a workspace-capable root so its sole write-capable
 slice-wright can execute, while all other specialists remain read-only. On
 Devin, `allowed-tools` gives `edit`, `write`, and `exec` only to
 `devrites-slice-wright` among lifecycle roles (plus `fast-builder` for

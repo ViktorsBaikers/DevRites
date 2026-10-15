@@ -57,7 +57,7 @@ draws a revision finding for variety 2.
   components with one-offs, and the information architecture and flow with
   neighboring screens. Name the root cause of any drift.
 - **States:** check the role lattice of control and surface states
-  ([`quality-standards.md`](../skills/devrites-frontend-craft/reference/quality-standards.md) § Focus & states),
+  ([`quality-standards.md`](.agents/skills/devrites-frontend-craft/reference/quality-standards.md) § Focus & states),
   not a shorter local list, and mark each per surface with its markers. The empty
   state needs a welcoming next action, and the error state must support recovery.
   Flag every applicable state that is `missing`; an unobserved one is `unknown`, which is

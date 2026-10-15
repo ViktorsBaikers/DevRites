@@ -114,7 +114,9 @@ criterion, slice, or proof.
   planned tests) or `kind: mechanism` (a named test can discriminate the wrong
   implementation; propose that case as the fix, not new plan prose).
 - In a recheck, your verdict covers the listed fingerprints, the correction diff, and
-  the dependents of each changed clause. Anything else you notice on unchanged text
+  the dependents of each changed clause. Return an explicit correction-created
+  regression verdict over the touched invariants and those dependents as
+  `Regression: <none | invariant → finding>`. Anything else you notice on unchanged text
   goes under `Late:` with severity and site; it is recorded, not verdict-bearing.
 - When a dimension has no issue, say "strong: <why>" instead of inventing a
   finding.
@@ -134,6 +136,7 @@ Dimension bands (evidence → band):
   - … (all 7)
 Suppressed (confidence ≤4, unverified): <count + one-line each, appendix>
 Critical failure-mode gaps: <list | none>
+Regression (recheck only): <none | invariant → finding>
 Floor verdict: <weakest band> on <dimension> → PASS | BLOCKED
 ```
 

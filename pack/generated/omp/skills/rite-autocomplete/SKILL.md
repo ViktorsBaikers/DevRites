@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"]} -->
-> Read-set manifest: `devrites-engine context <slug> --phase autocomplete` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase autocomplete` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-autocomplete: full lifecycle, unattended
@@ -19,15 +19,15 @@ option auto-resolve; they are not a user handoff, except a question whose answer
 would add acceptance or product scope, which a recommended option never resolves.
 Use the Standard native
 profile by default and Full for high-risk scope or explicit `--full`; see
-[`orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md).
+[`orchestration-profiles.md`](skill://devrites-lib/reference/orchestration-profiles.md).
 
 ## Required rules
 
-Read [`core.md`](../devrites-lib/reference/standards/core.md) and [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) first. Read
-[`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md) before any stop/continue or execution decision involving a
+Read [`core.md`](skill://devrites-lib/reference/standards/core.md) and [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) first. Read
+[`one-shot-actions.md`](skill://devrites-lib/reference/standards/one-shot-actions.md) before any stop/continue or execution decision involving a
 consumptive action. Before honoring a terminal cursor that names missing
 executable controller/harness/bundle bytes or a missing writer, read
-[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
+[`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md)
 (trigger `workflow-artifacts` — only when a workspace declares them). Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
@@ -127,11 +127,12 @@ executable controller/harness/bundle bytes or a missing writer, read
    product scope is never auto-resolved by a recommended option; it stops for a human.
    Technical exhaustion records terminal
    `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
-6. **Seal boundary.** Without a ship flag, stop at Seal GO with `/rite-ship` —
-   unless `continue_sequence: false` or sequence budget is spent; otherwise
-   leave the sealed workspace unshipped and open the next recorded continuation
-   ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation));
-   report the sequence position on every stop.
+6. **Seal boundary.** Without a ship flag, leave the sealed workspace unshipped and
+   open the next recorded continuation
+   ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation))
+   unless `continue_sequence: false`, the sequence budget is spent, or no entry
+   remains; then stop at Seal GO with `/rite-ship`. Report the sequence position on
+   every stop.
    With a ship flag, perform Ship preflight, disclose the exact Git plan, and stop for
    fresh literal `GO` plus native approval. **Completion:** performed no Git action before fresh literal `GO` plus native approval.
 

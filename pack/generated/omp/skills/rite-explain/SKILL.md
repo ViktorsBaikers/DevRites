@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["rite-explain/reference/intake.md"],"triggers":{"repo":["devrites-lib/reference/standards/tooling.md"],"style":["devrites-lib/reference/standards/prose-style.md"],"principles":["devrites-lib/reference/standards/principles.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-explain` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite-explain` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # /rite-explain: the human half of the learning loop
 
@@ -17,7 +17,7 @@ a window of their own recent work) so they keep learning while the agents do the
 specific change, it can instead write a **walkthrough**: a human review guide organized by concern,
 risk stops, and manual observations.
 
-This is the **complement of [`/rite-learn`](../rite-learn/SKILL.md)**, and the two together are
+This is the **complement of [`/rite-learn`](skill://rite-learn/SKILL.md)**, and the two together are
 the whole compounding story. `/rite-learn` teaches the **repo**. It promotes recurring lessons
 into rules and principles the next feature reads. `/rite-explain` teaches the **person**: the
 mental model the next feature needs a human to hold. A team that only runs `/rite-learn`
@@ -62,7 +62,7 @@ free: prefer it over re-deriving:
 - A **diff** or **recap** → the workspace and archive: `seal.md`, `evidence.md`, `decisions.md`,
   `traceability.md`, the shipped `.devrites/archive/<slug>/`, and `git log` / `git diff`.
 - A **concept** with footprint in this repo → live code through the primary index selected by
-  [`tooling.md`](../devrites-lib/reference/standards/tooling.md) (one named-predicate cross-check only when needed), plus any
+  [`tooling.md`](skill://devrites-lib/reference/standards/tooling.md) (one named-predicate cross-check only when needed), plus any
   `.devrites/principles.md` or ADRs that already take a position on it.
 - An **idea** or a concept with no repo footprint → the user's framing plus, only if it sharpens
   the teaching, current external sources (weight by date).
@@ -95,12 +95,12 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
    or an inline Mermaid sketch, treat this as a soft-required dual-read branch — not decoration and
    not a new lifecycle phase:
    1. Open matching playbooks via
-      [`../devrites-lib/reference/visual-playbooks/index.md`](../devrites-lib/reference/visual-playbooks/index.md)
+      [`skill://devrites-lib/reference/visual-playbooks/index.md`](skill://devrites-lib/reference/visual-playbooks/index.md)
       first (progressive load; open every matching id; **never** preload all seven).
    2. Emit the pair under either the active workspace
       `.devrites/work/<slug>/visual/<name>.{html,outline.md}` **or** the explainers run dir with the
       same contract (`$RUN_DIR/visual/<name>.{html,outline.md}`). Copy required outline headings from
-      [`outline-template.md`](../devrites-lib/reference/visual-playbooks/outline-template.md).
+      [`outline-template.md`](skill://devrites-lib/reference/visual-playbooks/outline-template.md).
    3. Agents treat the outline as SSOT; if HTML and outline disagree, **outline wins** until both are
       regenerated. No Lavish runtime (`window.lavish.*`, `data-lavish-*`, poll/queue/share/ht-ml.app).
    4. In the reply, `Changed` / `Record` may cite the HTML+outline pair. Optionally tip the human to
@@ -109,7 +109,7 @@ Otherwise write one dense artifact at `$RUN_DIR/explainer.md`. It must **teach**
    the named relationship.
    **Completion:** matching playbooks loaded when taken; dual-read pair written with outline-wins /
    no-Lavish / no-new-phase; or the branch is explicitly skipped because prose won.
-5. **Human voice.** Follow [`prose-style.md`](../devrites-lib/reference/standards/prose-style.md):
+5. **Human voice.** Follow [`prose-style.md`](skill://devrites-lib/reference/standards/prose-style.md):
    no throat-clearing, no false-binary contrast, no marketing adjectives. One senior engineer
    explaining to another.
 
@@ -138,7 +138,7 @@ not force it; offer once.
   Wikipedia paragraph. If it has footprint in this repo, quote the repo.
 - **Not a review.** `/rite-explain` never judges the code or files findings, that is `/rite-review`.
   It explains what *is*, adversarially neutral.
-- **Not `/rite-learn`.** It writes to `.devrites/explainers/`, never to [`principles.md`](../devrites-lib/reference/standards/principles.md)
+- **Not `/rite-learn`.** It writes to `.devrites/explainers/`, never to [`principles.md`](skill://devrites-lib/reference/standards/principles.md)
   or any rule file. Teaching the human is not promoting a repo rule.
 
 ## Output

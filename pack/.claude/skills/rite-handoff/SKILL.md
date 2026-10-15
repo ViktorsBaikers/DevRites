@@ -6,7 +6,7 @@ disable-model-invocation: true
 argument-hint: "[what the next session will focus on]"
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-handoff/reference/handoff-template.md","devrites-lib/reference/reply-contract.md"],"triggers":{"hygiene":["devrites-lib/reference/standards/context-hygiene.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-handoff` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context <slug> --skill rite-handoff` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # /rite-handoff: chat-only context, into a fresh-agent doc
 
@@ -48,8 +48,9 @@ For each of these, write the content into its **canonical home** first, then mer
 - **Assumption** about behaviour / API / user intent → append to `assumptions.md`.
 - **Drift event raised but not fully resolved** → update `drift.md` with the current
   resolution status (open / asked-user / repaired).
-- **Files modified in chat not yet in `touched-files.md`** → append to
-  `touched-files.md`.
+- **Files modified in chat not yet in `touched-files.md`** → no recorded provenance, so
+  record them as drift in `drift.md` (or a `questions.md` entry); never append them to
+  `touched-files.md`, the candidate manifest Ship stages.
 
 The handoff doc itself then says "synced N entries into decisions.md", not the entries
 themselves. The workspace is the canonical store; the handoff is the chat-only delta.

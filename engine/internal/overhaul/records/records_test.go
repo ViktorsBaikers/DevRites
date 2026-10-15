@@ -10,6 +10,7 @@ import (
 
 	"github.com/devrites/devrites/internal/overhaul/ovio"
 	"github.com/devrites/devrites/internal/overhaul/render"
+	"github.com/devrites/devrites/internal/overhaul/score"
 )
 
 type J = map[string]any
@@ -195,6 +196,25 @@ func scorecard(r map[string]J, gates J) {
 	r["scorecard.json"] = J{"schema": "overhaul.scorecard/1", "gates": gates}
 }
 
+// ready makes r a finished repair run that meets its targets: a complete,
+// passing scorecard backed by the records, with gates overriding statuses.
+func ready(f *fixture, r map[string]J, gates J) {
+	reviewed(f, r, "applicable")
+	finding(r)["severity"] = "low"
+	all := J{}
+	for _, g := range score.GateIDs(true) {
+		all[g] = "PASS"
+	}
+	for g, st := range gates {
+		all[g] = st
+	}
+	scorecard(r, all)
+	r["scorecard.json"]["readiness_verdict"] = "MEETS_TARGETS"
+	r["run.json"]["readiness_verdict"] = "MEETS_TARGETS"
+	r["run.json"]["execution_outcome"] = "READY_FOR_USER_REVIEW"
+	r["run.json"]["task_outcomes"] = J{"T-1": "completed"}
+}
+
 // reviewed records one applicability cell in state st, backed by a receipt that
 // checked its domain, and a fully reviewed range for the fixture's file.
 func reviewed(f *fixture, r map[string]J, st string) {
@@ -284,8 +304,8 @@ func TestSingleGenerationRules(t *testing.T) {
 				"history": L{J{"status": "candidate"}, J{"status": "needs-validation"}}})
 		}, "finding F-2: needs-validation must name the missing fact (blockers)"},
 		{"host path location", func(f *fixture, r map[string]J) {
-			finding(r)["locations"] = L{J{"path": "/Users/me/app/a.py", "start": 1}}
-		}, "location '/Users/me/app/a.py' is not a repository-relative path or label"},
+			finding(r)["locations"] = L{J{"path": "/Users/me/app/a.py", "start": 1}} // no-personal-paths-ignore: fixture
+		}, "location '/Users/me/app/a.py' is not a repository-relative path or label"}, // no-personal-paths-ignore: fixture
 		{"external host path location", func(f *fixture, r map[string]J) {
 			finding(r)["locations"] = L{J{"path": "~/app/a.py", "external": true}}
 		}, "is not a repository-relative path or label"},
@@ -345,23 +365,47 @@ func TestSingleGenerationRules(t *testing.T) {
 		{"terminal outcome missing", func(f *fixture, r map[string]J) {
 			r["run.json"]["execution_outcome"] = "READY_FOR_USER_REVIEW"
 		}, "approved tasks without exactly one recorded outcome: ['T-1']"},
-		{"terminal outcome recorded", func(f *fixture, r map[string]J) {
-			r["run.json"]["execution_outcome"] = "READY_FOR_USER_REVIEW"
-			r["run.json"]["task_outcomes"] = J{"T-1": "completed"}
+		{"terminal outcome recorded", func(f *fixture, r map[string]J) { ready(f, r, nil) }, ""},
+		{"ready without scorecard", func(f *fixture, r map[string]J) {
+			ready(f, r, nil)
+			delete(r, "scorecard.json")
+		}, "READY_FOR_USER_REVIEW needs scorecard.json"},
+		{"ready without repair gates", func(f *fixture, r map[string]J) {
+			ready(f, r, nil)
+			delete(r["scorecard.json"]["gates"].(J), "G-APPROVAL")
+		}, "READY_FOR_USER_REVIEW needs gate G-APPROVAL to pass in scorecard.json"},
+		{"ready with failing gate", func(f *fixture, r map[string]J) {
+			ready(f, r, nil)
+			r["scorecard.json"]["gates"].(J)["G-FINAL-CHALLENGE"] = "FAIL"
+		}, "READY_FOR_USER_REVIEW needs gate G-FINAL-CHALLENGE to pass in scorecard.json"},
+		{"ready with wrong verdict", func(f *fixture, r map[string]J) {
+			ready(f, r, nil)
+			r["scorecard.json"]["readiness_verdict"] = "NOT_READY"
+			r["run.json"]["readiness_verdict"] = "NOT_READY"
+		}, "READY_FOR_USER_REVIEW needs readiness_verdict MEETS_TARGETS"},
+		{"degradation needs degraded verdict", func(f *fixture, r map[string]J) {
+			ready(f, r, nil)
+			r["run.json"]["execution_outcome"] = "COMPLETED_WITH_APPROVED_DEGRADATION"
+		}, "COMPLETED_WITH_APPROVED_DEGRADATION needs readiness_verdict MEETS_TARGETS_WITH_APPROVED_DEGRADATION"},
+		{"degradation with waived concurrency", func(f *fixture, r map[string]J) {
+			ready(f, r, J{"G-CONCURRENCY": "WAIVED_OPERATIONAL"})
+			r["run.json"]["execution_outcome"] = "COMPLETED_WITH_APPROVED_DEGRADATION"
+			r["run.json"]["readiness_verdict"] = "MEETS_TARGETS_WITH_APPROVED_DEGRADATION"
+			r["scorecard.json"]["readiness_verdict"] = "MEETS_TARGETS_WITH_APPROVED_DEGRADATION"
 		}, ""},
 		{"unsettled attempt blocks leaving RUNNING", func(f *fixture, r map[string]J) {
 			r["run.json"]["execution_outcome"] = "STOPPED_BY_USER"
 			r["run.json"]["task_outcomes"] = J{"T-1": "completed"}
 			addAttempt(r, J{"task_id": "R-9", "attempt_id": "A1", "role": "reviewer", "status": "returned", "receipt": "receipts/R-1.json"})
 		}, "before the run leaves RUNNING: ['R-9#A1']"},
-		{"unknown and timed-out allowed after stop", func(f *fixture, r map[string]J) {
+		{"unknown and timed-out block leaving RUNNING", func(f *fixture, r map[string]J) {
 			approval(r)["status"] = "stopped"
 			r["approval.json"]["events"] = append(r["approval.json"]["events"].(L), J{"id": "S-1", "kind": "stop"})
 			r["run.json"]["execution_outcome"] = "STOPPED_BY_USER"
 			r["run.json"]["task_outcomes"] = J{"T-1": "not-started"}
 			addAttempt(r, J{"task_id": "T-1", "attempt_id": "A2", "role": "implementer", "status": "unknown", "authorized_by": "AP-1"})
 			addAttempt(r, J{"task_id": "R-9", "attempt_id": "A1", "role": "reviewer", "status": "timed-out"})
-		}, ""},
+		}, "before the run leaves RUNNING: ['T-1#A2', 'R-9#A1']"},
 		{"scorecard needs revisions.rubric", func(f *fixture, r map[string]J) {
 			r["scorecard.json"] = J{"readiness_verdict": "NOT_ASSESSED"}
 		}, "scorecard needs revisions.rubric"},
@@ -654,6 +698,13 @@ func TestBadPath(t *testing.T) {
 	if err := os.Symlink(filepath.Join(outside, "secret.py"), filepath.Join(repo, "src/out.py")); err != nil {
 		t.Fatal(err)
 	}
+	write(t, filepath.Join(repo, ".git/hooks/x"), "x\n")
+	write(t, filepath.Join(repo, ".devrites/overhaul/r1/x"), "x\n")
+	for link, target := range map[string]string{"gl": ".git", "ra": ".devrites/overhaul"} {
+		if err := os.Symlink(target, filepath.Join(repo, link)); err != nil {
+			t.Fatal(err)
+		}
+	}
 	cases := []struct {
 		path any
 		want string
@@ -675,6 +726,12 @@ func TestBadPath(t *testing.T) {
 		{".devrites/overhaul/r1/g0001/run.json", "names the overhaul run area"},
 		{"src/.git/HEAD", "names a directory or git metadata"},
 		{"src/out.py", "resolves outside the repository (symlink or traversal)"},
+		{".GIT/hooks/pre-commit", "names a directory or git metadata"},
+		{"src/.Git/HEAD", "names a directory or git metadata"},
+		{"gl/hooks/pre-commit", "names a directory or git metadata"},
+		{".DEVRITES/overhaul/r1/CURRENT", "names the overhaul run area"},
+		{".devrites/OVERHAUL/r1/CURRENT", "names the overhaul run area"},
+		{"ra/r1/CURRENT", "names the overhaul run area"},
 	}
 	for _, c := range cases {
 		if got := BadPath(c.path, repo); got != c.want {
@@ -692,5 +749,17 @@ func TestRepr(t *testing.T) {
 		if got := Repr(v); got != want {
 			t.Errorf("Repr(%v) = %s, want %s", v, got, want)
 		}
+	}
+}
+
+// A plan with no tasks still renders plan.md, so the run can await approval.
+func TestZeroTaskPlanAwaitsApproval(t *testing.T) {
+	f := newFixture(t)
+	f.writePlan(L{})
+	r := f.records()
+	r["run.json"]["phase"], r["run.json"]["execution_outcome"] = "AWAITING_APPROVAL", "AWAITING_APPROVAL"
+	r["approval.json"]["events"], r["dispatch.json"]["attempts"] = L{}, L{}
+	if code, out := f.publishRendered(r); code != 0 {
+		t.Fatalf("publish: %d\n%s", code, out)
 	}
 }

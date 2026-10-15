@@ -11,6 +11,15 @@ Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root
 the exact `:workspace` wright, and read-only specialists. Never bypass/substitute
 the wright or recreate an engine bridge.
 
+## Standalone correction
+
+`/rite-quick`, `/rite-dogfood`, and `/rite-pr-feedback` fixes have no `tasks.md`
+slice, so skip Prepare's `check slice`, `context --slice`, and the build `dispatch`
+wave. Give the wright an inline contract: goal, acceptance check, exact
+project-relative paths, and proof command. With an active workspace, `claim add`
+those paths first. On return, compare its file list and `git diff --name-only`
+with the paths; reject any extra path.
+
 ## Isolated writer-worktree pilot
 
 Use native isolation only when the current host exposes an explicit named-writer
@@ -64,6 +73,8 @@ worktrees stay forbidden.
    topology/data/integration standard, include only the feature-specific owner/invariant,
    failure or partial-state case, recovery rule, and required proof from the vetted plan.
    Do not paste the whole standard or silently omit an applicable risk.
+   Quote every active `decisions.md` carry-forward constraint whose `Files:`
+   overlap the task paths (or that names no files).
    A new path requires a new bounded contract; the wright cannot widen the task.
 3. Record `git diff --name-only` before dispatch so unrelated work remains
    distinguishable. For an isolated pilot, also record committed base SHA and exact
@@ -141,3 +152,11 @@ TTL is crash recovery, not normal cleanup.
    escalation without the checked-assumption list (verified|falsified) is
    malformed; root sweeps the unchecked remainder per
    [`spec-drift-guard.md`](spec-drift-guard.md) before repair.
+6. **Learning edge.** A correction accepted with a confirmed cause (a review,
+   gate, or proof rejection plus its fix) becomes a carry-forward constraint so
+   later slices start where this one ended: append one line under
+   `decisions.md` `## Carry-forward constraints` —
+   `- <rule> — from <SLICE-ID> (<evidence ref>); Files: <paths>`. Record the
+   derived rule, not the output, at the scope its evidence supports: "this
+   button is blue" never becomes "buttons are blue". Never edit `tasks.md` mid-build (it is a
+   readiness input). **Failing case:** slice 3 repeats a defect slice 2 fixed.

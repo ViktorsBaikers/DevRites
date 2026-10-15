@@ -123,14 +123,19 @@ verifier attempt, repository-relative locations (external ones are labels, never
 host paths); `revisions.plan.file` equal to `revisions/plan-r<rev>.json`, required
 once approvals or writers exist; plan digest pins; known, acyclic dependencies;
 allowed paths that are exact files inside the repository (no `*` or `?`, no
-directories, no `.git`, no symlink or traversal escape); a separate verifier role;
+directories, no `.git` component or run-area path in any letter case or through a
+symlink, no symlink or traversal escape); a separate verifier role;
 approval and `accept-degradation` events with quote and trusted channel, approvals
 matching the plan digest, closure and current revision, none active after a later
 stop; a scorecard only with `revisions.rubric` and the same verdict as `run.json`;
+`READY_FOR_USER_REVIEW` only with a scorecard whose verdict is `MEETS_TARGETS`, and
+`COMPLETED_WITH_APPROVED_DEGRADATION` only with `MEETS_TARGETS_WITH_APPROVED_DEGRADATION`,
+each listing every audit gate (plus every repair gate outside assessment-only runs) as
+`PASS` or `NOT_APPLICABLE` (`G-CONCURRENCY` may be `WAIVED_OPERATIONAL` for the degraded outcome);
 no approval or writer in an assessment-only run; unchanged `run_id`, `repo_root`,
 `mode` and `assessment_only`; writers authorized for their task; one live writer
-per path (case-folded, symlink-resolved); no `dispatched`, `running` or `returned`
-attempt once the outcome leaves `RUNNING`; one outcome per approved task at the end;
+per path (case-folded, symlink-resolved); every attempt `admitted`, `rejected` or
+`cancelled` once the outcome leaves `RUNNING` (`timed-out` and `unknown` are not settled); one outcome per approved task at the end;
 a coverage denominator that never shrinks; append-only cycles, findings history and
 approval events; immutable revisions; view stamps; manifest integrity; stale stages
 and interrupted publishes. Across records: every finding's `domain` is a score key;

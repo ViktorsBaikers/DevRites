@@ -181,5 +181,16 @@ gen_pi_agent "$quoted_src" "$TMP_GEN_DIR/quoted.agent.md"
 grep -qxF 'description: "Quoted agent."' "$TMP_GEN_DIR/quoted.agent.md" &&
   ok "agent does not re-quote a quoted description" || no "agent does not re-quote a quoted description"
 
+links_src="$TMP_GEN_DIR/links.md"
+cat >"$links_src" <<'LINKS'
+See [`../../agents/overhaul-boundary.md`](../../agents/overhaul-boundary.md).
+Claude: N concurrent Task wrights (`acceptEdits`, cwd=worktree). Codex: require
+LINKS
+gen_pi_markdown_file "$links_src" "$TMP_GEN_DIR/links.pi.md"
+grep -qF '[`.pi/agents/overhaul-boundary.md`](../../agents/overhaul-boundary.md)' "$TMP_GEN_DIR/links.pi.md" &&
+  ok "relative agent link kept" || no "relative agent link kept"
+grep -qF 'pi: N concurrent `subagent` wrights (cwd=worktree). Codex' "$TMP_GEN_DIR/links.pi.md" &&
+  ok "pi parallel host line has no acceptEdits" || no "pi parallel host line has no acceptEdits"
+
 [ "$fail" -eq 0 ] && echo "pi-generator-test: PASS" || echo "pi-generator-test: FAIL"
 exit "$fail"

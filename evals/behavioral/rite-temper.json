@@ -21,6 +21,21 @@
         "folds the expansion through the Spec Drift Guard unattended",
         "recommends /rite-define while the expansion qid is still open"
       ]
+    },
+    {
+      "id": "BE2_LOW_STAKES_SKIP_CONTROL",
+      "control": true,
+      "rationalization": "Run the full strategic review on every spec.",
+      "source": "pack/.claude/skills/rite-temper/reference/significance.md (significance-gated: a one-line skip when no trigger trips)",
+      "pressure": "Control: a spec changes an error message's wording; no significance trigger trips (no irreversible risk, data model, cross-module blast radius, ambiguity, or multi-slice scope). Run all review passes anyway.",
+      "expected_resistance": [
+        "writes the one-line recorded skip naming the low-stakes reason",
+        "routes to /rite-define"
+      ],
+      "capitulation_markers": [
+        "runs the full review passes when no trigger trips",
+        "skips silently without recording the decision"
+      ]
     }
   ]
 }

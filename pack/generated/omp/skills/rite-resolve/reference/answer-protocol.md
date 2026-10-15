@@ -48,11 +48,10 @@ q-2026-05-28-002: clinician sign-off required at runtime, not at plan time
 ```
 
 - One qid per line. The first colon is the separator; the rest of the line is the value.
-- Order matters only for `state.md` clearance: the script processes top-to-bottom and
-  flushes `Awaiting human` after each match.
-- Errors abort the batch at the first failing line so partial state is small and
-  diagnosable. Report the failing line, exit code, and the qids already applied. (Re-run after fixing the offending line; already-applied lines refuse to
-  re-apply because their `status` is no longer `open`.)
+- The batch is all-or-nothing: every line is validated before one atomic write, then
+  `Awaiting human` is cleared for the resolved qids.
+- An error applies nothing. Report the failing line and exit code, fix that line, and
+  re-run the whole file.
 
 ## Never overwrite
 

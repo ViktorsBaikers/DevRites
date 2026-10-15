@@ -58,6 +58,11 @@ func writerReceipt() J {
 		"outcome": "patch", "changed_paths": L{"src/a.py"}}
 }
 
+// receiptPath is the canonical <run>/receipts/<run_id>__<task_id>__<attempt_id>__<role>.json for rc.
+func receiptPath(dir string, rc J) string {
+	return filepath.Join(dir, "receipts", "run-1__"+rc["task_id"].(string)+"__"+rc["attempt_id"].(string)+"__"+rc["role"].(string)+".json")
+}
+
 func TestReceipt(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -97,7 +102,7 @@ func TestReceipt(t *testing.T) {
 			dir := newRun(t)
 			rc := writerReceipt()
 			c.mutate(rc)
-			args := []string{"receipt", dir, write(t, filepath.Join(dir, "receipts/r.json"), rc)}
+			args := []string{"receipt", dir, write(t, receiptPath(dir, rc), rc)}
 			if c.observed != "-" {
 				args = append(args, "--observed", write(t, filepath.Join(dir, "observed.txt"), c.observed))
 			}
@@ -124,7 +129,7 @@ func TestReceiptAgainstOpenStage(t *testing.T) {
 	rc["task_id"], rc["role"], rc["lane"], rc["outcome"], rc["inspected"] = "R-2", "reviewer", "security", "no-findings", L{"src/a.py:1-9"}
 	rc["domains_checked"] = L{"security"}
 	delete(rc, "changed_paths")
-	p := write(t, filepath.Join(dir, "receipts/r2.json"), rc)
+	p := write(t, receiptPath(dir, rc), rc)
 	if code, out, errs := run("receipt", dir, p); code != 0 || !strings.Contains(out, "ADMISSIBLE") {
 		t.Fatalf("open stage: %d %s%s", code, out, errs)
 	}
@@ -132,6 +137,73 @@ func TestReceiptAgainstOpenStage(t *testing.T) {
 	write(t, filepath.Join(stage, ".base"), "g0000")
 	if code, out, _ := run("receipt", dir, p); code != 1 || !strings.Contains(out, "no such dispatched attempt") {
 		t.Fatalf("stale stage consulted: %d %s", code, out)
+	}
+}
+
+// A receipt is admitted only from the attempt's own file in the run's receipts/
+// directory, never from a copy elsewhere (such as the target repository) or a symlink.
+func TestReceiptLocation(t *testing.T) {
+	const want = "receipt must be the attempt's file <run>/receipts/<run_id>__<task_id>__<attempt_id>__<role>.json"
+	rc := writerReceipt()
+	rc["task_id"], rc["role"], rc["lane"], rc["outcome"] = "R-1", "reviewer", "security", "findings"
+	delete(rc, "changed_paths")
+	t.Run("outside the run", func(t *testing.T) {
+		dir := newRun(t)
+		p := write(t, filepath.Join(t.TempDir(), "repo", "receipt.json"), rc)
+		if code, out, _ := run("receipt", dir, p); code != 1 || !strings.Contains(out, want) {
+			t.Fatalf("got %d %s", code, out)
+		}
+	})
+	t.Run("wrong name", func(t *testing.T) {
+		dir := newRun(t)
+		p := write(t, filepath.Join(dir, "receipts", "r.json"), rc)
+		if code, out, _ := run("receipt", dir, p); code != 1 || !strings.Contains(out, want) {
+			t.Fatalf("got %d %s", code, out)
+		}
+	})
+	t.Run("symlink", func(t *testing.T) {
+		dir := newRun(t)
+		target := write(t, filepath.Join(t.TempDir(), "repo", "receipt.json"), rc)
+		p := receiptPath(dir, rc)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(target, p); err != nil {
+			t.Fatal(err)
+		}
+		if code, out, _ := run("receipt", dir, p); code != 1 || !strings.Contains(out, want) {
+			t.Fatalf("got %d %s", code, out)
+		}
+	})
+	t.Run("differs from recorded receipt", func(t *testing.T) {
+		dir := newRun(t)
+		write(t, filepath.Join(dir, "g0001/dispatch.json"), J{"attempts": L{
+			J{"task_id": "R-1", "attempt_id": "A1", "role": "reviewer", "lane": "security", "snapshot": "s1", "status": "running", "receipt": "receipts/other.json"}}})
+		if code, out, _ := run("receipt", dir, write(t, receiptPath(dir, rc), rc)); code != 1 || !strings.Contains(out, "receipt differs from the dispatched attempt's receipt") {
+			t.Fatalf("got %d %s", code, out)
+		}
+	})
+	t.Run("canonical", func(t *testing.T) {
+		dir := newRun(t)
+		if code, out, _ := run("receipt", dir, write(t, receiptPath(dir, rc), rc)); code != 0 {
+			t.Fatalf("got %d %s", code, out)
+		}
+	})
+}
+
+func TestStrictArguments(t *testing.T) {
+	dir := newRun(t)
+	p := filepath.Join(dir, "receipts", "x.json")
+	for _, args := range [][]string{
+		{},
+		{"receipt", dir, p, "--observd", "o.txt"},
+		{"receipt", dir, p, "extra"},
+		{"receipt", dir, p, "--observed", "o.txt", "extra"},
+		{"anchor", dir, p, "extra"},
+	} {
+		if code, _, errs := run(args...); code != 2 || !strings.HasPrefix(errs, "usage:") {
+			t.Errorf("%v: got %d %s", args, code, errs)
+		}
 	}
 }
 

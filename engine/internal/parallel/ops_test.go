@@ -478,6 +478,45 @@ func TestCleanupFailedSalvageKeepsWorktreeDir(t *testing.T) {
 	}
 }
 
+// TestCleanupAliasedRootKeepsUnsalvagedWorktree proves the batch-directory
+// sweep never deletes a lease slice's worktree that the per-slice loop left
+// untouched: a --root spelled through a symlink fails the lexical ownership
+// check, so the worktree was never salvaged and is the only copy of its edits.
+func TestCleanupAliasedRootKeepsUnsalvagedWorktree(t *testing.T) {
+	repo, base := setupRepo(t)
+	slug, batch := "demo-feature", "batch1"
+	lease, err := Create(CreateOpts{
+		Root:    repo,
+		Slug:    slug,
+		BatchID: batch,
+		BaseSHA: base,
+		Slices: []SlicePaths{
+			{ID: "slice-a", Paths: []string{"src/a.go"}},
+			{ID: "slice-b", Paths: []string{"src/b.go"}},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wip := filepath.Join(lease.Slices[0].WorktreePath, "src", "a.go")
+	if err := os.WriteFile(wip, []byte("package main\n\nfunc WIP() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(t.TempDir(), "alias")
+	if err := os.Symlink(repo, alias); err != nil {
+		t.Fatal(err)
+	}
+
+	swapSeams(t)
+	warnf = func(string, ...any) {}
+	if _, err := Cleanup(alias, slug, true); err != nil {
+		t.Fatal(err)
+	}
+	if body, err := os.ReadFile(wip); err != nil || !strings.Contains(string(body), "WIP") {
+		t.Fatalf("unsalvaged worktree edits lost: %v %q", err, body)
+	}
+}
+
 // TestCleanupNamesDirectoryGitDroppedButNotDeleted proves that when git has
 // already dropped a worktree and its directory cannot be deleted, the error
 // names the directory and says a rerun will not delete it, and the rerun does

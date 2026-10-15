@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/documentation.md","devrites-lib/reference/standards/tooling.md"],"workspace":["state.md","decisions.md","drift.md","evidence.md","review.md","seal.md","questions.md"],"workspaceByRole":{"retrospector":["state.md","decisions.md","drift.md","evidence.md","review.md","seal.md","questions.md"]},"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-learn` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite-learn` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # /rite-learn: review durable lessons
 
@@ -20,7 +20,7 @@ of one authority; it cannot promote a rule alone.
 
 ## Workflow
 
-1. Read [durable promotion](../devrites-lib/reference/standards/documentation.md#promote-durable-guidance).
+1. Read [durable promotion](skill://devrites-lib/reference/standards/documentation.md#promote-durable-guidance).
    Before bounding, fixed-string search all of `.devrites/archive/` and active
    `decisions.md` for `rite-learn: accepted` and `rite-learn: declined`; read every hit
    whole. Then bound the archive; inspect applicable `AGENTS.md`/`CLAUDE.md`, accepted ADRs, and relevant `.devrites/archive/*/{decisions,drift,review,seal}.md`.
@@ -28,15 +28,15 @@ of one authority; it cannot promote a rule alone.
 2. Broad mode dispatches exact fresh/read-only `devrites-retrospector`; reconcile its claims against cited files.
    A missing, failed, timed-out, or malformed result reports `Candidate: NOT-RUN
    (unavailable: <reason>)` as a gap, never `Candidate: none`; an unavailable role stops
-   for HITL per [`agents.md`](../devrites-lib/reference/standards/agents.md) (trigger `agents`).
-3. Keep corrections repeated in two features, a judgement call made twice, or a defect class seen twice; drop one-off preferences, task-specific detail, generic advice.
+   for HITL per [`agents.md`](skill://devrites-lib/reference/standards/agents.md) (trigger `agents`).
+3. Keep corrections repeated in two features (a `## Carry-forward constraints` rule recurring in two archived `decisions.md` qualifies), a judgement call made twice, or a defect class seen twice; drop one-off preferences, task-specific detail, generic advice.
    Broad mode also proposes **retirements**: a rule found via a `rite-learn: accepted`
    marker whose cited failing case or owner no longer exists in live source, whose
    review-by date passed unverified, or that is a model-default no-op. Zero is valid but
    names the searched scope; a rule still guarding a live failing case is never retired.
 4. Verify claims against live authoritative sources; state currentness signal, applies/does-not-apply scope, `unknown` where unverifiable.
    **Research promotion requires:** each external claim carries a dated citation per
-   [[`tooling.md`](../devrites-lib/reference/standards/tooling.md) § Research provenance](../devrites-lib/reference/standards/tooling.md#research-provenance-staleness-and-cost).
+   [[`tooling.md`](skill://devrites-lib/reference/standards/tooling.md) § Research provenance](skill://devrites-lib/reference/standards/tooling.md#research-provenance-staleness-and-cost).
    **Failing case:** "best practice is X" with no source → reject promotion.
 5. Apply durable promotion's recoverability test; search same/contrary rules, choose one existing owner (nearest instruction/standard, ADR, or feature `decisions.md`), and name discovery.
 6. Show the exact edit + duplicate/conflict/supersession disposition; update/narrow/replace/retire contradictions; apply only after user approval of exact edits.
@@ -63,7 +63,7 @@ of one authority; it cannot promote a rule alone.
   owner → human approval of the exact edit. A skipped stage is no promotion.
 - **Recurrence ⇒ mechanism.** When `Authority: existing <path>` already holds the violated
   rule, the candidate is a check, gate, template slot, or default at that owner
-  ([`skill-authoring.md`](../devrites-lib/reference/standards/skill-authoring.md#match-form-to-failure) § Match form to failure),
+  ([`skill-authoring.md`](skill://devrites-lib/reference/standards/skill-authoring.md#match-form-to-failure) § Match form to failure),
   never a reworded, bolder, or relocated copy; otherwise record `no mechanical form
   possible: <reason>` and narrow the proposal. An unwired or broken existing check is
   itself the candidate. **Failing case:** a round accepts a bolder copy of an `AGENTS.md`

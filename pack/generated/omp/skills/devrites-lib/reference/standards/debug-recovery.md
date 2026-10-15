@@ -3,7 +3,7 @@
 > Applies when: polling async readiness, timeouts, retries, stuck-wait triage.
 
 Triggered standard for polling async readiness without blind sleep. Skill owner:
-[`devrites-debug-recovery`](../../../devrites-debug-recovery/SKILL.md).
+[`devrites-debug-recovery`](skill://devrites-debug-recovery/SKILL.md).
 
 ## Condition-based wait (bounded)
 

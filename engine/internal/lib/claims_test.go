@@ -265,3 +265,55 @@ func TestClaimReadNamesLedgerOnOversizedLine(t *testing.T) {
 		t.Fatalf("list: code=%d stderr=%q", code, errOut)
 	}
 }
+
+func TestClaimConflictCoversContainedPaths(t *testing.T) {
+	root := claimTestRoot(t)
+	if code, _, e := runClaim(t, root, "add", "--session", "A", "src/auth"); code != 0 {
+		t.Fatalf("first add: %d %s", code, e)
+	}
+	for _, path := range []string{"src/auth/login.go", "src"} {
+		if code, out, _ := runClaim(t, root, "check", "--session", "B", path); code != 3 || !strings.Contains(out, "BLOCKED") {
+			t.Fatalf("check %s: code=%d out=%q, want overlap blocked", path, code, out)
+		}
+		if code, _, _ := runClaim(t, root, "add", "--session", "B", path); code != 3 {
+			t.Fatalf("add %s: code=%d, want overlap blocked", path, code)
+		}
+	}
+	if code, _, e := runClaim(t, root, "add", "--session", "B", "src/authz.go"); code != 0 {
+		t.Fatalf("sibling with shared prefix: %d %s", code, e)
+	}
+}
+
+func TestClaimRejectsUnknownFlags(t *testing.T) {
+	root := claimTestRoot(t)
+	for _, args := range [][]string{
+		{"add", "--session", "C", "--ttll", "5", "x.go"},
+		{"check", "--sesion", "C", "x.go"},
+	} {
+		if code, _, errOut := runClaim(t, root, args...); code != 2 || !strings.Contains(errOut, "unknown flag") {
+			t.Fatalf("%v: code=%d stderr=%q, want unknown flag rejected", args, code, errOut)
+		}
+	}
+	if code, out, _ := runClaim(t, root, "list", "--all"); code != 0 || !strings.Contains(out, "no claims") {
+		t.Fatalf("a claim was recorded: %q", out)
+	}
+}
+
+// Claims fold case: on a case-insensitive filesystem SRC/Auth and src/auth are
+// one tree, and .DEVRITES is the control tree.
+func TestClaimFoldsCase(t *testing.T) {
+	root := claimTestRoot(t)
+	if code, _, e := runClaim(t, root, "add", "--session", "A", "src/auth"); code != 0 {
+		t.Fatalf("first add: %d %s", code, e)
+	}
+	for _, path := range []string{"SRC/Auth/login.go", "Src"} {
+		if code, out, _ := runClaim(t, root, "check", "--session", "B", path); code != 3 || !strings.Contains(out, "BLOCKED") {
+			t.Fatalf("check %s: code=%d out=%q, want case-folded overlap blocked", path, code, out)
+		}
+	}
+	for _, path := range []string{".DEVRITES/work/x/state.md", ".GIT/hooks/pre-commit"} {
+		if code, _, _ := runClaim(t, root, "add", "--session", "B", path); code != 2 {
+			t.Fatalf("add %s: code=%d, want control-tree refusal", path, code)
+		}
+	}
+}

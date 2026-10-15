@@ -1,6 +1,6 @@
 # /rite-temper: anti-patterns
 
-For cross-phase issues, read [universal anti-patterns](../../devrites-lib/reference/standards/anti-patterns.md).
+For cross-phase issues, read [universal anti-patterns](skill://devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase rationalizations
 
@@ -23,7 +23,7 @@ For cross-phase issues, read [universal anti-patterns](../../devrites-lib/refere
 - A pre-mortem with risks listed but no mitigation + owning slice: a risk without an owner is a
   wish.
 - Repeating an exhausted causal failure under the shared no-progress rule in
-  [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md), or stopping a
+  [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md), or stopping a
   distinct cause solely because the total review round exceeds three.
 - The reviewer being handed the author's reasoning as independent evidence
   (defeats the fresh-context point).

@@ -50,12 +50,14 @@ Exit 0 clean or fully waived, 3 unwaived markers or blocked.`
 // deferralTokenRe catches uppercase comment markers: TODO, FIXME, XXX, HACK.
 var deferralTokenRe = regexp.MustCompile(`(?:^|[^A-Za-z0-9_])(TODO|FIXME|XXX|HACK)(?:[^A-Za-z0-9_]|$)`)
 
-// deferralIdioms are substring signals for skipped tests and stub bodies.
+// deferralIdioms are signals for skipped tests and stub bodies. An idiom that
+// starts with an identifier character matches only at a word start, so
+// os.Exit( is not xit( and benefit( is not fit(.
 var deferralIdioms = []string{
 	"t.Skip(", "t.Skipf(",
 	"test.skip(", "it.skip(", "describe.skip(", "context.skip(",
 	"xit(", "xdescribe(", "xtest(", "xcontext(", "fit(", "fdescribe(",
-	"pytest.mark.skip", "unittest.skip", "SkipTest",
+	"pytest.mark.skip", "pytest.skip(", "pytest.xfail(", "unittest.skip", "SkipTest",
 	"@Disabled", "#[ignore]",
 	"todo!(", "unimplemented!(",
 	"NotImplementedError",
@@ -104,7 +106,7 @@ type windowWaiver struct {
 func windowsMarkers(line string) []string {
 	var idioms []string
 	for _, idiom := range deferralIdioms {
-		if strings.Contains(line, idiom) {
+		if containsIdiom(line, idiom) {
 			idioms = append(idioms, idiom)
 		}
 	}
@@ -126,6 +128,37 @@ func windowsMarkers(line string) []string {
 		out = append(out, "empty-catch")
 	}
 	return out
+}
+
+// containsIdiom reports whether idiom occurs in line at a word start.
+func containsIdiom(line, idiom string) bool {
+	for i := 0; ; {
+		j := strings.Index(line[i:], idiom)
+		if j < 0 {
+			return false
+		}
+		at := i + j
+		if at == 0 || !isIdentByte(idiom[0]) || !isIdentByte(line[at-1]) {
+			return true
+		}
+		i = at + 1
+	}
+}
+
+func isIdentByte(b byte) bool {
+	return b == '_' || b >= '0' && b <= '9' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z'
+}
+
+// diffHeaderPath decodes a `--- `/`+++ ` header path, unquoting git's C-style
+// quoting of non-ASCII and special characters.
+func diffHeaderPath(raw string) string {
+	p := strings.TrimSpace(raw)
+	if strings.HasPrefix(p, `"`) {
+		if decoded, err := strconv.Unquote(p); err == nil {
+			return decoded
+		}
+	}
+	return p
 }
 
 // isTestPath reports whether a project-relative path names a test source file.
@@ -157,9 +190,9 @@ func removedTestHits(diff string) []windowHit {
 		case strings.HasPrefix(line, "diff --git "):
 			inHeader, deleted, file = true, false, ""
 		case inHeader && strings.HasPrefix(line, "--- "):
-			oldPath = strings.TrimPrefix(strings.Trim(strings.TrimSpace(line[4:]), `"`), "a/")
+			oldPath = strings.TrimPrefix(diffHeaderPath(line[4:]), "a/")
 		case inHeader && strings.HasPrefix(line, "+++ "):
-			newPath := strings.Trim(strings.TrimSpace(line[4:]), `"`)
+			newPath := diffHeaderPath(line[4:])
 			if newPath == "/dev/null" {
 				deleted = true
 				if isTestPath(oldPath) {
@@ -203,8 +236,7 @@ func addedLinesFromDiff(diff string) ([]windowHit, map[string]bool) {
 	for _, line := range strings.Split(diff, "\n") {
 		switch {
 		case strings.HasPrefix(line, "+++ "):
-			p := strings.TrimSpace(strings.TrimPrefix(line, "+++ "))
-			p = strings.Trim(p, `"`)
+			p := diffHeaderPath(strings.TrimPrefix(line, "+++ "))
 			if p == "/dev/null" {
 				path = ""
 				continue
@@ -272,14 +304,16 @@ func windowsHits(opts diffScopeOpts) ([]windowHit, error) {
 		dir = opts.root
 	}
 	var hits []windowHit
-	var diffArgs []string
+	// Repository diff config (color, external diff, textconv, mnemonic or no
+	// prefixes) must not reshape the patch this parser reads.
+	diffArgs := []string{"diff", "--no-ext-diff", "--no-textconv", "--no-color", "--src-prefix=a/", "--dst-prefix=b/"}
 	switch opts.mode {
 	case "staged":
-		diffArgs = []string{"diff", "--cached", "-M", "-U0", "--"}
+		diffArgs = append(diffArgs, "--cached", "-M", "-U0", "--")
 	case "base":
-		diffArgs = []string{"diff", opts.base, "-M", "-U0", "--"}
+		diffArgs = append(diffArgs, opts.base, "-M", "-U0", "--")
 	default:
-		diffArgs = []string{"diff", "HEAD", "-M", "-U0", "--"}
+		diffArgs = append(diffArgs, "HEAD", "-M", "-U0", "--")
 	}
 	diff, err := runGitCommand(dir, nil, diffArgs...)
 	var diffPaths map[string]bool
@@ -293,6 +327,9 @@ func windowsHits(opts diffScopeOpts) ([]windowHit, error) {
 	default:
 		return nil, err
 	}
+	// Git paths are repo-root-relative; the project's own workspace may sit
+	// in a subdirectory ("sub/.devrites") when the project is nested.
+	control := devritesRepoPrefix(dir, opts.root)
 	if opts.mode == "worktree" {
 		// Whole files whose diff produced no hunks: staged additions land in
 		// `git diff HEAD`, untracked files never do — scan those in full.
@@ -307,17 +344,26 @@ func windowsHits(opts diffScopeOpts) ([]windowHit, error) {
 		}
 		repo := strings.TrimSpace(string(repoRoot))
 		for _, p := range status {
-			if diffPaths[p] || strings.HasPrefix(p, ".devrites/") {
+			if diffPaths[p] || strings.HasPrefix(p, control+"/") {
 				continue
 			}
 			hits = scanWholeFile(repo, p, hits)
 		}
 	}
+	// windows.md rows name project-relative paths, so hits are rebased from
+	// the repository root onto the project directory that holds control.
+	project := path.Dir(control)
 	var kept []windowHit
 	for _, h := range hits {
-		if !strings.HasPrefix(h.Path, ".devrites/") {
-			kept = append(kept, h)
+		if strings.HasPrefix(h.Path, control+"/") {
+			continue
 		}
+		if project != "." {
+			if rel, err := filepath.Rel(filepath.FromSlash(project), filepath.FromSlash(h.Path)); err == nil {
+				h.Path = filepath.ToSlash(rel)
+			}
+		}
+		kept = append(kept, h)
 	}
 	return kept, nil
 }
@@ -362,7 +408,7 @@ func parseWindowsWaivers(raw string) (map[windowWaiver]int, []string) {
 // parseWindowsArgs accepts the diff-scope mode flags plus a slug; the allowlist
 // flags do not apply to marker scanning.
 func parseWindowsArgs(root string, args []string, stderr io.Writer) (diffScopeOpts, int) {
-	opts := diffScopeOpts{mode: "worktree", phase: "seal", root: root}
+	opts := diffScopeOpts{mode: "worktree", root: root}
 	var positional []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -376,6 +422,10 @@ func parseWindowsArgs(root string, args []string, stderr io.Writer) (diffScopeOp
 		case "--base":
 			opts.mode = "base"
 			opts.base = argAt(args, i+1)
+			if strings.HasPrefix(opts.base, "-") {
+				fmt.Fprintln(stderr, "windows: --base requires a ref (not a flag)")
+				return opts, 2
+			}
 			i++
 		case "--cwd":
 			opts.cwd = argAt(args, i+1)
@@ -393,6 +443,9 @@ func parseWindowsArgs(root string, args []string, stderr io.Writer) (diffScopeOp
 		return opts, 2
 	}
 	opts.slug = positional[0]
+	if opts.phase == "" {
+		opts.phase = cursorPhase(root, opts.slug)
+	}
 	return opts, 0
 }
 

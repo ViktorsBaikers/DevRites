@@ -5,7 +5,7 @@ argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] 
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"]} -->
-> Read-set manifest: `devrites-engine context <slug> --phase autocomplete` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --phase autocomplete` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-autocomplete: full lifecycle, unattended
@@ -67,7 +67,7 @@ executable controller/harness/bundle bytes or a missing writer, read
   Missing, repeated, malformed, or conflicting values stop before any write.
 - Temper always runs after Clarify. Auto-apply `hold-rigor`, `reduce-to-MVP` or a skip;
   record the ADR and fold via Spec Drift Guard. `expand` and extra acceptance never
-  auto-apply: ask through `AskUserQuestion`, hold the fold, and stop until a human
+  auto-apply: ask through `ask_user_question`, hold the fold, and stop until a human
   resolves the qid. Irreversible-risk still pauses.
 - Vet every plan. Cross-model is off unless the current invocation arms it.
 
@@ -126,11 +126,12 @@ executable controller/harness/bundle bytes or a missing writer, read
    product scope is never auto-resolved by a recommended option; it stops for a human.
    Technical exhaustion records terminal
    `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
-6. **Seal boundary.** Without a ship flag, stop at Seal GO with `/rite-ship` —
-   unless `continue_sequence: false` or sequence budget is spent; otherwise
-   leave the sealed workspace unshipped and open the next recorded continuation
-   ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation));
-   report the sequence position on every stop.
+6. **Seal boundary.** Without a ship flag, leave the sealed workspace unshipped and
+   open the next recorded continuation
+   ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation))
+   unless `continue_sequence: false`, the sequence budget is spent, or no entry
+   remains; then stop at Seal GO with `/rite-ship`. Report the sequence position on
+   every stop.
    With a ship flag, perform Ship preflight, disclose the exact Git plan, and stop for
    fresh literal `GO` plus native approval. **Completion:** performed no Git action before fresh literal `GO` plus native approval.
 

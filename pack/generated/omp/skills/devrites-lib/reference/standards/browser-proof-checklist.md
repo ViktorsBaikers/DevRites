@@ -3,7 +3,7 @@
 > Applies when: UI proof: compact sweep before claiming a rendered/browser pass.
 
 Compact sweep only. Numbers and failing cases live in
-[`quality-standards.md`](../../../devrites-frontend-craft/reference/quality-standards.md)
+[`quality-standards.md`](skill://devrites-frontend-craft/reference/quality-standards.md)
 § Focus & states, § Responsive, and § Browser chrome — do not restate a shorter
 viewport set here.
 
@@ -14,7 +14,7 @@ viewport set here.
   stale candidate is missing evidence. Recapture; until resolved, record
   `cannot_verify` and block visual approval. A convincing narrative cannot repair it.
 - **Evidence matrix.** Layout-bearing states (default, long content, and every
-  role-applicable surface state from [`quality-standards.md`](../../../devrites-frontend-craft/reference/quality-standards.md) § Focus & states) × every
+  role-applicable surface state from [`quality-standards.md`](skill://devrites-frontend-craft/reference/quality-standards.md) § Focus & states) × every
   canonical viewport; interaction states at ≥1 small and ≥1 large viewport (hover
   only with a hover-capable pointer); one keyboard traversal; a `reduce` capture when
   motion changed; every shipped theme. Each cell holds a capture, `cannot_verify`, or

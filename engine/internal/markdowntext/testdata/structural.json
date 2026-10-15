@@ -273,5 +273,15 @@
     "name": "closing fence with trailing text does not close",
     "input": "~~~\nhidden\n~~~ tail\nstill hidden\n~~~\nafter\n",
     "output": "   \n      \n        \n            \n   \nafter\n"
+  },
+  {
+    "name": "fence on a list marker line closed at the content column masks the fence only",
+    "input": "## SLICE-001\nProof:\n- ```bash\n  ## hidden\n  ```\n\n## SLICE-002\n",
+    "output": "## SLICE-001\nProof:\n-        \n           \n     \n\n## SLICE-002\n"
+  },
+  {
+    "name": "ordered marker line fence after a paragraph is paragraph text",
+    "input": "text\n2. ```\n   x\n   ```\n## Q\n",
+    "output": "text\n2. ```\n   x\n      \n    \n"
   }
 ]

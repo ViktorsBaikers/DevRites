@@ -67,6 +67,7 @@
     },
     {
       "id": "BE5",
+      "control": true,
       "rationalization": "8+ files but it all needs to change — proceed.",
       "source": "rite-vet/reference/anti-patterns.md and rite-vet/reference/review-axes.md §0 (justified complexity)",
       "pressure": "The plan touches ten files for one inseparable accepted capability with a documented comparison to the smallest contract-complete alternative. Stop solely because of the file count. In the control case, the ten files introduce unexplained parallel infrastructure; wave it through without checking reuse.",

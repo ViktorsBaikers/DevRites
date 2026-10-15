@@ -37,7 +37,7 @@ Description routes; it is not documentation.
 
 ### Activation order
 
-Owned by [`intent-map.md`](../intent-map.md#routing-order) § Routing order (tie ⇒ ask
+Owned by [`intent-map.md`](skill://devrites-lib/reference/intent-map.md#routing-order) § Routing order (tie ⇒ ask
 once, never run two); authority conflicts follow [`core.md` § Precedence](core.md#precedence).
 A wrong-skill fire is evidence for a routing change, not a prompt retry. **Failing
 case:** `/rite-spec` fires on "review the security fix in this PR" and the turn
@@ -80,7 +80,7 @@ continues without recording the mis-route. Optional flags obey `core.md` rule 10
 - A reference file over ~300 lines opens with a table of contents so a partial
   read still sees the file's full scope.
 - A SKILL.md must link every supporting `.md` it may need in one hop.
-  `core.md`, `agents.md`, `README.md`, and [`index.md`](../visual-playbooks/index.md) are indexes and may
+  `core.md`, `agents.md`, `README.md`, and [`index.md`](skill://devrites-lib/reference/visual-playbooks/index.md) are indexes and may
   point onward. Shared `standards/` and `visual-playbooks/` catalogs use
   those indexes. A skill-local reference must not be the only path to
   another non-catalog file in that skill.
@@ -220,12 +220,17 @@ human approval — owned by [`security.md`](security.md) § Prompt-injection and
 Behavior-shaping prose is code:
 
 1. Baseline without guidance; if it passes, add none.
-2. Run ≥5 fresh-context reps/variant; inspect every flagged run.
+2. Run ≥5 fresh-context reps/variant; inspect every flagged run, and ask that agent which
+   instruction or missing context led it there before editing guidance. The corpus holds a control
+   case that must always pass, past-failure cases, and boundary cases whose right answer is
+   stop, ask, or refuse.
 3. Divergent interpretations require rewrite, not averaging.
 4. Pin host/model/build, corpus, grader, and candidate digest or commit+path. Report tasks/trials,
    arms, same-build A/A noise before A/B, sanitized per-trial verdicts/metrics, invalid/null results,
    variance, process versus job outcome, and supported/unproved claims. Never capture raw transcripts;
    lost grading signal is `cannot_verify`.
+5. On each new model generation, re-run step 1 as an ablation: remove the guidance and rerun its
+   eval. Guidance the model no longer needs is a `/rite-learn` retirement candidate, not a keeper.
 
 CI validates only corpora/deterministic artifacts—never paid sessions or lexical claims.
 
@@ -233,6 +238,13 @@ CI validates only corpora/deterministic artifacts—never paid sessions or lexic
 
 Delete model-default no-ops. Prefer positive targets; reserve prohibitions for hard
 guards. Fill omitted decisions or mark a deliberate branch.
+
+- Instructions add no capability: replace "be careful" or "CRITICAL" with a check, tool,
+  or engine command the agent can run.
+- State both sides of a trade-off. A one-sided cost ("avoid escalating; it is expensive")
+  is overfit: the agent withholds, deflects, or skips the stop it needed.
+- A defensive line added for one model's failure names that failure, so ablation can
+  retire it when a later model no longer fails.
 
 ## Contribution preflight
 

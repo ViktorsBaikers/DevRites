@@ -241,7 +241,7 @@ func TestInstallMergesClaudePermissionsIntoExistingSettings(t *testing.T) {
 	if strings.Count(settings, "Bash(devrites-engine check readiness *)") != 1 {
 		t.Fatalf("Claude permission was not merged exactly once:\n%s", settings)
 	}
-	for _, managed := range []string{"mcp__codegraph__*", "Bash(git diff *)", "Edit(.devrites/**)"} {
+	for _, managed := range []string{"mcp__codegraph__*", "Bash(git diff *)", "Edit(/.devrites/**)"} {
 		if !strings.Contains(settings, managed) {
 			t.Fatalf("Claude settings merge missed managed rule %q:\n%s", managed, settings)
 		}
@@ -256,9 +256,8 @@ func TestInstallMergesClaudePermissionsIntoExistingSettings(t *testing.T) {
 	if !strings.Contains(manifest, "\n.claude/devrites.claude-hooks-merge\n") {
 		t.Fatalf("Claude settings merge marker missing:\n%s", manifest)
 	}
-	marker := testutil.ReadFile(t, filepath.Join(target, ".claude", "devrites.claude-hooks-merge"))
-	if !strings.Contains(marker, "default-mode=preexisting") {
-		t.Fatalf("Claude settings marker lost pre-existing plan-mode ownership:\n%s", marker)
+	if !strings.Contains(settings, `"defaultMode": "plan"`) {
+		t.Fatalf("Claude settings merge dropped the user's own defaultMode:\n%s", settings)
 	}
 
 	runUninstall(t, target)
@@ -271,7 +270,7 @@ func TestInstallMergesClaudePermissionsIntoExistingSettings(t *testing.T) {
 	if strings.Contains(settings, "Bash(devrites-engine ") || strings.Contains(settings, "devrites-engine hook") {
 		t.Fatalf("Claude settings uninstall left DevRites configuration:\n%s", settings)
 	}
-	for _, managed := range []string{"mcp__codegraph__*", "Bash(git diff *)", "Edit(.devrites/**)"} {
+	for _, managed := range []string{"mcp__codegraph__*", "Bash(git diff *)", "Edit(/.devrites/**)"} {
 		if strings.Contains(settings, managed) {
 			t.Fatalf("Claude settings uninstall left managed non-engine rule %q:\n%s", managed, settings)
 		}
@@ -300,13 +299,13 @@ func TestInstallKeepsClaudeMergeOwnershipAcrossReinstall(t *testing.T) {
 	runInstall(t, target, payload, func(o *Options) {})
 
 	settings := testutil.ReadFile(t, settingsPath)
-	if strings.Count(settings, `"defaultMode": "plan"`) != 1 ||
+	if strings.Contains(settings, "defaultMode") ||
 		strings.Count(settings, "Bash(devrites-engine check readiness *)") != 1 {
 		t.Fatalf("Claude permissions lost merge ownership on reinstall (marker exists: %t):\nsettings:\n%s\nmanifest:\n%s",
 			exists(filepath.Join(target, filepath.FromSlash(markerRel))), settings, testutil.ReadFile(t, filepath.Join(target, ManifestName)))
 	}
-	if marker := testutil.ReadFile(t, filepath.Join(target, filepath.FromSlash(markerRel))); !strings.Contains(marker, "default-mode=added") {
-		t.Fatalf("Claude settings marker did not record owned plan mode:\n%s", marker)
+	if marker := testutil.ReadFile(t, filepath.Join(target, filepath.FromSlash(markerRel))); strings.Contains(marker, "default-mode=") {
+		t.Fatalf("Claude settings marker still records a default mode:\n%s", marker)
 	}
 	manifest := testutil.ReadFile(t, filepath.Join(target, ManifestName))
 	if !strings.Contains(manifest, "\n.claude/devrites.claude-hooks-merge\n") {
@@ -319,23 +318,63 @@ func TestInstallKeepsClaudeMergeOwnershipAcrossReinstall(t *testing.T) {
 	}
 }
 
-func TestInstallRejectsConflictingClaudeDefaultMode(t *testing.T) {
+func TestInstallKeepsUserClaudeDefaultMode(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	payload := testPayload(t)
 	target := t.TempDir()
 	settingsPath := filepath.Join(target, ".claude", "settings.json")
-	original := `{"permissions":{"defaultMode":"acceptEdits"},"theme":"dark"}` + "\n"
-	testutil.WriteFile(t, settingsPath, original)
+	testutil.WriteFile(t, settingsPath, `{"permissions":{"defaultMode":"acceptEdits"},"theme":"dark"}`+"\n")
 
-	err := applyInstall(target, payload, false, false, &bytes.Buffer{})
-	if err == nil || !strings.Contains(err.Error(), "requires plan mode") {
-		t.Fatalf("install error = %v, want conflicting default-mode rejection", err)
+	runInstall(t, target, payload, func(o *Options) {})
+	if settings := testutil.ReadFile(t, settingsPath); !strings.Contains(settings, `"defaultMode": "acceptEdits"`) || !strings.Contains(settings, "Bash(devrites-engine check readiness *)") {
+		t.Fatalf("install did not keep the user's defaultMode beside DevRites rules:\n%s", settings)
 	}
-	if got := testutil.ReadFile(t, settingsPath); got != original {
-		t.Fatalf("failed install changed Claude settings:\n%s", got)
+	runUninstall(t, target)
+	if settings := testutil.ReadFile(t, settingsPath); !strings.Contains(settings, `"defaultMode": "acceptEdits"`) || strings.Contains(settings, "devrites-engine") {
+		t.Fatalf("uninstall did not restore the user's settings:\n%s", settings)
 	}
-	if exists(filepath.Join(target, ".claude", "devrites.claude-hooks-merge")) {
-		t.Fatal("failed install created a Claude settings marker")
+}
+
+// Installs before 6.0.5 set plan mode and recorded default-mode=added (or
+// =preexisting); update removes only the plan mode DevRites wrote.
+func TestUpdateRemovesDevritesOwnedPlanMode(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	for _, tc := range []struct {
+		ownership string
+		wantPlan  bool
+	}{{"added", false}, {"preexisting", true}} {
+		t.Run(tc.ownership, func(t *testing.T) {
+			target := t.TempDir()
+			settingsPath := filepath.Join(target, ".claude", "settings.json")
+			seedLegacyClaudeSettingsInstall(t, target, `{"permissions":{"defaultMode":"plan","allow":["Bash(devrites-engine check readiness *)"]}}`+"\n",
+				hostpack.ClaudeSettingsMerge.MarkerText+"\ndefault-mode="+tc.ownership+"\nrules=added\n")
+			stderr := &bytes.Buffer{}
+			runInstall(t, target, payload, func(o *Options) { o.Stderr = stderr })
+			settings := testutil.ReadFile(t, settingsPath)
+			if got := strings.Contains(settings, `"defaultMode": "plan"`); got != tc.wantPlan {
+				t.Fatalf("plan mode present = %t, want %t:\n%s", got, tc.wantPlan, settings)
+			}
+			// A kept plan mode blocks the root's .devrites writes; say so.
+			if got := strings.Contains(stderr.String(), "defaultMode is plan"); got != tc.wantPlan {
+				t.Fatalf("plan-mode warning = %t, want %t:\n%s", got, tc.wantPlan, stderr)
+			}
+		})
+	}
+}
+
+// A marker written before rules=added/settings=created cannot say who created
+// settings.json; once uninstall strips it to nothing, it must not leave "{}".
+func TestUninstallAfterLegacyMarkerUpgradeRemovesEmptySettings(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	target := t.TempDir()
+	seedLegacyClaudeSettingsInstall(t, target, `{"permissions":{"defaultMode":"plan","allow":["Bash(devrites-engine check readiness *)","mcp__codegraph__*"]}}`+"\n",
+		hostpack.ClaudeSettingsMerge.MarkerText+"\ndefault-mode=added\nrule:mcp__codegraph__*")
+	runInstall(t, target, payload, func(o *Options) {})
+	runUninstall(t, target)
+	if path := filepath.Join(target, ".claude", "settings.json"); exists(path) {
+		t.Fatalf("uninstall after a legacy-marker upgrade left settings.json: %q", testutil.ReadFile(t, path))
 	}
 }
 
@@ -1237,6 +1276,36 @@ func seedLegacyCodexHooksInstall(t *testing.T, target, hooks string) {
 	addManifestRecord(t, filepath.Join(target, ManifestName), markerRel, marker)
 }
 
+func TestIsGlobalTargetResolvesSymlinkedHome(t *testing.T) {
+	real := t.TempDir()
+	link := filepath.Join(t.TempDir(), "home")
+	if err := os.Symlink(real, link); err != nil {
+		t.Skip(err)
+	}
+	t.Setenv("HOME", link)
+	resolved, err := filepath.EvalSymlinks(real)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, target := range []string{resolved, filepath.Join(resolved, ".claude"), filepath.Join(resolved, ".codex", "x")} {
+		if !isGlobalTarget(target) {
+			t.Errorf("isGlobalTarget(%s) = false under symlinked HOME", target)
+		}
+	}
+	if isGlobalTarget(filepath.Join(resolved, "project")) {
+		t.Error("a project under HOME was treated as a global agent home")
+	}
+}
+
+func seedLegacyClaudeSettingsInstall(t *testing.T, target, settings, marker string) {
+	t.Helper()
+	markerRel := hostpack.ClaudeSettingsMerge.MarkerRel
+	testutil.WriteFile(t, filepath.Join(target, ".claude", "settings.json"), settings)
+	testutil.WriteFile(t, filepath.Join(target, filepath.FromSlash(markerRel)), marker)
+	testutil.WriteFile(t, filepath.Join(target, ManifestName), "# DevRites install manifest - do not edit by hand.\n# devrites-version: 6.0.4\n# devrites-flags: \n")
+	addManifestRecord(t, filepath.Join(target, ManifestName), markerRel, []byte(marker))
+}
+
 func addManifestRecord(t *testing.T, manifest, rel string, data []byte) {
 	t.Helper()
 	hash := fmt.Sprintf("sha256:%x", sha256.Sum256(data))
@@ -1304,8 +1373,7 @@ func writeTestPayload(t *testing.T, root string) {
 	testutil.WriteFile(t, filepath.Join(root, "claude", "workflows", "devrites-readonly-review.js"), "return { read_only: true }\n")
 	testutil.WriteFile(t, filepath.Join(root, "claude", "settings.json"), `{
   "permissions": {
-    "defaultMode": "plan",
-    "allow": ["Bash(devrites-engine check readiness *)", "mcp__codegraph__*", "Bash(git diff *)", "Edit(.devrites/**)"]
+    "allow": ["Bash(devrites-engine check readiness *)", "mcp__codegraph__*", "Bash(git diff *)", "Edit(/.devrites/**)"]
   }
 }`+"\n")
 	testutil.WriteFile(t, filepath.Join(root, "codex", "skills", "rite", "SKILL.md"), "codex rite\n")
@@ -1737,5 +1805,412 @@ func TestUninstallDryRunMatchesRealMarkerErrors(t *testing.T) {
 				t.Fatalf("dry-run err=%v, real uninstall err=%v; want the same error", dryErr, realErr)
 			}
 		})
+	}
+}
+
+func TestInstallRejectedMergeWritesNothing(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	for _, tc := range []struct {
+		name, rel, data, want string
+	}{
+		{"claude permissions not an object", ".claude/settings.json", `{"permissions":[]}` + "\n", "must be a JSON object"},
+		{"codex default permissions", ".codex/config.toml", "default_permissions = \"mine\"\n", "default_permissions"},
+		{"codex default permissions after nested array", ".codex/config.toml", "notify = [\n  [\"a\"],\n]\ndefault_permissions = \"mine\"\n", "default_permissions"},
+		{"unterminated AGENTS marker", "AGENTS.md", "user\n<!-- BEGIN DEVRITES PI -->\n", "unterminated"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			target := t.TempDir()
+			testutil.WriteFile(t, filepath.Join(target, "AGENTS.md"), "user guidance\n")
+			testutil.WriteFile(t, filepath.Join(target, filepath.FromSlash(tc.rel)), tc.data)
+			before := hashTree(t, target)
+			err := applyInstall(target, testPayload(t), false, false, nil)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("install error = %v, want %q", err, tc.want)
+			}
+			if after := hashTree(t, target); after != before {
+				t.Fatalf("rejected install changed the target:\nbefore:\n%s\nafter:\n%s", before, after)
+			}
+		})
+	}
+}
+
+// tomlKeyPaths resolves each key line of a simple TOML file to its dotted
+// table path, so tests can assert where a key semantically lives.
+func tomlKeyPaths(data string) map[string]string {
+	out := map[string]string{}
+	table := ""
+	for _, line := range strings.Split(data, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.HasPrefix(line, "[") {
+			table = strings.Trim(line, "[]")
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		path := strings.TrimSpace(key)
+		if table != "" {
+			path = table + "." + path
+		}
+		out[path] = strings.TrimSpace(value)
+	}
+	return out
+}
+
+func TestCodexConfigMergeKeepsUserTopLevelKeys(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	for _, tc := range []struct{ table, key, value string }{
+		{"profiles.fast", "model", `"mini"`},
+		{`mcp_servers."@acme/docs"`, "command", `"npx"`},
+		{`profiles."gpt-5:high"`, "model", `"gpt-5"`},
+		{`projects."/home/x/repo"`, "trust_level", `"trusted"`}, // no-personal-paths-ignore: fixture
+		{`projects.'C:\repo'`, "trust_level", `"trusted"`},
+		{`[mcp_servers."a=b,c"]`, "command", `"x"`},
+	} {
+		t.Run(tc.table, func(t *testing.T) {
+			target := t.TempDir()
+			configPath := filepath.Join(target, ".codex", "config.toml")
+			original := "model = \"o3\"\n\n[" + tc.table + "]\n" + tc.key + " = " + tc.value + "\n"
+			testutil.WriteFile(t, configPath, original)
+
+			runInstall(t, target, payload, func(o *Options) {})
+			first := testutil.ReadFile(t, configPath)
+			runInstall(t, target, payload, func(o *Options) {})
+			config := testutil.ReadFile(t, configPath)
+			if config != first {
+				t.Fatalf("reinstall changed config.toml:\nfirst:\n%s\nsecond:\n%s", first, config)
+			}
+			keys := tomlKeyPaths(config)
+			for path, want := range map[string]string{
+				"model": `"o3"`,
+				strings.Trim(tc.table, "[]") + "." + tc.key: tc.value,
+				"default_permissions":                       `"devrites-orchestrator"`,
+				"permissions.devrites-orchestrator.extends": `":workspace"`,
+			} {
+				if keys[path] != want {
+					t.Fatalf("config key %s = %q, want %q:\n%s", path, keys[path], want, config)
+				}
+			}
+			if _, leaked := keys["permissions.devrites-orchestrator.model"]; leaked {
+				t.Fatalf("user top-level model moved into the DevRites permissions table:\n%s", config)
+			}
+			runUninstall(t, target)
+			if got := testutil.ReadFile(t, configPath); got != original {
+				t.Fatalf("uninstall did not restore config.toml:\nwant %q\ngot  %q", original, got)
+			}
+		})
+	}
+}
+
+// Header-looking lines inside multi-line strings or arrays, and a header
+// behind a UTF-8 BOM, must not move the DevRites block.
+func TestCodexConfigMergeSkipsMultilineValuesAndBOM(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	for _, tc := range []struct{ name, original, header string }{
+		{"basic string", "model = \"o3\"\ndeveloper_instructions = \"\"\"\nRules:\n[important]\nbe nice\n\"\"\"\n\n[mcp_servers.a]\ncommand = \"a\"\n", "[mcp_servers.a]\n"},
+		{"literal string", "model = \"o3\"\nnote = '''\n[x]\n'''\n[t]\nk = 1\n", "[t]\n"},
+		{"array", "model = \"o3\"\nmatrix = [\n  [1, 2],\n\n  [3]\n]\n\n[mcp_servers.a]\ncommand = \"a\"\n", "[mcp_servers.a]\n"},
+		{"bom", "\ufeff[model_providers.x]\nname = \"x\"\n\n[profiles.p]\nmodel = \"m\"\n", "[model_providers.x]\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			target := t.TempDir()
+			configPath := filepath.Join(target, ".codex", "config.toml")
+			testutil.WriteFile(t, configPath, tc.original)
+			runInstall(t, target, payload, func(o *Options) {})
+			config := testutil.ReadFile(t, configPath)
+			if !strings.Contains(config, "# END DEVRITES CODEX PERMISSIONS\n"+tc.header) {
+				t.Fatalf("DevRites block not placed before the first real header %q:\n%s", tc.header, config)
+			}
+			if strings.Contains(config, "\ufeff") {
+				t.Fatalf("BOM left inside config.toml: %q", config)
+			}
+			runUninstall(t, target)
+			if got := testutil.ReadFile(t, configPath); got != strings.TrimPrefix(tc.original, "\ufeff") {
+				t.Fatalf("uninstall did not restore config.toml:\nwant %q\ngot  %q", tc.original, got)
+			}
+		})
+	}
+}
+
+func TestHasTopLevelTOMLKey(t *testing.T) {
+	for _, tc := range []struct {
+		data string
+		want bool
+	}{
+		{"default_permissions = \"mine\"\n", true},
+		{"\"default_permissions\" = \"mine\"\n", true},
+		{"'default_permissions' = \"mine\"\n", true},
+		{"\ufeffdefault_permissions = \"mine\"\n", true},
+		{"x = \"\"\"\ndefault_permissions = 1\n\"\"\"\n", false},
+		{"x = [\n  [1],\n]\ndefault_permissions = \"mine\"\n", true},
+		{"[t]\ndefault_permissions = \"mine\"\n", false},
+	} {
+		if got := hasTopLevelTOMLKey([]byte(tc.data), "default_permissions"); got != tc.want {
+			t.Errorf("hasTopLevelTOMLKey(%q) = %t, want %t", tc.data, got, tc.want)
+		}
+	}
+}
+
+func TestInstallPrunesHostsSharingAgentsMD(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	target := t.TempDir()
+	runInstall(t, target, payload, func(o *Options) {})
+	runInstall(t, target, payload, func(o *Options) {
+		o.WithCodex = false
+		o.WithPi = false
+	})
+	agents := testutil.ReadFile(t, filepath.Join(target, "AGENTS.md"))
+	if strings.Contains(agents, "DEVRITES CODEX") || strings.Contains(agents, "DEVRITES PI") || !strings.Contains(agents, "DEVRITES DEVIN") {
+		t.Fatalf("dropping Codex and pi left the wrong AGENTS.md blocks:\n%s", agents)
+	}
+}
+
+func TestClaudeSettingsUninstallKeepsPreexistingRule(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	target := t.TempDir()
+	settingsPath := filepath.Join(target, ".claude", "settings.json")
+	testutil.WriteFile(t, settingsPath, `{"permissions":{"allow":["Bash(git diff *)"]}}`+"\n")
+
+	runInstall(t, target, payload, func(o *Options) {})
+	runInstall(t, target, payload, func(o *Options) {})
+	if marker := testutil.ReadFile(t, filepath.Join(target, ".claude", "devrites.claude-hooks-merge")); strings.Contains(marker, "rule:Bash(git diff *)") {
+		t.Fatalf("settings marker claims the user's pre-existing rule:\n%s", marker)
+	}
+	runUninstall(t, target)
+	settings := testutil.ReadFile(t, settingsPath)
+	if !strings.Contains(settings, "Bash(git diff *)") {
+		t.Fatalf("uninstall removed the user's pre-existing rule:\n%s", settings)
+	}
+	if strings.Contains(settings, "mcp__codegraph__*") || strings.Contains(settings, "devrites-engine") {
+		t.Fatalf("uninstall left DevRites rules:\n%s", settings)
+	}
+}
+
+func TestUninstallRemovesClaudeSettingsCreatedByInstall(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	target := t.TempDir()
+	runInstall(t, target, testPayload(t), func(o *Options) {})
+	runInstall(t, target, testPayload(t), func(o *Options) {})
+	runUninstall(t, target)
+	if exists(filepath.Join(target, ".claude", "settings.json")) {
+		t.Fatalf("uninstall left the DevRites-created settings file: %q", testutil.ReadFile(t, filepath.Join(target, ".claude", "settings.json")))
+	}
+}
+
+func TestUpdateHonorsExplicitCLIFlags(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	t.Setenv("DEVRITES_ENGINE_CLI", "")
+	t.Setenv("DEVRITES_UPDATE_HANDOFF", "")
+	payload := testPayload(t)
+	target := t.TempDir()
+	runInstall(t, target, payload, func(o *Options) {})
+	t.Setenv("DEVRITES_NO_BINARY", "")
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"--target", target, "--source-dir", testSource(t, "9.9.9"), "--payload-dir", payload, "--no-binary", "--no-omp", "--force"}, &stdout, &stderr, ModeUpdate)
+	if code != 0 {
+		t.Fatalf("update exit %d\nstdout:\n%s\nstderr:\n%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "engine binary: skipped (--no-binary)") {
+		t.Fatalf("update ignored --no-binary:\n%s", stdout.String())
+	}
+	if exists(filepath.Join(target, ".omp", "skills")) {
+		t.Fatal("update ignored --no-omp")
+	}
+	if flags := manifestHeader(filepath.Join(target, ManifestName), "devrites-flags"); !strings.Contains(flags, "--no-omp") || !strings.Contains(flags, "--no-binary") {
+		t.Fatalf("update did not persist explicit flags: %q", flags)
+	}
+}
+
+func TestUninstallNoBinaryFlagKeepsGlobalBinary(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	binDir := t.TempDir()
+	t.Setenv("DEVRITES_BIN_DIR", binDir)
+	bin := filepath.Join(binDir, engineBinaryName())
+	testutil.WriteFile(t, bin, "engine\n")
+	target := t.TempDir()
+	runInstall(t, target, testPayload(t), func(*Options) {})
+	t.Setenv("DEVRITES_NO_BINARY", "")
+
+	var stdout, stderr bytes.Buffer
+	if code := Run([]string{"--target", target, "--no-binary"}, &stdout, &stderr, ModeUninstall); code != 0 {
+		t.Fatalf("uninstall exit %d: %s", code, stderr.String())
+	}
+	if !exists(bin) {
+		t.Fatalf("uninstall --no-binary removed the global binary:\n%s", stdout.String())
+	}
+}
+
+func TestPinnedAliasSurvivesInstallAndUninstalls(t *testing.T) {
+	if _, err := exec.LookPath("bash"); err != nil || runtime.GOOS == "windows" {
+		t.Skip("pin.sh needs bash")
+	}
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	testutil.WriteFile(t, filepath.Join(payload, "claude", "skills", "rite-build", "SKILL.md"), "build\n")
+	target := t.TempDir()
+	runInstall(t, target, payload, func(o *Options) {})
+	pin := exec.Command("bash", filepath.Join("..", "..", "..", "scripts", "pin.sh"), "--target", target, "add", "b", "rite-build")
+	pin.Env = append(os.Environ(), "HOME="+t.TempDir())
+	if out, err := pin.CombinedOutput(); err != nil {
+		t.Fatalf("pin.sh add: %v\n%s", err, out)
+	}
+	records, err := readManifest(filepath.Join(target, ManifestName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, rel := range []string{".claude/skills/b/SKILL.md", ".agents/skills/b/SKILL.md"} {
+		snap, err := inspectManagedPath(target, rel)
+		if err != nil || records[rel].Hash != snap.hash {
+			t.Fatalf("pin.sh recorded %s hash %q, file hash %q (%v)", rel, records[rel].Hash, snap.hash, err)
+		}
+	}
+	// A pin recorded by an older pin.sh carries no hash.
+	legacy := filepath.Join(target, ".claude", "skills", "old", "SKILL.md")
+	testutil.WriteFile(t, legacy, "---\nname: old\ndescription: Alias of DevRites /rite. Use when the user runs /old. Delegates to /rite.\n---\n")
+	testutil.AppendFile(t, filepath.Join(target, ManifestName), ".claude/skills/old/SKILL.md\n")
+
+	if err := applyInstall(target, payload, false, false, nil); err != nil {
+		t.Fatalf("install after pin: %v", err)
+	}
+	for _, rel := range []string{".claude/skills/b/SKILL.md", ".agents/skills/b/SKILL.md", ".claude/skills/old/SKILL.md"} {
+		if !exists(filepath.Join(target, filepath.FromSlash(rel))) {
+			t.Fatalf("install pruned pinned alias %s", rel)
+		}
+	}
+	runUninstall(t, target)
+	for _, rel := range []string{".claude/skills/b/SKILL.md", ".agents/skills/b/SKILL.md", ".claude/skills/old/SKILL.md"} {
+		if exists(filepath.Join(target, filepath.FromSlash(rel))) {
+			t.Fatalf("uninstall left pinned alias %s", rel)
+		}
+	}
+}
+
+func TestInstallManagesHostConfigs(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	for _, tc := range []struct {
+		config hostpack.HostConfig
+		drop   func(*Options)
+	}{
+		{hostpack.OmpConfig, func(o *Options) { o.WithOmp = false }},
+		{hostpack.PiSettings, func(o *Options) { o.WithCodex = false }},
+	} {
+		t.Run(tc.config.Host+" absent", func(t *testing.T) {
+			target := t.TempDir()
+			configPath := filepath.Join(target, filepath.FromSlash(tc.config.Rel))
+			runInstall(t, target, payload, func(o *Options) {})
+			if got := testutil.ReadFile(t, configPath); got != tc.config.Content {
+				t.Fatalf("%s = %q", tc.config.Rel, got)
+			}
+			if records, _ := readManifest(filepath.Join(target, ManifestName)); records[tc.config.Rel].Hash == "" {
+				t.Fatalf("%s not hash-managed", tc.config.Rel)
+			}
+			runInstall(t, target, payload, tc.drop)
+			if exists(configPath) {
+				t.Fatalf("dropping the host kept managed %s", tc.config.Rel)
+			}
+			runInstall(t, target, payload, func(o *Options) {})
+			runUninstall(t, target)
+			if exists(configPath) {
+				t.Fatalf("uninstall kept managed %s", tc.config.Rel)
+			}
+		})
+
+		t.Run(tc.config.Host+" user owned", func(t *testing.T) {
+			target := t.TempDir()
+			configPath := filepath.Join(target, filepath.FromSlash(tc.config.Rel))
+			testutil.WriteFile(t, configPath, "mine\n")
+			var stderr bytes.Buffer
+			runInstall(t, target, payload, func(o *Options) { o.Stderr = &stderr; o.Force = true })
+			if got := testutil.ReadFile(t, configPath); got != "mine\n" {
+				t.Fatalf("installer edited a user-owned %s: %q", tc.config.Rel, got)
+			}
+			if !strings.Contains(stderr.String(), "add: "+tc.config.Advice+"\n") {
+				t.Fatalf("missing %s advice:\n%s", tc.config.Rel, stderr.String())
+			}
+			runUninstall(t, target)
+			if got := testutil.ReadFile(t, configPath); got != "mine\n" {
+				t.Fatalf("uninstall touched a user-owned %s: %q", tc.config.Rel, got)
+			}
+		})
+	}
+}
+
+func TestEditedHostConfigIsRelinquished(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	t.Setenv("DEVRITES_UPDATE_HANDOFF", "")
+	payload := testPayload(t)
+	ops := map[string]func(t *testing.T, target string, force bool, drop func(*Options)) string{
+		"update": func(t *testing.T, target string, force bool, _ func(*Options)) string {
+			args := []string{"--target", target, "--source-dir", testSource(t, "9.9.9"), "--payload-dir", payload, "--no-binary"}
+			if force {
+				args = append(args, "--force")
+			}
+			var stdout, stderr bytes.Buffer
+			if code := Run(args, &stdout, &stderr, ModeUpdate); code != 0 {
+				t.Fatalf("update exit %d\nstdout:\n%s\nstderr:\n%s", code, stdout.String(), stderr.String())
+			}
+			return stderr.String()
+		},
+		"host drop": func(t *testing.T, target string, force bool, drop func(*Options)) string {
+			var stderr bytes.Buffer
+			runInstall(t, target, payload, func(o *Options) { drop(o); o.Force = force; o.Stderr = &stderr })
+			return stderr.String()
+		},
+		"uninstall": func(t *testing.T, target string, force bool, _ func(*Options)) string {
+			opts := DefaultOptions(ModeUninstall)
+			opts.Target = target
+			opts.KeepBinary = true
+			opts.Force = force
+			opts.Stdout = &bytes.Buffer{}
+			var stderr bytes.Buffer
+			opts.Stderr = &stderr
+			if err := Apply(opts); err != nil {
+				t.Fatal(err)
+			}
+			return stderr.String()
+		},
+	}
+	for _, tc := range []struct {
+		config hostpack.HostConfig
+		drop   func(*Options)
+	}{
+		{hostpack.OmpConfig, func(o *Options) { o.WithOmp = false }},
+		{hostpack.PiSettings, func(o *Options) { o.WithCodex = false }},
+	} {
+		for name, op := range ops {
+			for _, force := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s %s force=%v", tc.config.Host, name, force), func(t *testing.T) {
+					target := t.TempDir()
+					configPath := filepath.Join(target, filepath.FromSlash(tc.config.Rel))
+					runInstall(t, target, payload, func(o *Options) {})
+					testutil.WriteFile(t, configPath, "mine\n")
+					stderr := op(t, target, force, tc.drop)
+					if got := testutil.ReadFile(t, configPath); got != "mine\n" {
+						t.Fatalf("%s changed the user-edited %s: %q", name, tc.config.Rel, got)
+					}
+					if name == "update" && !strings.Contains(stderr, "add: "+tc.config.Advice+"\n") {
+						t.Fatalf("missing %s advice:\n%s", tc.config.Rel, stderr)
+					}
+					if mf := filepath.Join(target, ManifestName); exists(mf) && slices.Contains(manifestEntries(t, mf), tc.config.Rel) {
+						t.Fatalf("%s still lists the user-edited %s", ManifestName, tc.config.Rel)
+					}
+					runInstall(t, target, payload, func(o *Options) {})
+					runUninstall(t, target)
+					if got := testutil.ReadFile(t, configPath); got != "mine\n" {
+						t.Fatalf("later install/uninstall changed the user-edited %s: %q", tc.config.Rel, got)
+					}
+				})
+			}
+		}
 	}
 }

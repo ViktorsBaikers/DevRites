@@ -70,7 +70,7 @@ A missing check is not a negative result; a failed check is not an unavailable
 tool; freshness alone is not a pass. Only applicable `fresh` or `reused`
 evidence with a supported `pass` satisfies a required row. Reuse keeps the
 original observation and records the new applicability check separately —
-see [`candidate-integrity.md`](../candidate-integrity.md#evidence-validity).
+see [`candidate-integrity.md`](skill://devrites-lib/reference/candidate-integrity.md#evidence-validity).
 When change impact cannot be bounded, recheck the full affected scope.
 
 A tool-cache replay (`(cached)`, replayed output, last-failed-only selection) is

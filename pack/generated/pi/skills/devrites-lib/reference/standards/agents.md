@@ -41,7 +41,7 @@ Skills name exact fresh roles, omit native fields;
 hosts spawn/wait/deliver. Root MUST NOT advance/claim completion before admitting required results;
 running/orphaned/unavailable = `gap` — no root/generic substitute.
 Where a feature workspace exists, every fresh dispatch to a named `devrites-*`
-role — wave or solo — builds its read-set with `devrites-engine context <slug>
+role — wave or solo — builds its read-set with `devrites-engine context --skills-root .pi/skills <slug>
 --phase <p> --role <role>` and tracks the launch through `devrites-engine
 dispatch <slug> open|start|seal|return` (a solo dispatch is a wave of one;
 start/return auto-record metrics). Without a workspace the plain host dispatch

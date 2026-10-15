@@ -5,7 +5,7 @@ skip normalize, polish without Chesterton's Fence, or cite clean lint/build
 as proof of quality.
 
 Pack-wide rationalizations + red flags (incl. lint-pass-as-quality): see
-[standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
+[standards/anti-patterns.md](skill://devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 

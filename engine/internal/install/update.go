@@ -77,6 +77,9 @@ func runUpdate(opts Options) error {
 			return fmt.Errorf("parse manifest install flags: %w", err)
 		}
 	}
+	if err := parseArgs(opts.args, &next); err != nil {
+		return fmt.Errorf("parse update flags: %w", err)
+	}
 	next.Target = target
 	next.PayloadDir = payload
 	next.SourceDir = source
@@ -147,12 +150,13 @@ func runRemoteUpdate(opts Options, target, installed string) error {
 	if _, err := verifyEngineBinary(candidate.EnginePath, tag, 30*time.Second); err != nil {
 		return fmt.Errorf("verify update engine: %w", err)
 	}
-	args := []string{
-		"update",
+	// Explicit flags first so the fixed handoff arguments below win.
+	args := append([]string{"update"}, opts.args...)
+	args = append(args,
 		"--target", target,
 		"--source-dir", candidate.SourceDir,
 		"--payload-dir", candidate.PayloadDir,
-	}
+	)
 	if opts.DryRun {
 		args = append(args, "--dry-run")
 	}

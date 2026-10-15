@@ -5,7 +5,7 @@ How to turn a spec into ordered, vertical slices in `tasks.md`.
 ## Each slice is one task
 
 Use the complete canonical grammar in
-[`workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar).
+[`workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar).
 This reference owns decomposition; the shared schema owns field names and meanings.
 
 ## Process

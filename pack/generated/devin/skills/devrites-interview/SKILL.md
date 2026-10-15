@@ -5,7 +5,7 @@ triggers:
   - model
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-spec/reference/interview-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["spec.md","questions.md","decisions.md","assumptions.md","decision-coverage.md","state.md"]} -->
-> Read-set manifest: `devrites-engine context [slug] --skill devrites-interview` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill devrites-interview` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # devrites-interview: extract intent
 
@@ -34,7 +34,7 @@ spec, plan, or code.
   **option set** ([[`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) → "Option set"](../devrites-lib/reference/standards/afk-hitl.md#option-set-how-every-gap-is-presented)): recommended **first**, labelled
   `(Recommended)`, each with a dimension-tagged rationale (`logic · infra · business ·
   architecture`, + `security`/`UX`/`risk` when in scope), plus the escape hatch. Render via
-  `AskUserQuestion` when the harness has it:
+  `ask_user_question` when the harness has it:
   ```
   1. <recommended> (Recommended) — logic: … · infra: … · business: … · architecture: …
   2. <alternative> — <rationale + the trade-off it accepts>

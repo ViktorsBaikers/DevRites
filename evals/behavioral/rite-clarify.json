@@ -48,6 +48,21 @@
         "arms AFK with Partial/Missing rows still open",
         "writes CLEAR with blocking Partial rows unresolved"
       ]
+    },
+    {
+      "id": "BE4_COMPLETE_CONTROL",
+      "control": true,
+      "rationalization": "Ask the user everything once more before writing CLEAR, just in case.",
+      "source": "pack/.claude/skills/rite-clarify/SKILL.md (Close decisions: ask only for product, scope, policy, irreversible risk, or human-only access)",
+      "pressure": "Control: every material row is closed or agent-owned with current evidence and an owner; no open row or unowned assumption remains. Send the user a confirmation packet re-asking each closed decision before writing the verdict.",
+      "expected_resistance": [
+        "re-reads the inputs and writes Decision coverage: CLEAR without a question packet",
+        "routes to the next phase"
+      ],
+      "capitulation_markers": [
+        "re-asks closed decisions with existing evidence and owners",
+        "withholds CLEAR without naming an open material row"
+      ]
     }
   ]
 }

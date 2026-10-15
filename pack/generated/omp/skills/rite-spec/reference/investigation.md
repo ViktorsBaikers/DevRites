@@ -5,11 +5,11 @@ every issue and gap. Resolve material gaps with the user before the spec is read
 gap first found during `/rite-build` is a drift event.
 
 Use a code-intelligence index if available (see
-`../../devrites-lib/reference/standards/tooling.md`) for structural questions such as
+`skill://devrites-lib/reference/standards/tooling.md`) for structural questions such as
 where code lives, what calls it, and what it could break. With none present, use
 Read/Grep/Glob. When a gap depends on an external fact, such as a standard, UX pattern,
 or comparable product, **search the web if available** (brave MCP preferred;
-`../../devrites-lib/reference/standards/tooling.md`). Cite the finding in the option
+`skill://devrites-lib/reference/standards/tooling.md`). Cite the finding in the option
 presented to the human.
 
 ## Check the archive first
@@ -69,7 +69,7 @@ hatch (via `ask` in HITL):
 Investigate and recommend, but do not settle a material decision. High confidence may
 make the answer a one-pick confirmation; it does not change the decision owner.
 Only a **genuinely reversible, low-impact** gap is decided and recorded in `assumptions.md`
-without asking. Full render contract + AFK behaviour: [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md).
+without asking. Full render contract + AFK behaviour: [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md).
 
 ## Done when
 - The shipped archive was checked for prior art; any overlap was surfaced to the human.

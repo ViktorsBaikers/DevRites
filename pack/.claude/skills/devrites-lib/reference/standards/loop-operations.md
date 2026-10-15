@@ -38,6 +38,9 @@ Every unattended loop must name:
 2. **Objective:** one active workspace or one read-only external observation.
 3. **Cycle:** one documented skill invocation; no hidden command chain.
 4. **Evaluator:** the skill's existing readiness, proof, review, or watcher verdict.
+   A cycle may add proof but never loosens or retargets what judges it (a test, gate,
+   threshold, benchmark, or fixture) to pass; an unattended optimizer overfits whatever
+   it can touch. An objective with no verifiable evaluator is not loopable; it stays HITL.
 5. **Budget:** every applicable `.devrites/AFK` resource cap.
 6. **Checkpoint:** durable workspace/evidence update before the turn ends; a
    `devrites-engine check regression <slug> --update` ratchet after each durable

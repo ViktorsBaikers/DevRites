@@ -68,7 +68,7 @@ Suppressed (confidence ≤4, unverified): <count — one line each>
 ## 6. Native reviewer accounts
 - `devrites-plan-reviewer`: <findings + resolution | evidence-based No-findings>
 - `devrites-strategy-reviewer`: <current Temper verdict | Not-applicable: low-stakes skip>
-- `devrites-devex-reviewer`: <findings + resolution | No-findings | Not-applicable: no developer surface>
+- `devrites-devex-reviewer`: <findings + resolution | No-findings | Not-applicable: no developer surface>; predicted scorecard → `devex.md`
 - Recheck: <not-needed | one narrow recheck and result>
 - Cross-model (if --cross-model): <overlap / unique findings — informational until approved>
 - Final: floor = <band>; unresolved → <none | blocking qid>
@@ -126,7 +126,7 @@ prove only their named static criterion.
 
 ## Interaction inventory (UI slices — every element + flow gets an asserting test)
 Enumerate every interactive element and user flow the feature exposes; one row each, none
-skipped. Level per [`testing.md`](../../devrites-lib/reference/standards/testing.md) "Completeness": elements/fields → unit/component, critical
+skipped. Level per [`testing.md`](skill://devrites-lib/reference/standards/testing.md) "Completeness": elements/fields → unit/component, critical
 journeys → one E2E (never one-per-field). `/rite-build` must cover every row; `/rite-prove`
 fails any row with no passing result — an unverified element is a NO-GO, like an unproven criterion.
 ```markdown
@@ -152,7 +152,7 @@ Write `.devrites/work/<slug>/gates.md` once the preflight table is final —
 `devrites-engine gates scaffold <slug>` seeds one pending gate per `AC-###` in
 `spec.md`; never clobber a ledger that already carries evidence. Grammar,
 evidence binding, and oracle rules live in
-[`gates.md`](../../devrites-lib/reference/standards/gates.md); the engine
+[`gates.md`](skill://devrites-lib/reference/standards/gates.md); the engine
 enforces them, so author to the contract, not around it:
 
 - One gate per required outcome; reuse `AC-###` ids so readiness coverage and

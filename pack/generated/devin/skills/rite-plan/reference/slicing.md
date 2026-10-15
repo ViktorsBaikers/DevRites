@@ -165,4 +165,6 @@ while pivoting is still cheap.
 
 ## Slice independence
 Order by dependency, but minimize coupling. A slice that needs three other slices first
-is a smell: look for a thinner cut that stands alone.
+is a smell: look for a thinner cut that stands alone. An edge exists only when this slice
+reads something the other produces: write it as `SLICE-001 (via <interface>)`. If you
+cannot name what crosses, drop the edge; a shallow, wide graph runs in parallel.

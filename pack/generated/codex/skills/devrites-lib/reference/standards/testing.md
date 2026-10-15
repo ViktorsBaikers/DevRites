@@ -106,6 +106,11 @@ discriminates the required result.
   any divergence against the external spec — never by majority vote between
   reviewers, and never because the fixture is committed. A golden nobody re-derived
   is a rumor.
+- **A rewrite or port uses the old implementation as its oracle.** Run old and new on the
+  same inputs (the existing suite, a published conformance suite, recorded requests,
+  screenshots) and diff the results;
+  parity claimed only from tests written for the new code is unproven. **Failing case:** a
+  port passes its new unit tests while the old suite fails against it.
 
 ### Safe perturbation
 
@@ -174,6 +179,10 @@ test exercises; **D**escriptive **A**nd **M**eaningful **P**hrases beat **D**on'
 here. (Deliberately trades against production reuse-first: a fixture that makes the reader
 scroll away to understand the case costs more than the duplication saved.)
 
+Test data is synthetic. A generator or factory builds each named edge case (a user with
+1,000 tickets, an empty tenant); production records never enter tests, fixtures, or agent
+sandboxes ([`security.md`](security.md)).
+
 ## Test doubles: reach for the real thing first
 Prefer, in order: **real > fake > stub > mock**. Use the real collaborator when it's fast and
 deterministic; a **fake** (an in-memory implementation that honors the contract) when it isn't; a
@@ -209,6 +218,10 @@ Select cases from the accepted spec and applicable standards, not a generic coun
   authorization, extra fields, or side effects; run schema-driven fuzzers only against a
   disposable target under external-write approval. **Failing case:** a shared
   `createdAt: Date` compiles on both sides while the client receives a string.
+- A module or layer boundary the plan relies on ("only `clients/` imports the SDK") is
+  enforced by a structural test in the project's existing tooling (an import or
+  dependency rule), not by prose. Its failure message names the allowed route, so the
+  agent fixes the design instead of dodging the rule.
 - Compatibility/delivery work drives both feature-flag states and old/new caller or
   schema combinations. Migration-before-code and code-before-migration order each need a
   declared expected result.

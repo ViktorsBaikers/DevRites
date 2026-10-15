@@ -80,6 +80,19 @@ def structural_markdown(text: str, source: str | Path = "markdown text") -> str:
                         break
                     start = close_end + 1
                     continue
+            elif (
+                found := _marker_line_fence(
+                    data, line, line_end, after_blank or anchor >= 0
+                )
+            ) is not None:
+                fence, close_end = found
+                anchor, after_blank = -1, False
+                if not _lone_cr(data[start:close_end]):
+                    _mask(masked, start + fence, close_end)
+                if close_end == len(data):
+                    break
+                start = close_end + 1
+                continue
             else:
                 column = _top_level_item(line)
                 if column is not None and (after_blank or anchor >= 0):
@@ -106,7 +119,29 @@ def _leading_width(line: bytes) -> tuple[int, int]:
     return columns, size
 
 
+def _marker_line_fence(
+    data: bytes, line: bytes, line_end: int, separated: bool
+) -> tuple[int, int] | None:
+    """Mirror markdowntext.markerLineFence: a top-level item opening a fence."""
+    item = _item_content(line)
+    if item is None or (not separated and 50 <= line[0] <= 57):
+        return None
+    column, nxt = item
+    opened = _opening_fence(line[nxt:], 0)
+    if opened is None:
+        return None
+    close_end = _list_fence_end(data, line_end, opened, column, column)
+    return None if close_end < 0 else (nxt, close_end)
+
+
 def _top_level_item(line: bytes) -> int | None:
+    item = _item_content(line)
+    if item is None or _starts_block(line[item[1]:]):
+        return None
+    return item[0]
+
+
+def _item_content(line: bytes) -> tuple[int, int] | None:
     if len(line) < 2 or _is_thematic_break(line):
         return None
     marker_end = 1
@@ -122,9 +157,9 @@ def _top_level_item(line: bytes) -> int | None:
     while nxt < len(line) and line[nxt] in b" \t":
         column += 4 - column % 4 if line[nxt] == ord("\t") else 1
         nxt += 1
-    if nxt == len(line) or column - marker_end > 4 or _starts_block(line[nxt:]):
+    if nxt == len(line) or column - marker_end > 4:
         return None
-    return column
+    return column, nxt
 
 
 def _starts_block(content: bytes) -> bool:

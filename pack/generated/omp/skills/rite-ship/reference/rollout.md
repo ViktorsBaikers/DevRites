@@ -27,13 +27,13 @@ project has no defensible threshold or signal, the monitoring gap blocks live ex
   are tested, disabling it stops the risky effect, and it has an owner/removal trigger.
   Do not add a flag to a change already reversible by a safe atomic deploy.
 - A flag cannot reverse destructive data/schema effects. Apply
-  [`data-integrity.md`](../../devrites-lib/reference/standards/data-integrity.md) and prove
+  [`data-integrity.md`](skill://devrites-lib/reference/standards/data-integrity.md) and prove
   restore or forward recovery separately.
 - External APIs, webhooks, queues, jobs, and caches apply
-  [`integration-reliability.md`](../../devrites-lib/reference/standards/integration-reliability.md):
+  [`integration-reliability.md`](skill://devrites-lib/reference/standards/integration-reliability.md):
   reconcile unknown outcomes, drain/quarantine/replay safely, and protect downstream capacity.
 - Multi-root/service rollout follows
-  [`repository-topology.md`](../../devrites-lib/reference/standards/repository-topology.md);
+  [`repository-topology.md`](skill://devrites-lib/reference/standards/repository-topology.md);
   references to another repository never grant write/deploy authority there.
 
 ## Stage, observe, decide

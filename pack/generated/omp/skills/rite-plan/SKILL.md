@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/agents.md","rite-plan/reference/slicing.md","rite-plan/reference/replan-and-repair.md","rite-plan/reference/dependency-graph.md","rite-plan/reference/task-breakdown.md","rite-plan/reference/anti-patterns.md","rite-define/reference/plan-template.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","drift.md"],"workspaceByRole":{"plan-drafter":["brief.md","spec.md","plan.md","tasks.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","state.md","drift.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase plan` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase plan` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-plan: (re)plan an active feature
@@ -18,11 +18,11 @@ artifact-only**: reconcile
 editing source code.
 
 ## Rules consulted (read on demand from `.omp/skills/devrites-lib/reference/standards/`)
-Pull [`development-workflow.md`](../devrites-lib/reference/standards/development-workflow.md) via `Read` when reshaping slice cadence or DoD
+Pull [`development-workflow.md`](skill://devrites-lib/reference/standards/development-workflow.md) via `Read` when reshaping slice cadence or DoD
 criteria.
-Load [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md)
+Load [`repository-topology.md`](skill://devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](skill://devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](skill://devrites-lib/reference/standards/integration-reliability.md)
 when the spec applicability map or observed drift triggers them.
-Load [`assumption-checkpoints.md`](../devrites-lib/reference/standards/assumption-checkpoints.md) (trigger `assumption-delta`)
+Load [`assumption-checkpoints.md`](skill://devrites-lib/reference/standards/assumption-checkpoints.md) (trigger `assumption-delta`)
 when scope introduces a second case, an optional field, or a chosen-over-derived value.
 Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
@@ -43,7 +43,7 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
   the irreducible complexity. Honor each slice's `depends_on:`: the next *buildable* slice is the
   lowest pending one whose dependencies are all built. This preserves one-slice-at-a-time execution.
 - **Root writes; drafter proposes.** Follow
-  [`agents.md`](../devrites-lib/reference/standards/agents.md). The controlling chat owns
+  [`agents.md`](skill://devrites-lib/reference/standards/agents.md). The controlling chat owns
   human questions, decisions, reconciliation, and planning writes.
 - **Nested repair preserves its caller.** When `state.md` contains a valid
   technical-backtracking return cursor, preserve any valid return cursor
@@ -85,7 +85,7 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
    builds its bundle with `--slice <SLICE-ID>` per affected slice. Await one atomic, read-only
    the drafter's `candidate_files` bundle; human choices return separately.
    When the observed failure is missing or ambiguous consumptive-action evidence,
-   require the drafter to apply [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md) and return the bounded
+   require the drafter to apply [`one-shot-actions.md`](skill://devrites-lib/reference/standards/one-shot-actions.md) and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
    collision mutant. Past evidence loss is not terminal. The drafter supplies no bodies.
    A repair candidate carries a delta self-check scoped to what the patch
@@ -123,10 +123,10 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
    auto-declared.
    Bind exact active `.devrites/work/<slug>/` targets and executable contract; after Vet READY, root
    materializes the exact vetted workflow-artifact paths under
-   [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
+   [`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md)
    without dispatching the product wright.
 3. Reason about dependencies: [dependency-graph](reference/dependency-graph.md).
-   Reconcile the horizon register against `../rite-define/reference/plan-template.md`.
+   Reconcile the horizon register against `skill://rite-define/reference/plan-template.md`.
    Preserve every `HZN-###` and unresolved item. Cite evidence when reclassifying the earliest
    honest decision point; resolution or supersession also needs evidence. Never silently delete
    an item. Planning choices resolve from source evidence or become bounded risk spikes with

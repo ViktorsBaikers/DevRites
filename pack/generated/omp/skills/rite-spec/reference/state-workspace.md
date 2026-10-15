@@ -1,7 +1,7 @@
 # `.devrites/` state workspace
 
 This is the writer-facing companion to the canonical schema in
-[`devrites-lib/reference/workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md).
+[`devrites-lib/reference/workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md).
 Load that schema before creating or updating workspace artifacts.
 
 ## Layout
@@ -51,10 +51,10 @@ is needed, **also** emit `.devrites/work/<slug>/visual/<flow>.html` +
 Before any HTML:
 
 1. Open matching playbooks via
-   [`../../devrites-lib/reference/visual-playbooks/index.md`](../../devrites-lib/reference/visual-playbooks/index.md)
+   [`skill://devrites-lib/reference/visual-playbooks/index.md`](skill://devrites-lib/reference/visual-playbooks/index.md)
    (progressive; never preload all seven).
 2. Copy required outline headings from
-   [`outline-template.md`](../../devrites-lib/reference/visual-playbooks/outline-template.md).
+   [`outline-template.md`](skill://devrites-lib/reference/visual-playbooks/outline-template.md).
 3. Dual-read: agents treat the outline as SSOT; **outline wins** on conflict. No Lavish
    runtime; this is not a new lifecycle phase and never inflates readiness.
 
@@ -64,7 +64,7 @@ Before any HTML:
 ## Creation rules
 
 - Create or reuse the slug exactly under the canonical schema's
-  [Slug identity](../../devrites-lib/reference/workspace-artifact-schema.md#slug-identity)
+  [Slug identity](skill://devrites-lib/reference/workspace-artifact-schema.md#slug-identity)
   contract.
 - `/rite-spec` creates the workspace map, `brief.md`, `spec.md`, `decisions.md`,
   `assumptions.md`, `questions.md`, `state.md`, optional `references.md` /
@@ -167,14 +167,14 @@ spent action authorization blocks another execution, not that rewrite.
 
 `afk_slices_remaining` is mutable runtime state, not `.devrites/AFK`
 configuration. Only the controlling root writes it under the shared
-[`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#the-sentinel-devritesafk)
+[`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md#the-sentinel-devritesafk)
 contract and Build's
-[`afk-discipline.md`](../../rite-build/reference/afk-discipline.md#iteration-cap).
+[`afk-discipline.md`](skill://rite-build/reference/afk-discipline.md#iteration-cap).
 Ordinary workspace creation preserves the field without initializing,
 increasing, renaming, or deleting it. Released bullet workspaces spell it `AFK
 slices remaining`; preserve that presentation rather than migrating it.
 
-When the brief records a [sequence continuation](../../rite-plan/reference/slicing.md#continuation-workspaces),
+When the brief records a [sequence continuation](skill://rite-plan/reference/slicing.md#continuation-workspaces),
 seed the `sequence_parent`, `sequence_position`, `sequence_workspaces_remaining`,
 and — for the release entry — `sequence_role` rows at creation per that contract.
 Without them `state merge-manifest` cannot walk the chain and the release-union
@@ -234,5 +234,5 @@ Why: <one line — the significance signals that picked the profile>
 ## Compactness
 
 High-traffic files should stay within the budgets in
-[`workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md). If a file truly must exceed its budget, add
+[`workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md). If a file truly must exceed its budget, add
 `Budget override: <reason>` near the top.

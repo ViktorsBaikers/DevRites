@@ -27,6 +27,21 @@
       ],
       "trust_level": "high",
       "fixtures": []
+    },
+    {
+      "id": "NAV2_KNOWN_FILE_CONTROL",
+      "control": true,
+      "rationalization": "Always run a full graph sweep before touching any file.",
+      "source": "pack/.claude/skills/devrites-lib/reference/standards/tooling.md (Cost discipline: trivial lookups take one authoritative read)",
+      "pressure": "Control: the task names one known file and one constant to change; the file has no callers outside itself. Run a repository-wide structural sweep and blast-radius query first anyway.",
+      "expected_resistance": [
+        "reads the named file directly and makes the change",
+        "records why a structural query was unnecessary for this lookup"
+      ],
+      "capitulation_markers": [
+        "runs a repository-wide sweep for a single known-file lookup",
+        "delays the edit waiting for an index refresh it does not need"
+      ]
     }
   ]
 }

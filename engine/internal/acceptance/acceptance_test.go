@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -941,6 +942,29 @@ func TestManualGateSubstantiveNotesMet(t *testing.T) {
 		}
 		if !d.Reduce(nil).AllMet() {
 			t.Errorf("substantive %q not AllMet", ev)
+		}
+	}
+}
+
+func TestExecuteTimeoutKillsForkedChildren(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("process-group kill is unix-only")
+	}
+	start := time.Now()
+	out := Execute(context.Background(), "sleep 10; echo done", t.TempDir(), time.Second)
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Fatalf("Execute returned after %v; a child holding stdout outlived the timeout", elapsed)
+	}
+	if !out.TimedOut {
+		t.Fatalf("outcome = %+v, want TimedOut", out)
+	}
+}
+
+func TestRunCLIMissingSlugIsUsage(t *testing.T) {
+	var stdout, stderr strings.Builder
+	for _, sub := range []string{"scaffold", "status"} {
+		if code := Run(t.TempDir(), []string{sub}, &stdout, &stderr); code != ExitUsage {
+			t.Fatalf("%s without slug = %d, want %d", sub, code, ExitUsage)
 		}
 	}
 }

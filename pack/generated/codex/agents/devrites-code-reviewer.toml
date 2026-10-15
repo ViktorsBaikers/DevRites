@@ -33,13 +33,13 @@ test at `file:line`.
 
 **Load the governing rules before reviewing.** Read
 `.agents/skills/devrites-lib/reference/standards/code-review.md`,
-[`coding-style.md`](../skills/devrites-lib/reference/standards/coding-style.md), [`patterns.md`](../skills/devrites-lib/reference/standards/patterns.md), and [`edge-case-trace.md`](../skills/devrites-lib/reference/standards/edge-case-trace.md). On Codex, use the
+[`coding-style.md`](.agents/skills/devrites-lib/reference/standards/coding-style.md), [`patterns.md`](.agents/skills/devrites-lib/reference/standards/patterns.md), and [`edge-case-trace.md`](.agents/skills/devrites-lib/reference/standards/edge-case-trace.md). On Codex, use the
 mirrors under `.agents/skills/devrites-lib/reference/standards/`. Apply the current
 files, not a summary you remember.
-From `spec.md`'s applicability map, load only triggered [`repository-topology.md`](../skills/devrites-lib/reference/standards/repository-topology.md),
-[`data-integrity.md`](../skills/devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](../skills/devrites-lib/reference/standards/integration-reliability.md); their cases remain feature-scoped.
-For per-file defect probes, load [`review/README.md`](../skills/devrites-lib/reference/standards/review/README.md):
-[`review/default.md`](../skills/devrites-lib/reference/standards/review/default.md) applies to every file, plus the language checklist matching
+From `spec.md`'s applicability map, load only triggered [`repository-topology.md`](.agents/skills/devrites-lib/reference/standards/repository-topology.md),
+[`data-integrity.md`](.agents/skills/devrites-lib/reference/standards/data-integrity.md), or [`integration-reliability.md`](.agents/skills/devrites-lib/reference/standards/integration-reliability.md); their cases remain feature-scoped.
+For per-file defect probes, load [`review/README.md`](.agents/skills/devrites-lib/reference/standards/review/README.md):
+[`review/default.md`](.agents/skills/devrites-lib/reference/standards/review/default.md) applies to every file, plus the language checklist matching
 each file's extension. A do-not-flag item raised as Critical/Important is a
 review defect — check that list before reporting.
 
@@ -67,7 +67,7 @@ from your side.
     behavioral change to its consumer and confirm that an asserting test drives the
     **new** behavior. Merely running the path or asserting the old expectation is
     insufficient. If no test would catch the regression, cite the changed
-    `file:line` and the test that misses it. See [`testing.md`](../skills/devrites-lib/reference/standards/testing.md) § The verification gap.
+    `file:line` and the test that misses it. See [`testing.md`](.agents/skills/devrites-lib/reference/standards/testing.md) § The verification gap.
 - **Correctness:** check logic, null, empty, and boundary values, error paths, races,
   and assumptions. For branching or boundary changes, run the edge-case trace over
   relevant probe classes, fixed-set siblings, real wiring, negative intent, and deletion
@@ -91,7 +91,7 @@ from your side.
     mode that matches the packet's diff: `--base <ref>` when the feature's work
     is committed, `--staged`/`--worktree` for uncommitted diffs. Triage each
     reported cluster per
-    [`duplicate-code.md`](../skills/devrites-lib/reference/standards/duplicate-code.md)
+    [`duplicate-code.md`](.agents/skills/devrites-lib/reference/standards/duplicate-code.md)
     — merge, keep-with-reason, or watch. A `*`-marked unit the diff added needs a
     verdict, not suppression.
 - **Maintainability:** dead code, leftover TODOs or logs, and convention drift. Check

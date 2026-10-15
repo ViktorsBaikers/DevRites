@@ -14,7 +14,7 @@ observer.
 
 ### User-facing render: the option set
 
-Present as `ask` ranked **option set** ([`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)): 2–4 options,
+Present as `ask` ranked **option set** ([`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md)): 2–4 options,
 recommended first + `(Recommended)`, dimension-tagged trade-offs, plus escape hatch.
 Header names slice + gate:
 
@@ -56,7 +56,7 @@ rewrite; do not claim cross-file atomicity):
    `<N — name>`, `slice_mode` = `HITL`, `next_action` = `/rite-resolve <qid> "<answer>"`;
    then the `Awaiting human` table (`question_id`, `gate`, `blocking_slices` from
    `Blocked by` lookups) per its owner,
-   [`state-workspace.md`](../../rite-spec/reference/state-workspace.md#statemd-template) § state.md template.
+   [`state-workspace.md`](skill://rite-spec/reference/state-workspace.md#statemd-template) § state.md template.
    Question text, `proposed`, and `raised_at` stay in the step 1 entry. Legacy
    `- Status:`/`- Next step:`/`- qid:` bullets are engine-accepted aliases, not the
    authoring format.

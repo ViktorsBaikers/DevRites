@@ -46,7 +46,8 @@ Keep incomplete or risky behavior disabled behind a flag so deploy and release r
   gates precede exposure.
 - Feature flags separate exposure only when both states are tested, the off path preserves
   current behavior, and disabling the flag stops the risky effect. A flag cannot undo an
-  already destructive schema or data change.
+  already destructive schema or data change. Each flag names its removal trigger (full
+  rollout or kill); a flag past its trigger is dead code ([`deprecation.md`](deprecation.md)).
 
 ## Secrets
 

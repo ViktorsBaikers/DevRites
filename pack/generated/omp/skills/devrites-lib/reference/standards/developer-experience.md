@@ -11,7 +11,7 @@ have to read the source to learn. Un-tested DX is a claim, the same way un-run c
 
 This rule is the developer-facing counterpart to [`performance.md`](performance.md): perf says
 *measure the speed before you assert it*; this says *measure the experience before you assert
-it*. It pairs with the [`devrites-api-interface`](../../../devrites-api-interface/SKILL.md)
+it*. It pairs with the [`devrites-api-interface`](skill://devrites-api-interface/SKILL.md)
 skill (which shapes the contract). This rule **proves** the shape is usable.
 
 ## Scope: when this applies
@@ -28,7 +28,7 @@ It applies when the diff changes a **developer-facing surface**:
 - the **getting-started path**. README, install steps, quickstart, the first-run docs.
 
 Skip it for pure-internal refactors, private helpers, app-only UI (that's
-[`devrites-frontend-craft`](../../../devrites-frontend-craft/SKILL.md) /
+[`devrites-frontend-craft`](skill://devrites-frontend-craft/SKILL.md) /
 `devrites-frontend-reviewer`), docs-only typo fixes, and config that no external consumer
 touches. Don't DX-review a change with no developer-facing surface: the same scope discipline
 as the rest of the conditional rules. End-user UX is a different axis; this rule is about the
@@ -77,6 +77,11 @@ touches:
   carries meaning by colour alone; a status only colour conveys is a finding.
 - **Docs accuracy:** examples are copy-pasteable and correct, the signature in the docs matches
   the code, and changed behavior updated its docs in the same change ([`documentation.md`](documentation.md)).
+- **Agent use:** a coding agent is now a common consumer. Can it complete the flow with no
+  human step: non-interactive flags or env for every prompt, machine-readable output and
+  distinct exit codes where scripts consume results, setup and auth that run headless, and
+  docs that give commands rather than "click here" UI steps? A step only a human can do is
+  friction; name it.
 
 ## Measure, don't assert
 
@@ -87,7 +92,7 @@ The same discipline as `performance.md` "measure first" and `testing.md` "see it
   a clean state, the real CLI `--help`, the real error path) and recording what happened.
 - **Quote the artifact.** Record exact signal-bearing error text with typed security redactions
   (not paraphrase), secret-free command shape, and measured TTHW. For docs, use the
-  [browser-proof ladder](../../../devrites-browser-proof/SKILL.md) and describe the screenshot;
+  [browser-proof ladder](skill://devrites-browser-proof/SKILL.md) and describe the screenshot;
   a path alone is not proof.
 - **No measurement → no DX claim**, and usually no finding above Suggestion. "Feels confusing" is
   a hypothesis to test, not a verdict.

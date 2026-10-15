@@ -78,17 +78,21 @@ func ArtifactLineBudget(name string) (int, bool) {
 
 // sanctionedRootFiles are workspace-root files the schema places there without a
 // line budget: conditional artifacts (`references.md`, `investigation-map.md`,
-// `dogfood.md`) and engine-owned machine files (the parallel lease, the metrics
-// ledger, the regression baseline). Anything else in the root is unsanctioned
-// placement — `packets/` and `history/` own by-reference packets and relocated
-// narrative (workspace-artifact-schema.md "Required by phase").
+// `dogfood.md`, `devex.md`) and engine-owned machine files (the parallel lease,
+// the metrics ledger, the regression baseline, the dispatch ledger, the drift
+// baseline). Anything else in the root is unsanctioned placement — `packets/`
+// and `history/` own by-reference packets and relocated narrative
+// (workspace-artifact-schema.md "Required by phase").
 var sanctionedRootFiles = map[string]bool{
 	"references.md":            true,
 	"investigation-map.md":     true,
 	"dogfood.md":               true,
+	"devex.md":                 true,
 	"parallel-lease.md":        true,
 	"metrics.jsonl":            true,
 	"regression-baseline.json": true,
+	"dispatch.json":            true,
+	"readiness-inputs.json":    true,
 }
 
 // SanctionedRootFile reports whether name is a legitimate workspace-root file:

@@ -15,12 +15,14 @@ import (
 // ResolveRoot returns the .devrites directory to operate on. A non-empty
 // override (e.g. from DEVRITES_ROOT) may name either the project root or its
 // .devrites directory; otherwise the nearest ancestor .devrites is used.
+// Callers take Dir(root) as the project, so a symlinked .devrites (which
+// rootfacts proves resolves inside the project) keeps its project-side name.
 func ResolveRoot(override string) (string, error) {
 	facts, err := rootfacts.Resolve(override)
 	if err != nil {
 		return "", err
 	}
-	return facts.PhysicalRoot, nil
+	return filepath.Join(facts.PhysicalProject, devritespaths.DevritesRootName), nil
 }
 
 // featureDir is the canonical per-feature state directory under root.

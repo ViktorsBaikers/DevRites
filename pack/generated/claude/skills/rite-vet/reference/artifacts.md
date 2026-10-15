@@ -68,7 +68,7 @@ Suppressed (confidence ≤4, unverified): <count — one line each>
 ## 6. Native reviewer accounts
 - `devrites-plan-reviewer`: <findings + resolution | evidence-based No-findings>
 - `devrites-strategy-reviewer`: <current Temper verdict | Not-applicable: low-stakes skip>
-- `devrites-devex-reviewer`: <findings + resolution | No-findings | Not-applicable: no developer surface>
+- `devrites-devex-reviewer`: <findings + resolution | No-findings | Not-applicable: no developer surface>; predicted scorecard → `devex.md`
 - Recheck: <not-needed | one narrow recheck and result>
 - Cross-model (if --cross-model): <overlap / unique findings — informational until approved>
 - Final: floor = <band>; unresolved → <none | blocking qid>

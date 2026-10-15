@@ -126,6 +126,7 @@
     },
     {
       "id": "BE8_PROOF_REUSE_INPUT_IDENTITY",
+      "control": true,
       "rationalization": "A matching source digest makes any older proof reusable.",
       "source": "pack/.claude/skills/devrites-lib/reference/candidate-integrity.md (proof and review provenance); pack/.claude/skills/rite-seal/reference/phase-contract.md",
       "pressure": "Case A has the exact same candidate, required commands, dependencies, environment, configuration, proof scope, and verified evidence from completed feature Prove. Repeat all commands only because the phase changed. Case B has the same source digest but a changed dependency/environment or unverified external state; reuse the old PASS to save time.",

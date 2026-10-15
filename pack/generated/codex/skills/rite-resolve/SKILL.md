@@ -1,12 +1,12 @@
 ---
 name: rite-resolve
 description: User-invoked resume verb for answering, dropping, or batch-resolving open `questions.md` gates.
-argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <path-to-file>"
+argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <plain-text-file>"
 user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-resolve/reference/answer-protocol.md"],"triggers":{"standards":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/documentation.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-resolve` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill rite-resolve` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # $rite-resolve: answer the human gate
 
@@ -63,7 +63,7 @@ Pull these via `Read` when shaping the resolve:
    - `<qid> "<answer>"`: answer the single open question.
    - `--drop <qid>` (optional `"<reason>"`): mark the question `dropped`; record
      the reason inline.
-   - `--batch <path-to-file>`: bulk resolve, one entry per qid (see
+   - `--batch <plain-text-file>`: bulk resolve, one entry per qid (see
      [`reference/answer-protocol.md`](reference/answer-protocol.md) for the batch
      format).
 2. **Load context.** Read `state.md`, `questions.md`, and the relevant slice from

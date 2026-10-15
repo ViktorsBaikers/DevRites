@@ -5,7 +5,7 @@ argument-hint: "[candidate/link/question]"
 user-invocable: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/tooling.md"],"workspace":["decisions.md"]} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-pov` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite-pov` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # /rite-pov: project-grounded external verdict
 
@@ -23,7 +23,7 @@ named outside candidate.
    confirmed absence. No profile cache.
 3. Verify the external claim from current primary documentation, source,
    advisory, or release notes, cited with URL, version or advisory id, and
-   retrieval date ([`tooling.md`](../devrites-lib/reference/standards/tooling.md) citation contract). A CVE verdict also needs the
+   retrieval date ([`tooling.md`](skill://devrites-lib/reference/standards/tooling.md) citation contract). A CVE verdict also needs the
    installed version from the lockfile (`path:line`) checked against the
    advisory's affected range, and a call-site search for the affected API
    (`reachable` / `unreachable` / `unknown`). Known exploitation (a KEV listing)

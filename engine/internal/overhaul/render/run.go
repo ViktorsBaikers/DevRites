@@ -530,6 +530,7 @@ type built struct {
 	laneCov        map[string][2]int // lane -> reviewed, eligible ranges
 	secs           []section
 	approve, stamp string
+	hasPlan        bool // run.json names a plan revision
 	finds          []map[string]any
 	lanes          []string
 	cards          map[string][]map[string]any // section anchor -> findings drawn as cards in HTML
@@ -787,7 +788,7 @@ func build(run, gen string) (*built, error) {
 	}
 	stamp := sf("overhaul-stamp run=%s generation=%s plan=%s", rj["run_id"],
 		strings.ReplaceAll(filepath.Base(strings.TrimRight(gen, "/")), ".tmp", ""), planStamp)
-	return &built{rj: rj, sc: sc, base: base, rubric: rubric, domains: domains, tasks: tasks, laneCov: laneCov, secs: S, approve: approve, stamp: stamp, finds: finds, lanes: lanes,
+	return &built{rj: rj, sc: sc, base: base, rubric: rubric, domains: domains, tasks: tasks, laneCov: laneCov, secs: S, approve: approve, stamp: stamp, hasPlan: len(pr) > 0, finds: finds, lanes: lanes,
 		cards: map[string][]map[string]any{"findings": confirmed, "opportunities": opps}, byF: byF}, nil
 }
 
@@ -816,7 +817,7 @@ func render(run, gen, kind, home string) (string, error) {
 	runID := pyStr(b.rj["run_id"])
 	if kind == "review" {
 		for _, s := range b.secs {
-			if s.anchor != "plan" || len(s.body) == 0 {
+			if s.anchor != "plan" || !b.hasPlan { // a zero-task plan still gets plan.md
 				continue
 			}
 			lines := append([]string{"<!-- " + b.stamp + " -->", "# Overhaul plan " + runID, ""}, mdTable(v, s.cols, s.body)...)

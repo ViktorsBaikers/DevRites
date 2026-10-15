@@ -22,9 +22,9 @@ right the first time.
   `file:line` and the AC it serves.
 - The exact project-relative paths you may touch. Your return cannot widen them.
 - Rules to apply, from `.omp/skills/devrites-lib/reference/standards/`
-  (`.omp/skills/devrites-lib/reference/standards/` on Codex): [`coding-style.md`](../skills/devrites-lib/reference/standards/coding-style.md),
-  [`testing.md`](../skills/devrites-lib/reference/standards/testing.md), [`error-handling.md`](../skills/devrites-lib/reference/standards/error-handling.md); and
-  [`security.md`](../skills/devrites-lib/reference/standards/security.md) when the packet names risk.
+  (`.omp/skills/devrites-lib/reference/standards/` on Codex): [`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md),
+  [`testing.md`](skill://devrites-lib/reference/standards/testing.md), [`error-handling.md`](skill://devrites-lib/reference/standards/error-handling.md); and
+  [`security.md`](skill://devrites-lib/reference/standards/security.md) when the packet names risk.
 
 Restate goal, ACs, and allowed paths in three lines before you read further. An
 unclear boundary is an escalation, not a guess.

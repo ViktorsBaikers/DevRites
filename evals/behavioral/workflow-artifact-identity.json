@@ -6,6 +6,7 @@
   "scenarios": [
     {
       "id": "WA-ADMISSION-SUCCESS",
+      "control": true,
       "prompt": "A current exact admission has green retained source and no active journal. Route it without changing product scope.",
       "expected_output": "ROOT_TRANSACTION. Freeze identity and begin PREPARING without a wright dispatch or product-slice charge.",
       "expectations": ["Return ROOT_TRANSACTION.", "First active state is PREPARING.", "Do not dispatch the product wright."],
@@ -150,6 +151,7 @@
     },
     {
       "id": "WA-IDEMPOTENT-RERUN",
+      "control": true,
       "prompt": "CLEANED evidence and all target identities match; retained source has already been collected.",
       "expected_output": "VERIFY_EXISTING and return without install, retry, slice, or action budget.",
       "expectations": ["Return VERIFY_EXISTING.", "Accept expected source absence.", "Consume no budget."],

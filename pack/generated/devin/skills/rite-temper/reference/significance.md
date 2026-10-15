@@ -15,6 +15,8 @@ so they agree on when it fires.
   module/service boundaries or has many dependents.
 - **Greenfield / ambiguous scope:** a new surface with no existing seam to follow, or a spec
   whose "right size" is genuinely open (multiple defensible scopes).
+- **Low detectability:** no existing test, gate, or monitor would show a wrong result
+  in the affected area (no suite there, silent data change), so a mistake ships unseen.
 - **Multi-slice / multi-day:** the work decomposes into several slices (large enough that a
   wrong scope call is expensive to unwind).
 - **The user asked:** "think bigger", "is this ambitious enough", "scope check", "pre-mortem",
@@ -45,7 +47,7 @@ Autocomplete runs the significance test every feature. On skip → straight to `
 [`scope-modes.md`](scope-modes.md): `hold-rigor`, `reduce-to-MVP`, and a skip apply unattended.
 `expand` and any extra acceptance **do not** apply unattended — acceptance is never auto-grown.
 When the review lands on `expand` or any acceptance growth, the agent presents the scope call as a
-ranked `AskUserQuestion` option set per the HITL rule, records the open `questions.md` qid, and
+ranked `ask_user_question` option set per the HITL rule, records the open `questions.md` qid, and
 **holds the fold**: do not write *Success metrics* or *Acceptance criteria* rows, do not fold via
 Spec Drift Guard, and do not recommend `/rite-define` until a human answers the qid. A self-written
 `decisions.md` ADR is not that human answer (see [`strategy-template.md`](strategy-template.md)

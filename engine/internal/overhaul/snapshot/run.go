@@ -239,7 +239,7 @@ func dirty(root string, tracked []string) (map[string]bool, error) {
 		return set, nil
 	}
 	b, err := git(root, "-c", "diff.autoRefreshIndex=false", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
-		"--name-only", "-z", "HEAD")
+		"--relative", "--name-only", "-z", "HEAD") // --relative: same base as ls-files when root is a subdirectory
 	if err != nil {
 		return nil, err
 	}
@@ -465,7 +465,7 @@ func capture(root, out string, stdout io.Writer) error {
 	safe := []string{"--", "."}
 	for p, v := range st {
 		if v.Sensitive {
-			safe = append(safe, ":(top,exclude,literal)"+p)
+			safe = append(safe, ":(exclude,literal)"+p) // cwd-relative, like p, when root is a subdirectory
 		}
 	}
 	for _, o := range []struct {

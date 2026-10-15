@@ -2,7 +2,7 @@
 
 Apply only when a stated budget or visible regression risk makes performance relevant.
 The canonical measurement, pitfall, optimization, and scope rules live in
-[`performance.md`](../../devrites-lib/reference/standards/performance.md); apply every
+[`performance.md`](skill://devrites-lib/reference/standards/performance.md); apply every
 one before filing a performance finding.
 
 The agent runs **Source mode** (static scan, findings tagged `potential` + the verify

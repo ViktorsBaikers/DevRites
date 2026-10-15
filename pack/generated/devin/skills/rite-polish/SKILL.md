@@ -5,7 +5,7 @@ argument-hint: "[target | bolder | quieter | distill | harden | normalize-only]"
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/candidate-integrity.md","rite-polish/reference/code.md","rite-polish/reference/anti-patterns.md","rite-polish/reference/anti-ai-slop.md","rite-polish/reference/harden-checklist.md","rite-polish/reference/ledger.md","rite-build/reference/checkpoint.md"],"triggers":{"adr":["rite-polish/reference/adr-promotion.md"],"agents":["devrites-lib/reference/standards/agents.md"],"backend":["rite-polish/reference/backend-polish.md"],"coding":["devrites-lib/reference/standards/coding-style.md","devrites-lib/reference/standards/duplicate-code.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"ui":["rite-polish/reference/ui.md","rite-polish/reference/design-memory.md","rite-polish/reference/design-system-discovery.md","rite-polish/reference/browser-polish-evidence.md","devrites-lib/reference/standards/browser-proof-checklist.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md","touched-files.md","design-brief.md","browser-evidence.md","polish-report.md"],"workspaceByRole":{"slice-wright":["spec.md","architecture.md","plan.md","tasks.md","test-plan.md","state.md","decisions.md","design-brief.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase polish` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --phase polish` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-polish: finish before review
@@ -78,7 +78,7 @@ Incomplete comparison is **not** agreement. Record axis deltas in `polish-report
    (code polish)**; if backend was touched, assess **Phase 2 (backend polish)** from
    the same file. Reconcile the findings, then send accepted corrections as one bounded
    wright contract: build its read-set with
-   `devrites-engine context <slug> --phase polish --role slice-wright`, run the
+   `devrites-engine context --skills-root .devin/skills <slug> --phase polish --role slice-wright`, run the
    single-agent wave through `devrites-engine dispatch <slug> open|start|seal|return`
    (auto-records dispatch/return metrics), and gate returned paths
    with `devrites-engine check diff-scope <slug> --allow <contract-paths>` before

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/devrites/devrites/internal/state"
 )
 
 func newWorkspace(t *testing.T, phase string) (root, featureDir string) {
@@ -47,6 +49,24 @@ func newSkillsRoot(t *testing.T) string {
 	writeFile(t, filepath.Join(skills, "..", "agents", "devrites-code-reviewer.md"), "# reviewer\n")
 	writeFile(t, filepath.Join(skills, "..", "agents", "devrites-proof-runner.md"), "# runner\n")
 	return skills
+}
+
+func TestContextRelativeSkillsRootResolvesFromProject(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "# State\n")
+	skills := filepath.Join(project, ".omp", "skills")
+	writeFile(t, filepath.Join(skills, "devrites-lib", "reference", "standards", "core.md"), "# omp core\n")
+	writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), "<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\"]} -->\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	// The test cwd is the package dir, so only the project-root fallback finds it.
+	if code := RunContext(root, []string{"feat", "--phase", "build", "--skills-root", ".omp/skills"}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+	}
+	bundle, err := os.ReadFile(filepath.Join(root, "work", "feat", "ctx", "build.bundle.md"))
+	if err != nil || !strings.Contains(string(bundle), "# omp core") {
+		t.Fatalf("bundle not built from project-relative skills root: %v\n%s", err, bundle)
+	}
 }
 
 func TestContextEmitsDedupedBundle(t *testing.T) {
@@ -508,6 +528,52 @@ func TestNextSkipsVacuousClarify(t *testing.T) {
 	}
 }
 
+// Phases that add no required artifact over the previous one (build and
+// converge after vet; polish and review after prove) cannot be proven done by
+// artifact presence, so they are never skipped.
+func TestNextDoesNotSkipPhasesWithoutNewArtifacts(t *testing.T) {
+	for _, tc := range []struct {
+		phase state.Phase
+		want  string
+	}{
+		{state.PhaseVet, "next-phase: build"},
+		{state.PhaseProve, "next-phase: polish"},
+	} {
+		root, featureDir := newWorkspace(t, string(tc.phase))
+		policy, _ := state.PolicyFor(tc.phase)
+		for _, artifact := range policy.RequiredArtifacts {
+			if artifact != state.LedgerFile {
+				writeFile(t, filepath.Join(featureDir, string(artifact)), "x\n")
+			}
+		}
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		if code := RunNext(root, []string{"feat"}, stdout, stderr); code != 0 {
+			t.Fatalf("%s: code=%d err=%s", tc.phase, code, stderr.String())
+		}
+		if out := stdout.String(); !strings.Contains(out, tc.want+"\n") || strings.Contains(out, "artifacts complete") {
+			t.Fatalf("%s: want %q without artifact skips:\n%s", tc.phase, tc.want, out)
+		}
+	}
+}
+
+func TestNextSkipsConditionalConvergeAfterBuild(t *testing.T) {
+	root, featureDir := newWorkspace(t, string(state.PhaseBuild))
+	policy, _ := state.PolicyFor(state.PhaseBuild)
+	for _, artifact := range policy.RequiredArtifacts {
+		if artifact != state.LedgerFile {
+			writeFile(t, filepath.Join(featureDir, string(artifact)), "x\n")
+		}
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunNext(root, []string{"feat"}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d err=%s", code, stderr.String())
+	}
+	// /rite-build hands off to /rite-prove; converge is a recovery phase.
+	if out := stdout.String(); !strings.Contains(out, "next-phase: prove\n") || !strings.Contains(out, "converge (artifacts complete)") {
+		t.Fatalf("want prove with converge skipped:\n%s", out)
+	}
+}
+
 func TestDiffScopeAllowlist(t *testing.T) {
 	root, _ := newWorkspace(t, "build")
 	repo := t.TempDir()
@@ -908,5 +974,51 @@ func TestMetricsSummaryBySlice(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q:\n%s", want, out)
 		}
+	}
+}
+
+func TestMetricsSummaryLedgerErrorsAndLongLines(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	note := strings.Repeat("<", 1<<20) // JSON-escapes to ~6 MiB on one line
+	if code := RunMetrics(root, []string{"record", "feat", "--phase", "build", "--event", "note", "--note", note}, stdout, stderr); code != 0 {
+		t.Fatalf("record code=%d err=%s", code, stderr.String())
+	}
+	stdout.Reset()
+	if code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr); code != 0 || !strings.Contains(stdout.String(), "note=1") {
+		t.Fatalf("long line: code=%d out=%q err=%q", code, stdout.String(), stderr.String())
+	}
+	// A ledger that exists but cannot be read is an error, never "no events".
+	ledger := filepath.Join(featureDir, MetricsFile)
+	if err := os.Remove(ledger); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(ledger, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr); code == 0 || strings.Contains(stdout.String(), "no events") {
+		t.Fatalf("unreadable ledger: code=%d out=%q err=%q", code, stdout.String(), stderr.String())
+	}
+}
+
+// A Codex install keeps skills in .agents/skills and role agents in
+// .codex/agents/<name>.toml; the role contract must still lead the bundle.
+func TestContextRoleContractFallsBackToCodexAgents(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "# State\n")
+	skills := filepath.Join(project, ".agents", "skills")
+	writeFile(t, filepath.Join(skills, "devrites-lib", "reference", "standards", "core.md"), "# core\n")
+	writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), "<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\"]} -->\n")
+	writeFile(t, filepath.Join(project, ".codex", "agents", "devrites-slice-wright.toml"), "name = \"devrites-slice-wright\"\ndeveloper_instructions = \"codex wright\"\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunContext(root, []string{"feat", "--phase", "build", "--role", "slice-wright", "--skills-root", ".agents/skills"}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+	}
+	bundle, err := os.ReadFile(filepath.Join(root, "work", "feat", "ctx", "build-slice-wright.bundle.md"))
+	if err != nil || !strings.Contains(string(bundle), "===== .codex/agents/devrites-slice-wright.toml =====") || !strings.Contains(string(bundle), "codex wright") {
+		t.Fatalf("codex role contract missing: %v\n%s", err, bundle)
 	}
 }

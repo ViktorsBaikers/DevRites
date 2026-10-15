@@ -9,7 +9,7 @@ is a **per-slice refinement of that brief for the surface you're about to code**
 the answers below against the brief and fill any slice-specific gaps; don't re-derive the
 design. **Only shape from scratch here** when a UI slice has no `design-brief.md` (a spec
 written before shaping), then run `devrites-ux-shape` first; only if it cannot run, answer
-these and write the brief per `../../devrites-ux-shape/reference/brief-template.md`, and
+these and write the brief per `skill://devrites-ux-shape/reference/brief-template.md`, and
 return through `/rite-vet` before code.
 
 ## Answer these before writing markup
@@ -41,7 +41,7 @@ return through `/rite-vet` before code.
 The answers live in the feature's `design-brief.md` (shaped at spec by `devrites-ux-shape`).
 In build, append any slice-specific refinement to its **Build-time refinements** section;
 if you shaped from scratch (no brief existed), write the brief now per
-`../../devrites-ux-shape/reference/brief-template.md`. This drives the build and the polish
+`skill://devrites-ux-shape/reference/brief-template.md`. This drives the build and the polish
 checklist.
 
 ## NEVER (shape)

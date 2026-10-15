@@ -52,11 +52,11 @@ The orchestrator supplies these inline or by path, relative to **Workspace root*
   Follow named read-next references for dependencies; use
   `.omp/skills/devrites-lib/reference/standards/context-hygiene.md` dispatch packets, never a
   summary that drops applicable obligations or an unsolicited whole-history dump.
-- **Rules in scope** (`.omp/skills/devrites-lib/reference/standards/`): [`coding-style.md`](../skills/devrites-lib/reference/standards/coding-style.md), [`error-handling.md`](../skills/devrites-lib/reference/standards/error-handling.md), [`testing.md`](../skills/devrites-lib/reference/standards/testing.md),
-  [`patterns.md`](../skills/devrites-lib/reference/standards/patterns.md); [`security.md`](../skills/devrites-lib/reference/standards/security.md) when input/auth/data/integrations are touched; [`performance.md`](../skills/devrites-lib/reference/standards/performance.md)
+- **Rules in scope** (`.omp/skills/devrites-lib/reference/standards/`): [`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md), [`error-handling.md`](skill://devrites-lib/reference/standards/error-handling.md), [`testing.md`](skill://devrites-lib/reference/standards/testing.md),
+  [`patterns.md`](skill://devrites-lib/reference/standards/patterns.md); [`security.md`](skill://devrites-lib/reference/standards/security.md) when input/auth/data/integrations are touched; [`performance.md`](skill://devrites-lib/reference/standards/performance.md)
   when the slice touches a hot path, a query, or a large payload; and only when named by
-  the vetted applicability contract, [`repository-topology.md`](../skills/devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../skills/devrites-lib/reference/standards/data-integrity.md), or
-  [`integration-reliability.md`](../skills/devrites-lib/reference/standards/integration-reliability.md). These files are authoritative:
+  the vetted applicability contract, [`repository-topology.md`](skill://devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](skill://devrites-lib/reference/standards/data-integrity.md), or
+  [`integration-reliability.md`](skill://devrites-lib/reference/standards/integration-reliability.md). These files are authoritative:
   read the in-scope one rather than guessing the standard.
 
 **Before ORIENT, restate** goal, acceptance, and boundary in one short block. An
@@ -119,7 +119,7 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
    or human-only access; technical failure is a blocker.
    Before handoff, inspect your cumulative slice diff against the contract and
    scenario matrix, including correction-affected adjacent variants, then against
-   the reviewers' own checks: [code review § What to check](../skills/devrites-lib/reference/standards/code-review.md#what-to-check-tests-first)
+   the reviewers' own checks: [code review § What to check](skill://devrites-lib/reference/standards/code-review.md#what-to-check-tests-first)
    and test analysis (each acceptance criterion has a test that fails without the
    change; no assertion-free, tautological, or mock-asserting test). Fix supported
    in-scope gaps together, rerun affected proof, and report remaining gaps. Self-check

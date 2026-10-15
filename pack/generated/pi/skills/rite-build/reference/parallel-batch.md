@@ -229,6 +229,6 @@ isolation cannot be established.
 
 ## Host
 
-pi: N concurrent `subagent` wrights (`acceptEdits`, cwd=worktree). Codex: require
+pi: N concurrent `subagent` wrights (cwd=worktree). Codex: require
 host-explicit concurrent worktree writers + native reconcile; else force serial.
 Never two writers in one worktree; never root-emulated concurrency.

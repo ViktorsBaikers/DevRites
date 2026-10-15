@@ -36,6 +36,9 @@ func (r *runner) install() error {
 			return fmt.Errorf("verify staged engine binary %s: %w", r.preparedBinary, err)
 		}
 	}
+	if _, err := r.relinquishEditedHostConfigs(); err != nil {
+		return err
+	}
 	if err := r.preflightInstall(); err != nil {
 		return err
 	}
@@ -79,6 +82,11 @@ func (r *runner) install() error {
 	if r.opts.WithSkills {
 		if err := r.seedClaudeSettings(); err != nil {
 			return fmt.Errorf("seed claude settings: %w", err)
+		}
+	}
+	for _, config := range r.hostConfigs() {
+		if err := r.seedHostConfig(config); err != nil {
+			return fmt.Errorf("seed %s config: %w", config.Host, err)
 		}
 	}
 	if err := r.seedDevrites(); err != nil {
@@ -277,6 +285,60 @@ func (r *runner) seedDevrites() error {
 	return f.Close()
 }
 
+// hostConfigs lists the host configs this install manages: omp's skill
+// filter, and pi's .agents/skills filter when Codex skills are installed.
+func (r *runner) hostConfigs() []hostpack.HostConfig {
+	var out []hostpack.HostConfig
+	if r.opts.WithSkills && r.opts.WithOmp {
+		out = append(out, hostpack.OmpConfig)
+	}
+	if r.opts.WithSkills && r.opts.WithPi && r.opts.WithCodex {
+		out = append(out, hostpack.PiSettings)
+	}
+	return out
+}
+
+// relinquishEditedHostConfigs hands every installer-created host config the
+// user has since edited over to the user: it leaves the manifest, so no later
+// update, host drop or uninstall rewrites or removes it, even with --force.
+func (r *runner) relinquishEditedHostConfigs() (map[string]bool, error) {
+	out := map[string]bool{}
+	for _, config := range []hostpack.HostConfig{hostpack.OmpConfig, hostpack.PiSettings} {
+		record, managed := r.prev[config.Rel]
+		if !managed {
+			continue
+		}
+		snapshot, err := r.rememberPath(config.Rel)
+		if err != nil {
+			return nil, err
+		}
+		if snapshot.missing || managedConflict(record, snapshot) == "" {
+			continue
+		}
+		delete(r.prev, config.Rel)
+		out[config.Rel] = true
+		fmt.Fprintf(r.opts.Stdout, "  [keep] %s (edited by you; no longer DevRites-managed)\n", config.Rel)
+	}
+	return out, nil
+}
+
+// seedHostConfig installs config as a managed file unless the user already
+// has their own file there (or edited ours); that one is never edited, even
+// with --force.
+func (r *runner) seedHostConfig(config hostpack.HostConfig) error {
+	if _, managed := r.prev[config.Rel]; !managed {
+		// #nosec G304 -- fixed host config path under the operator target
+		data, err := os.ReadFile(filepath.Join(r.target, filepath.FromSlash(config.Rel)))
+		if err == nil && string(data) != config.Content {
+			if !strings.Contains(string(data), config.Applied) {
+				fmt.Fprintf(r.opts.Stderr, "warning: %s exists and was not changed; to hide duplicate DevRites skills in %s, add: %s\n", config.Rel, config.Host, config.Advice)
+			}
+			return nil
+		}
+	}
+	return r.installData([]byte(config.Content), config.Rel)
+}
+
 func (r *runner) pruneDropped() error {
 	if len(r.prev) == 0 {
 		return nil
@@ -317,11 +379,16 @@ func (r *runner) pruneDropped() error {
 						return fmt.Errorf("strip hooks from %s: %w", merge.TargetRel, err)
 					}
 				} else if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
-					if err := r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), true); err != nil {
+					if err := r.stripClaudeSettings(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))); err != nil {
 						return fmt.Errorf("strip DevRites settings from %s: %w", merge.TargetRel, err)
 					}
 				} else if err := r.stripMarkerConfined(filepath.Join(r.target, filepath.FromSlash(merge.TargetRel)), merge.Begin, merge.End); err != nil {
 					return fmt.Errorf("strip marker block from %s: %w", merge.TargetRel, err)
+				}
+				// Dropped hosts can share one target (AGENTS.md); record our own
+				// strip so the next one's recheckPath does not see a race.
+				if err := r.refreshPreflight(merge.TargetRel); err != nil {
+					return err
 				}
 			}
 			if err := r.removeConfined(dead); err != nil && !os.IsNotExist(err) {

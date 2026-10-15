@@ -51,8 +51,9 @@ records move intact.
 Before restoring an archive, verify its identity, released cursor form and declared
 workspace schema, that the live destination is absent, and that ACTIVE is empty or
 already names this slug. A collision or another active feature stops restoration;
-do not replace its workspace or cursor. Supported released cursor forms remain valid:
-age or encoding alone never requires normalization (see
+do not replace its workspace or cursor. A cursor with no `schema` row predates the
+engine schema and needs a human-approved `devrites-engine migrate <slug>` before the
+engine accepts it; beyond that, age or encoding alone never requires normalization (see
 [workspace-artifact-schema.md](../../devrites-lib/reference/workspace-artifact-schema.md)).
 An unsupported declared schema stops restoration: record the observed version,
 installed engine's recovery diagnostic and pending normalization owner. Do not guess

@@ -57,11 +57,11 @@ facts were lost this cycle; restore or route them before landing the commit.
 After a crash, a fresh session may read the last `WIP(<slug>)` body as crash context.
 Authoritative state remains in `.devrites/`: validate the body against that workspace;
 never reconstruct or advance state from the commit body. Reload per
-[`context-hygiene.md`](../../devrites-lib/reference/standards/context-hygiene.md)
+[`context-hygiene.md`](skill://devrites-lib/reference/standards/context-hygiene.md)
 (`.devrites/ACTIVE`, `state.md`, `questions.md`, `decisions.md`, `test-plan.md`/`evidence.md`).
 
 ## Collapse at ship
 WIP commits are scratch and never reach shared history. `/rite-ship` folds them into the
 one atomic feature commit before the Conventional-Commit ladder: see the collapse step in
-[git-ship.md](../../rite-ship/reference/git-ship.md). Result: one clean commit, bisect
+[git-ship.md](skill://rite-ship/reference/git-ship.md). Result: one clean commit, bisect
 stays green.

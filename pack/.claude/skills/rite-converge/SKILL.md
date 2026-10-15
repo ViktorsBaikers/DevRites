@@ -101,9 +101,10 @@ Pull on demand:
    Produces. A principle violated in the current code is its own top-severity gap.
    Dispatch up to three independent inventory partitions to `devrites-evidence-scout` on the
    same live-code snapshot — build each scout's read-set once with
-   `devrites-engine context <slug> --phase converge --role evidence-scout` and hand it the
-   bundle path; run the wave through
-   `devrites-engine dispatch <slug> open|start|seal|return` (per
+   `devrites-engine context <slug> --phase converge --role evidence-scout --out
+   ctx/converge-evidence-scout.p<n>.bundle.md` and hand it the bundle path; run the wave
+   through `devrites-engine dispatch <slug> open|start|seal|return` with one lane label
+   per partition (`--role evidence-scout.p1 --role evidence-scout.p2 ...`, per
    [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md)), which
    auto-records dispatch/return metrics. Await their
    dossiers, then reconcile the cited facts in the root

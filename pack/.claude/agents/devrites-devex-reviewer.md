@@ -76,6 +76,10 @@ consistently:
 - **Docs accuracy:** examples must be correct and ready to copy. The documented
   signature must match the code, and changed behavior must update its docs in the
   same change.
+- **Agent use:** can a coding agent complete the flow with no human step?
+  Check non-interactive flags or env for every prompt, machine-readable output and
+  distinct exit codes where scripts consume results, headless setup and auth, and
+  commands instead of "click here" UI steps. Name each human-only step.
 
 ## Rules
 
@@ -112,6 +116,7 @@ Scorecard:
   error-messages    <actionable? | the unactionable ones, quoted>
   ergonomics        <consistent with project conventions? | the breaks>
   docs              <copy-pasteable + accurate? | the wrong examples>
+  agent-use         <completes headless? | the human-only steps | n/a>
 Boomerang (measure mode): predicted <…> vs measured <…> — gap: <none | the delta + why it matters>
 Overall: blockers? <yes/no — list>
 ```

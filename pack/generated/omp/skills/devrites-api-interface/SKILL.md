@@ -4,7 +4,7 @@ description: Shape stable API, type, module, or frontend/backend contracts befor
 user-invocable: false
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"deprecation":["devrites-lib/reference/standards/deprecation.md"],"security":["devrites-lib/reference/standards/security.md","rite-review/reference/security-review.md"]},"workspace":["spec.md","plan.md","tasks.md","state.md","decisions.md"]} -->
-> Read-set manifest: `devrites-engine context [slug] --skill devrites-api-interface` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill devrites-api-interface` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # devrites-api-interface: contract before implementation
 
@@ -26,7 +26,7 @@ stays stable.
   call hard.
 - **Prefer addition over modification.** A new field is additive and optional; changing a
   field's type or removing one is a breaking change. You can add later. You can't un-ship a
-  shape consumers already read (observable behavior is the contract: [`deprecation.md`](../devrites-lib/reference/standards/deprecation.md) Hyrum's law).
+  shape consumers already read (observable behavior is the contract: [`deprecation.md`](skill://devrites-lib/reference/standards/deprecation.md) Hyrum's law).
 - **One-Version Rule.** Design as if only one version of this interface will ever exist:
   extend the single contract rather than fork a v2 you then maintain in parallel. Forking
   multiplies the surface and breeds diamond-dependency conflicts; bump a version only when an
@@ -37,7 +37,7 @@ stays stable.
   typed functions, on your own database's data, or in a utility already called by validated code.
   A check inside the trusted core hides the bug in the boundary that should have caught it. A
   third-party API response is external input: always untrusted. (Three-tier boundary:
-  [`security.md`](../devrites-lib/reference/standards/security.md); see [`security-review.md`](../rite-review/reference/security-review.md).)
+  [`security.md`](skill://devrites-lib/reference/standards/security.md); see [`security-review.md`](skill://rite-review/reference/security-review.md).)
 
 ## Type craft: make the wrong call unrepresentable
 - **Brand your ids.** A bare `string`/`number` id is assignable to any other id, so the compiler
@@ -54,7 +54,7 @@ Before standing the interface, run `devrites-doubt`.
 The contract is complete only when **every** field carries a type + optionality + unit,
 **every** success and error status code is enumerated with its error-body shape, the
 `devrites-doubt` verdict is accept (on reject: revise the contract and re-doubt under
-[the canonical retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)
+[the canonical retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)
 with caller repair and human-risk gates), and the
 contract + rationale are recorded in `decisions.md`. A contract that pins only the
 happy-path shape is not done.

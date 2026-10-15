@@ -280,3 +280,24 @@ func TestRegressionUnreadablePhaseIsNotPass(t *testing.T) {
 		t.Fatalf("unreadable phase must not pass: code=%d out=%s", code, out)
 	}
 }
+
+// Canonical tasks.md slices carry no Status field; the built list lives in
+// state.md as checked items. Losing one is a regression.
+func TestRegressionCountsStateBuiltList(t *testing.T) {
+	root, dir := newWorkspace(t, "build")
+	writeFile(t, filepath.Join(dir, "tasks.md"), "# Tasks\n\n## SLICE-001 Export\nGoal: export\nDone condition: csv\n\n## SLICE-002 Scope\nGoal: scope\n")
+	built := "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | build |\n| status | running |\n\n## Slice progress\n- [x] SLICE-001 built\n- [ ] SLICE-002 pending\n\n```markdown\n- [x] SLICE-002 example only\n```\n"
+	writeFile(t, filepath.Join(dir, "state.md"), built)
+	if code, out := checkRegression(t, root, "feat", "--update"); code != 0 || !strings.Contains(out, "slices-done=1") {
+		t.Fatalf("update code=%d out=%s", code, out)
+	}
+	writeFile(t, filepath.Join(dir, "state.md"), strings.Replace(built, "- [x] SLICE-001", "- [ ] SLICE-001", 1))
+	if code, out := checkRegression(t, root, "feat"); code != 3 || !strings.Contains(out, "SLICE-001") {
+		t.Fatalf("code=%d out=%s", code, out)
+	}
+	// The golden-fixture spelling `Slice 2: <name> — built` names the same slice.
+	writeFile(t, filepath.Join(dir, "state.md"), strings.Replace(built, "- [ ] SLICE-002 pending", "- [x] Slice 2: scope — built", 1))
+	if code, out := checkRegression(t, root, "feat", "--update"); code != 0 || !strings.Contains(out, "slices-done=2") {
+		t.Fatalf("Slice <n> spelling: code=%d out=%s", code, out)
+	}
+}

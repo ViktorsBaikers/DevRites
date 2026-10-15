@@ -53,7 +53,8 @@ and parallel AFK headroom as stop conditions. Pass this invocation's
 that already name a ranked recommended option (recommended pick via
 `devrites-engine state resolve`) instead of queuing them or handing
 `/rite-resolve` to the user. Escalating, irreversible-risk, access, and
-blocking with no recommended option still pause.
+blocking with no recommended option still pause, as does Seal's judgment-only
+validating question (`slice: seal`).
 
 ## Phase arc
 
@@ -86,7 +87,7 @@ floor; `--update` never excuses an unreconciled regression.
 ## Sequence continuation
 
 Unless `continue_sequence: false`, while sequence budget remains
-([sentinel](../../devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces)),
+([sentinel](skill://devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces)),
 step 10 does not end the run: leave the sealed workspace unshipped with its
 `Next step: /rite-ship`, then invoke the next recorded continuation
 (`/rite-spec <parent>-<n> "<objective>"` from the parent's `decisions.md` sequence)
@@ -96,7 +97,7 @@ Spend accounting is durable in `state.md` cursors, not chat. Before invoking the
 continuation, ensure the current workspace's `sequence_workspaces_remaining` is
 set — absent, write `max_workspaces - 1` and `sequence_position: 1` first — and
 `> 0`. `/rite-spec` seeds the child's sequence cursor at creation per the
-[continuation contract](../../rite-plan/reference/slicing.md#continuation-workspaces);
+[continuation contract](skill://rite-plan/reference/slicing.md#continuation-workspaces);
 after the child's `state.md` exists, verify it — `sequence_parent` = the current
 slug, `sequence_position` = parent position + 1,
 `sequence_workspaces_remaining` = parent remaining − 1, and — when the recorded

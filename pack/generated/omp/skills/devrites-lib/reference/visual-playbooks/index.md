@@ -3,7 +3,7 @@
 Progressive references for DevRites `visual/` HTML + outline pairs.
 Load **only** matching playbooks before writing HTML. Do not preload all seven.
 
-**Spec / schema SSOT:** [`../workspace-artifact-schema.md`](../workspace-artifact-schema.md) (see What each file owns)  
+**Spec / schema SSOT:** [`skill://devrites-lib/reference/workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md) (see What each file owns)  
 **Outline companion:** [`outline-template.md`](outline-template.md)
 
 ## Load rules
@@ -59,7 +59,7 @@ Home: `.devrites/work/<slug>/visual/`. Optional artifact; never a new lifecycle 
 When HTML/visual work shows **two or more** of: generic Inter/system font with no
 brief justification, hero-only layout, purple/blue gradient CTA with no brand token,
 lorem or placeholder copy in shipped states, or identical card grid with no product
-hierarchy — load [`rite-polish`](../../../rite-polish/SKILL.md) **ux_coverage** and
+hierarchy — load [`rite-polish`](skill://rite-polish/SKILL.md) **ux_coverage** and
 craft axes before sign-off.
 
 **Failing case:** visual ships with three slop patterns and no axis record → Review

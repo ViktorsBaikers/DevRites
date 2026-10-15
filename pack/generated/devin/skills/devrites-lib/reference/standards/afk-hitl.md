@@ -28,7 +28,7 @@ The contract uses one sentinel, one queue, and one resume verb.
 ## Run modes
 
 - **HITL (default):** human is present. At a gap/checkpoint the skill **asks inline** via
-  the harness `AskUserQuestion` tool: a ranked **option set** (recommended first, each with
+  the harness `ask_user_question` tool: a ranked **option set** (recommended first, each with
   dimension-tagged rationale; see [Option set](#option-set-how-every-gap-is-presented)). The
   human picks; the skill records the pick to `questions.md` (`answered`) + `decisions.md` and
   **continues in place: no `/rite-resolve` round-trip**. `/rite-resolve` is only for answering
@@ -136,9 +136,10 @@ every completed round (serial slice or parallel integrate)
 
 ## Unattended resource envelope
 
-AFK writer admission needs a bounded input queue, effective slice cap, and valid
-`max_agents`, `max_minutes`, and `max_review_queue`. Existing sentinels
-that declare writer admission but miss/malform these fail closed; cold resume keeps the
+Outside `/rite-autocomplete`, AFK writer admission needs a bounded input queue,
+effective slice cap, and valid `max_agents`, `max_minutes`, and `max_review_queue`.
+Existing sentinels that declare writer admission but miss/malform these fail closed
+(Autocomplete's sentinel omits them as unlimited; see below); cold resume keeps the
 state-owned slice counter. A leftover `expires_at` is ignored and never rewritten.
 Read-only watchers use equivalent native caps from [`loop-operations.md`](loop-operations.md).
 
@@ -211,7 +212,7 @@ Wherever a gap, checkpoint, or non-trivial decision surfaces (`/rite-spec`, `/ri
   be silently dropped, merged, or preselected to fit the UI.
 - Recommend for project conventions, stack, scale, and domain, not a generic default.
 
-**HITL** renders the set via `AskUserQuestion`; the human's pick resolves the gate **in place**.
+**HITL** renders the set via `ask_user_question`; the human's pick resolves the gate **in place**.
 **AFK** auto-picks option 1 for gates it may auto-handle. Record the chosen option verbatim and
 keep the **rejected options in `questions.md`**.
 
@@ -304,13 +305,13 @@ Three shapes:
 ```
 /rite-resolve <qid> "<answer>"
 /rite-resolve --drop <qid> ["<reason>"]
-/rite-resolve --batch <path-to-yaml>
+/rite-resolve --batch <plain-text-file>
 ```
 
 `/rite-resolve` is the canonical writer for **async** resume: a gate that already paused and
 stopped the session (an AFK blocking/escalating/irreversible queue, or a HITL pause the human
 walked away from), plus `--batch`. In an **interactive HITL** session the skill resolves the
-`AskUserQuestion` pick **in place** (the same `questions.md` `answered` write + `state.md`
+`ask_user_question` pick **in place** (the same `questions.md` `answered` write + `state.md`
 clear), so you don't type `/rite-resolve` for gaps you answer live. Both paths flip
 `status: open → answered` and clear `Awaiting human` through the **same `devrites-engine state resolve` writer**:
 one source of truth, two entry points (live pick vs typed verb). Use the writer;

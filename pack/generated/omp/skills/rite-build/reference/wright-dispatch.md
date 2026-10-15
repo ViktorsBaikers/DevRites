@@ -6,10 +6,19 @@ Wright alone writes; no agents.
 
 ## Host gate
 
-Apply [source-writing boundary](../../devrites-lib/reference/standards/agents.md#source-writing-boundary):
+Apply [source-writing boundary](skill://devrites-lib/reference/standards/agents.md#source-writing-boundary):
 omp has no permission modes: only the wright's `tools` allowlist has `edit`/`write`, and the root stays source-read-only by instruction. Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root,
 the exact `:workspace` wright, and read-only specialists. Never bypass/substitute
 the wright or recreate an engine bridge.
+
+## Standalone correction
+
+`/rite-quick`, `/rite-dogfood`, and `/rite-pr-feedback` fixes have no `tasks.md`
+slice, so skip Prepare's `check slice`, `context --slice`, and the build `dispatch`
+wave. Give the wright an inline contract: goal, acceptance check, exact
+project-relative paths, and proof command. With an active workspace, `claim add`
+those paths first. On return, compare its file list and `git diff --name-only`
+with the paths; reject any extra path.
 
 ## Isolated writer-worktree pilot
 
@@ -50,12 +59,12 @@ worktrees stay forbidden.
    directories/globs, traversal, symlink escapes, duplicates, and `.devrites/**`.
    A target composed only of vetted executable workflow artifacts routes to the
    controlling root under
-   [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md);
+   [`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md);
    its rejection here is not a blocker.
 2. Include goal, verbatim acceptance, exclusions, context,
    `test-plan.md` proof commands, applicable standards, and the exact
    `WIP(<slug>):` subject (no slice id). Build the wright's read-set with
-   `devrites-engine context <slug> --phase build --role slice-wright --slice <SLICE-ID> --trigger <set>`
+   `devrites-engine context --skills-root .omp/skills <slug> --phase build --role slice-wright --slice <SLICE-ID> --trigger <set>`
    and hand it the bundle path (over-budget artifacts arrive as anchor indexes;
    read owning sections live). Evaluate each trigger condition and pass those
    that fire (TDD slice → `tdd`, AFK run → `afk`, UI work → `frontend`, …).
@@ -64,6 +73,8 @@ worktrees stay forbidden.
    topology/data/integration standard, include only the feature-specific owner/invariant,
    failure or partial-state case, recovery rule, and required proof from the vetted plan.
    Do not paste the whole standard or silently omit an applicable risk.
+   Quote every active `decisions.md` carry-forward constraint whose `Files:`
+   overlap the task paths (or that names no files).
    A new path requires a new bounded contract; the wright cannot widen the task.
 3. Record `git diff --name-only` before dispatch so unrelated work remains
    distinguishable. For an isolated pilot, also record committed base SHA and exact
@@ -76,8 +87,8 @@ Same-worktree (non-isolated) dispatch claims before writing: `devrites-engine
 claim add --session <id> <task-paths>`; retain its returned `<claim-id>`, then run
 `devrites-engine claim check --session <id> <task-paths>` — a held claim from a
 live foreign session releases the retained claim and stops the dispatch, per
-[`agents.md`](../../devrites-lib/reference/standards/agents.md). `.devrites/**`
-is never a task path; see [Workflow Artifact admission](../../devrites-lib/reference/standards/workflow-artifacts.md).
+[`agents.md`](skill://devrites-lib/reference/standards/agents.md). `.devrites/**`
+is never a task path; see [Workflow Artifact admission](skill://devrites-lib/reference/standards/workflow-artifacts.md).
 Ask the host
 for the exact writer in fresh context and wait. Track it through the
 launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
@@ -85,7 +96,7 @@ launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
 `return` on completion (auto-records dispatch/return metrics). Every 5 wright
 rounds on one slice, `open` blocks for a reslice review: propose an
 acceptance-preserving split (`root_no_change_analysis` → `FOLD` per
-[acceptance-preserving-reslice](../../devrites-lib/reference/standards/acceptance-preserving-reslice.md);
+[acceptance-preserving-reslice](skill://devrites-lib/reference/standards/acceptance-preserving-reslice.md);
 open findings move to the new slice owning their paths), or record
 `## <DRIFT-ID> — <SLICE-ID> reslice review` with why no smaller split exists and
 reopen with `--reslice-review <DRIFT-ID>`. Use
@@ -97,7 +108,7 @@ substitute a generic agent. Opt-in `/rite-build --parallel N` fans out only unde
 After `claim add`, every terminal path releases the claim with
 `devrites-engine claim release --session <id> --id <claim-id>`: successful
 return, rejected result, stop, or a launch the host refused with no handle. A
-timeout or unknown outcome keeps the claim ([`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)).
+timeout or unknown outcome keeps the claim ([`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)).
 TTL is crash recovery, not normal cleanup.
 
 ## Inspect and prove
@@ -125,7 +136,7 @@ TTL is crash recovery, not normal cleanup.
    and, in the same window, run only repository proof already approved by
    `test-plan.md` against the same frozen candidate; neither waits for the
    other. Human choices return; technical failures follow
-   [the canonical retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+   [the canonical retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
    Derive accounting from recorded reproductions, corrections, and decisive rechecks.
 4. After proof, inspect `git diff --name-only` again in case a proof tool changed
    source; a change rejects that candidate and voids the concurrent review. A
@@ -141,3 +152,11 @@ TTL is crash recovery, not normal cleanup.
    escalation without the checked-assumption list (verified|falsified) is
    malformed; root sweeps the unchecked remainder per
    [`spec-drift-guard.md`](spec-drift-guard.md) before repair.
+6. **Learning edge.** A correction accepted with a confirmed cause (a review,
+   gate, or proof rejection plus its fix) becomes a carry-forward constraint so
+   later slices start where this one ended: append one line under
+   `decisions.md` `## Carry-forward constraints` —
+   `- <rule> — from <SLICE-ID> (<evidence ref>); Files: <paths>`. Record the
+   derived rule, not the output, at the scope its evidence supports: "this
+   button is blue" never becomes "buttons are blue". Never edit `tasks.md` mid-build (it is a
+   readiness input). **Failing case:** slice 3 repeats a defect slice 2 fixed.

@@ -145,15 +145,17 @@ func validTag(tag string) bool {
 }
 
 func platformBinaryName() (string, error) {
-	supported := (runtime.GOOS == "darwin" || runtime.GOOS == "linux") && (runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64")
-	if runtime.GOOS == "windows" && runtime.GOARCH == "amd64" {
-		supported = true
+	return binaryNameFor(runtime.GOOS, runtime.GOARCH)
+}
+
+// binaryNameFor names the release asset; CI publishes darwin, linux and
+// windows for both amd64 and arm64.
+func binaryNameFor(goos, goarch string) (string, error) {
+	if (goos != "darwin" && goos != "linux" && goos != "windows") || (goarch != "amd64" && goarch != "arm64") {
+		return "", fmt.Errorf("no DevRites engine release for %s/%s", goos, goarch)
 	}
-	if !supported {
-		return "", fmt.Errorf("no DevRites engine release for %s/%s", runtime.GOOS, runtime.GOARCH)
-	}
-	name := "devrites-" + runtime.GOOS + "-" + runtime.GOARCH
-	if runtime.GOOS == "windows" {
+	name := "devrites-" + goos + "-" + goarch
+	if goos == "windows" {
 		name += ".exe"
 	}
 	return name, nil

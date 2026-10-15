@@ -191,3 +191,27 @@ func TestSelectGreedyTrialErrorClassification(t *testing.T) {
 		t.Fatalf("real overlap must be skipped, got %v, %v", got, err)
 	}
 }
+
+// Overlap and control-dir checks fold case: on a case-insensitive filesystem
+// (macOS, Windows defaults) src/A.go and src/a.go are one file.
+func TestCheckPathDisjointFoldsCase(t *testing.T) {
+	t.Parallel()
+	for _, c := range [][2]string{{"src/A.go", "src/a.go"}, {"SRC", "src/a.go"}} {
+		_, err := CheckPathDisjoint([]SlicePaths{
+			{ID: "a", Paths: []string{c[0]}},
+			{ID: "b", Paths: []string{c[1]}},
+		}, "")
+		if !errors.Is(err, ErrPathOverlap) {
+			t.Fatalf("%q vs %q: expected overlap, got %v", c[0], c[1], err)
+		}
+	}
+	for _, p := range []string{".DEVRITES/state.md", ".Git/hooks/pre-commit"} {
+		_, err := CheckPathDisjoint([]SlicePaths{
+			{ID: "a", Paths: []string{p}},
+			{ID: "b", Paths: []string{"src/b.go"}},
+		}, "")
+		if err == nil || errors.Is(err, ErrPathOverlap) {
+			t.Fatalf("%q: expected control-dir refusal, got %v", p, err)
+		}
+	}
+}

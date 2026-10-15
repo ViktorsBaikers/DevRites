@@ -157,8 +157,17 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	// reference text.
 	if opts.role != "" {
 		rel := roleAgentPath(manifest, opts.role)
-		if writeContextEntry(&bundle, filepath.Join(skillsRoot, "..", "agents", filepath.FromSlash(rel)),
-			"agents/"+rel, seen, true) {
+		abs, label := filepath.Join(skillsRoot, "..", "agents", filepath.FromSlash(rel)), "agents/"+rel
+		// A Codex install has skills in .agents/skills but role agents at
+		// <project>/.codex/agents/<name>.toml, with no Markdown sibling.
+		if _, err := os.Stat(abs); err != nil {
+			codex := strings.TrimSuffix(filepath.Base(filepath.FromSlash(rel)), ".md") + ".toml"
+			candidate := filepath.Join(filepath.Dir(root), ".codex", "agents", codex)
+			if info, err := os.Stat(candidate); err == nil && info.Mode().IsRegular() {
+				abs, label = candidate, ".codex/agents/"+codex
+			}
+		}
+		if writeContextEntry(&bundle, abs, label, seen, true) {
 			loaded++
 		} else {
 			// The agent contract is a pack file, not a workspace artifact: a
@@ -543,15 +552,23 @@ func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
 // canonical pack (this repo), a project-level install, then the user-global
 // install.
 func resolveSkillsRoot(root, explicit string) (string, error) {
-	if explicit != "" {
-		if info, err := os.Stat(explicit); err == nil && info.IsDir() {
-			return explicit, nil
-		}
-		return "", fmt.Errorf("skills root %q is not a directory", explicit)
-	}
 	// root is the .devrites directory; its parent is the project root that
 	// holds pack/ and host skill installs.
 	project := filepath.Dir(root)
+	if explicit != "" {
+		candidates := []string{explicit}
+		// Host guidance passes a project-relative root (.omp/skills); keep it
+		// working when the engine runs from a subdirectory.
+		if !filepath.IsAbs(explicit) {
+			candidates = append(candidates, filepath.Join(project, explicit))
+		}
+		for _, candidate := range candidates {
+			if info, err := os.Stat(candidate); err == nil && info.IsDir() {
+				return candidate, nil
+			}
+		}
+		return "", fmt.Errorf("skills root %q is not a directory", explicit)
+	}
 	candidates := []string{
 		filepath.Join(project, "pack", ".claude", "skills"),
 		filepath.Join(root, "pack", ".claude", "skills"),

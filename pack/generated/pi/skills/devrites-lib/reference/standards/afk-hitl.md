@@ -136,9 +136,10 @@ every completed round (serial slice or parallel integrate)
 
 ## Unattended resource envelope
 
-AFK writer admission needs a bounded input queue, effective slice cap, and valid
-`max_agents`, `max_minutes`, and `max_review_queue`. Existing sentinels
-that declare writer admission but miss/malform these fail closed; cold resume keeps the
+Outside `/rite-autocomplete`, AFK writer admission needs a bounded input queue,
+effective slice cap, and valid `max_agents`, `max_minutes`, and `max_review_queue`.
+Existing sentinels that declare writer admission but miss/malform these fail closed
+(Autocomplete's sentinel omits them as unlimited; see below); cold resume keeps the
 state-owned slice counter. A leftover `expires_at` is ignored and never rewritten.
 Read-only watchers use equivalent native caps from [`loop-operations.md`](loop-operations.md).
 
@@ -304,7 +305,7 @@ Three shapes:
 ```
 /rite-resolve <qid> "<answer>"
 /rite-resolve --drop <qid> ["<reason>"]
-/rite-resolve --batch <path-to-yaml>
+/rite-resolve --batch <plain-text-file>
 ```
 
 `/rite-resolve` is the canonical writer for **async** resume: a gate that already paused and

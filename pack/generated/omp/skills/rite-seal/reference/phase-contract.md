@@ -6,8 +6,8 @@
 2. **Recheck identity and real proof.** Run
    `devrites-engine check candidate <slug>` and require its exact digest to match
    the single evidence/review bindings and the browser binding when present.
-   Apply [`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md)'s Native grammar re-read checklist and
-   [evidence validity](../../devrites-lib/reference/candidate-integrity.md#evidence-validity).
+   Apply [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md)'s Native grammar re-read checklist and
+   [evidence validity](skill://devrites-lib/reference/candidate-integrity.md#evidence-validity).
    Run required `test-plan.md` commands unless valid observed proof already satisfies
    them under that contract. Rerun the
    candidate check afterward and require the identical digest and no source
@@ -25,9 +25,9 @@
    Every deferred finding (`touched-files.md` `## Review trail`, `eng-review.md`
    `## Deferred findings`) needs its `review.md` verdict; a row without one blocks.
 6. **Risk and native review.** Apply [`risk-and-rollback.md`](risk-and-rollback.md)
-   and the [`review roster`](../../devrites-lib/reference/parallel-dispatch.md) on
+   and the [`review roster`](skill://devrites-lib/reference/parallel-dispatch.md) on
    the candidate. Admit each result through
-   [`result admission`](../../devrites-lib/reference/standards/agents.md#result-admission).
+   [`result admission`](skill://devrites-lib/reference/standards/agents.md#result-admission).
    `## Reviewer Accounts` preserves the seven roster roles, each engineering lane as its own account, plus
    `devrites-proof-runner` and, when any decision stood, `devrites-doubt-reviewer`; gap/missing/malformed blocks;
    conditional `Not-applicable` names why.

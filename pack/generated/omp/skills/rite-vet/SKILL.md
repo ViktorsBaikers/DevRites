@@ -5,8 +5,8 @@ argument-hint: "[slug] [--cross-model] [--full]"
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-dispatch.md","devrites-lib/reference/standards/gates.md","rite-vet/reference/review-axes.md","rite-vet/reference/artifacts.md","rite-vet/reference/depth.md","rite-vet/reference/eng-lenses.md","rite-vet/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"cross-model":["rite-vet/reference/cross-model.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"grammar":["devrites-lib/reference/standards/spec-grammar.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"principles":["devrites-lib/reference/standards/principles.md"],"reslice":["devrites-lib/reference/standards/acceptance-preserving-reslice.md"],"testing":["devrites-lib/reference/standards/testing.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"yagni":["devrites-lib/reference/standards/patterns.md","devrites-lib/reference/standards/coding-style.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md"],"workspaceByRole":{"devex-reviewer":["spec.md","plan.md","tasks.md","state.md"],"plan-reviewer":["spec.md","plan.md","tasks.md","test-plan.md","decision-coverage.md","architecture.md","decisions.md","state.md"],"strategy-reviewer":["brief.md","spec.md","plan.md","decisions.md","decision-coverage.md","strategy.md","state.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase vet` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-dispatch.md","devrites-lib/reference/standards/gates.md","rite-vet/reference/review-axes.md","rite-vet/reference/artifacts.md","rite-vet/reference/depth.md","rite-vet/reference/eng-lenses.md","rite-vet/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"cross-model":["rite-vet/reference/cross-model.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"grammar":["devrites-lib/reference/standards/spec-grammar.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"principles":["devrites-lib/reference/standards/principles.md"],"reslice":["devrites-lib/reference/standards/acceptance-preserving-reslice.md"],"testing":["devrites-lib/reference/standards/testing.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"yagni":["devrites-lib/reference/standards/patterns.md","devrites-lib/reference/standards/coding-style.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","strategy.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md"],"workspaceByRole":{"devex-reviewer":["spec.md","plan.md","tasks.md","decisions.md","state.md"],"plan-reviewer":["spec.md","plan.md","tasks.md","test-plan.md","decision-coverage.md","architecture.md","decisions.md","state.md"],"strategy-reviewer":["brief.md","spec.md","plan.md","decisions.md","decision-coverage.md","strategy.md","state.md"]}} -->
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase vet` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-vet: review the plan before build
@@ -15,23 +15,23 @@ Vet every plan's scope, architecture, quality, proof, performance, failures and 
 safety. Fold cited technical findings; design Build tests. Temper owns product;
 Vet owns implementation; current `$ARGUMENTS` (`--full`) feeds the depth triggers in
 `reference/depth.md`; profiles never remove the exact plan-reviewer gate
-([orchestration-profiles.md](../devrites-lib/reference/orchestration-profiles.md)).
+([orchestration-profiles.md](skill://devrites-lib/reference/orchestration-profiles.md)).
 
 ## Rules
 
-Read the active standard from: [`principles.md`](../devrites-lib/reference/standards/principles.md), [`patterns.md`](../devrites-lib/reference/standards/patterns.md) + [`coding-style.md`](../devrites-lib/reference/standards/coding-style.md) (over-engineering / YAGNI rubric, trigger `yagni`),
-[`testing.md`](../devrites-lib/reference/standards/testing.md), [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md), [`performance.md`](../devrites-lib/reference/standards/performance.md), [`error-handling.md`](../devrites-lib/reference/standards/error-handling.md) (trigger `errors`),
-[`development-workflow.md`](../devrites-lib/reference/standards/development-workflow.md), [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md), [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md),
-[`developer-experience.md`](../devrites-lib/reference/standards/developer-experience.md), [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md), and [`definition-of-done.md`](../devrites-lib/reference/standards/definition-of-done.md) (trigger `dod`). Load
+Read the active standard from: [`principles.md`](skill://devrites-lib/reference/standards/principles.md), [`patterns.md`](skill://devrites-lib/reference/standards/patterns.md) + [`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md) (over-engineering / YAGNI rubric, trigger `yagni`),
+[`testing.md`](skill://devrites-lib/reference/standards/testing.md), [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md), [`performance.md`](skill://devrites-lib/reference/standards/performance.md), [`error-handling.md`](skill://devrites-lib/reference/standards/error-handling.md) (trigger `errors`),
+[`development-workflow.md`](skill://devrites-lib/reference/standards/development-workflow.md), [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md), [`one-shot-actions.md`](skill://devrites-lib/reference/standards/one-shot-actions.md),
+[`developer-experience.md`](skill://devrites-lib/reference/standards/developer-experience.md), [`elicitation.md`](skill://devrites-lib/reference/standards/elicitation.md), and [`definition-of-done.md`](skill://devrites-lib/reference/standards/definition-of-done.md) (trigger `dod`). Load
 repository topology, data integrity, and integration reliability only when
 triggered (trigger `applicability`). When the plan's scope generalizes an existing boundary — a second
 platform/tenant/source of truth, a newly optional field, a constant turned parameter —
-confirm the [`assumption-checkpoints.md`](../devrites-lib/reference/standards/assumption-checkpoints.md) question (trigger `assumption-delta`)
+confirm the [`assumption-checkpoints.md`](skill://devrites-lib/reference/standards/assumption-checkpoints.md) question (trigger `assumption-delta`)
 was answered and recorded, not skipped-as-negative.
 Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 When a
 plan declares a root-authored executable workflow file, read
-[`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md).
+[`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md).
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
 - `FOLD` → fold technical topology; invalidate Vet/readiness; affected Vet before Build.
@@ -83,7 +83,7 @@ plan declares a root-authored executable workflow file, read
    read-only plan reviewer — plus developer-experience reviewer for developer
    surfaces (trigger `devex`) and the current strategy reviewer after significant
    Temper — in
-   parallel under `../devrites-lib/reference/parallel-dispatch.md`; they are
+   parallel under `skill://devrites-lib/reference/parallel-dispatch.md`; they are
    independent read-only passes on one frozen candidate. Missing
    required account blocks.
 1b. **Recovery recheck.** Require valid return cursor, accepted prior finding,
@@ -100,7 +100,7 @@ plan declares a root-authored executable workflow file, read
    different Critical/Important invariant needs exact evidence and a new
    fingerprint; a Suggestion, Nit, or FYI cannot keep recovery open. Reviewer
    `Late:` rows on unchanged clauses follow the canonical
-   [late-finding rule](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
+   [late-finding rule](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
    Critical with a failure path → new fingerprint; otherwise `eng-review.md`
    `## Deferred findings` (mechanism rows become one proof row at step 6). A packet
    marked `convergence_pressure` accepts an explicit, bounded declared
@@ -160,7 +160,8 @@ plan declares a root-authored executable workflow file, read
    editing intent/decision/assumption/question owners, re-scan affected coverage,
    assumptions, uncertainty, and gates. Keep state non-READY. Every scenario and
    criterion needs positive, discriminating proof; every slice must be one-pass
-   implementable; developer plans need a predicted scorecard. Durable commands
+   implementable; developer plans (trigger `devex`) write the devex reviewer's
+   predicted scorecard to `devex.md`. Durable commands
    are portable repository commands, not host wrappers — resolve them with
    `devrites-engine detect commands` (Makefile/package.json/manifests, no
    execution) and cite the resolved text verbatim; an `unresolved` slot means
@@ -198,7 +199,7 @@ plan declares a root-authored executable workflow file, read
    Write exactly one `Implementation readiness: READY`, `NEEDS CLARIFICATION`,
    or `NEEDS REPLAN`. Root sets READY after every account, checklist,
    preflight, and sweep is green, including the
-   [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) marker sweep whose
+   [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md) marker sweep whose
    `marker sweep:` line is recorded in `eng-review.md`; a kept hit blocks READY. Write phase/next step and emit one
    `Readiness inputs SHA-256` with
    `devrites-engine check readiness --emit-binding <slug>`; normal readiness check

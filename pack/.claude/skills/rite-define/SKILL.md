@@ -106,6 +106,8 @@ Pull these via `Read` when shaping the plan:
    capability end to end; first is the thinnest useful path, ordered by dependency then
    risk. Apply the slice-count and broad-refactor rules above plus
    [`slicing.md`](../rite-plan/reference/slicing.md) and [`task-breakdown.md`](../rite-plan/reference/task-breakdown.md).
+   Run `devrites-engine recall --paths <files likely touched>`; fold each relevant prior
+   decision, carry-forward constraint, or finding into that slice's `Prior-slice learnings`.
    Mark per slice: **Frontend craft required**
    and **Browser proof required** (UI), and whether it's **fullstack** (FE+BE → contract
    first, see [`fullstack.md`](../devrites-frontend-craft/reference/fullstack.md)). **For UI slices, name which
@@ -169,8 +171,7 @@ Pull these via `Read` when shaping the plan:
    `Plan sanity` (slice count + riskiest boundary/gate), `Expected build interruptions`
    (`none` or only justified action-time gates), and `Build exactly this?` (yes → approve;
    no → `/rite-plan revise`). When the human confirms the plan, write `Plan approved: <iso>` to
-   `state.md` (see [state-workspace](../rite-spec/reference/state-workspace.md)); `/rite-build`
-   checks this exists before building.
+   `state.md` (see [state-workspace](../rite-spec/reference/state-workspace.md)).
 
 ## tasks.md slice format
 

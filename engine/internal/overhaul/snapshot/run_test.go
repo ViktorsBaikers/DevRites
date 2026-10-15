@@ -254,6 +254,28 @@ func TestCaptureDirtyRepo(t *testing.T) {
 	}
 }
 
+// Capturing a subdirectory copies its dirty tracked files and keeps a dirty
+// tracked secret there out of the patches: every path is subdirectory-relative.
+func TestCaptureSubdirectory(t *testing.T) {
+	root := newRepo(t)
+	write(t, root, "src/deploy.tfvars", "token = \"clean\"\n")
+	gitT(t, root, "add", "-A")
+	gitT(t, root, "commit", "-q", "-m", "secret")
+	write(t, root, "src/b.py", "B-unstaged\n")
+	write(t, root, "src/deploy.tfvars", "token = \""+envSecret+"\"\n")
+	out := captureOK(t, filepath.Join(root, "src"))
+	m := loadManifest(t, out)
+	if g := m.Files["b.py"]; g == nil || !g.Copied || read(t, filepath.Join(out, "tree", "b.py")) != "B-unstaged\n" {
+		t.Fatalf("dirty tracked b.py not copied: %+v", g)
+	}
+	if g := m.Files["clean.py"]; g == nil || g.Copied {
+		t.Fatalf("clean.py: %+v", g)
+	}
+	if patch := read(t, filepath.Join(out, "unstaged.patch")); strings.Contains(patch, envSecret) || !strings.Contains(patch, "+B-unstaged") {
+		t.Fatalf("unstaged.patch:\n%s", patch)
+	}
+}
+
 func TestCaptureRefusals(t *testing.T) {
 	root := newRepo(t)
 

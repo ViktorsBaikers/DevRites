@@ -71,7 +71,7 @@ consistently:
   prerequisite, wrong command, missing step, or stale/mismatched transcript is a
   finding. Never execute the quickstart yourself.
 - **Error-message quality:** a failure must say what failed, why, and how to
-  recover, include the relevant IDs, and expose **no secrets** under [`security.md`](../skills/devrites-lib/reference/standards/security.md).
+  recover, include the relevant IDs, and expose **no secrets** under [`security.md`](.agents/skills/devrites-lib/reference/standards/security.md).
   A bare trace, silent exit, or "an error occurred" on a developer-facing path is a
   defect.
 - **Ergonomics & consistency:** compare naming, argument order, pagination, and
@@ -80,6 +80,10 @@ consistently:
 - **Docs accuracy:** examples must be correct and ready to copy. The documented
   signature must match the code, and changed behavior must update its docs in the
   same change.
+- **Agent use:** can a coding agent complete the flow with no human step?
+  Check non-interactive flags or env for every prompt, machine-readable output and
+  distinct exit codes where scripts consume results, headless setup and auth, and
+  commands instead of "click here" UI steps. Name each human-only step.
 
 ## Rules
 
@@ -116,6 +120,7 @@ Scorecard:
   error-messages    <actionable? | the unactionable ones, quoted>
   ergonomics        <consistent with project conventions? | the breaks>
   docs              <copy-pasteable + accurate? | the wrong examples>
+  agent-use         <completes headless? | the human-only steps | n/a>
 Boomerang (measure mode): predicted <…> vs measured <…> — gap: <none | the delta + why it matters>
 Overall: blockers? <yes/no — list>
 ```

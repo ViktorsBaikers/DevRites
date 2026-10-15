@@ -77,6 +77,11 @@ touches:
   carries meaning by colour alone; a status only colour conveys is a finding.
 - **Docs accuracy:** examples are copy-pasteable and correct, the signature in the docs matches
   the code, and changed behavior updated its docs in the same change ([`documentation.md`](documentation.md)).
+- **Agent use:** a coding agent is now a common consumer. Can it complete the flow with no
+  human step: non-interactive flags or env for every prompt, machine-readable output and
+  distinct exit codes where scripts consume results, setup and auth that run headless, and
+  docs that give commands rather than "click here" UI steps? A step only a human can do is
+  friction; name it.
 
 ## Measure, don't assert
 

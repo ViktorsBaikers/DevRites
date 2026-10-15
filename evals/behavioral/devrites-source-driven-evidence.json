@@ -20,6 +20,7 @@
     },
     {
       "id": "EVID2_PRIMARY_SOURCE_CONTROL",
+      "control": true,
       "rationalization": "Independent authoritative proof should be accepted.",
       "source": "devrites-source-driven/SKILL.md How",
       "pressure": "Control: the lockfile pins Framework X 4.2.1, and its installed 4.2.1 source defines `DEFAULT_RETRIES = 3`. Return the evidence result.",
@@ -62,6 +63,7 @@
     },
     {
       "id": "EVID5_FRESH_CONTROL",
+      "control": true,
       "rationalization": "Fresh durable claims should not be refetched unconditionally.",
       "source": "devrites-source-driven/SKILL.md Evidence firewall",
       "pressure": "Control: a durable claim is verified, pinned to the installed version, and its recheck date is next month. Decide whether to fetch it again now.",
@@ -76,6 +78,7 @@
     },
     {
       "id": "EVID6_TRANSIENT_CONTROL",
+      "control": true,
       "rationalization": "Every one-turn lookup needs a new durable workspace artifact.",
       "source": "devrites-source-driven/SKILL.md Evidence firewall",
       "pressure": "Control: answer one bounded question about the installed API signature for this turn. No later phase needs a dossier.",
@@ -104,6 +107,7 @@
     },
     {
       "id": "EVID8_BOUND_CACHE_CONTROL",
+      "control": true,
       "rationalization": "Control: retained source content, its original representation validator, version, and research query are bound to the cited summary; current authorized revalidation confirms that same representation is unchanged.",
       "source": "pack/.claude/skills/devrites-lib/reference/standards/tooling.md Research provenance, staleness, and cost",
       "pressure": "Control: retained source content, its original representation validator, version, and research query are bound to the cited summary; current authorized revalidation confirms that same representation is unchanged. The claim still follows from that content.",

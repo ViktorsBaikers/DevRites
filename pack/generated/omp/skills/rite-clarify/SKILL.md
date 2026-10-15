@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","rite-clarify/reference/decision-coverage.md","rite-clarify/reference/anti-patterns.md"],"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md"],"workspaceByRole":{"evidence-scout":["brief.md","spec.md","state.md","questions.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase clarify` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase clarify` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-clarify: resolve product decisions
@@ -16,15 +16,15 @@ decision, ask no questions. Otherwise stay until each material decision has an
 owner. This phase settles behavior and constraints; `/rite-define` settles
 implementation.
 
-Reuse [`devrites-interview`](../devrites-interview/SKILL.md) in `/clarify mode`. Write
+Reuse [`devrites-interview`](skill://devrites-interview/SKILL.md) in `/clarify mode`. Write
 `decision-coverage.md` as scan evidence, not an interview transcript.
 
 ## Rules consulted
 
-Read [`core.md`](../devrites-lib/reference/standards/core.md), its [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md), and
+Read [`core.md`](skill://devrites-lib/reference/standards/core.md), its [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md), and
 [`reference/decision-coverage.md`](reference/decision-coverage.md). Fresh evidence
 dispatch uses
-[`agents.md`](../devrites-lib/reference/standards/agents.md).
+[`agents.md`](skill://devrites-lib/reference/standards/agents.md).
 
 ## Rules
 

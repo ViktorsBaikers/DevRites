@@ -110,6 +110,29 @@ is_pinned_alias() {
   grep -q 'description: Alias of DevRites /' "$SKILLS_DIR/$1/SKILL.md"
 }
 
+file_sha256() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    dr_die "need shasum or sha256sum to record the alias in the manifest"
+  fi
+}
+
+# Copy manifest $1 to $2 without the entries (and hash records) for $3/$4.
+manifest_without() {
+  awk -v claude="$3" -v codex="$4" \
+    '$0 != claude && $0 != codex && index($0, "# managed: " claude " ") != 1 && index($0, "# managed: " codex " ") != 1' \
+    "$1" > "$2"
+}
+
+# Record a managed path in the same "# managed: <rel> sha256:<hex>" + <rel>
+# format the engine installer writes, so install/update/uninstall verify it.
+manifest_record() {
+  printf '# managed: %s sha256:%s\n%s\n' "$2" "$(file_sha256 "$3")" "$2" >> "$1"
+}
+
 is_pinned_alias_file() {
   [ -f "$1" ] || return 1
   grep -q 'description: Alias of DevRites /' "$1"
@@ -158,12 +181,10 @@ do_add() {
   if [ -d "$CODEX_SKILLS_DIR" ]; then
     dr_gen_alias_wrapper "$ALIAS" "$DEST" "$PIN_TMP/codex"
   fi
-  cp -p "$MF" "$PIN_TMP/manifest"
-  if ! dr_manifest_contains "$PIN_TMP/manifest" "$ALIAS_REL"; then
-    printf '%s\n' "$ALIAS_REL" >> "$PIN_TMP/manifest"
-  fi
-  if [ -d "$CODEX_SKILLS_DIR" ] && ! dr_manifest_contains "$PIN_TMP/manifest" "$CODEX_ALIAS_REL"; then
-    printf '%s\n' "$CODEX_ALIAS_REL" >> "$PIN_TMP/manifest"
+  manifest_without "$MF" "$PIN_TMP/manifest" "$ALIAS_REL" "$CODEX_ALIAS_REL"
+  manifest_record "$PIN_TMP/manifest" "$ALIAS_REL" "$PIN_TMP/claude"
+  if [ -d "$CODEX_SKILLS_DIR" ]; then
+    manifest_record "$PIN_TMP/manifest" "$CODEX_ALIAS_REL" "$PIN_TMP/codex"
   fi
 
   mkdir -p "$ALIAS_DIR"
@@ -208,8 +229,7 @@ do_remove() {
   fi
 
   PIN_TMP="$(mktemp -d "$SKILLS_DIR/.devrites-pin.XXXXXX")"
-  awk -v claude="$ALIAS_REL" -v codex="$CODEX_ALIAS_REL" \
-    '$0 != claude && $0 != codex' "$MF" > "$PIN_TMP/manifest"
+  manifest_without "$MF" "$PIN_TMP/manifest" "$ALIAS_REL" "$CODEX_ALIAS_REL"
 
   rm -f "$ALIAS_FILE"
   rmdir "$ALIAS_DIR" 2>/dev/null || true

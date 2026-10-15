@@ -179,3 +179,19 @@ func testBundle(t *testing.T, tag string, files map[string]string) []byte {
 	}
 	return raw.Bytes()
 }
+
+func TestBinaryNameForPublishedTargets(t *testing.T) {
+	for _, tc := range []struct{ goos, goarch, want string }{
+		{"darwin", "arm64", "devrites-darwin-arm64"},
+		{"linux", "amd64", "devrites-linux-amd64"},
+		{"windows", "amd64", "devrites-windows-amd64.exe"},
+		{"windows", "arm64", "devrites-windows-arm64.exe"},
+	} {
+		if got, err := binaryNameFor(tc.goos, tc.goarch); err != nil || got != tc.want {
+			t.Errorf("binaryNameFor(%s, %s) = %q, %v; want %q", tc.goos, tc.goarch, got, err, tc.want)
+		}
+	}
+	if _, err := binaryNameFor("freebsd", "amd64"); err == nil {
+		t.Error("binaryNameFor accepted an unpublished target")
+	}
+}

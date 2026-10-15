@@ -69,15 +69,15 @@ Wrong-skill fire: stop, admit it, switch rites.
 | Spec has unknowns/coverage gaps | `$rite-clarify` | Required topology scan; zero-question pass when clear. |
 | Derive intent from existing code without an active feature contract | `$rite-adopt` | Establish the brownfield contract. |
 | Reconcile implementation with an active feature contract | `$rite-converge` | Identify gaps and add missing slices. |
-| Older workspace cannot resume | `$rite-upgrade` | Audit cited current-contract defects; age alone is no defect. Route semantic repairs to normal owners; preserve history without synthetic proof. |
+| Older workspace cannot resume (explicit only) | `$rite-upgrade` | Audit cited current-contract defects; age alone is no defect. Route semantic repairs to normal owners; preserve history without synthetic proof. |
 | Turn an approved spec into its first plan | `$rite-define` | No `tasks.md` slices yet; writes architecture, slices, traceability. |
 | Reslice, reorder, or repair an existing plan | `$rite-plan` | Slices exist and evidence invalidates them. |
 | Review plan before code | `$rite-vet` | Every plan; depth scales to risk. |
 | Small safe fix | `$rite-quick` | Escalates auth, migration, public API, destructive, ambiguous, or multi-slice work. |
 | Mid-size work, fast lane (explicit only) | `$rite-fast` | Spec + plan + questions once, ≤10 slices, one completeness check, review, polish, proof; risk deepens questions. |
 | Prove UI/runtime | `$rite-prove` + `devrites-browser-proof` | Capture real evidence. |
-| Stuck/unfamiliar | `$rite-zoom-out` | Map before editing. |
-| Teach me | `$rite-explain` | Human learning loop. |
+| Stuck/unfamiliar (explicit only) | `$rite-zoom-out` | Map before editing. |
+| Teach me (explicit only) | `$rite-explain` | Human learning loop. |
 | Decide ship readiness | `$rite-seal` | Decides; never mutates Git. |
 | Execute ship after GO | `$rite-ship` | Requires GO/type-GO. |
 | Unattended lifecycle | `$rite-autocomplete` | Clean baseline/checkpoints; hard gates stop. |

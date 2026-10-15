@@ -5,7 +5,7 @@ argument-hint: "[<slug>]"
 user-invocable: false
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/code-navigation.md","devrites-debug-recovery/reference/build-the-loop.md","devrites-debug-recovery/reference/cleanup-and-classify.md","devrites-debug-recovery/reference/hypotheses.md","devrites-debug-recovery/reference/instrumentation.md","devrites-debug-recovery/reference/regression-test.md","devrites-debug-recovery/reference/trace.md","devrites-lib/reference/standards/debug-recovery.md"],"triggers":{"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"security":["devrites-lib/reference/standards/security.md"],"workspace":["devrites-lib/reference/standards/workflow-artifacts.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill devrites-debug-recovery` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context <slug> --skill devrites-debug-recovery` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # devrites-debug-recovery: fix the root cause, not the symptom
 
@@ -32,7 +32,8 @@ has no clear next move. Optional slug selects the active workspace; defaults to
    Do not proceed without a reproduction input: the captured error text for
    repeatable actions, or the retained bounded artifact for consumptive ones.
 3. **Ranked hypotheses (3-5, falsifiable):** generate the list before testing
-   any of them. Each must state a prediction.
+   any of them. Each must state a prediction. With a `.devrites/archive/`, first run
+   `devrites-engine recall --paths <failing files>` for prior dead ends and causes.
    **Completion:** 3-5 distinct hypotheses each state an observable prediction.
    See [hypotheses.md](reference/hypotheses.md).
 4. **Trace when ambiguous:** if the cause is unclear, flaky, causal, or one fix

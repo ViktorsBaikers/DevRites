@@ -65,14 +65,15 @@ Common flags:
   --target DIR          Install into DIR (default: current directory)
   --dry-run             Show the plan, change nothing
   --force               Overwrite existing non-DevRites files
-  --no-codex            Skip Codex support files (.agents, .codex, AGENTS.md)
+  --no-codex            Skip Codex support files (.agents, .codex, the Codex AGENTS.md block)
   --no-omp              Skip OMP support files (.omp/skills, .omp/agents, .omp/commands)
   --no-pi               Skip pi support files (.pi/skills, .pi/agents, .pi/prompts)
   --no-devin            Skip Devin CLI support files (.devin/skills, .devin/agents)
   --short-aliases=all   Also install /define /build /prove /seal
   --no-agents           Skip hook-free native specialist profiles
   --no-skills           Skip skills and bundled engineering standards
-  --no-binary           Skip installing the global devrites-engine binary
+  --no-binary           Skip installing the global devrites-engine binary (uninstall: keep it)
+  --keep-binary         Uninstall only: keep the global devrites-engine binary
   --no-rules            Deprecated no-op; standards ship inside devrites-lib
   --rules-only          Deprecated no-op; installs normally for compatibility
 
@@ -112,12 +113,35 @@ async function acquireEngine() {
   const tag = normalizeReleaseTag(process.env.DEVRITES_REF || pkgVersion());
   if (!validRepository(repo) || !tag) throw new Error('DevRites repository and release tag must identify an exact release');
   const envEngine = process.env.DEVRITES_ENGINE_CLI || process.env.DEVRITES_CLI;
-  if (envEngine && existsSync(envEngine)) return envEngine;
+  if (envEngine && existsSync(envEngine)) {
+    // Like install-lib.sh dr_engine_compatible: install/update need this exact release.
+    // A probe that cannot launch falls through so the launch error is reported.
+    if (command !== 'install' && command !== 'update') return envEngine;
+    const probe = spawnSync(envEngine, ['version'], { encoding: 'utf8' });
+    const got = probe.error ? null : probe.status === 0 ? String(probe.stdout).trim().replace(/^v/, '') : '';
+    if (got === null || got === tag.slice(1)) return envEngine;
+    acquisitionFailure = `${envEngine} reports version '${got}', want ${tag}`;
+    return null;
+  }
   if (command === 'uninstall' && spawnSync('devrites-engine', ['uninstall', '-h'], { stdio: 'ignore' }).status === 0) return 'devrites-engine';
 
+  // A git checkout's payload can be ahead of the published engine of the same
+  // version, so a checkout builds its own engine before downloading one.
+  const checkout = existsSync(join(root, '.git'));
+  const fromSource = checkout ? buildEngine(tag) : null;
+  if (fromSource) return fromSource;
   const downloaded = await downloadEngine();
   if (downloaded) return downloaded;
+  const built = checkout ? null : buildEngine(tag);
+  if (built) return built;
 
+  if (command === 'uninstall') return 'devrites-engine';
+  const probe = spawnSync('devrites-engine', ['version'], { encoding: 'utf8' });
+  if (!probe.error && probe.status === 0 && String(probe.stdout).trim().replace(/^v/, '') === tag.slice(1)) return 'devrites-engine';
+  return null;
+}
+
+function buildEngine(tag) {
   const engineDir = join(root, 'engine');
   if (existsSync(join(engineDir, 'go.mod'))) {
     const goBin = findGo();
@@ -136,10 +160,6 @@ async function acquireEngine() {
       if (!build.error && build.status === 0) return out;
     }
   }
-
-  if (command === 'uninstall') return 'devrites-engine';
-  const probe = spawnSync('devrites-engine', ['version'], { encoding: 'utf8' });
-  if (!probe.error && probe.status === 0 && String(probe.stdout).trim().replace(/^v/, '') === tag.slice(1)) return 'devrites-engine';
   return null;
 }
 
@@ -317,11 +337,7 @@ if (command === 'install' || command === 'update') {
 }
 args.push(...rest);
 
-let lastError = null;
-for (const candidate of [engine, 'devrites-engine']) {
-  lastError = await runEngine(candidate, args, engineEnv);
-  if (lastError.code !== 'ENOENT') break;
-}
+const lastError = await runEngine(engine, args, engineEnv);
 if (lastError.code !== 'ENOENT') {
   console.error('devrites: failed to launch devrites-engine:', lastError.message);
 } else {

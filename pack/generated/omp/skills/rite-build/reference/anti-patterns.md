@@ -4,7 +4,7 @@ Load when a non-trivial decision stands or stopping, TDD, or doubt discipline
 feels inconvenient.
 
 Pack-wide rationalizations and red flags live in
-[standards/anti-patterns.md](../../devrites-lib/reference/standards/anti-patterns.md).
+[standards/anti-patterns.md](skill://devrites-lib/reference/standards/anti-patterns.md).
 
 ## Phase-specific rationalizations
 

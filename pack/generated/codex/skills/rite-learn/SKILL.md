@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/documentation.md","devrites-lib/reference/standards/tooling.md"],"workspace":["state.md","decisions.md","drift.md","evidence.md","review.md","seal.md","questions.md"],"workspaceByRole":{"retrospector":["state.md","decisions.md","drift.md","evidence.md","review.md","seal.md","questions.md"]},"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]}} -->
-> Read-set manifest: `devrites-engine context [slug] --skill rite-learn` bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill rite-learn` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # $rite-learn: review durable lessons
 
@@ -29,7 +29,7 @@ of one authority; it cannot promote a rule alone.
    A missing, failed, timed-out, or malformed result reports `Candidate: NOT-RUN
    (unavailable: <reason>)` as a gap, never `Candidate: none`; an unavailable role stops
    for HITL per [`agents.md`](../devrites-lib/reference/standards/agents.md) (trigger `agents`).
-3. Keep corrections repeated in two features, a judgement call made twice, or a defect class seen twice; drop one-off preferences, task-specific detail, generic advice.
+3. Keep corrections repeated in two features (a `## Carry-forward constraints` rule recurring in two archived `decisions.md` qualifies), a judgement call made twice, or a defect class seen twice; drop one-off preferences, task-specific detail, generic advice.
    Broad mode also proposes **retirements**: a rule found via a `rite-learn: accepted`
    marker whose cited failing case or owner no longer exists in live source, whose
    review-by date passed unverified, or that is a model-default no-op. Zero is valid but

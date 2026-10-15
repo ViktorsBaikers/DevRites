@@ -6,7 +6,7 @@ user-invocable: true
 ---
 
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/spec-grammar.md","rite-define/reference/plan-template.md","rite-define/reference/gates.md","rite-define/reference/anti-patterns.md","rite-plan/reference/slicing.md","rite-plan/reference/task-breakdown.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/state-workspace.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"agents":["devrites-lib/reference/standards/agents.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"frontend":["devrites-frontend-craft/reference/fullstack.md"],"principles":["devrites-lib/reference/standards/principles.md"],"visual":["devrites-lib/reference/visual-playbooks/index.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","strategy.md","design-brief.md","references.md"],"workspaceByRole":{"plan-drafter":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","strategy.md","design-brief.md","references.md","state.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase define` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase define` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # /rite-define: plan from the spec
@@ -18,27 +18,27 @@ what/why; Define owns how. **Do not write code.**
 
 Pull these via `Read` when shaping the plan:
 
-- [`development-workflow.md`](../devrites-lib/reference/standards/development-workflow.md): small batches, trunk-always-green, definition of done.
-- [`principles.md`](../devrites-lib/reference/standards/principles.md): the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
-- [`documentation.md`](../devrites-lib/reference/standards/documentation.md): record plan-time decisions and rationale.
-- [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), and [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md):
+- [`development-workflow.md`](skill://devrites-lib/reference/standards/development-workflow.md): small batches, trunk-always-green, definition of done.
+- [`principles.md`](skill://devrites-lib/reference/standards/principles.md): the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
+- [`documentation.md`](skill://devrites-lib/reference/standards/documentation.md): record plan-time decisions and rationale.
+- [`repository-topology.md`](skill://devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](skill://devrites-lib/reference/standards/data-integrity.md), and [`integration-reliability.md`](skill://devrites-lib/reference/standards/integration-reliability.md):
   load only for matching `spec.md` applicability rows; each applicable owner is mandatory.
-- `../devrites-lib/reference/workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers (trigger `workflow-artifacts`).
+- `skill://devrites-lib/reference/workspace-artifact-schema.md`: artifact purposes, budgets, IDs, and read triggers (trigger `workflow-artifacts`).
 
 ## Operating rules
 
 - **Requires a readied spec.** Gate conditions and STOP routing are step 0;
   never plan it.
-- Apply [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) ownership. Prefer conventions; source-check new dependencies/design
+- Apply [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) ownership. Prefer conventions; source-check new dependencies/design
   systems, asking only about licensing, cost, security, or policy.
 - Author one `architecture.md`/`plan.md` section at a time. Before slicing, use
-  [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) Tournament for open
+  [`elicitation.md`](skill://devrites-lib/reference/standards/elicitation.md) Tournament for open
   designs and Delphi for uncertain estimates.
 - **Derive the slice count from the work.**
-  One per independently-shippable increment, sized by [`slicing.md`](../rite-plan/reference/slicing.md); map every acceptance
+  One per independently-shippable increment, sized by [`slicing.md`](skill://rite-plan/reference/slicing.md); map every acceptance
   criterion. User counts are hints: explain honest differences, never pad/compress.
   `.devrites/AFK` `max_slices` is an iteration budget, not decomposition. A derivation
-  over the [feature ceiling](../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
+  over the [feature ceiling](skill://rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)
   is a split signal, never a `Budget override`: keep the thinnest shippable subset
   here and route the rest to Non-goals + continuation workspaces via the Drift Guard.
 - **Complexity does not shrink scope.** Split/reorder; never drop/defer approved REQ/AC.
@@ -47,13 +47,13 @@ Pull these via `Read` when shaping the plan:
   batches, then remove the old path; if batches cannot stay green, use an integration branch
   plus final verify.
 - **Root writes; drafter proposes** under bounded fresh context
-  ([`agents.md`](../devrites-lib/reference/standards/agents.md)); root owns choices and canonical files.
+  ([`agents.md`](skill://devrites-lib/reference/standards/agents.md)); root owns choices and canonical files.
 
 ## Workflow
 
 0. **Read `.omp/skills/devrites-lib/reference/standards/core.md`:** the always-on operating rules and anti-rationalizations.
    Resolve the active slug from `.devrites/ACTIVE`, require its `state.md`, and
-   re-open `spec.md` and apply [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md)'s Native grammar re-read
+   re-open `spec.md` and apply [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md)'s Native grammar re-read
    checklist. If there is no active workspace, no `spec.md`, the checklist
    fails, or its readiness gate hasn't passed →
    **STOP** and tell the user to run `/rite-spec <feature>` first.
@@ -68,7 +68,7 @@ Pull these via `Read` when shaping the plan:
    and respect the IN/OUT line; map coverage against the **hardened** spec), and
    **`design-brief.md` if the feature touches UI** (the UX/UI contract `/rite-spec` shaped:
    its key states, interaction model, and proof targets drive how UI slices are cut). If a blocking
-   `[NEEDS CLARIFICATION]` remains, stop → `/rite-clarify`. Run the [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) marker
+   `[NEEDS CLARIFICATION]` remains, stop → `/rite-clarify`. Run the [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md) marker
    sweep; a kept hit stops the same way, and its `marker sweep:` line goes in the step-7 digest.
    Reconcile every `Applicability map` row against live repository evidence. Load each
    applicable standard; a false `not applicable` is a blocking spec gap, not a planning
@@ -80,16 +80,16 @@ Pull these via `Read` when shaping the plan:
 2. **Reconcile architecture + approach** against live seams; root writes at step 6.
    `architecture.md` owns layers/boundaries/integrations/data/dependencies/risks/impact;
    `plan.md` owns build strategy. Use the code index for structure/impact
-   ([`tooling.md`](../devrites-lib/reference/standards/tooling.md)) and source-check external behavior.
+   ([`tooling.md`](skill://devrites-lib/reference/standards/tooling.md)) and source-check external behavior.
    Record significant options as `DEC-###` only for non-obvious real trade-offs where
    independently built lower units could choose incompatibly; leave other details to convention/
    slice. Compare ≥2 viable approaches for hard-to-reverse boundaries, models, contracts, or
    dependencies by drivers, trade-offs, and consequences. Specify cross-boundary interfaces for independent work:
    invariants, I/O, ordering/idempotency, errors, versioning, config, and relevant budgets.
    Establish repository/deployable roots, state and contract ownership, shared mutable
-   resources, and deployment order under [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md). For applicable durable
-   data or integration rows, include the exact required plan table from [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md)
-   or [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md); do not replace it with "handle retries/migration" prose.
+   resources, and deployment order under [`repository-topology.md`](skill://devrites-lib/reference/standards/repository-topology.md). For applicable durable
+   data or integration rows, include the exact required plan table from [`data-integrity.md`](skill://devrites-lib/reference/standards/data-integrity.md)
+   or [`integration-reliability.md`](skill://devrites-lib/reference/standards/integration-reliability.md); do not replace it with "handle retries/migration" prose.
    For any changed provider/consumer boundary, complete `plan.md`'s canonical
    `Shared contract proof` table with one reused contract artifact and provider- and
    consumer-side asserting tests that both consume it. Otherwise record the exact justified
@@ -105,10 +105,12 @@ Pull these via `Read` when shaping the plan:
 3. **Create vertical tasks:** each delivers one independently verifiable, observable
    capability end to end; first is the thinnest useful path, ordered by dependency then
    risk. Apply the slice-count and broad-refactor rules above plus
-   [`slicing.md`](../rite-plan/reference/slicing.md) and [`task-breakdown.md`](../rite-plan/reference/task-breakdown.md).
+   [`slicing.md`](skill://rite-plan/reference/slicing.md) and [`task-breakdown.md`](skill://rite-plan/reference/task-breakdown.md).
+   Run `devrites-engine recall --paths <files likely touched>`; fold each relevant prior
+   decision, carry-forward constraint, or finding into that slice's `Prior-slice learnings`.
    Mark per slice: **Frontend craft required**
    and **Browser proof required** (UI), and whether it's **fullstack** (FE+BE → contract
-   first, see [`fullstack.md`](../devrites-frontend-craft/reference/fullstack.md)). **For UI slices, name which
+   first, see [`fullstack.md`](skill://devrites-frontend-craft/reference/fullstack.md)). **For UI slices, name which
    of `design-brief.md`'s key states + interaction the slice delivers, and give it a binary
    **Visual acceptance** target (state × viewport × input + target R-id/brief rule)**, so
    the design contract maps to slices as well as acceptance criteria.
@@ -121,7 +123,7 @@ Pull these via `Read` when shaping the plan:
    unchanged baseline green, perturb realistic behavior red, restore green, then modify. Never
    expand this into repository-wide coverage.
 4. **Map coverage and wiring:** every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
-   ([`acceptance-criteria.md`](../rite-spec/reference/acceptance-criteria.md)); no orphaned criteria, no slice without a
+   ([`acceptance-criteria.md`](skill://rite-spec/reference/acceptance-criteria.md)); no orphaned criteria, no slice without a
    criterion. Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`
    rows into `traceability.md` and `test-plan.md`; unresolved rows get a gate/owner. Each
    `Existing behavior to preserve` row becomes a regression row whose current evidence is
@@ -150,7 +152,7 @@ Pull these via `Read` when shaping the plan:
    `state.md` (phase: plan → next `/rite-vet`). When diagrams clarify, also write optional
    `flows.md` (**Mermaid-first**). If a richer reviewable visual earns it, emit
    `visual/<flow>.html` + `visual/<flow>.outline.md` after loading matching playbooks from
-   [`../devrites-lib/reference/visual-playbooks/index.md`](../devrites-lib/reference/visual-playbooks/index.md)
+   [`skill://devrites-lib/reference/visual-playbooks/index.md`](skill://devrites-lib/reference/visual-playbooks/index.md)
    (progressive; never preload all seven), link the pair from `flows.md`, treat outline as
    SSOT (outline wins), and never require Lavish or a new phase.
 6a. **Cross-artifact gate.** Read spec, tasks, and traceability together: every
@@ -169,13 +171,12 @@ Pull these via `Read` when shaping the plan:
    `Plan sanity` (slice count + riskiest boundary/gate), `Expected build interruptions`
    (`none` or only justified action-time gates), and `Build exactly this?` (yes → approve;
    no → `/rite-plan revise`). When the human confirms the plan, write `Plan approved: <iso>` to
-   `state.md` (see [state-workspace](../rite-spec/reference/state-workspace.md)); `/rite-build`
-   checks this exists before building.
+   `state.md` (see [state-workspace](skill://rite-spec/reference/state-workspace.md)).
 
 ## tasks.md slice format
 
 Use the canonical slice grammar in
-[`workspace-artifact-schema.md`](../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar).
+[`workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar).
 Every slice must satisfy that complete field set; phase-specific gate details live in
 [`reference/gates.md`](reference/gates.md).
 

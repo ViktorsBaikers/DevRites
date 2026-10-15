@@ -1,7 +1,7 @@
 # Design-system discovery
 
 Use the canonical discovery and register rules in
-[`design-references.md`](../../devrites-frontend-craft/reference/design-references.md#discover-these).
+[`design-references.md`](skill://devrites-frontend-craft/reference/design-references.md#discover-these).
 
 Polish-specific decision: preserve the discovered identity by default. Depart only when
 the design brief or the user explicitly targets this surface for redesign. Completion:

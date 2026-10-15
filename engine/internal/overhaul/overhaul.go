@@ -25,6 +25,7 @@ const Usage = `usage: devrites-engine overhaul <tool> ...
   overhaul records stage <run>
   overhaul records publish <run>
   overhaul records validate <run>
+  overhaul records prune <run> [--keep K]
   overhaul admit receipt <run> <receipt.json> [--observed <paths.txt>]
   overhaul admit packet <run> <packet.json>
   overhaul admit anchor <tree> <proposals.json>

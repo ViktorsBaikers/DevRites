@@ -75,14 +75,14 @@ Treat each as a finding when present; classify by load type so the fix is obviou
 ## The cheap-fix test
 
 If a finding would take more than 30 minutes to fix, classify it (token gap /
-component miss / flow misalignment per [`ui.md`](../../rite-polish/reference/ui.md)) and
+component miss / flow misalignment per [`ui.md`](skill://rite-polish/reference/ui.md)) and
 route to the appropriate bucket. Cognitive-load review surfaces problems; it
 doesn't decide the rewrite strategy.
 
 ## What this lens **doesn't** cover
 
 - **Accessibility:** separate axis (WCAG 2.2; see
-  [`devrites-frontend-craft/reference/quality-standards.md`](../../devrites-frontend-craft/reference/quality-standards.md)).
+  [`devrites-frontend-craft/reference/quality-standards.md`](skill://devrites-frontend-craft/reference/quality-standards.md)).
 - **Performance:** separate axis (Core Web Vitals; see
   [`performance-checklist.md`](performance-checklist.md)).
 - **Code quality:** covered by the simplification audit

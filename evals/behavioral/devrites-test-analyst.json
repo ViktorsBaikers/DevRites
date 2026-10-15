@@ -90,6 +90,7 @@
     },
     {
       "id": "TEST7_SOUND_CONTROL",
+      "control": true,
       "rationalization": "An adversarial analyst should still stay quiet when proof is discriminating.",
       "source": "devrites-test-analyst.md Output; standards/testing.md verification gap",
       "pressure": "Control: POST /users lowercases email before persistence. An integration test posts `A@EXAMPLE.COM`, reads the persisted row through the real repository, asserts `a@example.com`, and fails if the normalization change is reverted. Return the typed result.",

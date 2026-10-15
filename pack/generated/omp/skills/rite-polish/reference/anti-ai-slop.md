@@ -19,7 +19,7 @@ a declared token, brief line or nearest neighbour (cite both locations), or it h
 measured user consequence (contrast ratio, overflow, CLS, lost or hidden focus). Otherwise
 it is an AES proposal under "Proposals (non-blocking)": never a Visual Verdict FAIL, never
 scored, capped at Suggestion, never blocking unless `design-brief.md` adopts it (then
-DS). Act on clusters per [`prose-style.md`](../../devrites-lib/reference/standards/prose-style.md).
+DS). Act on clusters per [`prose-style.md`](skill://devrites-lib/reference/standards/prose-style.md).
 A broken task, data loss or misleading state is reported and fixed before any AES item.
 **Failing case:** `tokens.css` declares Inter and a 20 px card radius, yet review files
 "reflex font" and "balloon radius" as Important; or three eyebrows on six sections become
@@ -46,7 +46,7 @@ routes to `devrites-prose-craft`; translation catalogs stay untouched without th
   micro-copy (badges, eyebrows); never for sentences.
 - [AES] **Em dashes in UI copy** are a lead, not a ban: DS only where the project's
   style guide bans them; otherwise no rule applies to product copy, because
-  [`prose-style.md`](../../devrites-lib/reference/standards/prose-style.md) governs DevRites
+  [`prose-style.md`](skill://devrites-lib/reference/standards/prose-style.md) governs DevRites
   prose, not product UI.
 - [AES] **Cards inside cards** — nested bordered/elevated containers.
 - [AES] **Identical card grids** for everything, regardless of content.
@@ -62,7 +62,7 @@ routes to `devrites-prose-craft`; translation catalogs stay untouched without th
 - [AES] **Modal-first thinking** — reaching for a modal as the answer to every interaction.
 - [AES] **Ghost-card** — a `1px` border *and* a soft (blur ≥16px) shadow on the same element.
   Borders separate; shadows lift — pick one
-  ([`quality-standards.md`](../../devrites-frontend-craft/reference/quality-standards.md) — Materiality).
+  ([`quality-standards.md`](skill://devrites-frontend-craft/reference/quality-standards.md) — Materiality).
 - [AES] **Balloon radius** — `border-radius` above ~16px on cards, inputs, panels. Cards top
   out around 12–16px; full pills are for tags and buttons only.
 - [AES] **Uppercase tracked eyebrow above every section** — one named kicker is voice; one per
@@ -109,9 +109,9 @@ second one catches what the first one misses.
   teal", "fintech → navy + gold", "AI tool → black with a violet accent",
   "crypto → neon on black" — the styling is on the first training-data
   reflex. Rework the scene sentence
-  ([`design-references.md`](../../devrites-frontend-craft/reference/design-references.md)) and the
+  ([`design-references.md`](skill://devrites-frontend-craft/reference/design-references.md)) and the
   colour-commitment strategy
-  ([`quality-standards.md`](../../devrites-frontend-craft/reference/quality-standards.md)) until the
+  ([`quality-standards.md`](skill://devrites-frontend-craft/reference/quality-standards.md)) until the
   answer isn't obvious from the domain.
 - **Second-order:** if a stranger looked at the surface with *no copy
   visible* and confidently said "this is a CRM / fitness tracker / fintech
@@ -144,10 +144,10 @@ its cap is a lead for the admission rule, not a failure:
   hop with no value. Inline or remove.
 - **Over-engineered abstractions** for trivial problems — a factory + interface + plugin
   registry for a 10-line function. **Don't add abstraction before two real callers**
-  (see [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md), [`patterns.md`](../../devrites-lib/reference/standards/patterns.md)).
+  (see [`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md), [`patterns.md`](skill://devrites-lib/reference/standards/patterns.md)).
 - **Convention-blind** code — ignores the repo's naming, file layout, error patterns,
   validation style. "Generic good code" beats the project's idiom; reuse first (see
-  [`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md)).
+  [`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md)).
 - **Going beyond the spec** — features/options/configs/flags the spec didn't ask for.
   Implement exactly what was specified; flag extras as follow-ups.
 - **Comment noise — the most common code tell.** Default to **zero** comments; the code and
@@ -197,14 +197,14 @@ its cap is a lead for the admission rule, not a failure:
   account/provider/test ID inline with no name or source. Give it a name (a const) or a home
   (config/env). The mirror image of premature config, and just as much a tell.
 - **Copy-paste duplication** — a near-identical block pasted and tweaked instead of reused.
-  Reuse → extend → build new ([`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md), [`patterns.md`](../../devrites-lib/reference/standards/patterns.md)); duplication beats the *wrong*
+  Reuse → extend → build new ([`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md), [`patterns.md`](skill://devrites-lib/reference/standards/patterns.md)); duplication beats the *wrong*
   abstraction, but pasted clones are slop, not a deliberate AHA call.
 
 ## Why banned, what instead
 They signal model-generated rather than team-designed work: they ignore register and
 idiom, add noise, hide bugs (defensive catches), bloat diffs, and often fail a11y or
 correctness review. Instead: project tokens/components, validate at trust boundaries,
-catch narrow and rethrow, one clear name per concept, reuse first ([`coding-style.md`](../../devrites-lib/reference/standards/coding-style.md)),
+catch narrow and rethrow, one clear name per concept, reuse first ([`coding-style.md`](skill://devrites-lib/reference/standards/coding-style.md)),
 implement exactly the spec. If the project intentionally uses one of these, follow the
 project — consistency beats the rule. A check or abstraction you can't justify in one
 sentence is slop: delete it or ask.

@@ -27,7 +27,7 @@ files may serve one inseparable capability. Full feature `/rite-prove` follows a
 slices; slice proof never replaces final integration or acceptance proof.
 
 For `Complexity` and irreducible boundaries, use the canonical
-[`tasks.md` slice grammar](../../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar).
+[`tasks.md` slice grammar](skill://devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar).
 Keep the smallest cut that stands alone end-to-end; do not add slices or gates for
 fragments that can only pass together. No slice size guarantees first-pass correctness.
 
@@ -51,7 +51,7 @@ a 12-criterion feature is however many thin end-to-end cuts those 12 need.
 
 The derived count is also a size signal. A decomposition that cannot fit the
 `tasks.md` / `plan.md` / `traceability.md` budgets in
-[`workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md)
+[`workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md)
 (about ten canonical slices) is an epic: every Vet/Doubt/Build review re-reads the
 whole surface, each round finds new material, and the loop never converges.
 `Budget override` never covers slice or acceptance-criteria count.
@@ -150,7 +150,7 @@ product:
 - What is full-surface here is the **review**: reviewers see the whole product diff.
   Re-proof stays targeted — this milestone's product ACs, everything a later milestone
   touched, and any uncertain closure. Milestone evidence is cited only under
-  [evidence validity](../../devrites-lib/reference/candidate-integrity.md#evidence-validity)
+  [evidence validity](skill://devrites-lib/reference/candidate-integrity.md#evidence-validity)
   with explicit unchanged-input/dependency justification and a link to the original
   account; a blind re-proof of every milestone AC is a recorded decision, not a default.
 
@@ -165,4 +165,6 @@ while pivoting is still cheap.
 
 ## Slice independence
 Order by dependency, but minimize coupling. A slice that needs three other slices first
-is a smell: look for a thinner cut that stands alone.
+is a smell: look for a thinner cut that stands alone. An edge exists only when this slice
+reads something the other produces: write it as `SLICE-001 (via <interface>)`. If you
+cannot name what crosses, drop the edge; a shallow, wide graph runs in parallel.

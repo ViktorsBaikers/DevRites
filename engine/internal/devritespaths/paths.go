@@ -105,6 +105,11 @@ func ExistingFeatureDirChecked(root, slug string) (string, error) {
 	if ws, err := WorkspaceOverrideChecked(root, slug); err != nil {
 		return "", err
 	} else if ws != "" {
+		// The override names a workspace; it never creates one. Without its
+		// state.md ledger a mutating caller would conjure a ghost workspace.
+		if info, err := os.Lstat(filepath.Join(ws, "state.md")); err != nil || !info.Mode().IsRegular() {
+			return "", fmt.Errorf("no workspace for feature %q at %s (DEVRITES_WORKSPACE; state.md missing): %w", slug, ws, os.ErrNotExist)
+		}
 		return ws, nil
 	}
 	candidate := filepath.Join(root, "work", slug)

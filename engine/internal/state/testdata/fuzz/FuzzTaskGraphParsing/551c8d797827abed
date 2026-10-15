@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("## SLICE-0\nDependencies:\"[SLICE-0(via!)")

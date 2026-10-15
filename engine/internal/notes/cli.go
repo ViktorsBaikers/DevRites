@@ -93,11 +93,13 @@ func cmdAdd(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	slug := args[0]
 	subject := filepath.ToSlash(oneLine(args[1]))
-	quote := oneLine(args[2])
-	title := oneLine(args[3])
+	// ParseNotes trims attribute values, so a value is stored trimmed and a
+	// whitespace-only one is blank.
+	quote := strings.TrimSpace(oneLine(args[2]))
+	title := strings.TrimSpace(oneLine(args[3]))
 	body := ""
 	if len(args) == 5 {
-		body = oneLine(args[4])
+		body = strings.TrimSpace(oneLine(args[4]))
 	}
 	if err := ValidateSubject(subject); err != nil {
 		fmt.Fprintf(stderr, "note add: %v\n", err)

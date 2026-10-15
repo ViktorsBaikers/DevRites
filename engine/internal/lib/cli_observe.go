@@ -37,6 +37,12 @@ func RunTaskGraphCheck(root, slug string, stdout, stderr io.Writer) int {
 			recordMetric(root, slug, "define", "size-advisory", "", int64(over))
 		}
 	}
+	if edges := edgeAdvisories(graph); len(edges) > 0 {
+		for _, line := range edges {
+			fmt.Fprintf(stdout, "task-graph: %s\n", line)
+		}
+		recordMetric(root, slug, "define", "edge-advisory", "", int64(len(edges)))
+	}
 	return 0
 }
 

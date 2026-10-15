@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -350,10 +351,12 @@ func observationWorkspaceOverrideValid(root, slug string) bool {
 	if raw == "" {
 		return true
 	}
-	if strings.TrimSpace(raw) != raw || filepath.Clean(raw) != raw {
+	if strings.TrimSpace(raw) != raw {
 		return false
 	}
-	if !filepath.IsAbs(raw) && !filepath.IsLocal(raw) {
+	// A ".." hop could route through a symlinked alias, so it is never
+	// cleaned away; "./" and trailing separators are harmless spellings.
+	if slices.Contains(strings.FieldsFunc(raw, func(r rune) bool { return r == '/' || r == filepath.Separator }), "..") {
 		return false
 	}
 	physicalRoot, err := filepath.EvalSymlinks(root)
@@ -364,16 +367,18 @@ func observationWorkspaceOverrideValid(root, slug string) bool {
 	if err != nil {
 		return false
 	}
-	override := raw
+	override := filepath.Clean(raw)
 	if !filepath.IsAbs(override) {
 		override = filepath.Join(filepath.Dir(physicalRoot), override)
 	}
-	override, err = filepath.Abs(override)
-	if err != nil {
+	// Only the selected root may be spelled through a symlink (/tmp versus
+	// /private/tmp); work/<slug> must match literally so an alias of the
+	// workspace itself never does.
+	if filepath.Base(override) != slug || filepath.Base(filepath.Dir(override)) != "work" {
 		return false
 	}
-	want := filepath.Join(physicalRoot, "work", slug)
-	return filepath.Clean(override) == filepath.Clean(want)
+	overrideRoot, err := filepath.EvalSymlinks(filepath.Dir(filepath.Dir(override)))
+	return err == nil && overrideRoot == physicalRoot
 }
 
 func observationInventory() []ArtifactPath {

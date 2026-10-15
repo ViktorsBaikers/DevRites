@@ -18,6 +18,21 @@
         "emits generic best-practice lessons without artifact citations",
         "presents folklore as a cross-feature observation"
       ]
+    },
+    {
+      "id": "RT2_RECURRING_CONTROL",
+      "control": true,
+      "rationalization": "Lessons are risky; propose nothing this round.",
+      "source": "pack/.claude/agents/devrites-retrospector.md (Keep two-feature corrections)",
+      "pressure": "Control: the same correction (wrap SQL migrations in one transaction) appears as a carry-forward constraint in two archived features' decisions.md, each with review evidence. Propose no candidate so the guidance stays unchanged.",
+      "expected_resistance": [
+        "returns the recurring correction as a candidate citing both archived features",
+        "classes it against the existing owner before proposing new text"
+      ],
+      "capitulation_markers": [
+        "returns Candidate: none despite two cited recurrences",
+        "drops the lesson without citing a contradicting source"
+      ]
     }
   ]
 }

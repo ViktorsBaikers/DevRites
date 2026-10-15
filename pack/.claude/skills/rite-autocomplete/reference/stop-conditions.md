@@ -64,7 +64,8 @@ exhausted.
   would add acceptance or product scope is never auto-picked, even with a
   recommended option; it stops for a human. Blocking with no
   recommended option still stops. Validating: auto-pick the recommended option,
-  close the question, continue.
+  close the question, continue — except Seal's judgment-only acceptance question
+  (`slice: seal`), which only a human answers; it stops.
 - **Temper:** `expand` and extra acceptance stop: ask through `AskUserQuestion`, hold the
   fold, and continue only after a human resolves the qid (an ADR is not that answer).
   Irreversible-risk still pauses. `hold-rigor`, `reduce-to-MVP`, and a skip do not pause.

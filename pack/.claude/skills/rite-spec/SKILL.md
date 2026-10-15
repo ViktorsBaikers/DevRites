@@ -58,7 +58,10 @@ load a routed standard to discover required behavior, not to prescribe implement
    **Completion:** it includes both, and every ask is listed. **Failing case:** "CSV export
    and an email digest" yields a CSV-only spec; the digest is neither Non-goal nor question.
 1a. **Dedupe.** Search local issues/PRDs, work, and archive. On a close match ask
-   extend/adopt/new, then record the choice; otherwise continue silently.
+   extend/adopt/new, then record the choice; otherwise continue silently. A slug handed
+   off by `/rite-adopt` extends that adopted workspace without asking. Adopting a
+   pressure-test provisional slug turns each `Hold:` in its `investigation-map.md` into an
+   open `gate: blocking` question in `questions.md`.
    A recorded [feature-sequence continuation](../rite-plan/reference/slicing.md#continuation-workspaces)
    is a **new** workspace (`<parent>-2`): carry the parent slug and position into
    `brief.md`, read the parent artifacts as design input, and do not route to
