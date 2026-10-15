@@ -108,7 +108,7 @@ parent's counter (same values, never a second charge); a child with no recorded
 parent/position is not a sequence member and the chain stops.
 
 Stop instead when: no recorded next entry; the cap or review-queue bound is
-reached; a human-owned, safety, access, or exhaustion condition fires; or Seal returns
+reached; a human-owned, safety, access, or parked-recovery stop fires; or Seal returns
 `NO-GO`. On stop, report the sequence position, the sealed-but-unshipped workspaces, and
 the single release command (`/rite-autocomplete <release milestone> --ship`, or
 `/rite-ship` for the current sealed workspace when the sequence is complete).
@@ -140,14 +140,16 @@ agent-owned earlier-phase gap:
 Ask only for a human-owned decision or mandatory safety/access action. An open
 blocking question with `proposed` or option 1 labelled Recommended is not that
 decision: resolve it and continue. Three no-progress corrections of one exact
-fingerprint exhaust; preserve its reproduction and dead ends without another
-Plan/Vet command.
+fingerprint spend only its strategy: escalate inline per the
+[retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve),
+and park it after three escalations while independent work continues.
 
 ## Continuous caller obligation
 
 No user-facing reply is permitted while durable state contains agent-owned
 `NEEDS_REPLAN`, an intermediate Plan/Vet action, a distinct retained
-Critical/Important fingerprint below its cap, or an open blocking question that
+Critical/Important fingerprint below its cap or with an escalation left, runnable
+work independent of a parked fingerprint, or an open blocking question that
 already names a ranked recommended option. Invoke the next internal repair or
 `devrites-engine state resolve` immediately, unless that writer already hit the
 [resolver-failure stop](stop-conditions.md#other-stop-classes). **Failing case:**
@@ -157,4 +159,4 @@ Critical/Important invariant is progress, not exhaustion.
 The number of completed repair/Vet cycles is not a stop condition. Context
 pressure, compaction, session duration, and nested completion do not convert an
 internal checkpoint into a handoff. Persist it and resume until the requested
-rest point or a shared human/safety/access/exhaustion condition.
+rest point or a shared human/safety/access/parked-recovery condition.

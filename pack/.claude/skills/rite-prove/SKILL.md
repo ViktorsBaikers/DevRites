@@ -37,8 +37,10 @@ TTHW, and exact signal-bearing errors; never assert DX (trigger `devex`).
   validates it. Only the bounded wright fixes product source/tests.
 - **Prove remains the controlling caller** during technical backtracking. Save
   its cursor; run Plan repair, Recovery Vet, remediation, and re-proof inline;
-  consume nested boundaries; resume the failed rung. Recovery exhausts after
-  three no-progress attempts on the exact same fingerprint. Closing one or exposing a distinct
+  consume nested boundaries; resume the failed rung. A strategy is spent after
+  three no-progress attempts on the exact same fingerprint; escalate it per the
+  [retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)
+  instead of stopping. Closing one or exposing a distinct
   Critical/Important invariant is progress, not a reason to hand work off.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Prove consumes installed Workflow Artifact or CLEANED rerun","action":"VERIFY_EXISTING or admitted proof path ending PROVE_AND_RETURN","return":"saved Prove cursor; stop before real action"} -->
 ## Released-workspace refresh

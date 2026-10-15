@@ -28,6 +28,7 @@ def load_corpus() -> dict:
         "cold-resume",
         "build-until-empty",
         "prove-repair-resume",
+        "strategy-escalation",
         "unchanged-fingerprint-exhausted",
         "new-critical-budget",
         "product-gate-before-mutation",

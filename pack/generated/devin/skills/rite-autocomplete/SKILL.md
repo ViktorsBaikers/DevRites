@@ -48,14 +48,16 @@ executable controller/harness/bundle bytes or a missing writer, read
   likewise internal when current authority resolves it.
 - Always follow agent-owned backward edges through repair, affected Vet,
   correction, and proof. A nested `STOP`/`Next step` is not a user handoff.
-  Pause only for a shared human/safety/access/exhaustion condition.
+  Pause only for a shared human/safety/access condition.
 - **Do not confuse an action budget with recovery exhaustion.** Spent action
   authority blocks another real execution, not offline correction of retained
   Critical/Important evidence. Stop for fresh GO only after changed conditions
   and READY Vet.
-- Every exact causal fingerprint gets at most three no-progress corrections.
-  Closing one is progress; a distinct Critical/Important invariant has its own
-  budget. Lower severity cannot prolong recovery.
+- Every exact causal fingerprint gets three no-progress corrections per strategy.
+  A spent strategy escalates to a new correction class inline; after three
+  escalations it parks while independent work continues. Never ask permission to
+  retry. Closing one is progress; a distinct Critical/Important invariant has its
+  own budget. Lower severity cannot prolong recovery.
 - Do not stop on `--max-slices`, sentinel `max_slices`, `max_agents`,
   `max_minutes`, or `max_review_queue`. Count failed, malformed, and
   unavailable leaf calls.
@@ -78,7 +80,7 @@ executable controller/harness/bundle bytes or a missing writer, read
    Before honoring `blocked` with terminal `next_action`,
    reconcile retained consumptive evidence and fingerprint attempts from
    `drift.md`/`evidence.md`; a retained fingerprint below its cap resumes offline
-   recovery.
+   recovery, and this new invocation reopens each parked fingerprint.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"lifecycle cursor encounters admitted set or resumable journal","action":"invoke classifier; execute returned route internally","return":"saved phase/action; zero intermediate reply"} -->
    Reconstruct a missing return cursor only from
    the current phase and exact approved action in `test-plan.md`/evidence, never
@@ -117,15 +119,15 @@ executable controller/harness/bundle bytes or a missing writer, read
    route agent-owned red results through bounded recovery.
    Red gates block forward advancement and enter caller-owned recovery. Stop on
    hard risk, escalating, irreversible-risk, access, blocking with no
-   recommended option, remaining NO-GO, or the exact fingerprint's proven
-   exhaustion. An open blocking question that already names a ranked recommended
+   recommended option, remaining NO-GO, or parked fingerprints with no
+   independent work left. An open blocking question that already names a ranked recommended
    option (`proposed` or option 1 labelled Recommended) auto-resolves through
    `devrites-engine state resolve` and continues (a missing or failing resolver is
    the bounded resolver-failure stop); do not emit `/rite-resolve` as
    a user handoff. Exception: a question whose answer would add acceptance or
    product scope is never auto-resolved by a recommended option; it stops for a human.
-   Technical exhaustion records terminal
-   `Next step: none`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
+   A spent strategy escalates; parked recovery records
+   `Next step: /rite-autocomplete`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
 6. **Seal boundary.** Without a ship flag, leave the sealed workspace unshipped and
    open the next recorded continuation
    ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation))

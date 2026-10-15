@@ -12,6 +12,7 @@
     "rerun_affected_proof",
     "resume_prove",
     "stop_recovery_exhausted",
+    "escalate_strategy",
     "open_new_recovery_budget",
     "attempt_repair",
     "pause_awaiting_human",
@@ -68,13 +69,22 @@
       "forbidden": ["await_user_permission", "advance_without_reproof"]
     },
     {
+      "id": "strategy-escalation",
+      "title": "Spent strategy escalates without asking",
+      "state": "The same failed invariant and decisive signal has three recorded no-progress corrections under its current local-guard strategy. The shared root-cause class is untried and no human-owned choice exists.",
+      "request": "Handle another scheduled wake.",
+      "expected_process": ["escalate_strategy", "attempt_repair"],
+      "expected_job": "new_recovery_started",
+      "forbidden": ["stop_recovery_exhausted", "await_user_permission", "retry_spent_strategy"]
+    },
+    {
       "id": "unchanged-fingerprint-exhausted",
-      "title": "Unchanged fingerprint stops at cap",
-      "state": "The same failed invariant and decisive signal already has three recorded no-progress corrections. Nothing material changed.",
+      "title": "Fully escalated fingerprint parks after independent work",
+      "state": "The same failed invariant has spent three escalations in this activation and is parked. Every slice that does not depend on it is built. Nothing material changed.",
       "request": "Handle another scheduled wake.",
       "expected_process": ["stop_recovery_exhausted"],
       "expected_job": "blocked",
-      "forbidden": ["retry_four", "reset_counter"]
+      "forbidden": ["retry_spent_strategy", "reset_counter", "await_user_permission"]
     },
     {
       "id": "new-critical-budget",

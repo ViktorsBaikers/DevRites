@@ -350,7 +350,7 @@ access, safety and irreversible-action boundaries independently stop work.
   invariant + defect mechanism + minimal reproduction/decisive failure signal.
   DEC/DRIFT IDs, line numbers, wording and splitting one cause create no new budget.
 - **Cap no-progress retries:** three no-progress attempts per exact causal fingerprint
-  across wright/recovery. Only a correction whose narrow recheck leaves that cause
+  and strategy across wright/recovery. Only a correction whose narrow recheck leaves that cause
   open or reproduces its failure consumes an attempt.
   Closing a prior finding with discriminating evidence is progress: resolve it,
   do not charge. A new Critical or Important finding gets its own budget only for
@@ -384,11 +384,30 @@ access, safety and irreversible-action boundaries independently stop work.
 - **Reconcile terminal cursors.** Retained distinct Critical/Important evidence below
   cap resumes despite stale `Next step: none`; age/spent action authority is not exhaustion.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"unattended root reaches current admitted Workflow Artifact work","action":"invoke classifier; execute returned route without wright/slice charge","return":"saved lifecycle phase/action; no intermediate reply"} -->
-- **Classify exhaustion:** human-owned contract/risk/access gaps open their gate.
-  Otherwise preserve reproduction/dead ends, set `Status: blocked` and
-  `Next step: none — technical recovery exhausted; requires new evidence or changed failure conditions`.
-  Emit no phase command, retry-permission question or `/rite-resolve`.
-  Reinvocation with unchanged cause stays blocked; it never resets the cap.
+- **Escalate a spent strategy; never stop on it.** Three no-progress attempts spend
+  the fingerprint's current *strategy*, not the work. Record that strategy and its
+  attempts under `## Dead ends`, then the controlling caller escalates inline in the
+  same invocation: re-diagnose from the reproduction and dead ends, take the first
+  class below that still has an untried strategy, run `/rite-plan repair` plus
+  narrow Vet for it, and resume with a fresh three-attempt budget. Classes, in order:
+  (1) **shared root cause**: fix the owner every failing path routes through and
+  enforce it across all callers instead of another local guard; (2) **boundary
+  redesign**: acceptance-preserving reslice or redesign of the failing seam;
+  (3) **diagnostic amplification**: add discriminating probes or fixtures, then
+  correct from that evidence. A recorded strategy, or a rewording of one, never
+  repeats. Escalation never weakens tests, validators or acceptance. Each
+  fingerprint gets at most three escalations per activation; record each in
+  `drift.md` with its class and strategy.
+- **Park, finish the rest, then stop once.** Human-owned contract/risk/access gaps
+  open their gate. Otherwise, with every escalation spent, mark the fingerprint
+  `parked` in `drift.md`, keep its reproduction and dead ends, and continue every
+  step that does not depend on it. Only when nothing runnable remains, set
+  `Status: blocked` and
+  `Next step: <invoking command> — technical recovery parked; reinvoke to reopen with fresh escalation`.
+  Emit no retry-permission question or `/rite-resolve`. A genuinely new
+  user-issued activation appends `reopened: <date>` to each parked fingerprint and
+  grants it three fresh escalations, counted from that line; wakes, compaction and
+  nested re-entry of the same run never reset counts.
 - **Resolve agent-owned questions first** from code/docs/decisions. Human communication
   is for blocked environment, handover, inaccessible critical information or missing
   credentials/permission—not writing, testing or review. Blocking/escalating/

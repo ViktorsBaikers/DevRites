@@ -47,6 +47,7 @@ loop to `devrites-debug-recovery`.
 - Three no-progress attempts on the exact same causal fingerprint consume the
   shared recovery cap. A recheck that closes the reproduction is progress; a
   different evidenced Critical/Important invariant gets its own fingerprint.
-  Preserve the reproduction and dead ends, then stop once as a technical blocker.
+  Preserve the reproduction and dead ends, then escalate or park per the
+  [retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
   Ask only when the remaining decision is human-owned.
 - A failure you can't fix in scope is a recorded **blocker**, not a silent skip.

@@ -873,7 +873,7 @@ for text, required in (
         "`/rite-autocomplete` deliberately ignores `max_slices`, `max_agents`, `max_minutes` and `max_review_queue`",
     )),
     (afk, ("afk-hitl.md", "dispatch, charging, and red-path behavior", "exactly once after each green built slice", "never below zero", "fails closed", "before dispatching another slice", "curl -fsS -m 10 -d")),
-    (recovery, ("caller and recovery attempts", "three no-progress attempts", "Count an attempt only", "## Dead ends", "Next: none — technical recovery exhausted")),
+    (recovery, ("caller and recovery attempts", "three no-progress attempts", "Count an attempt only", "## Dead ends", "never request attempt four of the same strategy")),
     ((canonical / "skills/rite-build/reference/wright-dispatch.md").read_text(), (
         "Isolated writer-worktree pilot", "show-superproject-working-tree",
         "one writer", "transfer_commit", "preserve the worktree and commit",

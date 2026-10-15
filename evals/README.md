@@ -55,7 +55,7 @@ mutable checklist, or polished summary is never host-routing or job-success proo
 
 ### Optional loop-control policy matrix
 
-`native-host/loop-behavior.json` covers the ten lifecycle cases above plus leftover `expires_at` ignore,
+`native-host/loop-behavior.json` covers the ten lifecycle cases above plus strategy escalation, leftover `expires_at` ignore,
 agent budget, review-queue, unobservable-cap, and fresh-activation semantics. CI
 validates this corpus but never starts a model session:
 

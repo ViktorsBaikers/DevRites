@@ -69,13 +69,16 @@ wrong contract or proof path — agent-owned recovery; never advance on broken s
 The fail-on-red path:
 
 1. Continue the same wright under `devrites-debug-recovery`, carrying exact output and dead
-   ends; cap writer + recovery at three no-progress attempts per exact causal fingerprint.
+   ends; cap writer + recovery at three no-progress attempts per exact causal fingerprint
+   and strategy.
    A correction that closes the reproduction is progress; a different evidenced
    Critical/Important invariant starts a separate fingerprint.
 2. Green → record the slice. Product-contract/irreversible ambiguity → write the genuine
    human gate. Missing human-only credential/permission → write a human-intervention gate.
-3. Any other exhausted objective failure → set `Status: blocked`, preserve the reproduction,
-   set `Next step: none — technical recovery exhausted for <causal fingerprint>; requires new evidence or changed failure conditions`, and STOP without a qid or runnable phase command. Reinvocation with the unchanged fingerprint remains blocked and does not reset the cap.
+3. Any other spent strategy → escalate inline to the next correction class; after three
+   escalations park the fingerprint and build every slice that does not depend on it,
+   per the [retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve).
+   Never ask a qid or permission to retry; never hand back a routine phase command.
 4. Fire `notify:` only for an actual `awaiting_human` transition.
 
 AFK never starts the next slice while checks are red and never asks the human to approve
