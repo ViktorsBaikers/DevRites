@@ -383,7 +383,9 @@ when the answer is required.
 AFK always pauses for genuine product/scope/policy choices, irreversible risk,
 and human-only access or actions, regardless of the sentinel. Objective test,
 type, lint, runtime, and coverage failures stay inside bounded technical
-recovery; exhaustion records a blocker without inventing a question. See
+recovery; a spent strategy escalates to a new correction class, and a fully
+escalated fingerprint parks while independent work continues, without inventing a
+question. See
 [`pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md`](../pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md) for the full
 contract.
 

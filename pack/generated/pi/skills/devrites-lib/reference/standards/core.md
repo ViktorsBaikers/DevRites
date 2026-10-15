@@ -87,7 +87,7 @@ Verdict discipline — no vacuous verdicts:
 
 ## Caller-owned technical backtracking
 
-When a rite invokes an earlier rite inline to repair an agent-owned technical gap, the original rite stays the controlling caller: a nested `STOP` is a phase boundary, not user-facing. The caller re-reads `state.md`, follows the return cursor/`next_action`, and resumes unless a human-owned, safety, access, budget, or exhausted-recovery stop is active ([Persistence before stopping](#persistence-before-stopping-handoff-discipline)). Derive `exhausted-recovery` from the fingerprint's recorded no-progress attempts, not from a stale `state.md` label; one consumed authorization doesn't exhaust offline recovery from retained new evidence.
+When a rite invokes an earlier rite inline to repair an agent-owned technical gap, the original rite stays the controlling caller: a nested `STOP` is a phase boundary, not user-facing. The caller re-reads `state.md`, follows the return cursor/`next_action`, and resumes unless a human-owned, safety, access, budget, or parked-recovery stop is active ([Persistence before stopping](#persistence-before-stopping-handoff-discipline)). Derive `parked-recovery` from the fingerprint's recorded no-progress attempts and escalations, not from a stale `state.md` label; one consumed authorization doesn't exhaust offline recovery from retained new evidence.
 
 An intermediate `Next step` is cold-resume metadata. Do not ask the human to
 copy routine `/rite-plan repair`, `/rite-vet`, `/rite-build`, or proof-rerun

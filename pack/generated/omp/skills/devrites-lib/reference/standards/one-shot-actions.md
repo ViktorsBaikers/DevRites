@@ -73,8 +73,9 @@ Keep two budgets separate:
 Cold resume does not make that fingerprint old or exhausted. Derive its offline
 no-progress count from `drift.md` and `evidence.md`; while the count is below the
 cap, resume recovery even if a prior writer stored `blocked` / `Next step: none`.
-That terminal cursor is valid only for a human/safety gate, an actually exhausted
-fingerprint, or a proven absence of any safe retention/amplification design.
+A blocked cursor is valid only for a human/safety gate or a parked fingerprint
+with no independent work left; a missing safe retention/amplification design
+escalates to the next correction class.
 
 A new real attempt is normally admissible only after the affected plan and fixtures
 are re-vetted, the failure condition is shown changed, and any required fresh
@@ -98,7 +99,7 @@ claim the runtime failure condition changed: the independently proven change is 
 evidence-acquisition invariant, and the attempt's acceptance signal is the promised
 unique retained boundary (or action success).
 
-Terminal `Next: none` is valid only when no safe in-scope diagnostic-amplification
-seam exists, the required change is human/risk/scope owned, or the exact evidence-gap
-fingerprint exhausts bounded recovery. A missing old artifact alone is not terminal,
-and an amplification attempt never inherits authorization from the failed action.
+When no safe in-scope diagnostic-amplification seam exists, escalate or park per
+[`afk-hitl.md`](afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve); only a
+human/risk/scope-owned change stops for a human. A missing old artifact alone is not
+terminal, and an amplification attempt never inherits authorization from the failed action.

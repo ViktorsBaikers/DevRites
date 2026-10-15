@@ -182,11 +182,11 @@ Repair rejected work in place; never discard/rebuild while budget remains.
   exhaustion. Use plan path only if inventory proves the approach unsound.
 - Stop under the canonical retry/authority/resource conditions, or when evidence
   proves the approach unsound and no in-scope corrected decomposition exists.
-- Exhaustion is not abort: record one technical blocker (`Status: blocked`;
-  `Next step: none — technical recovery exhausted; requires new evidence or changed failure conditions`), preserve
-  lease/worktrees/branches, STOP — same fingerprint stays blocked on
-  reinvoke; new evidence resumes repair in place. Human-owned decisions use
-  the drift-guard question and wait.
+- A spent strategy is not abort: escalate per the canonical retry contract,
+  preserving lease/worktrees/branches; a fully escalated fingerprint parks and
+  the batch keeps its independent members. Repair resumes in place on
+  escalation or reinvocation. Human-owned decisions use the drift-guard
+  question and wait.
 
 ## Engine verbs
 

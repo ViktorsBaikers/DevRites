@@ -177,7 +177,7 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
 
 When invoked inline by a controlling rite, return the completed Plan checkpoint
 to that caller so it can invoke Vet immediately. The phase boundary is not a
-user-facing stop unless a genuine HITL, safety/access, or exhausted-recovery
+user-facing stop unless a genuine HITL, safety/access, or parked-recovery
 condition was recorded.
 
 When invoked directly with no controlling caller and a planning artifact

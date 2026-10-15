@@ -88,13 +88,14 @@ has no clear next move. Optional slug selects the active workspace; defaults to
   with that fingerprint. Reclassify only on new causal evidence. On cold resume,
   a retained fingerprint with fewer than three such attempts remains runnable
   even if the previous action wrote a terminal cursor.
-- **A maximum of three no-progress attempts per exact causal fingerprint stops the loop.**
+- **A strategy is spent after three no-progress attempts per exact causal fingerprint.**
   Count an attempt only when its recheck preserves the same decisive failure.
   Record attempt number, exact failure, hypothesis, probe, and failed idea after
   each; closure is progress and a different Critical/Important invariant is a new
   fingerprint. There is no JSONL ledger,
   counter command, or reset-on-green operation. Product/acceptance ambiguity, irreversible risk, or
-  human-only access becomes a human gate; otherwise return reproducible `blocked` with
-  `Next: none — technical recovery exhausted for <causal fingerprint>`, never request
-  attempt four. While budget remains, coupled failure requiring behavior change routes
+  human-only access becomes a human gate; otherwise return the spent strategy and
+  reproduction to the caller, which escalates or parks per the
+  [retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve);
+  never request attempt four of the same strategy. While budget remains, coupled failure requiring behavior change routes
   `/rite-plan repair` inline; behavior-neutral rerouting uses `unblock` inline.

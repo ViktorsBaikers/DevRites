@@ -10,7 +10,7 @@ When an active rite is the controlling caller, Intermediate `NEEDS_REPLAN` (the 
 token for the workspace's `NEEDS REPLAN` readiness value), a nested phase `STOP`, and a
 routine Plan/Vet `Next step` are not eligible completion states. Autocomplete may
 use the shapes below only after its requested rest point or a shared genuine
-human/safety/access/exhausted-recovery stop is reached.
+human/safety/access/parked-recovery stop is reached.
 
 ```text
 Done: <result in one sentence>
@@ -104,23 +104,20 @@ Record: .devrites/archive/<slug>/ship.md
 Claims such as proved, reviewed, sealed, shipped, or complete must point to real
 output or an artifact. A NOT-RUN verification keeps its marker in `Evidence:` or `Open:`
 per [`core.md`](standards/core.md#gate-contract) § Gate contract.
-Use exactly one recommended next action except for
-terminal agent-owned technical exhaustion, which has no runnable action.
+Use exactly one recommended next action.
 
-Use that terminal case only per [`one-shot-actions.md`](standards/one-shot-actions.md):
-three recorded no-progress corrections of the exact fingerprint, or required evidence
-irretrievably absent with **no safe in-scope diagnostic-amplification seam**. A spent
-consumptive-action authorization plus a retained new fingerprint is not terminal. For a
-true terminal case use:
+Agent-owned recovery never ends with `Next: none`. Per the
+[retry contract](standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve),
+a spent strategy escalates inline and a fully escalated fingerprint parks while
+independent work continues; with **no safe in-scope diagnostic-amplification seam**,
+escalate or park instead of stopping. A spent consumptive-action authorization plus a
+retained new fingerprint keeps recovering. Once nothing runnable remains, use:
 
 ```text
-Stopped: Technical recovery exhausted
+Stopped: Technical recovery parked
 Blocking: <causal fingerprint and invariant>
-Attempts: <three failed approaches and decisive reproduction>
-No runnable recovery command: unchanged reinvocation remains blocked
-Next: none — requires new evidence or changed failure conditions
+Attempts: <each strategy, its class, and decisive reproduction>
+Completed: <independent work finished after parking>
+Next: <invoking command> — reopens parked fingerprints with fresh escalation
 Record: <artifact path>
 ```
-
-The terminal cursor marker is `Next: none` exactly as shown; a stored `Next step: none`
-names the same exhausted state.

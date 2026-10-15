@@ -131,7 +131,7 @@ None.
 | slice_mode | none |
 | risk | none |
 | spec_gate | <passed <iso>; marker sweep: <n> files, <k> hits, <d> discarded — absent until $rite-spec passes> |
-| next_action | <single command + reason, or terminal: none — technical recovery exhausted for an unchanged causal fingerprint> |
+| next_action | <single command + reason; parked recovery names the invoking command> |
 | return_phase | <originating later phase; clarification or agent-owned technical backtracking only> |
 | return_next_action | <saved originating command> |
 | schema | 4 |
@@ -154,7 +154,7 @@ Before an active caller moves backward, it copies its current phase and
 non-empty action into the two return rows. Nested Plan, Vet, Build, and proof
 work preserves that valid cursor. Once the prerequisite chain is green, the
 controlling caller restores the saved phase/action and removes both rows in one
-rewrite. A real HITL or exhausted-recovery stop retains the cursor for cold
+rewrite. A real HITL or parked-recovery stop retains the cursor for cold
 resume. Never overwrite an existing valid return cursor, and preserve every
 unrelated Markdown byte. `$rite-clarify` applies its stricter native cursor protocol in `$rite-clarify`.
 

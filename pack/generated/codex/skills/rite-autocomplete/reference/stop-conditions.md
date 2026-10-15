@@ -1,10 +1,10 @@
 # Stop conditions: when autocomplete pauses
 
 On a real stop, write `state.md` as `awaiting_human` or `blocked`, persist the
-reason, and include one resume command only when an actual human/safety/access
-action can change it. Exhausted agent-owned recovery records terminal
-`Next step: none` and no runnable recovery command. `--ship` never bypasses a
-stop.
+reason, and include one resume command. Agent-owned recovery never ends the run:
+a spent strategy escalates and a fully escalated fingerprint parks while other
+work continues ([retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)).
+`--ship` never bypasses a stop.
 
 Authority: `.agents/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
@@ -24,8 +24,8 @@ Regardless of flags or AFK ceiling:
 - external-service contract change; or
 - filesystem destruction outside the workspace.
 
-Red proof cannot advance. Run bounded Debug Recovery; stop after proven
-exhaustion unless the remaining owner is human.
+Red proof cannot advance. Run bounded Debug Recovery and escalate spent
+strategies; a fully escalated fingerprint parks unless the remaining owner is human.
 
 ## Not stops: internal technical routing
 
@@ -36,13 +36,16 @@ agent-owned.
 
 Agent-owned backtracking is not a stop condition while the exact causal
 fingerprint has budget. Invoke the earlier phase, affected Vet, remediation, and
-proof; then resume the origin. Stop only after three no-progress corrections of
-that exact fingerprint or a real human/safety/access gate. Preserve reproduction,
-attempts, and dead ends; never offer `$rite-plan unblock` or another routine
-phase command. Reinvocation with unchanged evidence does not reset the cap.
-`unchanged` means the same fingerprint already has three recorded no-progress
-corrections. Closure is progress; a separately evidenced Critical/Important
-invariant starts its own cap and cannot extend the closed one.
+proof; then resume the origin. Three no-progress corrections of that exact
+fingerprint spend only its current strategy: escalate to the next correction
+class inline (shared root cause, boundary redesign, diagnostic amplification)
+with a fresh budget, never asking permission. After three escalations in this
+activation the fingerprint parks; finish all independent work, then stop once.
+Preserve reproduction, attempts, and dead ends; never offer `$rite-plan unblock`
+or another routine phase command. A new user-issued `$rite-autocomplete`
+reopens parked fingerprints with fresh escalation; wakes and compaction do not.
+Closure is progress; a separately evidenced Critical/Important invariant starts
+its own cap and cannot extend the closed one.
 
 Spent consumptive-action authorization is not technical-recovery exhaustion.
 It blocks another execution; retained new Critical/Important evidence still
@@ -52,9 +55,8 @@ authorization and never reuse old GO.
 Past evidence being irretrievable is not by itself terminal. If an in-scope
 trusted seam can uniquely discriminate the next failure, run diagnostic-
 amplification Plan repair and narrow Vet inline, then pause for fresh GO before
-one evidence-acquisition attempt. Use terminal none only when no safe in-scope
-seam exists, a real human/risk/scope gate owns it, or bounded recovery is
-exhausted.
+one evidence-acquisition attempt. Without a safe seam, escalate to the next
+class or park; only a real human/risk/scope gate stops for a human.
 
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"classifier returns owner-busy, exhausted, or existing hard gate","action":"stop on exact WAIT_ACTIVE_OWNER, BLOCKED_EXHAUSTED, or BLOCKED_GATE result","return":"unchanged cursor plus fixed route-owned output"} -->
 ## Other stop classes
@@ -86,7 +88,8 @@ exhausted.
 - **Resource envelope:** overlapping run or missing AFK after arm still stops.
   Do not stop on `--max-slices`, `max_agents`, `max_minutes`, or `max_review_queue`.
 - **Confidence:** intent still cannot become testable acceptance after interview.
-- **Repeated failure:** the exact fingerprint's bounded recovery is exhausted.
+- **Repeated failure:** not a stop. Escalate; a fully escalated fingerprint parks,
+  and the run stops only once no independent work remains.
 - **Resolver failure:** `devrites-engine state resolve` not found, or nonzero exit.
   Never hand-edit `questions.md`/`state.md` in its place. Not found stops at once;
   nonzero allows one identical re-run (the fingerprint is command + exit code +
@@ -101,7 +104,7 @@ disclose the exact plan, and stop for literal `GO` plus native approval. Without
 one, stop at Seal GO with `$rite-ship`. Seal GO, AFK, prior approval, and flags
 never satisfy Ship approval.
 
-A cold-resumable stop records `state.md` status, exact reason, and either one
-human-owned resume action or `none — technical recovery exhausted`; the owning
-question/drift/seal entry explains it. The user-facing line says what stopped
+A cold-resumable stop records `state.md` status, exact reason, and one resume
+action: the human-owned action, or `$rite-autocomplete` to reopen parked
+fingerprints; the owning question/drift/seal entry explains it. The user-facing line says what stopped
 and, only when applicable, what human action resumes it.

@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 output="$(python3 "$ROOT/scripts/live-hosts/run-loop-evals.py" --validate-only)"
 
 case "$output" in
-  "native-host-loop-evals: PASS (16 scenarios)") ;;
+  "native-host-loop-evals: PASS (17 scenarios)") ;;
   *) printf 'unexpected native-host eval validation: %s\n' "$output" >&2; exit 1 ;;
 esac
 
