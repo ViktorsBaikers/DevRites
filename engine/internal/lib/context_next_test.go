@@ -858,3 +858,55 @@ func TestContextRepeatedSliceUnion(t *testing.T) {
 		t.Fatalf("union of slice blocks wrong:\n%s", text)
 	}
 }
+
+func TestContextRootBundleAnchorsOverBudgetArtifacts(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	skills := newSkillsRoot(t)
+	writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), "---\nname: rite-build\n---\n<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\"],\"workspace\":[\"decisions.md\",\"spec.md\"]} -->\n# build\n")
+	writeFile(t, filepath.Join(featureDir, "decisions.md"), "# Decisions\n"+strings.Repeat("filler decision row\n", 250)+"## DEC-010 Use the store\n")
+	writeFile(t, filepath.Join(featureDir, "spec.md"), "# spec\nsmall spec body\n")
+	run := func(args ...string) string {
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		if code := RunContext(root, append([]string{"feat", "--phase", "build", "--skills-root", skills}, args...), stdout, stderr); code != 0 {
+			t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+		}
+		return stdout.String()
+	}
+	out := run()
+	if !strings.Contains(out, "scope: root (1 whole, 1 by-reference over budget)") {
+		t.Fatalf("root scope line missing:\n%s", out)
+	}
+	rootBundle, _ := os.ReadFile(filepath.Join(featureDir, "ctx", "build.bundle.md"))
+	if text := string(rootBundle); !strings.Contains(text, "workspace/decisions.md (by reference)") || strings.Contains(text, "filler decision row") || !strings.Contains(text, "small spec body") {
+		t.Fatalf("root bundle must anchor only the over-budget artifact:\n%s", text)
+	}
+	run("--role", "code-reviewer")
+	roleBundle, _ := os.ReadFile(filepath.Join(featureDir, "ctx", "build-code-reviewer.bundle.md"))
+	if !strings.Contains(string(roleBundle), "filler decision row") {
+		t.Fatalf("a role bundle without --slice must stay whole:\n%s", roleBundle)
+	}
+}
+
+func TestMetricsSummaryBySlice(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	writeFile(t, filepath.Join(featureDir, "dispatch.json"), `{"waves":{
+ "w1":{"phase":"build","state":"complete","slices":["SLICE-001"],"roles":{"slice-wright":{"handle":"a","started":"2026-10-15T10:00:00Z","returned":true,"returned_at":"2026-10-15T10:30:00Z"}}},
+ "w2":{"phase":"build","state":"complete","slices":["SLICE-001","SLICE-002"],"roles":{"slice-wright":{"handle":"b","started":"2026-10-15T11:00:00Z","returned":true,"returned_at":"2026-10-15T11:20:00Z"}}},
+ "w3":{"phase":"build","state":"abandoned","slices":["SLICE-001"],"roles":{"slice-wright":{"handle":"c"}}},
+ "v1":{"phase":"vet","state":"complete","slices":["SLICE-002"],"roles":{"plan-reviewer":{"handle":"d","started":"2026-10-15T12:00:00Z","returned":true}}},
+ "f1":{"phase":"vet","state":"complete","roles":{"plan-reviewer":{"handle":"e"}}}
+}}`)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunMetrics(root, []string{"summary", "feat", "--by-slice"}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d\n%s", code, stderr)
+	}
+	out := stdout.String()
+	for _, want := range []string{
+		"metrics: SLICE-001 wright_rounds=2 vet_rechecks=0 agent_minutes=40\n",
+		"metrics: SLICE-002 wright_rounds=1 vet_rechecks=1 agent_minutes=10\n",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q:\n%s", want, out)
+		}
+	}
+}

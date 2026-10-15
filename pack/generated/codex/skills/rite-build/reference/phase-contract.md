@@ -14,6 +14,8 @@ Spec Drift Guard still applies.
    `Implementation readiness: READY`, current `Readiness inputs SHA-256`, exact
    required accounts, ID/meaning traceability and green proof preflight.
    Run `devrites-engine check readiness <slug>`; any miss/nonzero blocks.
+   Non-empty `orient` `inflight_waves` is reconciled first: `dispatch return` each
+   role whose account is in hand, else `dispatch abandon --reason` and re-dispatch.
 2. **Select.** Pick the lowest pending slice whose `depends_on` are all built, using
    `orient` `task_graph.slices` plus the `state.md` built list — never by scanning
    `tasks.md`; then `observe slice` it. Restate its goal, ACs, exclusions and exact paths. Include

@@ -56,9 +56,10 @@ type dispatchWave struct {
 }
 
 type dispatchRole struct {
-	Handle    string `json:"handle,omitempty"`
-	StartedAt string `json:"started,omitempty"`
-	Returned  bool   `json:"returned,omitempty"`
+	Handle     string `json:"handle,omitempty"`
+	StartedAt  string `json:"started,omitempty"`
+	Returned   bool   `json:"returned,omitempty"`
+	ReturnedAt string `json:"returned_at,omitempty"`
 }
 
 func dispatchPath(root, slug string) string {
@@ -270,7 +271,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if r.Returned {
 			return fail("role %q already returned", role)
 		}
-		r.Returned = true
+		r.Returned, r.ReturnedAt = true, nowStamp()
 		all := true
 		for _, o := range w.Roles {
 			if !o.Returned {
@@ -400,12 +401,16 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 	var lines, overCap []string
 	for _, id := range w.Slices {
 		prior, reviews := 0, 0
-		for _, other := range f.Waves {
+		var unreturned []string
+		for name, other := range f.Waves {
 			if other.State == "abandoned" || roundKind(other) != kind {
 				continue
 			}
 			if slices.Contains(other.Slices, id) {
 				prior++
+				if other.State == "open" || other.State == "sealed" {
+					unreturned = append(unreturned, name)
+				}
 			}
 			if slices.Contains(other.ResliceReviewed, id) {
 				reviews++
@@ -416,6 +421,10 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 			overCap = append(overCap, id)
 		}
 		lines = append(lines, fmt.Sprintf("dispatch: %s %s round %d (reslice review every %d)", id, kind, round, wrightRoundsPerReview))
+		if len(unreturned) > 0 {
+			sort.Strings(unreturned)
+			lines = append(lines, fmt.Sprintf("dispatch: WARNING: %s earlier wave(s) %s never returned; record `dispatch return` or `dispatch abandon --reason`", id, strings.Join(unreturned, ",")))
+		}
 	}
 	if len(overCap) == 0 {
 		if review != "" {
@@ -455,6 +464,36 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 func driftHeading(drift, id string) string {
 	re := regexp.MustCompile(`(?m)^## ` + regexp.QuoteMeta(id) + `\b.*$`)
 	return re.FindString(drift)
+}
+
+// InflightWave is a dispatch wave whose agents have not all returned.
+type InflightWave struct {
+	Wave    string   `json:"wave"`
+	Phase   string   `json:"phase"`
+	State   string   `json:"state"`
+	Pending []string `json:"pending"`
+	Slices  []string `json:"slices,omitempty"`
+}
+
+// inflightWaves lists open or sealed waves with the roles still awaiting a
+// return, sorted by wave name.
+func inflightWaves(f *dispatchFile) []InflightWave {
+	var out []InflightWave
+	for name, w := range f.Waves {
+		if w.State != "open" && w.State != "sealed" {
+			continue
+		}
+		var pending []string
+		for role, r := range w.Roles {
+			if !r.Returned {
+				pending = append(pending, role)
+			}
+		}
+		sort.Strings(pending)
+		out = append(out, InflightWave{Wave: name, Phase: w.Phase, State: w.State, Pending: pending, Slices: w.Slices})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Wave < out[j].Wave })
+	return out
 }
 
 func waveState(w *dispatchWave) string {

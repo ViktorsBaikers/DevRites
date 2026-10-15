@@ -394,3 +394,35 @@ func TestObserveArtifactBudgetsOversizedArtifactIsOverWithoutFullRead(t *testing
 		t.Fatalf("allocated %d bytes for a %d byte artifact; the read must be bounded", allocated, size)
 	}
 }
+
+func TestUnreturnedWavesWarnAndSurfaceInOrient(t *testing.T) {
+	root, _ := writeBudgetWorkspace(t, map[string]string{
+		"state.md": "| phase | build |\n| schema | 4 |\n",
+		"tasks.md": budgetTasks,
+	})
+	open := func(wave string) string {
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		args := []string{"feature", "open", "--phase", "build", "--wave", wave, "--role", "slice-wright", "--slice", "SLICE-001"}
+		if code := RunDispatch(root, args, stdout, stderr); code != 0 {
+			t.Fatalf("open %s: code=%d\n%s%s", wave, code, stdout, stderr)
+		}
+		return stdout.String()
+	}
+	if out := open("r1"); strings.Contains(out, "WARNING") {
+		t.Fatalf("first wave must not warn:\n%s", out)
+	}
+	if out := open("r2"); !strings.Contains(out, "WARNING: SLICE-001 earlier wave(s) r1 never returned") {
+		t.Fatalf("unreturned earlier wave not warned:\n%s", out)
+	}
+	summary, err := ObserveSummaryFor(root, "feature")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(summary.InflightWaves) != 2 {
+		t.Fatalf("inflight waves=%+v", summary.InflightWaves)
+	}
+	first := summary.InflightWaves[0]
+	if first.Wave != "r1" || first.State != "open" || len(first.Pending) != 1 || first.Pending[0] != "slice-wright" || first.Slices[0] != "SLICE-001" {
+		t.Fatalf("inflight wave=%+v", first)
+	}
+}

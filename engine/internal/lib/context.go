@@ -204,7 +204,10 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		for _, rel := range workspaceList {
 			abs := filepath.Join(featureDir, filepath.FromSlash(rel))
-			if opts.slice == "" {
+			// Role bundles without --slice (full Vet, Review, Seal) read
+			// everything; root and --slice bundles take over-budget
+			// artifacts by anchor.
+			if opts.slice == "" && opts.role != "" {
 				if writeContextEntry(&bundle, abs, "workspace/"+rel, seen, false) {
 					loaded++
 				}
@@ -269,6 +272,8 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	fmt.Fprintln(stdout, ")")
 	if opts.slice != "" {
 		fmt.Fprintf(stdout, "scope: slice %s (%d whole, %d by-reference)\n", opts.slice, whole, byReference)
+	} else if byReference > 0 {
+		fmt.Fprintf(stdout, "scope: root (%d whole, %d by-reference over budget)\n", whole, byReference)
 	}
 	if workspaceScoped {
 		fmt.Fprintf(stdout, "workspace: role-scoped for %s (%d of %d declared artifacts)\n",
@@ -334,16 +339,17 @@ func expandIncludes(abs string, data []byte) []byte {
 	})
 }
 
-// writeSliceEntry writes one workspace artifact of a --slice bundle: tasks.md
-// as the slice block plus a by-reference index, any other canonical artifact
-// over its line/byte budget as a by-reference index, everything else whole.
+// writeSliceEntry writes one workspace artifact of a --slice or root bundle:
+// with a slice, tasks.md as the slice block plus a by-reference index; any
+// canonical artifact over its line/byte budget as a by-reference index;
+// everything else whole.
 func writeSliceEntry(bundle *strings.Builder, project, abs, label, slice, block string, ids []citedID, seen map[string]bool) (loaded, byRef bool) {
 	if seen[abs] {
 		return false, false
 	}
 	data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated feature workspace
 	name := filepath.Base(abs)
-	if err == nil && name == "tasks.md" {
+	if err == nil && name == "tasks.md" && slice != "" {
 		seen[abs] = true
 		fmt.Fprintf(bundle, "===== %s (%s block) =====\n%s\n", label, slice, block)
 	} else if status, ok := state.ArtifactBudget(name, data); err != nil || !ok || !status.Over {

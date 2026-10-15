@@ -9,7 +9,7 @@ Evidence: acceptance met; tests <cmd> → pass; browser <summary|n/a>; drift <no
 Open: <none|blockers|questions>
 Next: $rite-build
 Record: .devrites/work/<slug>/evidence.md
-↻ Hygiene: /clear between slices; $rite-handoff if away > a few hours
+↻ Hygiene: /clear between slices (none in `orient` `inflight_waves`); $rite-handoff if away > a few hours
 ```
 
 **All built:**

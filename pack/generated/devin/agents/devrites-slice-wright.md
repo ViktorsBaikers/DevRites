@@ -125,7 +125,10 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
    new fingerprint. At the limit return the gate and repro. `Escalation` is only for product/irreversible choices
    or human-only access; technical failure is a blocker.
    Before handoff, inspect your cumulative slice diff against the contract and
-   scenario matrix, including correction-affected adjacent variants. Fix supported
+   scenario matrix, including correction-affected adjacent variants, then against
+   the reviewers' own checks: [code review § What to check](../skills/devrites-lib/reference/standards/code-review.md#what-to-check-tests-first)
+   and test analysis (each acceptance criterion has a test that fails without the
+   change; no assertion-free, tautological, or mock-asserting test). Fix supported
    in-scope gaps together, rerun affected proof, and report remaining gaps. Self-check
    never replaces independent review; green tests do not prove all possible cases.
 5. **TRANSFER when isolated.** After green writer-safe proof, verify the diff again,
