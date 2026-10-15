@@ -1283,6 +1283,7 @@ func TestIsGlobalTargetResolvesSymlinkedHome(t *testing.T) {
 		t.Skip(err)
 	}
 	t.Setenv("HOME", link)
+	t.Setenv("USERPROFILE", link) // os.UserHomeDir reads USERPROFILE on Windows
 	resolved, err := filepath.EvalSymlinks(real)
 	if err != nil {
 		t.Fatal(err)

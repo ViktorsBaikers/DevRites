@@ -263,8 +263,11 @@ func recallTreeSnapshot(t *testing.T, dir string) map[string]string {
 		if err != nil {
 			return err
 		}
-		sig := fmt.Sprintf("%v %d %d", info.Mode(), info.Size(), info.ModTime().UnixNano())
+		// A created or deleted entry shows up as a map key. Directory mtime
+		// is left out: NTFS updates it lazily after the fixture writes.
+		sig := info.Mode().String()
 		if info.Mode().IsRegular() {
+			sig += fmt.Sprintf(" %d %d", info.Size(), info.ModTime().UnixNano())
 			data, err := os.ReadFile(path) // #nosec G304 -- test temp tree
 			if err != nil {
 				return err
