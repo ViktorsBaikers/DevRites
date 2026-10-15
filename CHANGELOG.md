@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v6.0.3...v6.0.4) (2026-10-15)
+
+### Changed
+
+* **devrites:** anchor root bundles, wright self-review, per-slice cost ([#105](https://github.com/ViktorsBaikers/DevRites/issues/105)) ([3569ab3](https://github.com/ViktorsBaikers/DevRites/commit/3569ab3d7c313a05c6371c696df9b2b40971ce2b))
+
 ## [6.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v6.0.2...v6.0.3) (2026-10-14)
 
 ### Changed
