@@ -87,7 +87,7 @@ has no clear next move. Optional slug selects the active workspace; defaults to
   with that fingerprint. Reclassify only on new causal evidence. On cold resume,
   a retained fingerprint with fewer than three such attempts remains runnable
   even if the previous action wrote a terminal cursor.
-- **Three no-progress attempts per exact causal fingerprint spend its current strategy.**
+- **A strategy is spent after three no-progress attempts per exact causal fingerprint.**
   Count an attempt only when its recheck preserves the same decisive failure.
   Record attempt number, exact failure, hypothesis, probe, and failed idea after
   each; closure is progress and a different Critical/Important invariant is a new

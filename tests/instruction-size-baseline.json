@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1481052,
+  "total_bytes": 1481051,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -49,7 +49,7 @@
     "pack/.claude/skills/devrites-debug-recovery/reference/instrumentation.md": 703,
     "pack/.claude/skills/devrites-debug-recovery/reference/regression-test.md": 1233,
     "pack/.claude/skills/devrites-debug-recovery/reference/trace.md": 1112,
-    "pack/.claude/skills/devrites-debug-recovery/SKILL.md": 7516,
+    "pack/.claude/skills/devrites-debug-recovery/SKILL.md": 7515,
     "pack/.claude/skills/devrites-doubt/SKILL.md": 5958,
     "pack/.claude/skills/devrites-frontend-craft/reference/craft.md": 3264,
     "pack/.claude/skills/devrites-frontend-craft/reference/design-references.md": 7185,
