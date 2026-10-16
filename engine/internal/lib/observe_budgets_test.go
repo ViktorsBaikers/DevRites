@@ -402,7 +402,7 @@ func TestUnreturnedWavesWarnAndSurfaceInOrient(t *testing.T) {
 	})
 	open := func(wave string) string {
 		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
-		args := []string{"feature", "open", "--phase", "build", "--wave", wave, "--role", "slice-wright", "--slice", "SLICE-001"}
+		args := []string{"feature", "open", "--phase", "build", "--wave", wave, "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)}
 		if code := RunDispatch(root, args, stdout, stderr); code != 0 {
 			t.Fatalf("open %s: code=%d\n%s%s", wave, code, stdout, stderr)
 		}

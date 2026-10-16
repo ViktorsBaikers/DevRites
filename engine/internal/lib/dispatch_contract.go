@@ -1,0 +1,51 @@
+package lib
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+// maxContractBytes bounds a wright contract read; packets stay <= 64 KiB.
+const maxContractBytes = 64 << 10
+
+var (
+	// writerSafeLineRE is the contract line that names the checks the wright
+	// itself runs before returning.
+	writerSafeLineRE = regexp.MustCompile(`(?im)^[\s>*#-]*writer-safe checks\s*:\s*\S`)
+	// forbidExecutionRE catches contract text that leaves the wright blind:
+	// "skip tests", "no tests/build", "do not run any checks", "run nothing".
+	forbidExecutionRE = regexp.MustCompile(`(?i)\bskip(?:s|ping)?\s+(?:all\s+|the\s+)?(?:builds?|lint|tests?|testing|checks?|formatters?)\b` +
+		`|\bno\s+(?:leaf\s+)?(?:tests?|test\s+commands?|builds?|lint|execution|checks?)\b` +
+		`|\b(?:do\s+not|don't|never)\s+run\s+(?:any\s+)?(?:tests?|checks?|builds?|lint|commands?)\b` +
+		`|\brun\s+nothing\b`)
+	// allowedAfterRE marks a forbid match that is about not weakening tests,
+	// not about skipping their execution ("no tests weakened or deleted").
+	allowedAfterRE = regexp.MustCompile(`(?i)^[\s/,a-z-]{0,24}\b(?:weaken|delet|remov|disabl|skipp|xfail|loosen)`)
+)
+
+// lintWrightContract refuses a build wright contract that forbids the wright's
+// own writer-safe verification or names none, so a blind round is rejected
+// before launch rather than discovered after the wright returns.
+func lintWrightContract(path string) error {
+	if path == "" {
+		return fmt.Errorf("a build wright wave needs --contract <file> holding the exact wright contract (with a `Writer-safe checks:` line)")
+	}
+	raw, err := readBoundedRegularFile(path, maxContractBytes)
+	if err != nil {
+		return fmt.Errorf("wright contract %s: %w", path, err)
+	}
+	for i, line := range strings.Split(string(raw), "\n") {
+		for _, loc := range forbidExecutionRE.FindAllStringIndex(line, -1) {
+			if allowedAfterRE.MatchString(line[loc[1]:]) {
+				continue
+			}
+			return fmt.Errorf("wright contract %s:%d forbids writer-safe execution (%q); the wright runs syntax/type/lint, unit and self-check suites and a narrow local smoke itself — list them under `Writer-safe checks:` and keep only artifact-producing, consumptive, or full canonical gates root-owned",
+				path, i+1, strings.TrimSpace(line[loc[0]:loc[1]]))
+		}
+	}
+	if !writerSafeLineRE.Match(raw) {
+		return fmt.Errorf("wright contract %s names no `Writer-safe checks:` line; list the syntax/type/lint, unit/self-check and narrow smoke commands the wright runs before returning", path)
+	}
+	return nil
+}

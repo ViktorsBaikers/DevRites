@@ -19,11 +19,11 @@ func TestDispatchRoundCapIgnoresSliceZeroPaddingAndPhaseCase(t *testing.T) {
 	phases := []string{"build", "Build", "BUILD", "build", "build"}
 	for i := range ids {
 		wave := "r" + string(rune('1'+i))
-		if code, out := runDispatchT(t, root, "open", "--phase", phases[i], "--wave", wave, "--role", "slice-wright", "--slice", ids[i]); code != 0 || !strings.Contains(out, "wright round "+string(rune('1'+i))) {
+		if code, out := runDispatchT(t, root, "open", "--phase", phases[i], "--wave", wave, "--role", "slice-wright", "--slice", ids[i], "--contract", wrightContractPath(t)); code != 0 || !strings.Contains(out, "wright round "+string(rune('1'+i))) {
 			t.Fatalf("round %d (%s, %s): code=%d\n%s", i+1, ids[i], phases[i], code, out)
 		}
 	}
-	if code, out := runDispatchT(t, root, "open", "--phase", "Build", "--wave", "r6", "--role", "slice-wright", "--slice", "SLICE-1"); code != 3 || !strings.Contains(out, "BLOCKED") {
+	if code, out := runDispatchT(t, root, "open", "--phase", "Build", "--wave", "r6", "--role", "slice-wright", "--slice", "SLICE-1", "--contract", wrightContractPath(t)); code != 3 || !strings.Contains(out, "BLOCKED") {
 		t.Fatalf("round 6 must block however the slice/phase is spelled: code=%d\n%s", code, out)
 	}
 }
@@ -66,7 +66,7 @@ func TestDispatchAbandonedStartedWaveCountsTowardRoundCap(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		wave := "s" + string(rune('0'+i))
 		for _, args := range [][]string{
-			{"open", "--phase", "build", "--wave", wave, "--role", "slice-wright", "--slice", "SLICE-001"},
+			{"open", "--phase", "build", "--wave", wave, "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)},
 			{"start", "--wave", wave, "--role", "slice-wright", "--handle", "h"},
 		} {
 			if code, out := runDispatchT(t, root, args...); code != 0 {
@@ -79,9 +79,9 @@ func TestDispatchAbandonedStartedWaveCountsTowardRoundCap(t *testing.T) {
 		}
 	}
 	// An abandoned wave whose wright never started does not spend a round.
-	runDispatchT(t, root, "open", "--phase", "build", "--wave", "u", "--role", "slice-wright", "--slice", "SLICE-001")
+	runDispatchT(t, root, "open", "--phase", "build", "--wave", "u", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t))
 	runDispatchT(t, root, "abandon", "--wave", "u", "--reason", "host limit")
-	if code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "s6", "--role", "slice-wright", "--slice", "SLICE-001"); code != 3 || !strings.Contains(out, "BLOCKED") {
+	if code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "s6", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)); code != 3 || !strings.Contains(out, "BLOCKED") {
 		t.Fatalf("five started-then-abandoned rounds must hit the cap: code=%d\n%s", code, out)
 	}
 }

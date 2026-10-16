@@ -827,7 +827,7 @@ func TestDispatchWrightRoundCap(t *testing.T) {
 		return code, stdout.String() + stderr.String()
 	}
 	open := func(wave string, extra ...string) (int, string) {
-		return run(append([]string{"open", "--phase", "build", "--wave", wave, "--role", "slice-wright", "--slice", "SLICE-001"}, extra...)...)
+		return run(append([]string{"open", "--phase", "build", "--wave", wave, "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)}, extra...)...)
 	}
 	if code, out := run("open", "--phase", "build", "--wave", "w0", "--role", "slice-wright"); code != 2 || !strings.Contains(out, "needs --slice") {
 		t.Fatalf("missing --slice: code=%d\n%s", code, out)
@@ -868,7 +868,7 @@ func TestDispatchWrightRoundCap(t *testing.T) {
 	if code, out := open("r11", "--reslice-review", "D-011"); code != 3 || !strings.Contains(out, "already admitted") {
 		t.Fatalf("reused review: code=%d\n%s", code, out)
 	}
-	if code, out := run("open", "--phase", "build", "--wave", "s2", "--role", "slice-wright", "--slice", "SLICE-002", "--reslice-review", "D-010"); code != 2 {
+	if code, out := run("open", "--phase", "build", "--wave", "s2", "--role", "slice-wright", "--slice", "SLICE-002", "--contract", wrightContractPath(t), "--reslice-review", "D-010"); code != 2 {
 		t.Fatalf("review before the cap must be refused: code=%d\n%s", code, out)
 	}
 }
@@ -885,7 +885,7 @@ func TestDispatchVetRoundsCountSeparately(t *testing.T) {
 			t.Fatalf("full Vet without --slice stays uncapped: code=%d\n%s", code, out)
 		}
 	}
-	if code, out := run("open", "--phase", "build", "--wave", "w1", "--role", "slice-wright", "--slice", "SLICE-001"); code != 0 || !strings.Contains(out, "wright round 1") {
+	if code, out := run("open", "--phase", "build", "--wave", "w1", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)); code != 0 || !strings.Contains(out, "wright round 1") {
 		t.Fatalf("wright round must not see vet waves: code=%d\n%s", code, out)
 	}
 	for i := 1; i <= wrightRoundsPerReview; i++ {

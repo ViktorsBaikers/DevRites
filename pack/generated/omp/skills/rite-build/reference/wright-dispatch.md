@@ -94,10 +94,14 @@ claim add --session <id> <task-paths>`; retain its returned `<claim-id>`, then r
 live foreign session releases the retained claim and stops the dispatch, per
 [`agents.md`](skill://devrites-lib/reference/standards/agents.md). `.devrites/**`
 is never a task path; see [Workflow Artifact admission](skill://devrites-lib/reference/standards/workflow-artifacts.md).
-Ask the host
-for the exact writer in fresh context and wait. Track it through the
-launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
-<slice-id> --role slice-wright --slice <SLICE-ID>`, then `start` with the host handle, `seal`, and
+Write the exact contract, with its `Writer-safe checks:` line, to
+`packets/<wave>.contract.md` and hand the wright that text verbatim. Ask the host
+for the exact writer in fresh context; a repair round on the same slice whose
+returned wright the host can still continue goes to that wright on its existing
+handle instead, so it does not re-read the slice from scratch. Wait, and track it
+through the launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
+<slice-id> --role slice-wright --slice <SLICE-ID> --contract <file>` (it refuses a
+contract that forbids writer-safe checks or names none), then `start` with the host handle, `seal`, and
 `return` on completion (auto-records dispatch/return metrics). Every 5 wright
 rounds on one slice, `open` blocks for a reslice review: propose an
 acceptance-preserving split (`root_no_change_analysis` → `FOLD` per
