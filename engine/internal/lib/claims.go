@@ -51,6 +51,10 @@ type claimRecord struct {
 	ClaimedAt string   `json:"claimed_at"`
 	ExpiresAt string   `json:"expires_at"`
 	Released  bool     `json:"released,omitempty"`
+	// Host and Anchors identify the claiming session's long-lived processes,
+	// so a later session can prove that holder exited (see holderProbe).
+	Host    string      `json:"host,omitempty"`
+	Anchors []claimProc `json:"anchors,omitempty"`
 }
 
 // RunClaim manages the advisory file-claim ledger.
@@ -299,7 +303,8 @@ func claimAddLocked(path, session, reason string, ttl int, paths []string, stdou
 		return 2
 	}
 	now := time.Now().UTC()
-	conflicts := claimConflicts(liveClaims(latest, order, now), session, paths)
+	probe := newHolderProbe()
+	conflicts := claimConflicts(probe.withoutGone(liveClaims(latest, order, now)), session, paths)
 	if len(conflicts) > 0 {
 		printConflicts(stderr, conflicts)
 		return 3
@@ -311,6 +316,8 @@ func claimAddLocked(path, session, reason string, ttl int, paths []string, stdou
 		Reason:    reason,
 		ClaimedAt: now.Format(time.RFC3339),
 		ExpiresAt: now.Add(time.Duration(ttl) * time.Minute).Format(time.RFC3339),
+		Host:      probe.host,
+		Anchors:   probe.anchors(now),
 	}
 	if err := appendClaim(path, rec); err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
@@ -389,6 +396,7 @@ func claimList(root string, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	now := time.Now().UTC()
+	probe := newHolderProbe()
 	rows := liveClaims(latest, order, now)
 	if all {
 		rows = rows[:0]
@@ -404,6 +412,8 @@ func claimList(root string, args []string, stdout, stderr io.Writer) int {
 		state := "live"
 		if rec.Released {
 			state = "released"
+		} else if probe.gone(rec) {
+			state = "dead"
 		} else if exp, err := time.Parse(time.RFC3339, rec.ExpiresAt); err != nil || !exp.After(now) {
 			state = "expired"
 		}
@@ -453,7 +463,7 @@ func claimCheck(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, unparsedLedgerMsg, bad)
 		return 2
 	}
-	conflicts := claimConflicts(liveClaims(latest, order, time.Now().UTC()), session, paths)
+	conflicts := claimConflicts(newHolderProbe().withoutGone(liveClaims(latest, order, time.Now().UTC())), session, paths)
 	if len(conflicts) > 0 {
 		printConflicts(stdout, conflicts)
 		return 3

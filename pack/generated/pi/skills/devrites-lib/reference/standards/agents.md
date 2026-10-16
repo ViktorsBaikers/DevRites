@@ -73,7 +73,9 @@ Claims cover product paths only; root-authored `.devrites/**` files use
 Expiry is not proof the holder stopped: size `claim add --ttl <minutes>` to the
 expected write (engine max 240) and re-add before it lapses; before writing, also
 read `claim list --all` — a foreign `expired` claim on overlapping paths whose
-session is not proven terminal counts as held (stop and report). **Failing case:**
+session is not proven terminal counts as held (stop and report). `dead` (engine-proven
+exited holder) or `released` is terminal: reconcile per
+[§ Cancellation](../parallel-dispatch.md#cancellation-and-terminal-reconciliation). **Failing case:**
 session B's `claim check` passes at minute 35 over session A's still-running wright.
 
 ## Independence

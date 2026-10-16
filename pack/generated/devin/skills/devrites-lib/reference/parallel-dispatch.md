@@ -127,7 +127,8 @@ child's handle, path/resource ownership and capacity reservation until the
 native host confirms a terminal state and returned work has been reconciled.
 Query or wait on that handle; do not replace the child, release its slot, or
 reuse its resources while it may still run. If terminal state cannot be
-established, record a gap and retain ownership. A result classification alone
+established, record a gap and retain ownership; for a child launched by an earlier
+session, the claim proof below settles it. A result classification alone
 does not prove host termination.
 
 On resume (compaction or a new session), run `devrites-engine dispatch <slug>
@@ -135,7 +136,11 @@ status`, `parallel status`, and `claim list --all` before any dispatch. A read-o
 wave whose handles this session cannot query: `abandon` it, record each unreturned
 role `gap`, and re-dispatch fresh on the current digest; its late returns are
 `stale`. A writer keeps its claim and lease — no relaunch on those paths until the
-claim is released or its holder is proven terminal. A wright that never returned an
+claim is released or its holder is proven terminal. For an unqueryable writer,
+`claim list --all` showing its claim `released` or `dead` (the engine proved the
+holding session exited on this host) is that proof: `abandon` the wave, record the
+role `gap`, claim the paths, and re-dispatch without waiting on the launching
+session. `live` or `expired` stays held. A wright that never returned an
 admitted result leaves unadmitted bytes: task-path changes since its pre-dispatch
 `git diff --name-only` baseline are never cited as built nor discarded, and are
 named in the re-dispatch contract; changes outside task paths stop for the human
