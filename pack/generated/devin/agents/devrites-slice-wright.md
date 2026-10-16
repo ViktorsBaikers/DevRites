@@ -124,6 +124,10 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
    loosening an assertion. A test that genuinely must change is an **Escalation**,
    not a quiet edit. The root inspects the returned diff and dedicated test
    analysis treats a weakened test as a Critical STOP.
+   **Scratch** for probes and copies is one fresh `mktemp -d` directory you own,
+   never a fixed name such as `/tmp/x`: writing a path you did not create is an
+   unproven overwrite and stops the run for the owner. Edit allowlisted files with
+   the edit tool; a blocked edit is a gap to report, never routed around.
    For non-trivial failure, invoke `devrites-debug-recovery` with the exact error,
    hypotheses, and dead ends. Caller and recovery share three no-progress attempts per
    exact causal fingerprint. Count only corrections whose recheck preserves the same
