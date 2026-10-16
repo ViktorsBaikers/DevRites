@@ -55,6 +55,9 @@ type claimRecord struct {
 	// so a later session can prove that holder exited (see holderProbe).
 	Host    string      `json:"host,omitempty"`
 	Anchors []claimProc `json:"anchors,omitempty"`
+	// Holder is the anchor that is the claiming agent session itself; its
+	// exit releases the claim even while the shell that launched it lives.
+	Holder *claimProc `json:"holder,omitempty"`
 }
 
 // RunClaim manages the advisory file-claim ledger.
@@ -318,6 +321,7 @@ func claimAddLocked(path, session, reason string, ttl int, paths []string, stdou
 		ExpiresAt: now.Add(time.Duration(ttl) * time.Minute).Format(time.RFC3339),
 		Host:      probe.host,
 		Anchors:   probe.anchors(now),
+		Holder:    probe.holder(now),
 	}
 	if err := appendClaim(path, rec); err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
