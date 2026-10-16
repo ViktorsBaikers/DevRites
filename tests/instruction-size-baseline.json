@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1487032,
+  "total_bytes": 1487025,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -247,7 +247,7 @@
     "pack/.claude/skills/rite-seal/reference/phase-contract.md": 3800,
     "pack/.claude/skills/rite-seal/reference/risk-and-rollback.md": 3028,
     "pack/.claude/skills/rite-seal/reference/seal-template.md": 887,
-    "pack/.claude/skills/rite-seal/SKILL.md": 8381,
+    "pack/.claude/skills/rite-seal/SKILL.md": 8374,
     "pack/.claude/skills/rite-ship/reference/anti-patterns.md": 1815,
     "pack/.claude/skills/rite-ship/reference/close-out.md": 4046,
     "pack/.claude/skills/rite-ship/reference/git-ship.md": 7310,
