@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.2.0...v6.3.0) (2026-10-16)
+
+### Added
+
+* **devrites:** guard proof proportionality across phases ([#113](https://github.com/ViktorsBaikers/DevRites/issues/113)) ([2222b60](https://github.com/ViktorsBaikers/DevRites/commit/2222b60563bf28202d163406d27cf7182c6431f0))
+
 ## [6.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.1.5...v6.2.0) (2026-10-16)
 
 ### Added
