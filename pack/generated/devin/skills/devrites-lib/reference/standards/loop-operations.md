@@ -112,6 +112,10 @@ armed AFK workspace whose exact scope, gates, and budgets permit it.
   run `devrites-engine check drift <slug>` before re-vetting: it names the
   exact input artifact that changed (or `missing`/`added`) since the recorded
   baseline, so the Spec Drift Guard or `/rite-vet` starts at the right file.
+- `check drift` and `check slice` print `ADVISORY proportion:` when a slice's proof
+  grew over 2x since the Vet baseline or carries over 3x the median proof per AC.
+  Repair by moving rows without a `Proves` spec line to `Deferred hardening`
+  ([agents.md](agents.md) § Result admission, Proportionality), not by adding proof.
 - Native notifications fire only after evidence and stop state are written.
 
 Use [`afk-hitl.md`](afk-hitl.md) for unattended authority and resource budgets,

@@ -126,9 +126,20 @@ prove only their named static criterion.
 <the ASCII code-paths + user-flows diagram from review-axes.md, with COVERAGE / GAPS / REGRESSIONS line>
 
 ## Per-gap test requirements
-| ID | Path / flow | Test file (match conventions) | Asserts (input → expected) | Kind | Slice | Priority |
-|---|---|---|---|---|---|---|
-| T1 | <path> | <path/to.test> | <empty list → 200 + []> | unit / E2E / eval | <slice> | P1 / **Regression-Critical** |
+| ID | Path / flow | Test file (match conventions) | Asserts (input → expected) | Kind | Slice | Priority | Proves |
+|---|---|---|---|---|---|---|---|
+| T1 | <path> | <path/to.test> | <empty list → 200 + []> | unit / E2E / eval | <slice> | P1 / **Regression-Critical** | <AC/REQ/INV/PROH/DEC/EDGE ID or standard § + quoted line> |
+
+Every row's `Proves` quotes the spec line or standard rule it proves. A row that proves
+none is plan-invented hardening: move it to `Deferred hardening`.
+
+## Deferred hardening
+| ID | Hardening | Why no spec line needs it | Promote by |
+|---|---|---|---|
+| D1 | <proof or mechanism> | <reason> | <the spec line an owner would add> |
+
+Deferred rows are an optional follow-up slice: not built, proven, or gating in this
+feature; this table is their follow-up record. Nothing is deleted.
 
 ## Interaction inventory (UI slices — every element + flow gets an asserting test)
 Enumerate every interactive element and user flow the feature exposes; one row each, none

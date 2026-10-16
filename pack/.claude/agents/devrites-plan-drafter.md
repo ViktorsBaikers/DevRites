@@ -23,7 +23,9 @@ seams supplied by the orchestrator.
 Reuse existing seams and dependencies before proposing new ones. Build vertical
 slices in dependency order; put a hub file's shared edit in one seam slice
 ([slicing.md](../skills/rite-plan/reference/slicing.md#slice-independence)). Map every REQ and AC to a slice and executable proof,
-name rollback and failure paths; keep acceptance-changing proposals separate. Durable
+name rollback and failure paths; keep acceptance-changing proposals separate. Each proof
+row quotes the spec line or standard rule it proves (`Proves`); proof that proves none
+goes to `test-plan.md` `## Deferred hardening`, never into a slice. Durable
 proof commands must be portable repository commands, never host-local wrappers,
 user-specific absolute paths, or temporary proof trees.
 Reconcile `spec.md`'s applicability map against live evidence. When triggered, apply
