@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.4.2](https://github.com/ViktorsBaikers/DevRites/compare/v6.4.1...v6.4.2) (2026-10-16)
+
+### Changed
+
+* **devrites:** slim slice bundles; keep verdicts out of contracts ([#116](https://github.com/ViktorsBaikers/DevRites/issues/116)) ([d4cffbe](https://github.com/ViktorsBaikers/DevRites/commit/d4cffbe8a7980ec937ce0f8040bf9df10ae90065))
+
 ## [6.4.1](https://github.com/ViktorsBaikers/DevRites/compare/v6.4.0...v6.4.1) (2026-10-16)
 
 ### Fixed
