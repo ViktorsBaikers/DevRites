@@ -163,6 +163,9 @@ A skill that stops without doing this leaves the workspace incomplete.
 
 Long contexts degrade reasoning quality. Act on context at **50-70% used, not 95%**.
 
+Read the engine `context` bundle once per phase instead of re-reading the files it
+contains; after compaction re-read the bundle, not its sources.
+
 Every rite names the single resume command on its action line; a `↻ Hygiene:` footer
 advises `/clear`, `/compact`, or `$rite-handoff` and never a competing command. Full phase-by-phase guidance:
 [`context-hygiene.md`](context-hygiene.md).

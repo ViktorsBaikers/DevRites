@@ -376,6 +376,14 @@ access, safety and irreversible-action boundaries independently stop work.
   closes every deferred row with a labeled verdict; Seal blocks on any without one.
   **Failing case:** round 4 finds three Important items on clauses untouched since
   round 1 and dispatches another repair.
+- **Recovery findings need a discriminator; recovery scope stays frozen.** While a
+  fingerprint is in recovery, a new Important finding keeps it open or opens another
+  only with an executed reproduction or a quoted AC/INV/PROH/accepted-DEC line whose
+  observable outcome fails; root turns it into a control the next wright must pass.
+  A static counterexample against plan-invented hardening goes to the Review trail or
+  `## Deferred findings` (Review gives it a verdict; Seal blocks without one). A
+  Critical with a concrete failure path always opens a fingerprint. A correction adds
+  no proof site or mechanism its fingerprint's closure does not need. No reviewer is skipped.
 - **Separate consumptive authority from recovery.** Spent one-shot authorization
   blocks another execution, not offline recovery. Retained evidence starts caller-owned
   diagnosis/correction immediately; the next consumptive execution needs fresh authority.

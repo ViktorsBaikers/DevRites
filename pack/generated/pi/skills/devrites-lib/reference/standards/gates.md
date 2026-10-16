@@ -124,6 +124,9 @@ an error because the runner can never execute it.
   (an invariant the output must always satisfy) over example (one concrete
   input/output case). An example-shaped oracle on a property-shaped outcome is
   a weak gate — reviewers flag it even when it passes.
+- One CHECK, one oracle: never chain another artifact's self-test before the
+  AC's oracle with `&&` — give the self-test its own gate, so a red self-test
+  never hides the AC's own result.
 - When an outcome becomes impossible, `gates abandon` it and route the
   handoff — never delete the row to make the ledger pass.
 - The gate set is the coverage denominator: it never shrinks to reach

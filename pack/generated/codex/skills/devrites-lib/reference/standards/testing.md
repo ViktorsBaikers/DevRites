@@ -250,6 +250,13 @@ Dismiss an irrelevant case with a reason; silently omitting an applicable case i
 - A flaky test is a broken test. Isolate and fix it immediately; don't paper over it with
   retries or `sleep`. **Failing case:** a known-flaky test is left with retries so the
   suite is paper-green at Prove/Seal → NO-GO.
+- **A diagnostic rerun is allowed, never proof.** Rerun a timing-shaped failure on
+  the unchanged candidate to classify it flaky or deterministic before a repair;
+  record it as diagnostic, never as a pass.
+- **Attributable RED.** A negative control or mutant counts RED only on a positive
+  marker from the targeted assertion; a setup, construction, or observation failure
+  is never credited as RED. Prove the classifier with an injected setup failure
+  that must stay uncredited.
 - **A retry-only pass is `flaky`, never green.** A pass earned by rerun on an unchanged
   candidate digest (no admitted correction between attempts), or by a runner retry
   setting, is `flaky`: record every attempt with the first attempt's outcome. It never
