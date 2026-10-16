@@ -86,6 +86,8 @@ session B's `claim check` passes at minute 35 over session A's still-running wri
 - Never message a running read-only leaf: a mid-run note voids it like a seeded packet.
   Root proof that lands after dispatch is weighed at reconciliation, not forwarded; a
   leaf gap it would close (e.g. "no independent runtime run") closes there.
+- A recheck packet lists only fingerprints that same role raised, plus the correction
+  diff. Another role's finding goes to that role's recheck, never a sibling's packet.
 - **Verify the packet is clean before admitting the account.** Confirm the returned packet/trace carries no host-injected context: an automatic memory/summary banner naming an earlier phase verdict (e.g. `past Temper PASS … next is /rite-define`) or harness reminder text seeds the pass and voids it. Cancel that account — never admit it — name the lost coverage, and re-dispatch with the host's context injection disabled for that child. Tool config changes that do not stop native child auto-injection are not a fix; verify on the next spawn instead of assuming.
 - A parent-context pass contributes attributed evidence but is not independent: exclude it from independent accounting and name the lost coverage.
 - Final severity is set at reconciliation after re-verifying the claimed consequence at the cited site (reviewer severity advisory); dismissals record a reason, and true facts about neighboring code route elsewhere instead of being dismissed.
