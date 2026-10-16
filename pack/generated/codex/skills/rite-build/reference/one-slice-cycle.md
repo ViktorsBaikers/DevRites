@@ -28,7 +28,7 @@ RECORD    → orchestrator: after green verification, update state.md/evidence.m
             upsert the authoritative candidate manifest from the actual scoped diff
 (CHECKPOINT) → only now, with review+proof green: local WIP(<slug>): <imperative summary>
             on the control branch (no slice id) → checkpoint.md
-NEXT      → HITL root reports and stops. AFK with parallel cap>1: refill free slots via parallel-batch selection; otherwise repeat under afk-discipline.md
+NEXT      → HITL root reports and stops. AFK with parallel cap>1: return to parallel-batch selection to refill; otherwise repeat under afk-discipline.md
 ```
 
 ## Why the boundary matters
