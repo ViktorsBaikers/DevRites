@@ -85,7 +85,9 @@ plan declares a root-authored executable workflow file, read
    Temper — in
    parallel under `skill://devrites-lib/reference/parallel-dispatch.md`; they are
    independent read-only passes on one frozen candidate. Missing
-   required account blocks.
+   required account blocks. Run root steps 2–4, including step 3's preflight
+   commands, on the same frozen candidate while the wave is out; reconcile the
+   accounts when they return.
 1b. **Recovery recheck.** Require valid return cursor, accepted prior finding,
    exact fingerprint/reproduction, repaired candidate identity, changed
    paths/criteria, affected drift/evidence, and the recorded delta self-check.
@@ -109,7 +111,7 @@ plan declares a root-authored executable workflow file, read
    it only by naming a concrete failure path the declaration omits. A
    `new_failure_mode` finding is never residual-eligible. A fold whose
    findings are all Suggestion-or-lower rechecks mechanically at the
-   materialization gate — anchors applied, mirrors consistent, invariants
+   materialization gate — anchors applied (a clean `state apply-bundle`), mirrors consistent, invariants
    pass — without a dispatched reviewer; sub-Important findings already
    cannot keep recovery open. Reconcile
    shared artifact/readiness gates, then enter step 8 or the next repair.

@@ -65,9 +65,19 @@ func ReadLedgerFile(ledgerPath string) (string, error) {
 // Each pass writes definition-bound evidence; each failure clears the box and
 // restores EVIDENCE: pending.
 //
-// The caller holds the feature lock across this call.
-func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, approved []ApprovedCommand, reverify bool, timeout time.Duration) []GateResult {
+// Gates sharing one CHECK and CWD execute once per call; each matches its own
+// EXPECT against that shared output. writeLock, when non-nil, wraps every
+// ledger writeback so the caller need not hold the feature lock while checks
+// execute; writeResult re-verifies the gate's oracle before it writes.
+func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, approved []ApprovedCommand, reverify bool, timeout time.Duration, writeLock func(func() error) error) []GateResult {
 	var results []GateResult
+	outcomes := map[string]RunOutcome{}
+	write := func(gate *Gate, evidence string, checked bool) error {
+		if writeLock == nil {
+			return writeResult(ledgerPath, gate, evidence, checked)
+		}
+		return writeLock(func() error { return writeResult(ledgerPath, gate, evidence, checked) })
+	}
 	for _, gate := range doc.Gates {
 		if _, abandoned := doc.Abandoned[gate.ID]; abandoned {
 			results = append(results, GateResult{ID: gate.ID, Detail: "abandoned; handoff required"})
@@ -94,17 +104,22 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 		if gate.Cwd != "" {
 			cwd = filepath.Join(root, filepath.FromSlash(gate.Cwd))
 		}
-		outcome := Execute(ctx, gate.Check, cwd, timeout)
+		key := gate.Check + "\x00" + cwd
+		outcome, ran := outcomes[key]
+		if !ran {
+			outcome = Execute(ctx, gate.Check, cwd, timeout)
+			outcomes[key] = outcome
+		}
 		if outcome.Err == nil && outcome.ExitCode == 0 && expectation.Matches(outcome.Output) {
 			evidence := FormatEvidence(gate, OutputDigest(outcome.Output), outcome.OutputBytes, time.Now().UTC().Format(time.RFC3339))
-			writeErr := writeResult(ledgerPath, gate, evidence, true)
+			writeErr := write(gate, evidence, true)
 			results = append(results, GateResult{
 				ID: gate.ID, Ran: true, Passed: true,
 				Discarded: errors.Is(writeErr, ErrOracleMoved), WriteErr: writeErr,
 				Detail: resultDetail(writeErr, "pass"),
 			})
 		} else {
-			writeErr := writeResult(ledgerPath, gate, "pending", false)
+			writeErr := write(gate, "pending", false)
 			results = append(results, GateResult{
 				ID: gate.ID, Ran: true,
 				Discarded: errors.Is(writeErr, ErrOracleMoved), WriteErr: writeErr,

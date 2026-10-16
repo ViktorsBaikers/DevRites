@@ -31,6 +31,7 @@ when the task needs it.
 | Resume record for handoff/compaction | `devrites-engine handoff [slug]` |
 | One-file read-set for a phase/role/skill | `devrites-engine context <slug> (--phase <p> \| --skill <name>) [--role <r>] [--trigger a,b]` |
 | Per-feature event ledger | `devrites-engine metrics summary <slug>` |
+| Apply drafter hunk bundles (all-or-nothing) | `devrites-engine state apply-bundle <slug> <bundle.json>... [--dry-run]` |
 | Same-tree session file claims | `devrites-engine claim <add\|release\|list\|check>` (advisory, `.devrites/claims.jsonl`) |
 | Returned paths ⊆ contract | `devrites-engine check diff-scope <slug> --allow <paths>` |
 | Slice sound before wright dispatch | `devrites-engine check slice <slug> <SLICE-ID>` |

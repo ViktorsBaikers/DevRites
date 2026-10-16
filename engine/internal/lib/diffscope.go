@@ -177,7 +177,7 @@ func (o diffScopeOpts) changedPaths() ([]string, error) {
 
 // engineMachineFiles are the feature-root files the engine itself writes:
 // the dispatch ledger, metrics ledger, drift and regression baselines, the
-// parallel lease, and the feature lock.
+// parallel lease, the feature lock, and the gate-execution lock.
 var engineMachineFiles = map[string]bool{
 	"dispatch.json":        true,
 	MetricsFile:            true,
@@ -185,6 +185,7 @@ var engineMachineFiles = map[string]bool{
 	regressionBaselineFile: true,
 	"parallel-lease.md":    true,
 	".lock":                true,
+	"gates.md.lock":        true,
 }
 
 // engineMachineFile reports whether rel, relative to the .devrites tree, is

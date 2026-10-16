@@ -98,10 +98,13 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    Packet mechanics: dedupe at assembly — findings with an identical
    required-fix and site set merge into one entry that closes all their
    fingerprints. The packet may carry digest-pinned site excerpts so the
-   drafter spot-verifies anchors instead of re-scanning whole files, and root
-   may partition findings into anchor-disjoint clusters with one drafter per
-   cluster in parallel — findings sharing any anchor or mirrored clause stay
-   in one cluster, and each bundle applies independently. A `partial`-
+   drafter spot-verifies anchors instead of re-scanning whole files. Root
+   partitions findings into anchor-disjoint clusters — findings sharing any
+   anchor or mirrored clause stay in one cluster — and, with two or more,
+   dispatches one drafter per cluster in one parallel wave within the scale
+   limits. Every cluster pins the same base; their bundles apply together in
+   one `state apply-bundle` call, and an overlap refusal merges those clusters
+   for the re-dispatch. A `partial`-
    continuation re-dispatch continues the same packet; it does not advance the
    same-seam counter. Count consecutive repair packets whose findings' cited clause sets overlap
    the immediately previous packet's — the overlap is the seam. Carry it as an explicit
@@ -140,9 +143,12 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
 4. Re-slice using vertical-slice rules: [slicing](reference/slicing.md) and
    [task-breakdown](reference/task-breakdown.md). Prefer thin, shippable, verifiable.
    **Completion:** every slice is independently shippable/provable or carries an irreducibility reason.
-5. Reconcile the candidate against steps 3 and 4, then the root updates `plan.md`, `tasks.md`,
-   `state.md`, and appends rationale to `decisions.md`. A rejected candidate
-   (malformed bundle, stale or non-unique anchor) or a drafter `Outcome: gap`
+5. Reconcile the candidate's meaning against steps 3 and 4, save each bundle
+   under `packets/`, and apply its hunks with `devrites-engine state apply-bundle
+   <slug> <bundle.json>...` (all-or-nothing; `--dry-run` previews); never
+   hand-copy hunks or stage file copies. Then update `state.md` and append
+   rationale to `decisions.md`. A rejected candidate
+   (malformed bundle, stale or non-unique anchor, any apply-bundle refusal) or a drafter `Outcome: gap`
    is one no-progress outcome on every open fingerprint in the fold; the
    re-dispatch packet must name the rejection so the same hunks don't recur.
    A gap naming genuinely human-owned information routes to `/rite-clarify`.

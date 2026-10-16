@@ -4,7 +4,9 @@ Host dispatch; DevRites governs.
 
 ## Roster
 
-Review: Spec/Code plus triggered frontend/security/performance; Seal: all applicable roles.
+Review: Spec/Code, triggered frontend/security/performance, and the seal roles that can
+judge the frozen digest (test-analyst, doubt, devex); Seal: all applicable roles, citing
+same-candidate Review accounts.
 
 | Reviewer | Fires | Trigger |
 |---|---|---|
@@ -74,8 +76,10 @@ If the candidate diff has no matching surfaces, record
    and dedupe by evidence/root cause. Account for all seven (and, in `seal.md`, `devrites-proof-runner` and `devrites-doubt-reviewer`) in
    `review.md`/`seal.md`, each [engineering lane](#engineering-lanes) separately:
    `Outcome:` plus admitted account, or
-   `Not-applicable: <inspected-scope reason>`. Spec/Code may cite valid unchanged
-   `review.md` under [evidence validity](candidate-integrity.md#evidence-validity); persist no dispatch telemetry.
+   `Not-applicable: <inspected-scope reason>`. Seal cites, rather than re-dispatches, any
+   role `review.md` admitted on the identical candidate under
+   [evidence validity](candidate-integrity.md#evidence-validity); a changed digest or newly
+   triggered surface needs a fresh account. Persist no dispatch telemetry.
 7. Missing profile, null/failure, or malformed output is a `gap`; never
    infer approval or substitute inline review.
 

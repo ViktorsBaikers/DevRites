@@ -76,10 +76,13 @@ Return this result:
 
 ```yaml
 mode: define | repair
+base_hashes: {}  # <path>: sha256 of the bytes you read, for every replace/patch target
 candidate_files:
   - path: <requested canonical target>
     operation: create | replace | patch
-    content: <complete candidate or exact bounded delta>
+    content: <complete file; create/replace only>
+    hunks: [] # patch only: {id, old_text, new_text}; old_text byte-exact, unique in the pinned file
+retired_ids: [] # tracked IDs (AC/REQ/HZN/SLICE/DEC/...) the delta removes on purpose
 acceptance_map: []
 dependency_order: []
 technical_decisions: []
@@ -89,7 +92,12 @@ applicability_disposition: []
 self_attack_exposures: []
 ```
 
-The root validates the cross-file bundle and persists accepted content.
+The root saves the bundle as JSON and applies it with `devrites-engine state
+apply-bundle <slug> <bundle.json>`, which refuses a stale pin, a missing,
+duplicate, or overlapping `old_text`, an unlisted vanished ID, a new task-graph
+problem, or new budget overshoot, and writes nothing on refusal. Pin each
+`base_hashes` entry with `shasum -a 256` (or `sha256sum`) on the exact file you
+read, and prefer short anchored hunks to whole-file `replace`.
 
 ## Tools / read-write mode
 

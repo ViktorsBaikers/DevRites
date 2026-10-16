@@ -13,12 +13,18 @@
    candidate check afterward and require the identical digest and no source
    mutation. Capture command, cwd, exit, decisive output, and identity.
    Missing/red/mismatched blocks; unavailable is `cannot_verify`, never pass.
+Steps 3–6 share one dispatch wave: launch every role they still need
+(proof-runner, test-analyst, doubt-reviewer, roster) together, admit valid
+same-candidate Review accounts instead, and do the root work of steps 4–6 while
+the wave runs.
+
 3. **Judge acceptance.** Dispatch exact `devrites-proof-runner` on immutable
    proof; admit valid same-candidate `devrites-spec-reviewer` evidence from Review
    or dispatch that exact reviewer. Reconcile every
    AC/REQ/scenario/key link by ID and meaning; missing/stale/self-attested/mismatched is NO-GO.
 4. **Judge tests.** Diff baseline/candidate tests for deletion, skip/focus,
-   tautology, or weakening; dispatch exact `devrites-test-analyst`. Missing or
+   tautology, or weakening; admit the same-candidate `devrites-test-analyst` account
+   from Review or dispatch that exact analyst. Missing or
    adverse account, or green tests not asserting mapped behavior, is Critical.
 5. **Resolve gates.** Open blocking/escalating/validating questions and drift
    block. Each stood decision needs a reconciled exact `devrites-doubt-reviewer` verdict.

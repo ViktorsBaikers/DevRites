@@ -77,8 +77,10 @@ Incomplete comparison is **not** agreement. Record axis deltas in `polish-report
    captures.
 3. **Always** read [`reference/code.md`](reference/code.md) and assess **Phase 1
    (code polish)**; if backend was touched, assess **Phase 2 (backend polish)** from
-   the same file. Reconcile the findings, then send accepted corrections as one bounded
-   wright contract: build its read-set with
+   the same file. Assess step 4's UI phases on the same frozen digest while the
+   code assessment runs, reconcile both, then send every accepted code and UI
+   correction as one bounded wright contract (normalize corrections before polish
+   ones): build its read-set with
    `devrites-engine context --skills-root .pi/skills <slug> --phase polish --role slice-wright`, run the
    single-agent wave through `devrites-engine dispatch <slug> open|start|seal|return`
    (auto-records dispatch/return metrics), and gate returned paths
@@ -91,8 +93,8 @@ Incomplete comparison is **not** agreement. Record axis deltas in `polish-report
    its `FAIL` and `PARTIAL` rows are the normalize/quality-bar worklist**: identify the root
    cause of each (a missing state, an off-token CTA, or an anti-slop hit) rather than
    hiding it with decoration. Assess **Phase 3 (normalize)** → **Phase 4 (UI polish)**,
-   then send accepted UI
-   corrections to the wright (which invokes the relevant craft skill). Honor argument modes:
+   and fold accepted UI
+   corrections into step 3's single wright contract (the wright invokes the relevant craft skill). Honor argument modes:
    - `bolder | quieter | distill | harden`: passed to Phase 4 as the
      emphasis dial.
    - `normalize-only`: assess Phase 3 and stop (no Phase 4).

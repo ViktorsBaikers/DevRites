@@ -76,6 +76,13 @@ Pull these via `Read` when shaping the plan:
    `devrites-plan-drafter` in `define` mode for one atomic candidate bundle:
    `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` with proof mapping.
    Validate its bounded result; it does not write/ask, and returns human choices to root.
+   In the same parallel wave, dispatch one `devrites-evidence-scout` per external
+   capability the plan will rest on — OS/SDK/native API, permission or sandbox,
+   file format, toolchain, or third-party behavior — that neither live code nor a
+   cited dossier already proves (at most three, as in Spec). Fold each dossier
+   before step 2a: cite a proven capability in `architecture.md`; an unproven or
+   contradicted one becomes a risk spike ordered before its dependent slices,
+   never an assumption the build discovers.
 2. **Reconcile architecture + approach** against live seams; root writes at step 6.
    `architecture.md` owns layers/boundaries/integrations/data/dependencies/risks/impact;
    `plan.md` owns build strategy. Use the code index for structure/impact
@@ -147,7 +154,9 @@ Pull these via `Read` when shaping the plan:
    intended, route it through the Spec Drift Guard plus a recorded decision and a scoped principle
    exception a human approves. Never ready a plan that silently violates an invariant. (Re-scored
    as a blocking gate at `/rite-vet`; no file → none declared → nothing to check.)
-6. **Write** `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md`; update
+6. **Write** `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` — save the
+   accepted bundle under `packets/` and apply it with `devrites-engine state
+   apply-bundle <slug> <bundle.json>` before root reconciliation edits; update
    `state.md` (phase: plan → next `/rite-vet`). When diagrams clarify, also write optional
    `flows.md` (**Mermaid-first**). If a richer reviewable visual earns it, emit
    `visual/<flow>.html` + `visual/<flow>.outline.md` after loading matching playbooks from

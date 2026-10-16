@@ -60,7 +60,8 @@ Follow [`reference/phase-contract.md`](reference/phase-contract.md)
 
 1. read workspace and final diff;
 2. recheck the canonical candidate/bindings and approved repository/CI proof;
-3. admit valid Spec/Code accounts; dispatch remaining required exact roles under
+3. admit every valid same-candidate Review account; dispatch all remaining required
+   exact roles, proof-runner included, in one wave under
    `../devrites-lib/reference/parallel-dispatch.md` on the same frozen candidate,
    code review through its § Engineering lanes;
 4. reconcile their read-only verdicts against source and immutable evidence;

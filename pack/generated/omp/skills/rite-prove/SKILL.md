@@ -76,7 +76,8 @@ test changes.
    command, cwd, prerequisites, exit, and sanitized
    decisive output, plus the test selector, runner counts
    (collected/ran/passed/failed/skipped), and attempt number with first-attempt
-   outcome; output and exit come from one execution. Run relevant suite plus build/typecheck/lint. Recheck the
+   outcome; output and exit come from one execution. Run relevant suite plus build/typecheck/lint,
+   concurrently when they share no build directory, port, or lock. Recheck the
    candidate and require identical digest/no source mutation. Reject substituted
    commands, malformed manifests, zero-test/skipped/filtered behavioral claims,
    exit-status-only claims, status-masking forms, and source drift. A retry-only
@@ -109,7 +110,7 @@ test changes.
    described screenshots, console/network, interaction, target comparisons, and
    every required state. Material mismatch fails.
 7. **Independent validation.** Fresh read-only `devrites-proof-runner` and
-   `devrites-spec-reviewer` judge the same candidate/commands/evidence/acceptance map.
+   `devrites-spec-reviewer`, in one parallel wave, judge the same candidate/commands/evidence/acceptance map.
    Neither runs commands; reject missing/stale, invented-ID, label-only or self-attested reports.
 8. **Map proof.** Reconcile verdicts under [acceptance-proof.md](reference/acceptance-proof.md).
    Every criterion/scenario/interaction/key link needs discriminating evidence or a
