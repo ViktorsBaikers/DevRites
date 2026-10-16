@@ -44,8 +44,8 @@ The controlling root owns the cap:
    before the next dispatch.
    - **Serial:** charge when fail-on-red is green and the built record is written
      (same rewrite as step 2).
-   - **Parallel `--parallel`:** charge only after **successful serial integrate**
-     — once per integrated green sibling. Abort / integrate-failed → charge **0**.
+   - **Parallel `--parallel`:** charge only after **successful integrate**
+     — once per landed green sibling. Abort / integrate-failed → charge **0**.
      Do not charge on worktree-green before integrate. See
      [`parallel-batch.md`](parallel-batch.md).
 

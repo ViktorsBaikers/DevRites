@@ -28,7 +28,7 @@ Before implementation review, check for work beyond the settled spec.
    (over-budget `tasks.md`/`plan.md` from slice or AC count) is a scope finding, not a
    `Budget override`: route to `/rite-plan course-correct` (`MVP cut`) with the
    continuation sequence named; do not vet the whole epic. An `ADVISORY size:`
-   slice without `Size rationale:` is a non-blocking Suggestion to split it.
+   or `hub:` line without its rationale is a non-blocking Suggestion to split or seam it.
 4. **Built-in check.** For each new pattern/infra/concurrency approach, invoke
    `devrites-source-driven` inline to verify current framework/runtime support and cite it. Custom
    work where a built-in suffices is a scope-reduction finding.

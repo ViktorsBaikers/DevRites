@@ -237,7 +237,7 @@ slices; use `none` when they do not apply. Complexity above 3 triggers reslicing
 unless the stated reason makes the boundary irreducible. A Writer allowlist of 12+
 files prints an engine `ADVISORY size:` line (`check task-graph`, `check slice`;
 never blocking): split it acceptance-preserving, or add `Size rationale:` naming
-the inseparable capability.
+the inseparable capability; `ADVISORY hub:` takes a seam slice or `Serial rationale:`.
 
 ## Read next by phase
 

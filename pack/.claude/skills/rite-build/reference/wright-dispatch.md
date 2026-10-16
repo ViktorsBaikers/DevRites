@@ -144,8 +144,8 @@ TTL is crash recovery, not normal cleanup.
    **Do not land on control until review and proof are both green.** Isolated
    `transfer_commit` stays on the worker branch; same-worktree diffs stay
    uncommitted. Serial: [`checkpoint.md`](checkpoint.md), then host may remove the
-   worktree. Parallel: `record-green` only; land with `parallel integrate
-   --apply-to-control` after the batch; `parallel cleanup` removes worktrees.
+   worktree. Parallel: `record-green`, then `parallel integrate
+   --slice <id> --apply-to-control`; `parallel cleanup` removes worktrees.
 5. Reconcile returned reuse, conventions, principles, sources, assumptions,
    decisions, dead ends, follow-ups, gates, and touched files. Persist the
    relevant facts in canonical artifacts, not the wholesale report. A plan-gap

@@ -22,6 +22,9 @@ const (
 	WrightGreen   = "green"
 	WrightRed     = "red"
 	WrightGap     = "gap"
+	// WrightIntegrated marks a slice a per-slice integrate already landed on
+	// control; it no longer holds a parallel slot.
+	WrightIntegrated = "integrated"
 
 	MinParallelSlices = 2
 	MaxParallelSlices = 10
@@ -36,17 +39,22 @@ var (
 )
 
 // Lease is the machine-readable parallel batch lease (control tree only).
+// ControlTip is control HEAD after this lease's most recent per-slice landing;
+// empty means BaseSHA (nothing landed yet).
 type Lease struct {
 	BatchID             string       `json:"batch_id"`
 	CreatedAt           string       `json:"created_at"`
 	BaseSHA             string       `json:"base_sha"`
+	ControlTip          string       `json:"control_tip,omitempty"`
 	N                   int          `json:"n"`
 	Status              string       `json:"status"`
 	ControlPIDOrSession string       `json:"control_pid_or_session"`
 	Slices              []LeaseSlice `json:"slices"`
 }
 
-// LeaseSlice records one worker worktree under the lease.
+// LeaseSlice records one worker worktree under the lease. BaseSHA is the
+// commit its worktree was created from; empty means Lease.BaseSHA (a slice
+// from the original create).
 type LeaseSlice struct {
 	ID             string   `json:"id"`
 	Paths          []string `json:"paths"`
@@ -54,6 +62,35 @@ type LeaseSlice struct {
 	Branch         string   `json:"branch"`
 	WrightStatus   string   `json:"wright_status"`
 	TransferCommit string   `json:"transfer_commit,omitempty"`
+	BaseSHA        string   `json:"base_sha,omitempty"`
+}
+
+// expectedControl is where control must sit: the tip of this lease's latest
+// landing, or the batch base before any landing.
+func expectedControl(lease *Lease) string {
+	if lease.ControlTip != "" {
+		return lease.ControlTip
+	}
+	return lease.BaseSHA
+}
+
+// sliceBase is the commit sl's worktree was created from.
+func sliceBase(lease *Lease, sl LeaseSlice) string {
+	if sl.BaseSHA != "" {
+		return sl.BaseSHA
+	}
+	return lease.BaseSHA
+}
+
+// activeSlices returns the slices that still hold a parallel slot.
+func activeSlices(lease *Lease) []SlicePaths {
+	var active []SlicePaths
+	for _, sl := range lease.Slices {
+		if sl.WrightStatus != WrightIntegrated {
+			active = append(active, SlicePaths{ID: sl.ID, Paths: sl.Paths})
+		}
+	}
+	return active
 }
 
 func LeasePath(repoRoot, slug string) (string, error) {
@@ -132,8 +169,16 @@ func ValidateLease(lease *Lease) error {
 	default:
 		return fmt.Errorf("invalid lease status %q", lease.Status)
 	}
-	if err := checkParallelSliceCount(len(lease.Slices)); err != nil {
-		return err
+	if lease.ControlTip != "" && !shaRE.MatchString(lease.ControlTip) {
+		return fmt.Errorf("invalid control_tip %q", lease.ControlTip)
+	}
+	// A rolling lease grows past the cap as landed slices free their slots;
+	// only the slices still active are bounded.
+	if len(lease.Slices) < MinParallelSlices {
+		return checkParallelSliceCount(len(lease.Slices))
+	}
+	if active := len(activeSlices(lease)); active > MaxParallelSlices {
+		return fmt.Errorf("parallel requires %d-%d slices active at once (got %d)", MinParallelSlices, MaxParallelSlices, active)
 	}
 	if lease.N != len(lease.Slices) {
 		return fmt.Errorf("lease n=%d does not match slices=%d", lease.N, len(lease.Slices))
@@ -151,12 +196,15 @@ func ValidateLease(lease *Lease) error {
 			return err
 		}
 		switch sl.WrightStatus {
-		case "", WrightPending, WrightGreen, WrightRed, WrightGap:
+		case "", WrightPending, WrightGreen, WrightRed, WrightGap, WrightIntegrated:
 		default:
 			return fmt.Errorf("slice %q: invalid wright_status %q", sl.ID, sl.WrightStatus)
 		}
 		if sl.TransferCommit != "" && !shaRE.MatchString(sl.TransferCommit) {
 			return fmt.Errorf("slice %q: invalid transfer_commit %q", sl.ID, sl.TransferCommit)
+		}
+		if sl.BaseSHA != "" && !shaRE.MatchString(sl.BaseSHA) {
+			return fmt.Errorf("slice %q: invalid base_sha %q", sl.ID, sl.BaseSHA)
 		}
 	}
 	return nil
@@ -176,6 +224,9 @@ func EmitLeaseMarkdown(lease *Lease) (string, error) {
 	fmt.Fprintf(&b, "batch_id: %s\n", yamlQuote(lease.BatchID))
 	fmt.Fprintf(&b, "created_at: %s\n", yamlQuote(lease.CreatedAt))
 	fmt.Fprintf(&b, "base_sha: %s\n", yamlQuote(lease.BaseSHA))
+	if lease.ControlTip != "" {
+		fmt.Fprintf(&b, "control_tip: %s\n", yamlQuote(lease.ControlTip))
+	}
 	fmt.Fprintf(&b, "n: %d\n", lease.N)
 	fmt.Fprintf(&b, "status: %s\n", yamlQuote(lease.Status))
 	fmt.Fprintf(&b, "control_pid_or_session: %s\n", yamlQuote(lease.ControlPIDOrSession))
@@ -192,6 +243,9 @@ func EmitLeaseMarkdown(lease *Lease) (string, error) {
 		}
 		fmt.Fprintf(&b, "    worktree_path: %s\n", yamlQuote(sl.WorktreePath))
 		fmt.Fprintf(&b, "    branch: %s\n", yamlQuote(sl.Branch))
+		if sl.BaseSHA != "" {
+			fmt.Fprintf(&b, "    base_sha: %s\n", yamlQuote(sl.BaseSHA))
+		}
 		status := sl.WrightStatus
 		if status == "" {
 			status = WrightPending

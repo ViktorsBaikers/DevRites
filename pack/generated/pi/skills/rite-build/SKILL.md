@@ -75,15 +75,15 @@ Wright applies anti-slop; root verifies returns and never patches source. Refuse
 
 Omitted/`1` ≡ serial; `2`–`10` is a **cap** — the root runs the largest eligible
 path-disjoint set it can start now (`N_eff`), takes fewer when the cap cannot be
-filled, and recomputes after every completed round (serial slice or parallel
-integrate) until no pending slice remains
+filled, and refills a slot per landing (serial slice or one sibling) until
+no pending slice remains
 ([`parallel-batch.md` § Dynamic selection](reference/parallel-batch.md#dynamic-selection-and-re-batching)).
-Unattended runs (`/rite-autocomplete`, `.devrites/AFK` `max_parallel`) repeat batches
-inside the same run; HITL stops after each batch. This invocation's `--parallel N`
+Unattended runs (`/rite-autocomplete`, `.devrites/AFK` `max_parallel`) refill
+inside the same run; HITL stops after each landing. This invocation's `--parallel N`
 is the cap: leftover sentinel `max_parallel` is not consulted. Autocomplete with
 that flag also writes or replaces only `max_parallel: N`. Non-integer/`N≤0`/`N>10` hard refuse.
-All-green (independent review + proof) then integrate as one local `WIP(<slug>):`
-commit per sibling onto the current control branch (never pushed). Do not
+Each sibling lands alone when its review + proof are green (`integrate --slice`):
+one local `WIP(<slug>):` commit onto the control branch (never pushed). Do not
 integrate a sibling because the wright returned. A red/gap sibling gets a bounded repair
 round in its own worktree — never rebuilt from scratch while budget remains.
 Post-writer inventory and affected rechecks follow `phase-contract.md` § Independent
@@ -94,7 +94,7 @@ a human `Fix`. Exhausted repair blocks and preserves everything;
 `cleanup --force` salvages slice branches before removing worktrees —
 human-gated to abandon a batch, orchestrator-emitted only as the salvage
 step of an automatic frozen-lease re-batch.
-AFK charges after integrate only. Running lease blocks another
+AFK charges per landed sibling only. Running lease blocks another
 `/rite-build`. Details: `parallel-batch.md`.
 
 ## Execute and reply

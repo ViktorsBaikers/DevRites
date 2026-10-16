@@ -90,54 +90,9 @@ func createLocked(opts CreateOpts) (*Lease, error) {
 		session = fmt.Sprintf("pid:%d", os.Getpid())
 	}
 
-	createdPaths := make([]string, 0, len(opts.Slices))
-	createdBranches := make([]string, 0, len(opts.Slices))
-	cleanupPartial := func() {
-		for _, p := range createdPaths {
-			if err := removeWorktree(opts.Root, p); err != nil {
-				warnf("worktree cleanup %s: %v", p, err)
-			}
-		}
-		for _, b := range createdBranches {
-			if err := deleteBranch(opts.Root, b); err != nil {
-				warnf("branch cleanup %s: %v", b, err)
-			}
-		}
-	}
-	slices := make([]LeaseSlice, 0, len(opts.Slices))
-	for _, sp := range opts.Slices {
-		if err := validateSliceID(sp.ID); err != nil {
-			cleanupPartial()
-			return nil, err
-		}
-		paths, err := validateSlicePaths(sp.Paths, fmt.Sprintf("slice %q", sp.ID), opts.Root)
-		if err != nil {
-			cleanupPartial()
-			return nil, err
-		}
-		branch := WorkerBranch(opts.Slug, opts.BatchID, sp.ID)
-		wt := WorkerWorktreePath(opts.Root, opts.BatchID, sp.ID)
-		if _, err := os.Stat(wt); err == nil {
-			cleanupPartial()
-			return nil, fmt.Errorf("worktree path already exists: %s", wt)
-		}
-		if err := os.MkdirAll(filepath.Dir(wt), 0o755); err != nil {
-			cleanupPartial()
-			return nil, err
-		}
-		if err := worktreeAdd(opts.Root, wt, branch, base); err != nil {
-			cleanupPartial()
-			return nil, fmt.Errorf("worktree add %s: %w", sp.ID, err)
-		}
-		createdPaths = append(createdPaths, wt)
-		createdBranches = append(createdBranches, branch)
-		slices = append(slices, LeaseSlice{
-			ID:           sp.ID,
-			Paths:        paths,
-			WorktreePath: wt,
-			Branch:       branch,
-			WrightStatus: WrightPending,
-		})
+	slices, cleanupPartial, err := createWorktrees(opts.Root, opts.Slug, opts.BatchID, base, opts.Slices)
+	if err != nil {
+		return nil, err
 	}
 
 	lease := &Lease{
@@ -154,6 +109,163 @@ func createLocked(opts CreateOpts) (*Lease, error) {
 		return nil, err
 	}
 	ensureScratchExcluded(opts.Root)
+	return lease, nil
+}
+
+// createWorktrees makes one pending worker worktree and branch per slice from
+// base, all or nothing: a failure removes what this call already made. The
+// returned rollback undoes a success when the caller's lease write fails.
+func createWorktrees(root, slug, batchID, base string, specs []SlicePaths) ([]LeaseSlice, func(), error) {
+	made := make([]LeaseSlice, 0, len(specs))
+	rollback := func() {
+		// Worktrees first: git refuses to delete a branch still checked out.
+		for _, sl := range made {
+			if err := removeWorktree(root, sl.WorktreePath); err != nil {
+				warnf("worktree cleanup %s: %v", sl.WorktreePath, err)
+			}
+		}
+		for _, sl := range made {
+			if err := deleteBranch(root, sl.Branch); err != nil {
+				warnf("branch cleanup %s: %v", sl.Branch, err)
+			}
+		}
+	}
+	for _, sp := range specs {
+		sl, err := createWorktree(root, slug, batchID, base, sp)
+		if err != nil {
+			rollback()
+			return nil, nil, err
+		}
+		made = append(made, sl)
+	}
+	return made, rollback, nil
+}
+
+func createWorktree(root, slug, batchID, base string, sp SlicePaths) (LeaseSlice, error) {
+	if err := validateSliceID(sp.ID); err != nil {
+		return LeaseSlice{}, err
+	}
+	paths, err := validateSlicePaths(sp.Paths, fmt.Sprintf("slice %q", sp.ID), root)
+	if err != nil {
+		return LeaseSlice{}, err
+	}
+	branch := WorkerBranch(slug, batchID, sp.ID)
+	wt := WorkerWorktreePath(root, batchID, sp.ID)
+	if _, err := os.Stat(wt); err == nil {
+		return LeaseSlice{}, fmt.Errorf("worktree path already exists: %s", wt)
+	}
+	if err := os.MkdirAll(filepath.Dir(wt), 0o755); err != nil {
+		return LeaseSlice{}, err
+	}
+	if err := worktreeAdd(root, wt, branch, base); err != nil {
+		return LeaseSlice{}, fmt.Errorf("worktree add %s: %w", sp.ID, err)
+	}
+	return LeaseSlice{
+		ID:           sp.ID,
+		Paths:        paths,
+		WorktreePath: wt,
+		Branch:       branch,
+		WrightStatus: WrightPending,
+	}, nil
+}
+
+// AddOpts configures refilling a running lease with new slices.
+type AddOpts struct {
+	Root   string
+	Slug   string
+	Slices []SlicePaths
+}
+
+// Add refills freed slots of a running lease: each new slice gets a worktree
+// from the current control tip, under the same path-disjoint and cap rules as
+// the slices still active. Landed (integrated) slices no longer claim paths.
+func Add(opts AddOpts) (lease *Lease, err error) {
+	err = withLeaseLock(opts.Root, opts.Slug, func() error {
+		lease, err = addLocked(opts)
+		return err
+	})
+	return lease, err
+}
+
+func addLocked(opts AddOpts) (*Lease, error) {
+	if abs, err := filepath.Abs(opts.Root); err == nil {
+		opts.Root = abs
+	}
+	if len(opts.Slices) == 0 {
+		return nil, fmt.Errorf("add requires at least one slice")
+	}
+	leasePath, err := LeasePath(opts.Root, opts.Slug)
+	if err != nil {
+		return nil, err
+	}
+	lease, err := ReadLease(leasePath)
+	if err != nil {
+		return nil, err
+	}
+	if lease.Status != StatusRunning {
+		return nil, fmt.Errorf("add requires status=running (have %s)", lease.Status)
+	}
+	head, err := revParse(opts.Root, expectedControl(lease))
+	if err != nil {
+		return nil, err
+	}
+	if err := ensureControlAtBase(opts.Root, head); err != nil {
+		return nil, err
+	}
+
+	seen := make(map[string]bool, len(lease.Slices)+len(opts.Slices))
+	for _, sl := range lease.Slices {
+		seen[sl.ID] = true
+	}
+	added := make([]SlicePaths, 0, len(opts.Slices))
+	var addedPaths []string
+	for _, sp := range opts.Slices {
+		if err := validateSliceID(sp.ID); err != nil {
+			return nil, err
+		}
+		if seen[sp.ID] {
+			return nil, fmt.Errorf("slice id %q already in lease", sp.ID)
+		}
+		seen[sp.ID] = true
+		paths, err := validateSlicePaths(sp.Paths, fmt.Sprintf("slice %q", sp.ID), opts.Root)
+		if err != nil {
+			return nil, err
+		}
+		added = append(added, SlicePaths{ID: sp.ID, Paths: paths})
+		addedPaths = append(addedPaths, paths...)
+	}
+	all := append(activeSlices(lease), added...)
+	if len(all) > MaxParallelSlices {
+		return nil, fmt.Errorf("add would make %d slices active; parallel allows at most %d", len(all), MaxParallelSlices)
+	}
+	if len(all) >= 2 {
+		if _, err := CheckPathDisjoint(all, opts.Root); err != nil {
+			return nil, err
+		}
+	}
+	// The new worktree starts from control HEAD, so uncommitted user work on
+	// its paths would be neither in the slice nor safe from its landing.
+	dirty, err := porcelainDirtyPaths(opts.Root, addedPaths)
+	if err != nil {
+		return nil, err
+	}
+	if dirty {
+		return nil, fmt.Errorf("control has uncommitted changes on new slice paths; stop for the human to resolve them (never stash or commit them), then rerun add")
+	}
+
+	made, rollback, err := createWorktrees(opts.Root, opts.Slug, lease.BatchID, head, added)
+	if err != nil {
+		return nil, err
+	}
+	for i := range made {
+		made[i].BaseSHA = head
+	}
+	lease.Slices = append(lease.Slices, made...)
+	lease.N = len(lease.Slices)
+	if err := WriteLease(leasePath, lease); err != nil {
+		rollback()
+		return nil, err
+	}
 	return lease, nil
 }
 
@@ -185,6 +297,10 @@ func recordGreenLocked(repoRoot, slug, sliceID, commit string) (*Lease, error) {
 	found := false
 	for i := range lease.Slices {
 		if lease.Slices[i].ID == sliceID {
+			if lease.Slices[i].WrightStatus == WrightIntegrated {
+				// Re-greening a landed slice would land its work a second time.
+				return nil, fmt.Errorf("slice %s already integrated", sliceID)
+			}
 			lease.Slices[i].WrightStatus = WrightGreen
 			lease.Slices[i].TransferCommit = sha
 			found = true
@@ -222,11 +338,11 @@ func abortLocked(repoRoot, slug string) (*Lease, error) {
 	if lease.Status == StatusComplete {
 		return nil, fmt.Errorf("abort refused: lease already complete — the batch landed in control; nothing to discard")
 	}
-	base, err := revParse(repoRoot, lease.BaseSHA)
+	expected, err := revParse(repoRoot, expectedControl(lease))
 	if err != nil {
 		return nil, err
 	}
-	if err := ensureControlAtBase(repoRoot, base); err != nil {
+	if err := ensureControlAtBase(repoRoot, expected); err != nil {
 		warnf("control not at base: %v", err)
 	}
 	lease.Status = StatusAborted
@@ -252,12 +368,17 @@ func ensureControlAtBase(repoRoot, base string) error {
 
 // IntegrateOpts configures staging integrate.
 type IntegrateOpts struct {
-	Root           string
-	Slug           string
+	Root string
+	Slug string
+	// Slice, when set, lands only that slice (requires ApplyToControl);
+	// otherwise every slice not yet integrated lands together.
+	Slice          string
 	ApplyToControl bool
 }
 
-// Integrate all-or-nothing applies sibling transfer commits onto a staging branch.
+// Integrate all-or-nothing applies transfer commits onto a staging branch
+// cut from the expected control tip — every not-yet-integrated slice, or just
+// opts.Slice — and with ApplyToControl fast-forwards control to it.
 func Integrate(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 	err = withLeaseLock(opts.Root, opts.Slug, func() error {
 		tip, lease, err = integrateLocked(opts)
@@ -267,6 +388,9 @@ func Integrate(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 }
 
 func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
+	if opts.Slice != "" && !opts.ApplyToControl {
+		return "", nil, fmt.Errorf("integrate --slice requires --apply-to-control")
+	}
 	leasePath, err := LeasePath(opts.Root, opts.Slug)
 	if err != nil {
 		return "", nil, err
@@ -278,17 +402,36 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 	if lease.Status != StatusRunning && lease.Status != StatusIntegrateFailed {
 		return "", nil, fmt.Errorf("integrate requires status=running|integrate-failed (have %s)", lease.Status)
 	}
-	base, err := revParse(opts.Root, lease.BaseSHA)
+	// Control may only have moved by this lease's own landings; anything else
+	// is external work that integrate must neither rewind nor build on.
+	expected, err := revParse(opts.Root, expectedControl(lease))
 	if err != nil {
 		return "", nil, err
 	}
-	if err := ensureControlAtBase(opts.Root, base); err != nil {
+	if err := ensureControlAtBase(opts.Root, expected); err != nil {
 		return "", nil, err
 	}
 
-	union := make([]string, 0, len(lease.Slices))
-	for _, sl := range lease.Slices {
-		union = append(union, sl.Paths...)
+	var targets []int
+	for i, sl := range lease.Slices {
+		switch {
+		case opts.Slice == "" && sl.WrightStatus != WrightIntegrated,
+			opts.Slice != "" && sl.ID == opts.Slice:
+			targets = append(targets, i)
+		}
+	}
+	switch {
+	case opts.Slice != "" && len(targets) == 0:
+		return "", nil, fmt.Errorf("slice not in lease: %s", opts.Slice)
+	case opts.Slice != "" && lease.Slices[targets[0]].WrightStatus == WrightIntegrated:
+		return "", nil, fmt.Errorf("slice %s already integrated", opts.Slice)
+	case len(targets) == 0:
+		return "", nil, fmt.Errorf("no slices left to integrate")
+	}
+
+	union := make([]string, 0, len(targets))
+	for _, i := range targets {
+		union = append(union, lease.Slices[i].Paths...)
 	}
 	if opts.ApplyToControl {
 		// FF into control must not silently absorb or clobber the user's
@@ -303,7 +446,8 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 		}
 	}
 
-	for _, sl := range lease.Slices {
+	for _, i := range targets {
+		sl := lease.Slices[i]
 		if sl.WrightStatus != WrightGreen {
 			return "", nil, fmt.Errorf("slice %s is not green", sl.ID)
 		}
@@ -326,7 +470,7 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 	if err := os.MkdirAll(filepath.Dir(stageWT), 0o755); err != nil {
 		return "", nil, err
 	}
-	if err := worktreeAdd(opts.Root, stageWT, ibranch, base); err != nil {
+	if err := worktreeAdd(opts.Root, stageWT, ibranch, expected); err != nil {
 		return "", nil, fmt.Errorf("staging worktree: %w", err)
 	}
 
@@ -350,13 +494,20 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 					leasePath, StatusRunning, retryErr)
 			}
 		}
-		if err := ensureControlAtBase(opts.Root, base); err != nil {
+		if err := ensureControlAtBase(opts.Root, expected); err != nil {
 			warnf("control diverged from base during integrate: %v", err)
 		}
 		return "", lease, reason
 	}
 
-	for _, sl := range lease.Slices {
+	for _, i := range targets {
+		sl := lease.Slices[i]
+		// Each slice is proven against the commit its worktree was cut from,
+		// which for a refill is a later control tip than the batch base.
+		base, err := revParse(opts.Root, sliceBase(lease, sl))
+		if err != nil {
+			return fail(fmt.Errorf("slice %s base: %w", sl.ID, err))
+		}
 		tc, err := revParse(opts.Root, sl.TransferCommit)
 		if err != nil {
 			return fail(fmt.Errorf("slice %s transfer: %w", sl.ID, err))
@@ -417,11 +568,20 @@ func integrateLocked(opts IntegrateOpts) (tip string, lease *Lease, err error) {
 		if err := mergeFFOnly(opts.Root, tip); err != nil {
 			return fail(fmt.Errorf("control fast-forward to integrate tip failed: %w", err))
 		}
-		lease.Status = StatusComplete
+		for _, i := range targets {
+			lease.Slices[i].WrightStatus = WrightIntegrated
+		}
+		lease.ControlTip = tip
+		// A per-slice landing also clears an earlier integrate-failed: the
+		// lease is healthy again while other slices are still in flight.
+		lease.Status = StatusRunning
+		if len(activeSlices(lease)) == 0 {
+			lease.Status = StatusComplete
+		}
 		if err := WriteLease(leasePath, lease); err != nil {
 			return "", nil, err
 		}
-	} else if err := ensureControlAtBase(opts.Root, base); err != nil {
+	} else if err := ensureControlAtBase(opts.Root, expected); err != nil {
 		return fail(err)
 	}
 	// Without --apply-to-control the lease stays running: the integrate
@@ -529,11 +689,12 @@ func salvageSlice(sl LeaseSlice, batchID string) (string, error) {
 		fmt.Sprintf("devrites: salvage WIP (%s)", batchID), sl.Paths)
 }
 
-// Cleanup removes worker worktrees and clears the lease. A complete batch
-// deletes the merged slice branches; a forced non-complete cleanup first
-// salvages each sibling — uncommitted allowlisted changes become a commit on
-// the slice branch — and keeps every branch whose tip moved past base as the
-// durable rejected-work ref.
+// Cleanup removes worker worktrees and clears the lease. A complete batch, and
+// any slice already integrated, deletes the merged slice branches; a forced
+// non-complete cleanup first salvages each other sibling — uncommitted
+// allowlisted changes become a commit on the slice branch — and keeps every
+// branch whose tip moved past that slice's base as the durable rejected-work
+// ref.
 func Cleanup(repoRoot, slug string, force bool) (salvaged []Salvage, err error) {
 	err = withLeaseLock(repoRoot, slug, func() error {
 		salvaged, err = cleanupLocked(repoRoot, slug, force)
@@ -558,14 +719,6 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 		return nil, fmt.Errorf("cleanup refuses status=%s without --force (non-complete cleanup salvages work onto slice branches)", lease.Status)
 	}
 	complete := lease.Status == StatusComplete
-	base := ""
-	if !complete {
-		if b, err := revParse(repoRoot, lease.BaseSHA); err != nil {
-			warnf("base sha %s: %v", lease.BaseSHA, err)
-		} else {
-			base = b
-		}
-	}
 	// Ownership comes from what git registered, read before anything is
 	// removed, never from the lease's own claim.
 	registered, err := registeredWorktrees(repoRoot)
@@ -576,6 +729,9 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 	var failed, stranded, unconfirmed []string
 	keptWorktrees := map[string]bool{}
 	for _, sl := range lease.Slices {
+		// A slice integrate already landed is done like a complete batch: its
+		// work is on control, so there is nothing to salvage or keep.
+		landed := complete || sl.WrightStatus == WrightIntegrated
 		salvageFailed := false
 		// Only the deterministic scratch layout is ours to touch. A forged or
 		// stale lease worktree_path is never salvaged into (git ops would run
@@ -595,7 +751,7 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 					sl.ID, sl.WorktreePath, ScratchRoot(repoRoot))
 			}
 		}
-		if !complete && owned {
+		if !landed && owned {
 			if _, err := salvage(sl, lease.BatchID); err != nil {
 				warnf("salvage %s: %v", sl.ID, err)
 				salvageFailed = true
@@ -631,7 +787,13 @@ func cleanupLocked(repoRoot, slug string, force bool) ([]Salvage, error) {
 		if sl.Branch != "" {
 			keep := salvageFailed
 			tip := ""
-			if !complete {
+			if !landed {
+				base := ""
+				if b, err := revParse(repoRoot, sliceBase(lease, sl)); err != nil {
+					warnf("base sha %s: %v", sliceBase(lease, sl), err)
+				} else {
+					base = b
+				}
 				if t, err := revParse(repoRoot, sl.Branch); err != nil {
 					warnf("branch tip %s: %v", sl.Branch, err)
 					keep = true // fail toward preservation
@@ -740,13 +902,20 @@ func StatusReport(repoRoot, slug string) (string, error) {
 	fmt.Fprintf(&b, "lease: %s\n", leasePath)
 	fmt.Fprintf(&b, "status: %s\n", lease.Status)
 	fmt.Fprintf(&b, "base_sha: %s\n", lease.BaseSHA)
+	if lease.ControlTip != "" {
+		fmt.Fprintf(&b, "control_tip: %s\n", lease.ControlTip)
+	}
 	for _, sl := range lease.Slices {
 		tc := sl.TransferCommit
 		if tc == "" {
 			tc = "-"
 		}
-		fmt.Fprintf(&b, "slice %s: wright=%s wt=%s branch=%s transfer=%s\n",
+		fmt.Fprintf(&b, "slice %s: wright=%s wt=%s branch=%s transfer=%s",
 			sl.ID, sl.WrightStatus, sl.WorktreePath, sl.Branch, tc)
+		if sl.BaseSHA != "" {
+			fmt.Fprintf(&b, " base=%s", sl.BaseSHA)
+		}
+		b.WriteString("\n")
 	}
 	if head, err := headSHA(repoRoot); err == nil {
 		fmt.Fprintf(&b, "control_HEAD: %s\n", head)

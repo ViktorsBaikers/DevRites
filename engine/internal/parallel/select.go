@@ -13,6 +13,13 @@ var checkPathDisjoint = CheckPathDisjoint
 // whose size is ≤ cap. ready must already be dependency-satisfied and in plan
 // order. cap is 1–MaxParallelSlices; 1 is a legal one-slice round, not a latch.
 func SelectGreedy(cap int, ready []SlicePaths, root string) ([]SlicePaths, error) {
+	return SelectGreedySeeded(cap, nil, ready, root)
+}
+
+// SelectGreedySeeded is SelectGreedy with seed slices already running: they
+// occupy cap slots and claim their paths, a ready candidate with a seed's id
+// is skipped, and only the new picks are returned.
+func SelectGreedySeeded(cap int, seed, ready []SlicePaths, root string) ([]SlicePaths, error) {
 	if cap < 1 || cap > MaxParallelSlices {
 		return nil, fmt.Errorf("cap must be 1-%d (got %d)", MaxParallelSlices, cap)
 	}
@@ -39,10 +46,17 @@ func SelectGreedy(cap int, ready []SlicePaths, root string) ([]SlicePaths, error
 		normalized = append(normalized, SlicePaths{ID: item.ID, Paths: paths})
 	}
 
-	selected := make([]SlicePaths, 0, min(cap, len(normalized)))
+	running := make(map[string]bool, len(seed))
+	for _, s := range seed {
+		running[s.ID] = true
+	}
+	selected := append([]SlicePaths{}, seed...)
 	for _, cand := range normalized {
 		if len(selected) >= cap {
 			break
+		}
+		if running[cand.ID] {
+			continue
 		}
 		if len(selected) == 0 {
 			selected = append(selected, cand)
@@ -57,7 +71,7 @@ func SelectGreedy(cap int, ready []SlicePaths, root string) ([]SlicePaths, error
 		}
 		selected = trial
 	}
-	return selected, nil
+	return selected[len(seed):], nil
 }
 
 func selectMode(n int) string {
@@ -71,10 +85,21 @@ func selectMode(n int) string {
 	}
 }
 
-func formatSelect(selected []SlicePaths) string {
-	ids := make([]string, len(selected))
-	for i, item := range selected {
+// formatSelect prints the select line. running < 0 means no lease seeded the
+// selection; otherwise new picks join that many running slices, so the mode
+// counts them too and the line reports running=<k>.
+func formatSelect(picks []SlicePaths, running int) string {
+	ids := make([]string, len(picks))
+	for i, item := range picks {
 		ids[i] = item.ID
 	}
-	return fmt.Sprintf("select: n_eff=%d mode=%s slices=%s", len(selected), selectMode(len(selected)), strings.Join(ids, ","))
+	mode := selectMode(len(picks))
+	if running > 0 && len(picks) > 0 {
+		mode = selectMode(len(picks) + running)
+	}
+	line := fmt.Sprintf("select: n_eff=%d mode=%s slices=%s", len(picks), mode, strings.Join(ids, ","))
+	if running >= 0 {
+		line += fmt.Sprintf(" running=%d", running)
+	}
+	return line
 }

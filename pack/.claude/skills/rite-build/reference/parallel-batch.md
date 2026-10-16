@@ -36,14 +36,14 @@ Select **greedily in plan order**: pass every currently dependency-ready pending
 `N_eff = 1` → one serial round; nothing pending → Prove. A cap that cannot be filled
 is normal: take fewer. Serial is this round's size, not the rest of the run.
 
-**Re-batch automatically after every completed round** (parallel integrate+cleanup or
-a serial slice). Re-read `state.md`, pending slices, and the tree, then run
-`parallel select` again: finished work leaves the pending set, and satisfied
-dependencies unlock new slices. Under `.devrites/AFK` and `/rite-autocomplete` the
-repeat is the same run — HITL stops after each batch. `--parallel 5` with one eligible
-slice runs that one; when two to five then become eligible, the next round takes that
-many. **Failing case:** the run stays one-by-one after a serial round even though more
-slices are now eligible under the same cap.
+**Refill per landing; never wait for the batch.** Each sibling lands alone when
+green ([Lifecycle](#lifecycle) step 6). Then re-read `state.md`, pending slices, and
+the tree and run `parallel select --cap N --slug <slug>`: unlanded siblings hold
+their slots and paths, landed ones count as built, and only new picks print;
+`parallel add` starts each from the control tip and its wright dispatches at once.
+No lease → plain `select` + `create`. AFK/autocomplete is one run; HITL stops after
+each landing. **Failing case:** three siblings are green, one is repairing, and no
+new slice starts.
 
 ## Path-disjoint
 
@@ -109,22 +109,27 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    headroom bounds the batch size — one batch never assumes unbounded reviewers.
 5. Non-green siblings → **repair round** (below) in the same worktrees; lease
    stays `running` — no abort while repair budget remains. A green sibling →
-   `parallel record-green`. No partial integrate. All green → integrate.
+   `parallel record-green`, then step 6 for it alone.
    A recoverable RED blocks integration but does not cancel independent safe running siblings.
    Expected test-first RED is not a terminal gate failure. Cancel only for a shared
    invalid foundation, safety/access failure, resource boundary, or explicit stop;
    preserve completed and in-progress recoverable work and classify each result.
-6. `parallel integrate --apply-to-control` **only after steps 4–5 are green**:
-   each `transfer_commit` descends from `B` and diffs path-exact vs
-   `B`; apply each in plan order as its own local `WIP(<slug>):` commit
-   (imperative summary, never a slice id). Staging branch, then FF. Conflict →
-   reset to `B`, `integrate-failed`; classify under repair rounds (siblings stay
-   in place). Never integrate because a wright returned.
-7. Success: FF control (the branch that held `HEAD` when the batch started —
-   often `main`/`master`, otherwise whatever the user was on) to the integrate
-   tip: N local commits, never pushed; union `touched-files.md`; update
-   state/evidence; AFK +1 per integrated sibling; optional `check candidate`.
-8. Cleanup runs only after `integrate` marks the lease `complete` — work
+6. `parallel integrate --slice <id> --apply-to-control` **only after its steps
+   4–5 are green**: `transfer_commit` descends from the sibling's base and diffs
+   path-exact vs it; apply as its own local `WIP(<slug>):` commit
+   (imperative summary, never a slice id). Staging branch, then FF; the engine
+   refuses (never rewinds) if anything but this lease moved control. Conflict →
+   `integrate-failed`; classify under repair rounds (siblings stay in place).
+   Never integrate because a wright returned.
+7. Each landing: FF control (the branch that held `HEAD` when the batch started —
+   often `main`/`master`, otherwise whatever the user was on) by one local commit,
+   never pushed; union that sibling's paths into `touched-files.md`; update
+   state/evidence; AFK +1 for that sibling; optional `check candidate`. Then
+   refill ([Dynamic selection](#dynamic-selection-and-re-batching)) and start the
+   feature gates on control
+   ([Proof tiers](phase-contract.md#proof-tiers)); the next landing waits for them
+   to pass, the refilled wrights do not.
+8. Cleanup runs only after the last landing marks the lease `complete` — work
    landed in control, so `parallel cleanup` removes worktrees/branches.
    Blocked/human-stopped batches keep lease, worktrees, branches — nothing is
    removed while the batch may resume. `parallel abort` + `cleanup --force`
@@ -191,9 +196,11 @@ Repair rejected work in place; never discard/rebuild while budget remains.
 ## Engine verbs
 
 ```text
-devrites-engine parallel select --cap <1-10> [--root <dir>] [<json-file>|-]
+devrites-engine parallel select --cap <1-10> [--root <dir>] [--slug <slug>] [<json-file>|-]
 devrites-engine parallel create --root <repo> --slug <slug> --batch <id> --base <B> --json <file>|-
+devrites-engine parallel add --root <repo> --slug <slug> --json <file>|-
 devrites-engine parallel record-green --root <repo> --slug <slug> --slice <id> --commit <sha>
+devrites-engine parallel integrate --root <repo> --slug <slug> --slice <id> --apply-to-control
 devrites-engine parallel integrate --root <repo> --slug <slug> --apply-to-control
 devrites-engine parallel status --root <repo> --slug <slug>
 devrites-engine parallel lease-write|lease-read|lease-clear --root <repo> --slug <slug>

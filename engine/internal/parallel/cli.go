@@ -74,18 +74,23 @@ func runPathDisjoint(args []string, stdin io.Reader, stdout, stderr io.Writer) i
 
 func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	root := ""
+	slug := ""
 	jsonPath := "-"
 	capN := 0
 	sawCap := false
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "--root":
+		case "--root", "--slug":
 			if i+1 >= len(args) {
 				fmt.Fprintln(stderr, usageSelect)
 				return ExitUsage
 			}
 			i++
-			root = args[i]
+			if args[i-1] == "--root" {
+				root = args[i]
+			} else {
+				slug = args[i]
+			}
 		case "--cap":
 			if i+1 >= len(args) {
 				fmt.Fprintln(stderr, usageSelect)
@@ -124,7 +129,33 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "parallel select: %v\n", err)
 		return ExitBlocked
 	}
-	selected, err := SelectGreedy(capN, slices, root)
+	var seed []SlicePaths
+	running := -1
+	if slug != "" {
+		lease, err := runningLease(root, slug)
+		if err != nil {
+			fmt.Fprintf(stderr, "parallel select: %v\n", err)
+			return ExitBlocked
+		}
+		if lease != nil {
+			// The lease's active slices keep their slots and paths; nothing it
+			// already names (active or landed) is picked again.
+			seed = activeSlices(lease)
+			running = len(seed)
+			named := make(map[string]bool, len(lease.Slices))
+			for _, sl := range lease.Slices {
+				named[sl.ID] = true
+			}
+			var fresh []SlicePaths
+			for _, s := range slices {
+				if !named[s.ID] {
+					fresh = append(fresh, s)
+				}
+			}
+			slices = fresh
+		}
+	}
+	selected, err := SelectGreedySeeded(capN, seed, slices, root)
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel select: %v\n", err)
 		if strings.Contains(err.Error(), "cap must be") {
@@ -132,8 +163,28 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		}
 		return ExitBlocked
 	}
-	fmt.Fprintln(stdout, formatSelect(selected))
+	fmt.Fprintln(stdout, formatSelect(selected, running))
 	return ExitOK
+}
+
+// runningLease returns slug's lease when it is still in flight
+// (running|integrate-failed), or nil when there is none to seed from.
+func runningLease(root, slug string) (*Lease, error) {
+	path, err := LeasePath(root, slug)
+	if err != nil {
+		return nil, err
+	}
+	lease, err := ReadLease(path)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if lease.Status != StatusRunning && lease.Status != StatusIntegrateFailed {
+		return nil, nil
+	}
+	return lease, nil
 }
 
 func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -145,6 +196,8 @@ func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	switch sub {
 	case "create":
 		return cmdCreate(rest, stdin, stdout, stderr)
+	case "add":
+		return cmdAdd(rest, stdin, stdout, stderr)
 	case "record-green":
 		return cmdRecordGreen(rest, stdout, stderr)
 	case "abort":
@@ -174,16 +227,17 @@ func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 
 const (
 	usageCreate       = "usage: parallel create --root --slug --batch --base --json"
+	usageAdd          = "usage: parallel add --root --slug --json <json-file>|-"
 	usageRecordGreen  = "usage: parallel record-green --root --slug --slice --commit"
 	usageAbort        = "usage: parallel abort --root --slug"
-	usageIntegrate    = "usage: parallel integrate --root --slug [--apply-to-control]"
+	usageIntegrate    = "usage: parallel integrate --root --slug [--apply-to-control [--slice <id>]]"
 	usageCleanup      = "usage: parallel cleanup --root --slug [--force]"
 	usageStatus       = "usage: parallel status --root --slug"
 	usageLeaseWrite   = "usage: parallel lease-write --root --slug --json"
 	usageLeaseRead    = "usage: parallel lease-read --root --slug [--field name]"
 	usageLeaseClear   = "usage: parallel lease-clear --root --slug"
 	usagePathDisjoint = "usage: check path-disjoint [--root <dir>] [<json-file>|-]"
-	usageSelect       = "usage: parallel select --cap <1-10> [--root <dir>] [<json-file>|-]"
+	usageSelect       = "usage: parallel select --cap <1-10> [--root <dir>] [--slug <slug>] [<json-file>|-]"
 )
 
 func parallelUsage() string {
@@ -191,15 +245,16 @@ func parallelUsage() string {
 
 Subcommands:
   create          --root --slug --batch --base --json
+  add             --root --slug --json
   record-green    --root --slug --slice --commit
   abort           --root --slug
-  integrate       --root --slug [--apply-to-control]
+  integrate       --root --slug [--apply-to-control [--slice <id>]]
   cleanup         --root --slug [--force]
   status          --root --slug
   lease-write     --root --slug --json
   lease-read      --root --slug [--field name]
   lease-clear     --root --slug
-  select          --cap <1-10> [--root] [<json-file>|-]
+  select          --cap <1-10> [--root] [--slug] [<json-file>|-]
 
 Exit codes: 0 ok, 2 usage, 3 blocked`)
 }
@@ -210,6 +265,8 @@ func CommandUsage(name string) string {
 	switch name {
 	case "create":
 		return usageCreate
+	case "add":
+		return usageAdd
 	case "record-green":
 		return usageRecordGreen
 	case "abort":
@@ -414,6 +471,41 @@ func cmdCreate(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	return ExitOK
 }
 
+func cmdAdd(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageAdd)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	if f.JSON == "" {
+		fmt.Fprintln(stderr, usageAdd)
+		return ExitUsage
+	}
+	data, err := readJSONInput(f.JSON, stdin)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel add: %v\n", err)
+		return ExitBlocked
+	}
+	slices, err := ParseSlicesJSON(data)
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel add: %v\n", err)
+		return ExitBlocked
+	}
+	lease, err := Add(AddOpts{Root: f.Root, Slug: f.Slug, Slices: slices})
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel add: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprintf(stdout, "added: %d worktrees; batch=%s active=%d base=%s\n",
+		len(slices), lease.BatchID, len(activeSlices(lease)), lease.Slices[len(lease.Slices)-1].BaseSHA)
+	return ExitOK
+}
+
 // rejectUnsupportedFlags reports flags a subcommand parses but must not
 // silently ignore: --force only exists for cleanup, --apply-to-control only
 // for integrate.
@@ -484,16 +576,26 @@ func cmdIntegrate(args []string, stdout, stderr io.Writer) int {
 	if code := rejectUnsupportedFlags(f, stderr, false, true); code != ExitOK {
 		return code
 	}
+	if f.Slice != "" && !f.ApplyToControl {
+		fmt.Fprintln(stderr, "parallel integrate: --slice requires --apply-to-control")
+		fmt.Fprintln(stderr, usageIntegrate)
+		return ExitUsage
+	}
 	tip, lease, err := Integrate(IntegrateOpts{
 		Root:           f.Root,
 		Slug:           f.Slug,
+		Slice:          f.Slice,
 		ApplyToControl: f.ApplyToControl,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel integrate: %v\n", err)
 		return ExitBlocked
 	}
-	fmt.Fprintf(stdout, "integrate-ok: tip=%s status=%s apply_to_control=%v\n", tip, lease.Status, f.ApplyToControl)
+	fmt.Fprintf(stdout, "integrate-ok: tip=%s status=%s apply_to_control=%v", tip, lease.Status, f.ApplyToControl)
+	if f.Slice != "" {
+		fmt.Fprintf(stdout, " slice=%s", f.Slice)
+	}
+	fmt.Fprintln(stdout)
 	return ExitOK
 }
 

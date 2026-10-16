@@ -18,7 +18,7 @@ the orchestrator pauses for approval before landing it.
   and fail-on-red proof are green, with no open Critical/Important and no repair
   wright still in flight. Serial: git recipe below (skip empty index) or isolated
   FF of a matching `transfer_commit`. Parallel: `devrites-engine parallel
-  integrate --apply-to-control` (no second control `git commit`).
+  integrate --slice <id> --apply-to-control` (no second control `git commit`).
 - **Do not:** when a wright returns; before review/proof; with red/gap findings;
   fast-forward an isolated transfer onto control before those checks.
 

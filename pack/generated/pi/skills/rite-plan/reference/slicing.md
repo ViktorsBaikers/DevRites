@@ -168,3 +168,8 @@ Order by dependency, but minimize coupling. A slice that needs three other slice
 is a smell: look for a thinner cut that stands alone. An edge exists only when this slice
 reads something the other produces: write it as `SLICE-001 (via <interface>)`. If you
 cannot name what crosses, drop the edge; a shallow, wide graph runs in parallel.
+
+Slices sharing a file never build side by side: put a hub file's shared edit
+(registry, command table, test harness) in one seam slice the others depend on.
+`check task-graph` prints the `schedule:` and `ADVISORY hub:` lines; inseparable
+writes get `Serial rationale: <why>`. Never merge slices or drop acceptance to widen it.

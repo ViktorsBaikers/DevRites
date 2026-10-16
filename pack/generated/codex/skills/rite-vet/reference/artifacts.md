@@ -103,6 +103,14 @@ From $rite-vet on <iso>. Runner + conventions: <detected framework + command>.
 Link any disposable parser fixture. Preflight values are planning evidence, not post-build proof;
 Prove recaptures the observed command, candidate identity, and result.
 
+## Feature gates
+| Gate | Command | Cwd | Expected |
+|---|---|---|---|
+| <full suite / workspace lint / audit> | <exact command> | <path> | <exit/output> |
+
+Whole-repository rows only: Build runs them per landing
+([tiers](../../rite-build/reference/phase-contract.md#proof-tiers)), Prove on the final candidate.
+
 Commands in this durable artifact are portable repository commands: no RTK or local shell
 aliases, user-specific absolute paths, or temporary proof trees. Evidence records
 the command actually executed.
