@@ -5,7 +5,7 @@ argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-cor
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/agents.md","rite-plan/reference/slicing.md","rite-plan/reference/replan-and-repair.md","rite-plan/reference/dependency-graph.md","rite-plan/reference/task-breakdown.md","rite-plan/reference/anti-patterns.md","rite-define/reference/plan-template.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","drift.md"],"workspaceByRole":{"plan-drafter":["brief.md","spec.md","plan.md","tasks.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","state.md","drift.md"]}} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/agents.md","rite-plan/reference/slicing.md","rite-plan/reference/replan-and-repair.md","rite-plan/reference/dependency-graph.md","rite-plan/reference/task-breakdown.md","rite-plan/reference/anti-patterns.md","rite-define/reference/plan-template.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","drift.md"],"workspaceByRole":{"evidence-scout":["spec.md","architecture.md","decisions.md","state.md"],"plan-drafter":["brief.md","spec.md","plan.md","tasks.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","state.md","drift.md"]}} -->
 > Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase plan` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -95,15 +95,21 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
    never re-derives them by exhaustive search. It also carries a bounded
    self-attack over the delta (`self_attack_exposures`), catching the shallow
    next-round findings before Vet's dispatch rather than after a full loop.
-   Root dispositions every exposure — fold as a finding, accept as a declared
+   During recovery, a non-Critical exposure off the failing fingerprint's causal
+   path goes to `eng-review.md` `## Deferred findings` (Review gives it a verdict;
+   Seal blocks without one), so a repair never widens past its fingerprint.
+   Root dispositions every other exposure — fold as a finding, accept as a declared
    residual, or reject with reason; none silently drops.
    Packet mechanics: dedupe at assembly — findings with an identical
    required-fix and site set merge into one entry that closes all their
    fingerprints. The packet may carry digest-pinned site excerpts so the
-   drafter spot-verifies anchors instead of re-scanning whole files, and root
-   may partition findings into anchor-disjoint clusters with one drafter per
-   cluster in parallel — findings sharing any anchor or mirrored clause stay
-   in one cluster, and each bundle applies independently. A `partial`-
+   drafter spot-verifies anchors instead of re-scanning whole files. Root
+   partitions findings into anchor-disjoint clusters — findings sharing any
+   anchor or mirrored clause stay in one cluster — and, with two or more,
+   dispatches one drafter per cluster in one parallel wave within the scale
+   limits. Every cluster pins the same base; their bundles apply together in
+   one `state apply-bundle` call, and an overlap refusal merges those clusters
+   for the re-dispatch. A `partial`-
    continuation re-dispatch continues the same packet; it does not advance the
    same-seam counter. Count consecutive repair packets whose findings' cited clause sets overlap
    the immediately previous packet's — the overlap is the seam. Carry it as an explicit
@@ -142,9 +148,14 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
 4. Re-slice using vertical-slice rules: [slicing](reference/slicing.md) and
    [task-breakdown](reference/task-breakdown.md). Prefer thin, shippable, verifiable.
    **Completion:** every slice is independently shippable/provable or carries an irreducibility reason.
-5. Reconcile the candidate against steps 3 and 4, then the root updates `plan.md`, `tasks.md`,
-   `state.md`, and appends rationale to `decisions.md`. A rejected candidate
-   (malformed bundle, stale or non-unique anchor) or a drafter `Outcome: gap`
+5. Reconcile the candidate's meaning against steps 3 and 4, save each bundle
+   under `packets/`, and apply its hunks with `devrites-engine state apply-bundle
+   <slug> <bundle.json>...` (all-or-nothing; `--dry-run` previews); never
+   hand-copy hunks or stage file copies. Rewrite each owning clause in place; never
+   append a dated delta or fold section beside the clause it supersedes (apply-bundle
+   refuses one). Then update `state.md` and append
+   rationale to `decisions.md`. A rejected candidate
+   (malformed bundle, stale or non-unique anchor, any apply-bundle refusal) or a drafter `Outcome: gap`
    is one no-progress outcome on every open fingerprint in the fold; the
    re-dispatch packet must name the rejection so the same hunks don't recur.
    A gap naming genuinely human-owned information routes to `/rite-clarify`.

@@ -337,7 +337,7 @@ func TestRunGatesExecutesAndBindsEvidence(t *testing.T) {
 	doc := ParseLedger(mustRead(t, ledgerPath))
 	approved := []ApprovedCommand{{Command: "echo RUN-MARKER", Cwd: ""}}
 
-	results := RunGates(context.Background(), project, ledgerPath, doc, approved, false, 10*time.Second)
+	results := RunGates(context.Background(), project, ledgerPath, doc, approved, false, 10*time.Second, nil)
 	if len(results) != 1 || !results[0].Ran || !results[0].Passed || results[0].WriteErr != nil {
 		t.Fatalf("results=%+v", results)
 	}
@@ -353,14 +353,39 @@ func TestRunGatesExecutesAndBindsEvidence(t *testing.T) {
 		t.Fatalf("gate not met after run: %s", GateState(gate, doc))
 	}
 	// Already met: skipped without reverify.
-	results = RunGates(context.Background(), project, ledgerPath, doc, approved, false, 10*time.Second)
+	results = RunGates(context.Background(), project, ledgerPath, doc, approved, false, 10*time.Second, nil)
 	if !results[0].Passed || results[0].Ran {
 		t.Fatalf("met gate must skip: %+v", results[0])
 	}
 	// Reverify re-executes it.
-	results = RunGates(context.Background(), project, ledgerPath, doc, approved, true, 10*time.Second)
+	results = RunGates(context.Background(), project, ledgerPath, doc, approved, true, 10*time.Second, nil)
 	if !results[0].Ran || !results[0].Passed {
 		t.Fatalf("reverify must re-run: %+v", results[0])
+	}
+}
+
+func TestRunGatesSharedCheckExecutesOnceAndLocksWrites(t *testing.T) {
+	project, ledgerPath := writeWorkspace(t)
+	// && separates commands under both /bin/sh and cmd.exe.
+	check := "echo x>>runs.txt && echo ALPHA BETA"
+	writeLedger(t, ledgerPath,
+		"- [ ] G1: alpha\n  CHECK: "+check+"\n  EXPECT: ALPHA\n  EVIDENCE: pending\n"+
+			"- [ ] G2: beta\n  CHECK: "+check+"\n  EXPECT: BETA\n  EVIDENCE: pending\n"+
+			"- [ ] G3: gamma\n  CHECK: "+check+"\n  EXPECT: GAMMA\n  EVIDENCE: pending\n")
+	doc := ParseLedger(mustRead(t, ledgerPath))
+	approved := []ApprovedCommand{{Command: check, Cwd: ""}}
+	locked := 0
+	writeLock := func(fn func() error) error { locked++; return fn() }
+
+	results := RunGates(context.Background(), project, ledgerPath, doc, approved, false, 10*time.Second, writeLock)
+	if !results[0].Passed || !results[1].Passed || results[2].Passed {
+		t.Fatalf("each gate must match its own EXPECT: %+v", results)
+	}
+	if runs := strings.Count(mustRead(t, filepath.Join(project, "runs.txt")), "x"); runs != 1 {
+		t.Fatalf("shared CHECK ran %d times, want 1", runs)
+	}
+	if locked != 3 {
+		t.Fatalf("writebacks under lock = %d, want 3", locked)
 	}
 }
 
@@ -370,7 +395,7 @@ func TestRunGatesFailureClearsBox(t *testing.T) {
 	doc := ParseLedger(mustRead(t, ledgerPath))
 	approved := []ApprovedCommand{{Command: "echo nothing", Cwd: ""}}
 
-	results := RunGates(context.Background(), project, ledgerPath, doc, approved, true, 10*time.Second)
+	results := RunGates(context.Background(), project, ledgerPath, doc, approved, true, 10*time.Second, nil)
 	if !results[0].Ran || results[0].Passed {
 		t.Fatalf("results=%+v", results)
 	}
@@ -388,7 +413,7 @@ func TestRunGatesSkipsUnapprovedManualAbandoned(t *testing.T) {
 			"- [ ] G3: gone\n  CHECK: echo hi\n  EXPECT: hi\n  EVIDENCE: pending\n"+
 			"ABANDON: G3 removed upstream\n")
 	doc := ParseLedger(mustRead(t, ledgerPath))
-	results := RunGates(context.Background(), project, ledgerPath, doc, []ApprovedCommand{}, false, 10*time.Second)
+	results := RunGates(context.Background(), project, ledgerPath, doc, []ApprovedCommand{}, false, 10*time.Second, nil)
 	if len(results) != 3 {
 		t.Fatalf("results=%+v", results)
 	}
@@ -703,7 +728,7 @@ func TestRunGatesRefusesUnresolvableApprovalSurface(t *testing.T) {
 				t.Fatal(err)
 			}
 			doc := ParseLedger(mustRead(t, ledgerPath))
-			results := RunGates(context.Background(), project, ledgerPath, doc, tc.approved, false, 10*time.Second)
+			results := RunGates(context.Background(), project, ledgerPath, doc, tc.approved, false, 10*time.Second, nil)
 			if len(results) != 1 {
 				t.Fatalf("results=%+v", results)
 			}
@@ -786,7 +811,7 @@ func TestUnresolvableApprovalDoesNotBlockNonExecutingGates(t *testing.T) {
 	}
 	manualUnmet := &Gate{ID: "M2", Title: "human judged", Evidence: "pending"}
 	doc := &Document{Abandoned: map[string]string{}, Gates: []*Gate{manualUnmet, met}}
-	for _, r := range RunGates(context.Background(), project, filepath.Join(project, "unused.md"), doc, nil, false, 10*time.Second) {
+	for _, r := range RunGates(context.Background(), project, filepath.Join(project, "unused.md"), doc, nil, false, 10*time.Second, nil) {
 		if strings.Contains(r.Detail, "not an approved") {
 			t.Errorf("gate %s was refused for approval although it never executes: %q", r.ID, r.Detail)
 		}

@@ -76,6 +76,11 @@ worktrees stay forbidden.
    Quote every active `decisions.md` carry-forward constraint whose `Files:`
    overlap the task paths (or that names no files).
    A new path requires a new bounded contract; the wright cannot widen the task.
+   Name the writer-safe commands the wright must run (syntax/type/lint, unit and
+   self-check suites, a narrow local smoke of the changed path) and never forbid
+   them: a wright that cannot execute writes blind and its failures surface a
+   whole review round later. Only artifact-producing, consumptive, or full
+   canonical feature gates stay root-owned.
 3. Record `git diff --name-only` before dispatch so unrelated work remains
    distinguishable. For an isolated pilot, also record committed base SHA and exact
    baseline status before asking the host for isolation. **Failing case:** paths that
@@ -99,6 +104,8 @@ acceptance-preserving split (`root_no_change_analysis` → `FOLD` per
 [acceptance-preserving-reslice](../../devrites-lib/reference/standards/acceptance-preserving-reslice.md);
 open findings move to the new slice owning their paths), or record
 `## <DRIFT-ID> — <SLICE-ID> reslice review` with why no smaller split exists and
+a spec trace of the slice's obligations (hardening no AC/INV/PROH requires moves to
+a sibling slice dependents do not need, still gated before Seal), and
 reopen with `--reslice-review <DRIFT-ID>`. Use
 at most one writer across all linked worktrees for this workspace. Never run two
 writers in one worktree, run isolated and same-worktree writers concurrently, or

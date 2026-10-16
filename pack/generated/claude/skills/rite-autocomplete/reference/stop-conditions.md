@@ -38,7 +38,7 @@ Agent-owned backtracking is not a stop condition while the exact causal
 fingerprint has budget. Invoke the earlier phase, affected Vet, remediation, and
 proof; then resume the origin. Three no-progress corrections of that exact
 fingerprint spend only its current strategy: escalate to the next correction
-class inline (shared root cause, boundary redesign, diagnostic amplification)
+class inline (shared root cause, diagnostic amplification, boundary redesign)
 with a fresh budget, never asking permission. After three escalations in this
 activation the fingerprint parks; finish all independent work, then stop once.
 Preserve reproduction, attempts, and dead ends; never offer `/rite-plan unblock`

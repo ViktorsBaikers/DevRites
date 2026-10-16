@@ -65,6 +65,8 @@ Usage:
   devrites-engine gates <subcommand> <slug>  Machine-checked gates.md ledger: scaffold/status/run/reverify/lint/attest/abandon
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
+  devrites-engine state apply-bundle <slug> <bundle.json>... [--dry-run]
+                                         Validate and apply plan-drafter hunk bundles atomically
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
   devrites-engine migrate <slug> [--dry-run] [--answer id=choice]  Normalize an older-schema workspace to the current schema
   devrites-engine secret-scan [--staged] [--stdin] [slug]  Scan exact staged blobs, stdin, or touched files; HIGH blocks
@@ -237,6 +239,8 @@ func cmdState(root string, args []string, stdout, stderr io.Writer) int {
 		return lib.Resolve(root, args[1:], stdout, stderr)
 	case "merge-manifest":
 		return lib.RunMergeManifest(root, args[1:], stdout, stderr)
+	case "apply-bundle":
+		return lib.RunApplyBundle(root, args[1:], stdout, stderr)
 	case "close":
 		return lib.CloseOut(root, args[1:], stdout, stderr)
 	default:

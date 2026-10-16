@@ -103,7 +103,10 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
    - **No process residue.** Do not put `SLICE-###`, slice numbers, or "this slice"
      in product source, tests, comments, or filenames.
 4. **VERIFY (fail-on-red).** Run writer-safe tests/types/lint: `Tests/proof` plus
-   tests of changed code; `## Feature gates` rows are root-owned. Report required
+   tests of changed code; `## Feature gates` rows are root-owned. Writer-safe means
+   local and non-consumptive — syntax/type/lint, unit and self-check suites, and a
+   narrow smoke of the changed path — never only a syntax check; contract text
+   cannot strip it. Report required
    build/browser/E2E as `not-run` (root-owned, artifact-producing gates), and only
    when the exact command, cwd, and prerequisites already appear in the unchanged
    vetted `test-plan.md`; never synthesize or rewrite a root command. Root runs

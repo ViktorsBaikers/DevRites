@@ -30,7 +30,7 @@ const (
   check dup [slug] [--all|--worktree|--staged|--base <ref>]
 `
 
-	stateUsage = `usage: devrites-engine state <resolve|merge-manifest|close> ...
+	stateUsage = `usage: devrites-engine state <resolve|merge-manifest|apply-bundle|close> ...
 
   state resolve <qid> "<answer>"
   state resolve --drop <qid> ["<reason>"]
@@ -39,6 +39,7 @@ const (
   state resolve --human --drop <qid> ["<reason>"]
   state resolve --human --batch <file>
   state merge-manifest <slug> [<predecessor>...]
+  state apply-bundle <slug> <bundle.json>... [--dry-run]
   state close <slug>
 `
 
@@ -86,6 +87,7 @@ const (
 	dupUsageLine        = "usage: devrites-engine check dup [slug] [--all|--worktree|--staged|--base <ref>] [--min-lines n] [--threshold f] [--ignore-file <path>] [--limit n] [--exclude <csv>] [--phase p] [--cwd <dir>]"
 	resolveUsage        = `usage: devrites-engine state resolve <qid> "<answer>"  |  state resolve --drop <qid> ["<reason>"]  |  state resolve --batch <file>  |  state resolve --human <qid> "<answer>"  |  state resolve --human --drop <qid> ["<reason>"]  |  state resolve --human --batch <file>`
 	mergeManifestUsage  = "usage: devrites-engine state merge-manifest <slug> [<predecessor>...]"
+	applyBundleUsage    = "usage: devrites-engine state apply-bundle <slug> <bundle.json>... [--dry-run]"
 	closeUsage          = "usage: devrites-engine state close <slug>"
 	observeSliceUsage   = "usage: devrites-engine observe slice <slug> <SLICE-ID>"
 	observeSummaryUsage = "usage: devrites-engine observe summary [slug]"
@@ -286,6 +288,8 @@ func helpState(rest []string) string {
 		return resolveUsage
 	case "merge-manifest":
 		return mergeManifestUsage
+	case "apply-bundle":
+		return applyBundleUsage
 	case "close":
 		return closeUsage
 	default:

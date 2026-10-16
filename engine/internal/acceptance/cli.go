@@ -248,9 +248,19 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 		return ExitBlocked
 	}
 
-	lockErr := state.WithFeatureLock(root, slug, func() error {
-		text, err := ReadLedgerFile(ledgerPath)
-		if err != nil {
+	// The gates lock serializes check execution; the feature lock is held only
+	// to read inputs and per writeback, so dispatch and other workspace writers
+	// are not blocked for the whole (often minutes-long) run.
+	featureLock := func(fn func() error) error { return state.WithFeatureLock(root, slug, fn) }
+	lockErr := state.WithLock(ledgerPath+".lock", func() error {
+		var text string
+		var approved []ApprovedCommand
+		if err := featureLock(func() error {
+			var err error
+			text, err = ReadLedgerFile(ledgerPath)
+			approved = loadTestPlan(testPlanPath)
+			return err
+		}); err != nil {
 			return err
 		}
 		doc := ParseLedger(text)
@@ -260,8 +270,7 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 			}
 			return nil
 		}
-		approved := loadTestPlan(testPlanPath)
-		for _, result := range RunGates(context.Background(), project, ledgerPath, doc, approved, reverify, timeout) {
+		for _, result := range RunGates(context.Background(), project, ledgerPath, doc, approved, reverify, timeout, featureLock) {
 			switch {
 			case !result.Ran:
 				fmt.Fprintf(stdout, "gate %s: skipped (%s)\n", result.ID, result.Detail)

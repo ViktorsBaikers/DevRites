@@ -79,7 +79,8 @@ Pull these via `Read` when the diff demands them:
    reviewer's brief without severity) and ends in `review.md` with its own label and
    action tag — never silently dropped. Hand each lane reviewer the
    `devrites-engine recall --paths <its touched paths>` pointers as prior context, not findings.
-2. **Review tests first:** do they prove the acceptance criteria? Missing,
+2. **Review tests first** while the step-3 cohort runs — launch it first; this
+   root pass needs none of its output: do they prove the acceptance criteria? Missing,
    weak, or wrong tests are the first findings.
    **Completion:** every acceptance criterion maps to a proven test or a labeled finding.
 3. **Review spec and code separately in parallel.** A change can pass
@@ -100,6 +101,10 @@ Pull these via `Read` when the diff demands them:
        (scope creep / drift), (c) criteria implemented incorrectly. Quote the spec
        line per finding. If the spec is missing or unreadable, report `Review gap:
        missing spec` and do not infer requirements from the diff."
+     - **Seal roles** → `devrites-test-analyst`, plus `devrites-doubt-reviewer` per
+       stood decision and `devrites-devex-reviewer` when triggered, join this cohort on
+       the same digest. Their findings join step 7's single correction, and Seal cites
+       their unchanged same-candidate accounts instead of re-dispatching them.
      - **Code-review axis** → `devrites-code-reviewer`: "Apply your full documented
        discipline (tests-first, correctness, readability, architecture, maintainability,
        standards) on the feature workspace + diff. Cite file:line; skip tooling-enforced

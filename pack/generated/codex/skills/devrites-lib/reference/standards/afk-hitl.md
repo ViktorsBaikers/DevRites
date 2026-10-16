@@ -376,6 +376,14 @@ access, safety and irreversible-action boundaries independently stop work.
   closes every deferred row with a labeled verdict; Seal blocks on any without one.
   **Failing case:** round 4 finds three Important items on clauses untouched since
   round 1 and dispatches another repair.
+- **Recovery findings need a discriminator; recovery scope stays frozen.** While a
+  fingerprint is in recovery, a new Important finding keeps it open or opens another
+  only with an executed reproduction or a quoted AC/INV/PROH/accepted-DEC line whose
+  observable outcome fails; root turns it into a control the next wright must pass.
+  A static counterexample against plan-invented hardening goes to the Review trail or
+  `## Deferred findings` (Review gives it a verdict; Seal blocks without one). A
+  Critical with a concrete failure path always opens a fingerprint. A correction adds
+  no proof site or mechanism its fingerprint's closure does not need. No reviewer is skipped.
 - **Separate consumptive authority from recovery.** Spent one-shot authorization
   blocks another execution, not offline recovery. Retained evidence starts caller-owned
   diagnosis/correction immediately; the next consumptive execution needs fresh authority.
@@ -389,13 +397,19 @@ access, safety and irreversible-action boundaries independently stop work.
   the fingerprint's current *strategy*, not the work. Record that strategy and its
   attempts under `## Dead ends`, then the controlling caller escalates inline in the
   same invocation: re-diagnose from the reproduction and dead ends, take the first
-  class below that still has an untried strategy, run `$rite-plan repair` plus
-  narrow Vet for it, and resume with a fresh three-attempt budget. Classes, in order:
-  (1) **shared root cause**: fix the owner every failing path routes through and
-  enforce it across all callers instead of another local guard; (2) **boundary
-  redesign**: acceptance-preserving reslice or redesign of the failing seam;
-  (3) **diagnostic amplification**: add discriminating probes or fixtures, then
-  correct from that evidence. A recorded strategy, or a rewording of one, never
+  class below that still has an untried strategy, and resume with a fresh
+  three-attempt budget. Re-plan only when the strategy must change a planning
+  input (writer allowlist, interface or contract, slice topology, or a
+  `test-plan.md` proof row): run `$rite-plan repair` plus narrow Vet for it. A
+  strategy that fits the vetted plan, with `devrites-engine check readiness <slug>`
+  still passing, goes straight to the wright with the dead ends in its contract;
+  Build's review and proof still gate it. Classes, in order, cheapest evidence
+  before costliest change: (1) **shared root cause**: fix the owner every failing
+  path routes through and enforce it across all callers instead of another local
+  guard; (2) **diagnostic amplification**: add discriminating probes or fixtures,
+  then correct from that evidence (last for a consumptive action, whose attempt
+  needs fresh authorization); (3) **boundary redesign**: acceptance-preserving
+  reslice or redesign of the failing seam, built on that evidence. A recorded strategy, or a rewording of one, never
   repeats. Escalation never weakens tests, validators or acceptance. Each
   fingerprint gets at most three escalations per activation; record each in
   `drift.md` with its class and strategy.
