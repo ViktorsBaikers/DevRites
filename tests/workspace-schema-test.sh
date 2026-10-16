@@ -45,6 +45,16 @@ if python3 "$VALIDATOR" "$PENDING_SLICE/fixtures" >"$OUT/devrites-workspace-sche
 fi
 expect_msg "$OUT/devrites-workspace-schema-pending-slice.txt" 'phase prove requires every slice built; incomplete: SLICE-002'
 
+DEFERRED_SLICE="$(mktemp -d "$OUT/case.XXXXXX")"
+cp -R "$FIXTURES" "$DEFERRED_SLICE/fixtures"
+printf '\n## SLICE-009 Optional hardening (deferred)\nGoal: owner may elect later.\nSatisfies: none\nDependencies: SLICE-002\nFiles likely touched: none\nTests/proof: none until elected\nMode: HITL\nGate: blocking\nDone condition: owner elects it with an AC\n' \
+  >>"$DEFERRED_SLICE/fixtures/.devrites/work/backend-api/tasks.md"
+python3 "$VALIDATOR" "$DEFERRED_SLICE/fixtures" >"$OUT/devrites-workspace-schema-deferred-slice.txt" 2>&1 || {
+  echo "FAIL: a deferred Satisfies: none slice blocked a proof-required workspace"
+  cat "$OUT/devrites-workspace-schema-deferred-slice.txt"
+  exit 1
+}
+
 CANONICAL_WORKSPACE="$(mktemp -d "$OUT/case.XXXXXX")"
 cp -R "$FIXTURES" "$CANONICAL_WORKSPACE/fixtures"
 {

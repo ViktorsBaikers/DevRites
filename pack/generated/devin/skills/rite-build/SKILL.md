@@ -109,7 +109,8 @@ or canonical transaction, return inspection, independent code/doubt/test analysi
 approved fail-on-red proof, record, AFK accounting, and stop. Use
 [`reference/output.md`](reference/output.md) plus the shared
 [`reply contract`](../devrites-lib/reference/reply-contract.md). HITL never starts
-the next slice automatically; AFK obeys remaining budget; Prove requires all slices built.
+the next slice automatically; AFK obeys remaining budget; Prove requires every slice built except a
+[deferred slice](../rite-plan/reference/slicing.md#deferred-slice).
 
 ## Phase exit
 

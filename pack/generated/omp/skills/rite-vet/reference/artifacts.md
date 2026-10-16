@@ -140,8 +140,9 @@ none is plan-invented hardening: move it to `Deferred hardening`.
 |---|---|---|---|
 | D1 | <proof or mechanism> | <reason> | <the spec line an owner would add> |
 
-Deferred rows are an optional follow-up slice: not built, proven, or gating in this
-feature; this table is their follow-up record. Nothing is deleted.
+Deferred rows, like a [deferred slice](skill://rite-plan/reference/slicing.md#deferred-slice),
+are not built, proven, or gating in this feature; this table is their follow-up record.
+Nothing is deleted.
 
 ## Interaction inventory (UI slices — every element + flow gets an asserting test)
 Enumerate every interactive element and user flow the feature exposes; one row each, none
