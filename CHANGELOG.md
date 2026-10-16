@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.1.5...v6.2.0) (2026-10-16)
+
+### Added
+
+* **devrites:** lint wright contracts at dispatch open ([#112](https://github.com/ViktorsBaikers/DevRites/issues/112)) ([391a931](https://github.com/ViktorsBaikers/DevRites/commit/391a9317dba9f00941ed29c48cc1f3f2ae8551c4))
+
 ## [6.1.5](https://github.com/ViktorsBaikers/DevRites/compare/v6.1.4...v6.1.5) (2026-10-16)
 
 ### Fixed
