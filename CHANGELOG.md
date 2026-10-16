@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.1.2](https://github.com/ViktorsBaikers/DevRites/compare/v6.1.1...v6.1.2) (2026-10-16)
+
+### Fixed
+
+* **devrites:** close autocomplete dead ends and orphaned writer claims ([#108](https://github.com/ViktorsBaikers/DevRites/issues/108)) ([a680203](https://github.com/ViktorsBaikers/DevRites/commit/a680203d226160f9dae3bf5a386914567bd25da5))
+
 ## [6.1.1](https://github.com/ViktorsBaikers/DevRites/compare/v6.1.0...v6.1.1) (2026-10-16)
 
 ### Fixed
