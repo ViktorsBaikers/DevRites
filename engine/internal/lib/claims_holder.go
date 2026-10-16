@@ -3,6 +3,7 @@ package lib
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -23,6 +24,14 @@ type claimProc struct {
 type procInfo struct {
 	ppid  int
 	start string
+	comm  string
+}
+
+// shells outlive the agent sessions they launch (a terminal pane, a
+// multiplexer's login shell), so a shell never stands for the holder.
+var shells = map[string]bool{
+	"sh": true, "bash": true, "zsh": true, "fish": true, "dash": true, "ksh": true,
+	"tcsh": true, "csh": true, "nu": true, "pwsh": true, "powershell": true, "cmd": true,
 }
 
 // processTable lists running processes keyed by pid, or nil when the host
@@ -30,7 +39,7 @@ type procInfo struct {
 var processTable = psProcessTable
 
 func psProcessTable() map[int]procInfo {
-	cmd := exec.Command("ps", "-A", "-o", "pid=,ppid=,lstart=")
+	cmd := exec.Command("ps", "-A", "-o", "pid=,ppid=,lstart=,comm=")
 	cmd.Env = append(os.Environ(), "LC_ALL=C")
 	out, err := cmd.Output()
 	if err != nil {
@@ -39,16 +48,16 @@ func psProcessTable() map[int]procInfo {
 	table := map[int]procInfo{}
 	for _, line := range strings.Split(string(out), "\n") {
 		f := strings.Fields(line)
-		if len(f) != 7 {
+		if len(f) < 8 {
 			continue
 		}
 		pid, perr := strconv.Atoi(f[0])
 		ppid, pperr := strconv.Atoi(f[1])
-		start, serr := time.ParseInLocation("Mon Jan 2 15:04:05 2006", strings.Join(f[2:], " "), time.Local)
+		start, serr := time.ParseInLocation("Mon Jan 2 15:04:05 2006", strings.Join(f[2:7], " "), time.Local)
 		if perr != nil || pperr != nil || serr != nil {
 			continue
 		}
-		table[pid] = procInfo{ppid: ppid, start: start.UTC().Format(time.RFC3339)}
+		table[pid] = procInfo{ppid: ppid, start: start.UTC().Format(time.RFC3339), comm: strings.Join(f[7:], " ")}
 	}
 	if len(table) == 0 {
 		return nil
@@ -99,11 +108,32 @@ func (p holderProbe) anchors(now time.Time) []claimProc {
 	return out
 }
 
+// holder returns the nearest anchor that is not a shell: the agent session
+// process that owns the claim. A shell or terminal multiplexer above it can
+// outlive the session, so only the session's own exit proves release.
+func (p holderProbe) holder(now time.Time) *claimProc {
+	for _, proc := range p.anchors(now) {
+		name := strings.TrimPrefix(filepath.Base(p.table[proc.PID].comm), "-")
+		if name != "" && !shells[name] {
+			return &proc
+		}
+	}
+	return nil
+}
+
 // gone reports whether rec's holder is proven exited: the claim was taken on
-// this host and every anchor it does not share with the caller has exited.
+// this host and its recorded holder session has exited, or, for a claim with
+// no recorded holder, every anchor it does not share with the caller has.
 func (p holderProbe) gone(rec *claimRecord) bool {
 	if p.table == nil || rec.Host == "" || rec.Host != p.host {
 		return false
+	}
+	if h := rec.Holder; h != nil {
+		if slices.Contains(p.self, *h) {
+			return false
+		}
+		proc, ok := p.table[h.PID]
+		return !ok || proc.start != h.Start
 	}
 	unique := 0
 	for _, a := range rec.Anchors {

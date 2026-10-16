@@ -318,6 +318,75 @@ func TestClaimFoldsCase(t *testing.T) {
 	}
 }
 
+// A shell or multiplexer that launched the session outlives it; once the
+// recorded holder session exits, the claim is dead even while they run.
+func TestClaimHolderSessionExitFreesPathsDespiteLiveShell(t *testing.T) {
+	host, err := os.Hostname()
+	if err != nil {
+		t.Skip("no hostname")
+	}
+	old := "2026-10-15T13:10:20Z"
+	session := claimProc{PID: 62926, Start: "2026-10-16T01:28:12Z"}
+	held := claimRecord{
+		ID: "cl-native", Session: "s1", Paths: []string{"pkg/a.go"},
+		ClaimedAt: time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+		ExpiresAt: time.Now().UTC().Add(time.Hour).Format(time.RFC3339),
+		Host:      host,
+		Anchors:   []claimProc{session, {PID: 4954, Start: old}, {PID: 4062, Start: old}},
+		Holder:    &session,
+	}
+	shellAndMux := map[int]procInfo{4954: {ppid: 4062, start: old, comm: "fish"}, 4062: {ppid: 1, start: old, comm: "herdr"}}
+	cases := []struct {
+		name   string
+		table  map[int]procInfo
+		state  string
+		addOut int
+	}{
+		{"session exited", shellAndMux, "dead", 0},
+		{"session running", map[int]procInfo{62926: {ppid: 4954, start: session.Start, comm: "omp"}, 4954: shellAndMux[4954], 4062: shellAndMux[4062]}, "live", 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			saved := processTable
+			processTable = func() map[int]procInfo { return tc.table }
+			t.Cleanup(func() { processTable = saved })
+			root := claimTestRoot(t)
+			line, _ := json.Marshal(held)
+			if err := os.WriteFile(filepath.Join(root, ClaimsFile), append(line, '\n'), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if _, out, _ := runClaim(t, root, "list"); !strings.Contains(out, "cl-native "+tc.state) {
+				t.Fatalf("list state want %s: %q", tc.state, out)
+			}
+			if code, _, errOut := runClaim(t, root, "add", "--session", "s2", "pkg/a.go"); code != tc.addOut {
+				t.Fatalf("add: code=%d want %d stderr=%s", code, tc.addOut, errOut)
+			}
+		})
+	}
+}
+
+func TestClaimAddRecordsNonShellHolder(t *testing.T) {
+	old := time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)
+	parent := os.Getppid()
+	saved := processTable
+	processTable = func() map[int]procInfo {
+		return map[int]procInfo{parent: {ppid: 777, start: old, comm: "/usr/local/bin/omp"}, 777: {ppid: 1, start: old, comm: "-zsh"}}
+	}
+	t.Cleanup(func() { processTable = saved })
+	root := claimTestRoot(t)
+	if code, _, e := runClaim(t, root, "add", "--session", "s1", "pkg/a.go"); code != 0 {
+		t.Fatalf("add: %d %s", code, e)
+	}
+	raw, err := os.ReadFile(filepath.Join(root, ClaimsFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rec claimRecord
+	if err := json.Unmarshal(raw, &rec); err != nil || rec.Holder == nil || rec.Holder.PID != parent {
+		t.Fatalf("holder = %+v, want pid %d (err %v)", rec.Holder, parent, err)
+	}
+}
+
 func TestClaimHolderExitFreesPaths(t *testing.T) {
 	host, err := os.Hostname()
 	if err != nil {

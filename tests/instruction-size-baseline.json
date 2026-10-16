@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1490507,
+  "total_bytes": 1490746,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -175,7 +175,7 @@
     "pack/.claude/skills/rite-build/reference/spec-drift-guard.md": 4629,
     "pack/.claude/skills/rite-build/reference/tdd.md": 1357,
     "pack/.claude/skills/rite-build/reference/wright-dispatch.md": 11271,
-    "pack/.claude/skills/rite-build/SKILL.md": 9611,
+    "pack/.claude/skills/rite-build/SKILL.md": 9850,
     "pack/.claude/skills/rite-clarify/reference/anti-patterns.md": 1348,
     "pack/.claude/skills/rite-clarify/reference/decision-coverage.md": 2069,
     "pack/.claude/skills/rite-clarify/SKILL.md": 6361,
