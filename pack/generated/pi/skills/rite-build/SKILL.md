@@ -30,6 +30,9 @@ Execute [`reference/phase-contract.md`](reference/phase-contract.md)
 Every wright contract names the writer-safe checks the wright runs (syntax/type/lint,
 unit and self-check suites, a narrow local smoke) and never forbids them; only
 artifact-producing, consumptive, or full canonical gates stay root-owned.
+Prior contracts in `evidence.md` are not a template for this. **Failing case:** the
+contract says "skip tests mid-flight; root runs them after return", and the wright
+returns three unit failures that a 20 s `go test` would have caught in-round.
 
 ## Required rules
 
