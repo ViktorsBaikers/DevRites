@@ -64,7 +64,7 @@ test changes.
    and no-progress corrections before accepting terminal none; a distinct
    fingerprint below cap resumes offline triage without another real action.
 2. **Freeze scope.** Read spec, tasks, state, test plan, and full diff. Require
-   every slice built. Missing `test-plan.md` returns to Vet inline (Prove stays the controlling
+   every slice built except a [deferred slice](../rite-plan/reference/slicing.md#deferred-slice). Missing `test-plan.md` returns to Vet inline (Prove stays the controlling
    caller) and resumes here; it never authorizes ad hoc proof.
 3. **Approve commands.** If absent, use
    [test-command-discovery](reference/test-command-discovery.md) over repository

@@ -131,7 +131,7 @@ Pull these via `Read` when shaping the plan:
    expand this into repository-wide coverage.
 4. **Map coverage and wiring:** every `AC-###` spec acceptance criterion maps to ≥1 `SLICE-###`
    ([`acceptance-criteria.md`](../rite-spec/reference/acceptance-criteria.md)); no orphaned criteria, no slice without a
-   criterion. Every proof row quotes the spec line it proves (`Proves`); proof that proves
+   criterion except a [deferred slice](../rite-plan/reference/slicing.md#deferred-slice). Every proof row quotes the spec line it proves (`Proves`); proof that proves
    none goes to `test-plan.md` `## Deferred hardening`, never into a slice
    ([artifacts.md](../rite-vet/reference/artifacts.md)). Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`
    rows into `traceability.md` and `test-plan.md`; unresolved rows get a gate/owner. Each

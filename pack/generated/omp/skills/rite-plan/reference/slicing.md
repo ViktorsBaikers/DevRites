@@ -173,3 +173,10 @@ Slices sharing a file never build side by side: put a hub file's shared edit
 (registry, command table, test harness) in one seam slice the others depend on.
 `check task-graph` prints the `schedule:` and `ADVISORY hub:` lines; inseparable
 writes get `Serial rationale: <why>`. Never merge slices or drop acceptance to widen it.
+
+## Deferred slice
+A slice with `Satisfies: none` is an optional follow-up: plan-invented hardening or
+owner-moved scope kept with its preserved source and contracts. It carries no acceptance
+(every AC still maps to a required slice), is never dispatched (`check slice` refuses
+it), and never counts toward "all slices built", Prove, or Seal. The owner elects it
+later through a plan change that gives it an AC.

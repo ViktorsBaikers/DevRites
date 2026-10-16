@@ -362,6 +362,19 @@ def completed_slices(tasks: str) -> set[str]:
     return done
 
 
+def deferred_slices(tasks: str) -> set[str]:
+    """Slices whose block says `Satisfies: none`: optional follow-ups never built."""
+    deferred = set()
+    current = ""
+    for line in tasks.splitlines():
+        if re.match(r"^#{1,6}\s", line):
+            ids = ID_PATTERNS["SLICE"].findall(line)
+            current = ids[0] if ids else ""
+        elif current and re.match(r"(?i)^\s*satisfies\s*:\s*none\b", line):
+            deferred.add(current)
+    return deferred
+
+
 def blocking_questions(questions: str) -> list[str]:
     out = []
     chunks = re.split(r"(?m)^##\s+", questions)
@@ -712,6 +725,7 @@ def validate_workspace(workspace: Path) -> list[str]:
     req_ids = set(ID_PATTERNS["REQ"].findall(spec))
     slice_ids = set(ID_PATTERNS["SLICE"].findall(tasks))
     built_slice_ids = completed_slices(tasks)
+    deferred_slice_ids = deferred_slices(tasks)
     evid_ids = set(ID_PATTERNS["EVID"].findall(evidence + "\n" + browser_evidence))
 
     if spec and not ac_ids:
@@ -722,7 +736,7 @@ def validate_workspace(workspace: Path) -> list[str]:
         errors.append(f"{workspace}: legacy slice label {old}; use SLICE-###")
 
     if bool(metadata.get("proofRequired")):
-        incomplete_slice_ids = sorted(slice_ids - built_slice_ids)
+        incomplete_slice_ids = sorted(slice_ids - built_slice_ids - deferred_slice_ids)
         if incomplete_slice_ids:
             errors.append(
                 f"{workspace / 'tasks.md'}: phase {phase} requires every slice built; "
@@ -743,9 +757,9 @@ def validate_workspace(workspace: Path) -> list[str]:
                 re.S,
             )
             section_text = section_match.group(1) if section_match else ""
-            if not ID_PATTERNS["AC"].search(section_text):
+            if slice_id not in deferred_slice_ids and not ID_PATTERNS["AC"].search(section_text):
                 errors.append(f"{workspace / 'tasks.md'}: {slice_id} has no AC-### reference")
-        for slice_id in sorted(slice_ids):
+        for slice_id in sorted(slice_ids - deferred_slice_ids):
             if trace and slice_id not in trace:
                 errors.append(f"{workspace / 'traceability.md'}: missing {slice_id}")
 

@@ -68,7 +68,7 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 | 4 | `$rite-define` | approved plan/tasks/traceability |
 | 5 | `$rite-vet` | every plan; derive mutable budget after READY |
 | 6 | `$rite-build` batch loop | largest eligible path-disjoint set (cap: this invocation's `--parallel N`, else sentinel `max_parallel`, else 10; one-slice round when <2 eligible); refill per landing; charge once per landed slice |
-| 7 | `$rite-prove` | all slices built; approved proof; recovery on red |
+| 7 | `$rite-prove` | all slices built except deferred (`Satisfies: none`); approved proof; recovery on red |
 | 8 | `$rite-polish` | re-prove after code edits |
 | 9 | `$rite-review` | in-scope correction then fresh proof |
 | 10 | `$rite-seal` | GO/NO-GO; no Git |
