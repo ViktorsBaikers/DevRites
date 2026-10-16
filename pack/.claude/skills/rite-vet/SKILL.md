@@ -207,7 +207,9 @@ plan declares a root-authored executable workflow file, read
    `devrites-engine check readiness --emit-binding <slug>`; normal readiness check
    must pass. Record the per-input drift baseline alongside it:
    `devrites-engine check drift <slug> --record` — a later stale binding then
-   names the exact artifact that moved instead of "something changed". Technical failure records reproduction, not qid. Human gap awaits
+   names the exact artifact that moved instead of "something changed". An `ADVISORY
+   proportion:` line names a slice whose proof outgrew its ACs: move its rows without a
+   `Proves` spec line to `Deferred hardening` before READY, never deepen them. Technical failure records reproduction, not qid. Human gap awaits
    Clarify. Optional cross-model follows `reference/cross-model.md` (trigger `cross-model`).
 
    With READY, no pending remediation, and a valid technical return cursor,

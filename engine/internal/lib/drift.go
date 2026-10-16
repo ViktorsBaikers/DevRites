@@ -44,6 +44,8 @@ type driftBaseline struct {
 	RecordedAt string                      `json:"recorded_at"`
 	Binding    string                      `json:"binding"`
 	Inputs     []gate.ReadinessInputDigest `json:"inputs"`
+	// ProofBytes is each slice's proof size at Vet, for the growth advisory.
+	ProofBytes map[string]int `json:"proof_bytes,omitempty"`
 }
 
 // driftDiff is one input whose state differs from the baseline.
@@ -78,10 +80,16 @@ func RunCheckDrift(root string, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	baselinePath := filepath.Join(workspace, driftBaselineFile)
+	code := 0
 	if record {
-		return recordDriftBaseline(root, slug, baselinePath, digests, binding, stdout, stderr)
+		code = recordDriftBaseline(root, slug, baselinePath, digests, binding, stdout, stderr)
+	} else {
+		code = compareDrift(workspace, baselinePath, digests, binding, stdout, stderr)
 	}
-	return compareDrift(workspace, baselinePath, digests, binding, stdout, stderr)
+	if code == 0 {
+		printProportion(root, slug, "", stdout)
+	}
+	return code
 }
 
 // recordDriftBaseline writes the current per-input digests as the baseline.
@@ -91,6 +99,10 @@ func recordDriftBaseline(root, slug, baselinePath string, digests []gate.Readine
 		RecordedAt: time.Now().UTC().Format(time.RFC3339),
 		Binding:    binding,
 		Inputs:     digests,
+		ProofBytes: map[string]int{},
+	}
+	for id, w := range workspaceProofWeights(root, slug) {
+		baseline.ProofBytes[id] = w.Bytes
 	}
 	payload, err := json.MarshalIndent(baseline, "", "  ")
 	if err != nil {

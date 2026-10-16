@@ -188,6 +188,7 @@ func RunCheckSlice(root string, args []string, stdout, stderr io.Writer) int {
 	if n, over := sliceSizeAdvisory(block); over {
 		fmt.Fprintf(stdout, "check slice: ADVISORY size: %s has %d Writer allowlist files (>= %d); consider an acceptance-preserving split\n", sliceID, n, sliceFileAdvisory)
 	}
+	printProportion(root, slug, sliceID, stdout)
 	if len(problems) > 0 {
 		fmt.Fprintf(stdout, "check slice: %s BLOCKED\n", sliceID)
 		for _, p := range problems {

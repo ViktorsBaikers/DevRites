@@ -98,7 +98,7 @@ Each required reviewer/analyst/auditor starts with exactly one:
 ```text
 Outcome: <findings | no-findings | gap>
 Counts: <n per severity or kind used in the rows below>
-Finding: <severity> conf <n> | <file:line or artifact section> | <observed quote/result> | when <input/state/sequence> → <effect> | <minimum fix>
+Finding: <severity> conf <n> | <file:line or artifact section> | <observed quote/result> | when <input/state/sequence> → <effect> | breaks <ID or standard §> "<quoted line>" | <minimum fix>
 Basis: <files read · commands run to reach this finding>
 ```
 
@@ -108,6 +108,13 @@ Basis: <files read · commands run to reach this finding>
   A Critical/Important row carries `conf <n>` in its severity cell and writes impact
   as `when <input/state/sequence> → <effect>`; missing either, root admits it as
   `Unverified: <claim> — missing trigger` (stays `gap`).
+- **Proportionality:** a Critical/Important row's `breaks` quotes the line it violates:
+  a spec ID (`AC`/`REQ`/`INV`/`PROH`/`DEC`/`EDGE`) or a shipped standard rule
+  (`<standard>.md § <section>`: security, regression, principles). Root anchors the
+  quote like the `file:line` quote. No anchor, or one the defect does not break,
+  admits the row as Suggestion logged `Deferred: <claim> — no spec anchor` for an
+  optional follow-up slice; it never drives a repair round. Hardening no spec line
+  asks for is a Suggestion, however plausible.
 - **`no-findings`:** `No-findings:` names checks and inspected evidence. Bare
   pass, empty list, or “looks good” is malformed.
 - **`gap`:** names missing/unreadable/stale input; skipped/failed required check;

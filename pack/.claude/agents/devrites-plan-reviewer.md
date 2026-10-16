@@ -112,7 +112,10 @@ criterion, slice, or proof.
   `convergence_pressure` eligibility mechanical. Tag every Critical/Important
   `kind: contract` (an implementer could build it differently and still pass the
   planned tests) or `kind: mechanism` (a named test can discriminate the wrong
-  implementation; propose that case as the fix, not new plan prose).
+  implementation; propose that case as the fix, not new plan prose). Each
+  Critical/Important also quotes the spec line (`AC`/`REQ`/`INV`/`PROH`/`DEC`/`EDGE`)
+  or standard rule it breaks; hardening no spec line asks for is a Suggestion
+  ([agents.md](../skills/devrites-lib/reference/standards/agents.md) § Result admission, Proportionality).
 - In a recheck, your verdict covers the listed fingerprints, the correction diff, and
   the dependents of each changed clause. Return an explicit correction-created
   regression verdict over the touched invariants and those dependents as
