@@ -62,7 +62,9 @@ a human plus an agent) can share one working tree. Before a same-tree writer
 starts, it records an advisory claim — `devrites-engine claim add --session
 <id> <paths>` — retains the returned `<claim-id>`, then checks the same paths
 with `devrites-engine claim check --session <id> <paths>`; a held claim from a
-live foreign session is a stop-and-report, not a merge-later problem. On every
+live foreign session is never merged later or overridden. Unattended, skip only
+work that needs those paths, run independent work, and re-check `claim list --all`
+before stopping; stop and report the holder only when nothing independent remains. On every
 host-confirmed terminal path after `add` ([unknown outcomes keep it](skill://devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)) — return,
 rejected result, stop, or a launch refused with no handle — run
 `devrites-engine claim release --session <id> --id <claim-id>`. Claims expire

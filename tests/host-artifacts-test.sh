@@ -133,7 +133,7 @@ grep -q 'exact path-bounded executable workflow artifacts under the active `.dev
   no "Codex root cannot materialize executable workflow artifacts"
 grep -q '"action":"invoke classifier once under owner lock; no actor-history migration"' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" &&
   ! grep -q 'There is no actor-history migration\.' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" &&
-  grep -q '"action":"stop on exact WAIT_ACTIVE_OWNER, BLOCKED_EXHAUSTED, or BLOCKED_GATE result"' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" &&
+  grep -q '"action":"escalate BLOCKED_EXHAUSTED; on WAIT_ACTIVE_OWNER run independent work and recheck; stop on exact BLOCKED_GATE result"' "$OUT/codex/skills/rite-autocomplete/reference/stop-conditions.md" &&
   ok "Codex autocomplete uses canonical Workflow Artifact routes" ||
   no "Codex autocomplete duplicates stale actor-history routing"
 grep -q 'devrites.workflow-artifact-admission.v1' "$OUT/codex/skills/devrites-lib/reference/standards/workflow-artifacts.md" &&

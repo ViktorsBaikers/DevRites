@@ -82,5 +82,6 @@ The detecting phase owns backtracking and the batch sweep. Save
 `return_phase`/`return_next_action`; consume nested Plan/Vet `STOP` internally, complete
 vetted acceptance-preserving remediation, then restore the cursor and failed step.
 Never hand the human an intermediate command. The shared three-attempt causal-fingerprint
-cap still applies: exhaustion produces one technical blocker, while a genuinely
-human-owned decision uses the question format below.
+cap still applies: a spent strategy escalates and a fully escalated fingerprint parks
+under the [retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve),
+while a genuinely human-owned decision uses the question format below.

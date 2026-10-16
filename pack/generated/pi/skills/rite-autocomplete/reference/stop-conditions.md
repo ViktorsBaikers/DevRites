@@ -58,7 +58,7 @@ amplification Plan repair and narrow Vet inline, then pause for fresh GO before
 one evidence-acquisition attempt. Without a safe seam, escalate to the next
 class or park; only a real human/risk/scope gate stops for a human.
 
-<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"classifier returns owner-busy, exhausted, or existing hard gate","action":"stop on exact WAIT_ACTIVE_OWNER, BLOCKED_EXHAUSTED, or BLOCKED_GATE result","return":"unchanged cursor plus fixed route-owned output"} -->
+<!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"classifier returns owner-busy, exhausted, or existing hard gate","action":"escalate BLOCKED_EXHAUSTED; on WAIT_ACTIVE_OWNER run independent work and recheck; stop on exact BLOCKED_GATE result","return":"unchanged cursor plus fixed route-owned output"} -->
 ## Other stop classes
 
 - **Gate severity:** escalating always stops. Blocking with a ranked recommended
@@ -85,6 +85,10 @@ class or park; only a real human/risk/scope gate stops for a human.
   pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count
   does not stop. Zero with no pending slices is normal completion.
   Malformed flag stops before any write.
+- **Foreign writer:** a `live`/`expired` claim or `WAIT_ACTIVE_OWNER` held by
+  another session blocks only work on those paths; run independent work, re-check,
+  and stop only when nothing independent remains. `released`/`dead` claims are
+  reconciled per [§ Cancellation](../../devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation).
 - **Resource envelope:** overlapping run or missing AFK after arm still stops.
   Do not stop on `--max-slices`, `max_agents`, `max_minutes`, or `max_review_queue`.
 - **Confidence:** intent still cannot become testable acceptance after interview.

@@ -223,8 +223,9 @@ project/decision docs, and authoritative dependency sources; make and record rev
 implementation/test choices. Ask only about product, scope, acceptance, architecture policy,
 irreversible risk, or human-only access/action.
 
-Objective test/build/tool failure runs bounded `devrites-debug-recovery`; fix it or record a
-technical blocker. Never ask permission for another attempt, test, parser repair, or probe.
+Objective test/build/tool failure runs bounded `devrites-debug-recovery`; fix it, or escalate and
+park it under the [retry contract](#retry-cap-no-progress-loops-and-self-resolve). Never ask
+permission for another attempt, test, parser repair, or probe.
 Close decisions at the earliest informed phase: product in spec, coverage in clarify,
 scope/risk in temper, architecture/dependencies in define, and proof/toolchain in vet. Build
 keeps only unavailable-pre-code or mandatory action-time checkpoints.
