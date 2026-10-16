@@ -124,9 +124,9 @@ EXPECTED_NORMAL_GENERATED_DELTA = {
 }
 EXPECTED_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "b6232bf5aff1f7f5b1e90e3c93899ade1b872588bf8c68a8ad59d84929fc95a0",
+        "7a44b3037e6e601132d38af412be55a577d09003deedf64ac2946173607a454b",
     "codex/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "8969fec2b58124e1e3d743ebb6d64b5b1071efde19b868e662fff718d7b1b597",
+        "a178f2d1afc0d3a803a044087d8f7dbbea847d8f6590e45d3ae5af37d2f7bd37",
 }
 PRECHANGE_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
@@ -2107,9 +2107,9 @@ def check_module_and_corpus(root: Path) -> None:
             and "epoch exhaustion\nnever claims" in module
             and "<NONE|same-fingerprint-count|total-epoch-limit>" not in module,
             "conditional terminal exhaustion cause contract")
-    require("next_action=none — technical recovery exhausted; requires new evidence or changed failure conditions" in module
-            and "technical recovery exhausted for <causal fingerprint>" not in module,
-            "frozen exhaustion action")
+    require("next_action=/rite-plan repair <slug> — escalate exhausted workflow attempt" in module
+            and "next_action=none" not in module,
+            "exhaustion escalates instead of dead-ending")
     require("WA-B016-PRODUCT-SEPARATION" not in module,
             "exact product-separation boundary")
     exact_manifest_contract = lambda text: text.count(OUTSIDE_MANIFEST_CONTRACT) == 1
@@ -2225,9 +2225,9 @@ ADMISSION_FIELDS = [
     "proof_aggregate_timeout_seconds", "proof_terminate_grace_seconds",
 ]
 OPERATION_TABLE_SHA256 = "a2b157c2226a216bf2a0f6dbebf82b673057c8c8087eb7c2b6cbb10424a831e6"
-ROUTE_MAP_SHA256 = "0a1634b772ae61e3d0ef0c74b9c0e0f1715af8401a00549179454470c4f96cfa"
+ROUTE_MAP_SHA256 = "4bf9579f8555bb44bd9faa8312fe3bb36ab0dbc882bc222bb33954427fb5d078"
 SCENARIO_MAP_SHA256 = "e94b71586407920931fbd012dc8c5f4fdcac5d88f2069029065d9862d26f063e"
-ADAPTER_MAP_SHA256 = "bb97e86c2322bc46ffdd36ce4155e0fbaf48d5dfd1650293b33db89c5c13ca4a"
+ADAPTER_MAP_SHA256 = "390b991900b8aeb9ef1b3ef424f08fd92dac53d47248fe7be8d719d70466a846"
 CORPUS_SCENARIOS_SHA256 = "4401c2757d9921cb039fe5ab7a459efc22b39a0f248711004f26b518686a6301"
 SCENARIO_FIELDS = {
     "id", "prompt", "expected_output", "expectations", "trust_level", "fixtures",

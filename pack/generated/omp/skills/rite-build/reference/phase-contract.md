@@ -42,7 +42,8 @@ Spec Drift Guard still applies.
 6. **Prove.** Against the frozen pre-slice candidate inspect
    test hunks for deletion, skipping/focus, tautology, or weaker expectations.
    Wait for step 5's exact test-analyst account; missing/adverse criterion verdict is
-   Critical. Run only `test-plan.md` repository/CI commands, record output, recheck
+   Critical. Run only `test-plan.md` repository/CI commands ([tier](#proof-tiers)),
+   record output, recheck
    `git diff --name-only`. Missing/weakened/red/source-mutating proof cannot pass.
    Pre-existing/environment-specific claims need a predating same-command,
    same-environment baseline; otherwise unresolved.
@@ -66,6 +67,14 @@ Spec Drift Guard still applies.
    only when all built; no decorative renderer/dispatch telemetry.
 
 One contract builds one slice: preserve TDD, exact paths and independent judgment.
+
+## Proof tiers
+
+With a `test-plan.md` `## Feature gates` section, step 6 runs `Tests/proof` and every
+other row; feature gates run once per parallel landing, on control, while worktree
+wrights continue. The next landing and Prove wait for them; red is a fingerprint
+against slices landed since the last green run. Serial same-worktree mode, and plans
+without the section, run every row each round.
 
 ## Independent Build review
 

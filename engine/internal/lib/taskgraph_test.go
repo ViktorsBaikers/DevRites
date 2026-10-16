@@ -413,3 +413,67 @@ func TestTaskGraphCheckInvalidGraphSkipsEdgeAdvisory(t *testing.T) {
 		t.Fatalf("malformed via not blocked:\n%s", stdout)
 	}
 }
+
+// Three slices all write src/hub.go; two leaves write their own files.
+// Plan order: hub writers serialize, leaves join the first round.
+const hubTasks = `# Tasks
+
+## SLICE-001 A
+Dependencies: none
+Writer allowlist: src/hub.go; src/a.go
+
+## SLICE-002 B
+Dependencies: none
+Writer allowlist: src/Hub.go; src/b.go
+
+## SLICE-003 C
+Dependencies: none
+Files likely touched: src/hub.go; src/c.go
+
+## SLICE-004 Leaf
+Dependencies: none
+Writer allowlist: src/d.go
+
+## SLICE-005 After leaf
+Dependencies: SLICE-004 (via d)
+Writer allowlist: src/e.go
+`
+
+func TestTaskGraphCheckScheduleAndHubAdvisory(t *testing.T) {
+	root := sliceWorkspace(t, hubTasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 {
+		t.Fatalf("advisory must not block: code=%d\n%s%s", code, stdout, stderr)
+	}
+	out := stdout.String()
+	// Round 1: 001+004; round 2: 002+005; round 3: 003.
+	for _, want := range []string{
+		"task-graph: schedule: 5 slices in 3 build rounds at cap 10",
+		"task-graph: ADVISORY hub: src/hub.go is written by 3 slices (SLICE-001, SLICE-002, SLICE-003)",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in:\n%s", want, out)
+		}
+	}
+	stdout.Reset()
+	if code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr); code != 0 || !strings.Contains(stdout.String(), "hub-advisory=1") {
+		t.Fatalf("hub-advisory metric not recorded: code=%d\n%s", code, stdout)
+	}
+}
+
+func TestTaskGraphCheckSerialRationaleSilencesHub(t *testing.T) {
+	tasks := strings.Replace(hubTasks, "Writer allowlist: src/Hub.go; src/b.go", "Writer allowlist: src/Hub.go; src/b.go\nSerial rationale: registry order is the contract", 1)
+	root := sliceWorkspace(t, tasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 || strings.Contains(stdout.String(), "ADVISORY hub") {
+		t.Fatalf("code=%d, want 0 and no hub advisory:\n%s", code, stdout)
+	}
+}
+
+func TestScheduleRoundsSkipsSliceWithoutPaths(t *testing.T) {
+	graph := ParseTaskGraph([]byte(edgeTasks))
+	paths, _ := sliceWritePaths([]byte(edgeTasks), graph)
+	if got := scheduleRounds(graph, paths, t.TempDir()); got != 0 {
+		t.Fatalf("rounds=%d, want 0 when slices declare no write paths", got)
+	}
+}

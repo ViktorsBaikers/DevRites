@@ -165,7 +165,10 @@ self-contained updater.
   and exits `3` naming the holder when a live claim by another session covers a
   path; `release --session <id> --id <claim>` frees it; `list [--all]` shows
   live (or all) claims; `check [--session <id>] <path>...` is the read-only
-  preflight. Claims coordinate concurrent same-tree sessions; they never
+  preflight. Each claim records its host and the claiming session's long-lived
+  processes; when all of them have exited on this host, `list` shows the claim
+  `dead` and it no longer conflicts. Other hosts or an unavailable `ps` never
+  prove exit. Claims coordinate concurrent same-tree sessions; they never
   replace the one-writer-per-worktree rule in `standards/agents.md`.
 - `note <add|list|check|rm>` manages `notes.md` anchored notes: `add <slug>
   <subject> <quote> <title> [body]` binds a note to a verbatim quote in one

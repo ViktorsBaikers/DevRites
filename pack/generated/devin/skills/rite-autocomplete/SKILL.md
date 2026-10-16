@@ -107,8 +107,8 @@ executable controller/harness/bundle bytes or a missing writer, read
    `/rite-review` → `/rite-seal`. Read and execute each skill; durable files, not
    chat, carry state. Apply the mutable post-vet budget before first Build.
    Build runs the largest eligible path-disjoint batch (cap: this invocation's
-   `--parallel N`, else sentinel `max_parallel`, else 10) and recomputes after
-   every completed round until no pending slice remains; a one-slice round is serial for that round only, then
+   `--parallel N`, else sentinel `max_parallel`, else 10) and refills a slot
+   per landing until no pending slice remains; a one-slice round is serial for that round only, then
    selection runs again (host isolation still forces serial when concurrent writers
    cannot be separated). When `--parallel N`
    is present, pass it into `/rite-build` and do not consult leftover sentinel

@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -35,6 +36,19 @@ func RunTaskGraphCheck(root, slug string, stdout, stderr io.Writer) int {
 		}
 		if over > 0 {
 			recordMetric(root, slug, "define", "size-advisory", "", int64(over))
+		}
+		paths, serial := sliceWritePaths(raw, graph)
+		if rounds := scheduleRounds(graph, paths, root); rounds > 0 {
+			fmt.Fprintf(stdout, "task-graph: schedule: %d slices in %d build rounds at cap %d\n", len(graph.Slices), rounds, parallel.MaxParallelSlices)
+		}
+		if hubs := hubAdvisories(graph, paths, serial); len(hubs) > 0 {
+			for _, line := range hubs[:min(len(hubs), hubAdvisoryShown)] {
+				fmt.Fprintf(stdout, "task-graph: %s\n", line)
+			}
+			if extra := len(hubs) - hubAdvisoryShown; extra > 0 {
+				fmt.Fprintf(stdout, "task-graph: ADVISORY hub: %d more shared paths; fix the ones above first\n", extra)
+			}
+			recordMetric(root, slug, "define", "hub-advisory", "", int64(len(hubs)))
 		}
 	}
 	if edges := edgeAdvisories(graph); len(edges) > 0 {

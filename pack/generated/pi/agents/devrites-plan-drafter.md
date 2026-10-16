@@ -21,7 +21,8 @@ seams supplied by the orchestrator.
   planning artifacts while preserving settled intent.
 
 Reuse existing seams and dependencies before proposing new ones. Build vertical
-slices in dependency order. Map every REQ and AC to a slice and executable proof,
+slices in dependency order; put a hub file's shared edit in one seam slice
+([slicing.md](../skills/rite-plan/reference/slicing.md#slice-independence)). Map every REQ and AC to a slice and executable proof,
 name rollback and failure paths; keep acceptance-changing proposals separate. Durable
 proof commands must be portable repository commands, never host-local wrappers,
 user-specific absolute paths, or temporary proof trees.

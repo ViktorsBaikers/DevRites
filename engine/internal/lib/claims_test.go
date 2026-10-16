@@ -317,3 +317,56 @@ func TestClaimFoldsCase(t *testing.T) {
 		}
 	}
 }
+
+func TestClaimHolderExitFreesPaths(t *testing.T) {
+	host, err := os.Hostname()
+	if err != nil {
+		t.Skip("no hostname")
+	}
+	anchor := claimProc{PID: 4242, Start: "2026-10-15T20:00:00Z"}
+	held := claimRecord{
+		ID:        "cl-held",
+		Session:   "s1",
+		Paths:     []string{"pkg/a.go"},
+		ClaimedAt: time.Now().UTC().Add(-time.Minute).Format(time.RFC3339),
+		ExpiresAt: time.Now().UTC().Add(time.Hour).Format(time.RFC3339),
+		Host:      host,
+		Anchors:   []claimProc{anchor},
+	}
+	cases := []struct {
+		name   string
+		table  map[int]procInfo
+		host   string
+		state  string
+		addOut int
+	}{
+		{"holder running", map[int]procInfo{4242: {ppid: 1, start: anchor.Start}}, host, "live", 3},
+		{"holder exited", map[int]procInfo{1: {}}, host, "dead", 0},
+		{"pid reused", map[int]procInfo{4242: {ppid: 1, start: "2026-10-16T01:00:00Z"}}, host, "dead", 0},
+		{"process table unavailable", nil, host, "live", 3},
+		{"other host", map[int]procInfo{1: {}}, "elsewhere", "live", 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			saved := processTable
+			processTable = func() map[int]procInfo { return tc.table }
+			t.Cleanup(func() { processTable = saved })
+			root := claimTestRoot(t)
+			rec := held
+			rec.Host = tc.host
+			line, _ := json.Marshal(rec)
+			if err := os.WriteFile(filepath.Join(root, ClaimsFile), append(line, '\n'), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if _, out, _ := runClaim(t, root, "list"); !strings.Contains(out, "cl-held "+tc.state) {
+				t.Fatalf("list state want %s: %q", tc.state, out)
+			}
+			if code, _, _ := runClaim(t, root, "check", "--session", "s2", "pkg/a.go"); code != tc.addOut {
+				t.Fatalf("check: code=%d want %d", code, tc.addOut)
+			}
+			if code, _, errOut := runClaim(t, root, "add", "--session", "s2", "pkg/a.go"); code != tc.addOut {
+				t.Fatalf("add: code=%d want %d stderr=%s", code, tc.addOut, errOut)
+			}
+		})
+	}
+}

@@ -138,9 +138,10 @@ and a control `parallel-lease.md` apply. `--parallel N` on `/rite-autocomplete`
 or `/rite-build` is the batch cap for that run and wins over leftover sentinel
 `max_parallel`; `/rite-autocomplete --parallel N` also writes or replaces only
 that field. Absent the flag, the sentinel (default cap 10 under
-`/rite-autocomplete`) is a **cap**: each round runs
-the largest eligible set, recomputes after every completed round, and repeats until no
-pending slice remains; a one-slice round is serial for that round only (see
+`/rite-autocomplete`) is a **cap**: the run fills it
+with the largest eligible set, lands each sibling as soon as its review and proof are
+green, refills the freed slot (`parallel add`), and repeats until no pending slice
+remains; a one-slice round is serial for that round only (see
 [`parallel-batch.md`](../pack/.claude/skills/rite-build/reference/parallel-batch.md)).
 Same-worktree multi-writer and root-emulated worktrees remain forbidden; default
 `/rite-build` stays one writer across linked worktrees.

@@ -326,12 +326,16 @@ Epoch starts 1. `FAILED` records preimages/cleanup/epoch/fingerprint/reason/
 boundary/route/no-progress count. Resolved fingerprints close; a different
 invariant gets a distinct fingerprint. Handoff death resumes its retry epoch with
 prior rows immutable. `WA-OP-011/012` enforce independent fingerprint/epoch caps
-and terminal source cleanup. Exhaustion records:
+and terminal source cleanup. Exhaustion closes this admission, not the work:
+the controlling caller escalates it under the
+[retry contract](afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)
+through `PLAN_VET_REPAIR`, and a re-vetted changed design re-admits under a new
+identity with fresh epochs. A fully escalated fingerprint parks. Exhaustion records:
 
 ```text
-status=blocked
+status=running
 exhaustion_cause=<same-fingerprint-count|total-epoch-limit>
-next_action=none — technical recovery exhausted; requires new evidence or changed failure conditions
+next_action=/rite-plan repair <slug> — escalate exhausted workflow attempt
 ```
 
 The journal, evidence section, and observer retain that cause; epoch exhaustion
@@ -343,7 +347,7 @@ Precedence: busy owner; safety/access/approval gate; completed historical; activ
 journal; `CLEANED`; missing/stale authority; stale writer evidence; current
 admission. `PROVED|CLEANING` resumes cleanup; install-through-`PROVING`, rollback,
 or failure cleanup routes offline; retryable `FAILED` routes correction/retry;
-`EXHAUSTED` blocks; `PREPARING|PREPARED` resumes only with current authority.
+`EXHAUSTED` escalates; `PREPARING|PREPARED` resumes only with current authority.
 There is no actor-history migration or backfill.
 
 |Route|Owner|Exact action|Durable state/status/next action|Cursor/output|
@@ -356,7 +360,7 @@ There is no actor-history migration or backfill.
 | `VERIFY_EXISTING`|controlling root|verify `CLEANED`, targets, proof, and product separation; do not reinstall|restore saved return phase/action|no retry/slice/action budget|
 | `NO_BACKFILL`|controlling root|no action|completed state unchanged|no new output|
 | `WAIT_ACTIVE_OWNER`|non-owner|no write; stop invocation|shared state unchanged|fixed owner-busy diagnostic|
-| `BLOCKED_EXHAUSTED`|controlling root|no attempt 4|blocked with exact exhausted next action|fixed exhausted diagnostic|
+| `BLOCKED_EXHAUSTED`|controlling root|no attempt 4 on this admission; escalate through `PLAN_VET_REPAIR` or park per retry contract|`status=running`, exact exhausted `next_action`; parked keeps the parked-recovery action|fixed exhausted diagnostic; no intermediate reply|
 | `BLOCKED_GATE`|controlling root|follow existing safety/access/approval gate|gate-owned state|gate output; never reinterpret as retry|
 
 |Scenario ID|Trigger|Exact route / action|Durable consequence|Forbidden behavior|
@@ -422,7 +426,7 @@ pairs remain injective for actionable seams.
 | `devrites-debug-recovery/SKILL.md`|durable active failure or ambiguous admitted state|`OFFLINE_RECOVERY`; correct offline, re-preflight, narrow Vet, retry only under cap|saved caller or exact Plan/Vet route|
 | `rite-autocomplete/SKILL.md`|lifecycle cursor encounters admitted set or resumable journal|invoke classifier; execute returned route internally|saved phase/action; zero intermediate reply|
 | `rite-autocomplete/reference/loop.md`|loop tick sees Workflow Artifact trigger/state|invoke classifier once under owner lock; no actor-history migration|same loop cursor; no budget charge for verify/rerun|
-| `rite-autocomplete/reference/stop-conditions.md`|classifier returns owner-busy, exhausted, or existing hard gate|stop on exact `WAIT_ACTIVE_OWNER`, `BLOCKED_EXHAUSTED`, or `BLOCKED_GATE` result|unchanged cursor plus fixed route-owned output|
+| `rite-autocomplete/reference/stop-conditions.md`|classifier returns owner-busy, exhausted, or existing hard gate|escalate `BLOCKED_EXHAUSTED`; on `WAIT_ACTIVE_OWNER` run independent work and recheck; stop on exact `BLOCKED_GATE` result|unchanged cursor plus fixed route-owned output|
 | `rite-build/SKILL.md`|Vet-ready admitted bytes require root authorship outside product wright|`ROOT_TRANSACTION`; root writes only admitted `.devrites/**` targets|saved Build slice cursor; wright product allowlist unchanged|
 | `rite-build/reference/phase-contract.md`|Build gate enters or resumes transaction|invoke canonical operation table; reconcile exact result|same slice/checkpoint cursor or Plan/Vet route|
 | `rite-prove/SKILL.md`|Prove consumes installed Workflow Artifact or `CLEANED` rerun|`VERIFY_EXISTING` or admitted proof path ending `PROVE_AND_RETURN`|saved Prove cursor; stop before real action|
