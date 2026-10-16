@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.3.0...v6.4.0) (2026-10-16)
+
+### Added
+
+* **devrites:** let Satisfies: none slices stay deferred ([#114](https://github.com/ViktorsBaikers/DevRites/issues/114)) ([d5bf85a](https://github.com/ViktorsBaikers/DevRites/commit/d5bf85a926f856625131ba297679f5db4d6be909))
+
 ## [6.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.2.0...v6.3.0) (2026-10-16)
 
 ### Added
