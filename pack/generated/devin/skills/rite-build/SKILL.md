@@ -26,6 +26,9 @@ Execute [`reference/phase-contract.md`](reference/phase-contract.md)
 ([`one-slice-cycle.md`](reference/one-slice-cycle.md),
 [`afk-discipline.md`](reference/afk-discipline.md)); dispatch uses
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
+Every wright contract names the writer-safe checks the wright runs (syntax/type/lint,
+unit and self-check suites, a narrow local smoke) and never forbids them; only
+artifact-producing, consumptive, or full canonical gates stay root-owned.
 
 ## Required rules
 

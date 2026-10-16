@@ -837,7 +837,7 @@ func TestDispatchWrightRoundCap(t *testing.T) {
 	}
 	for i := 1; i <= wrightRoundsPerReview; i++ {
 		code, out := open("r" + string(rune('0'+i)))
-		if code != 0 || !strings.Contains(out, "SLICE-001 wright round "+string(rune('0'+i))) {
+		if code != 0 || !strings.Contains(out, "SLICE-001 wright round "+string(rune('0'+i))) || !strings.Contains(out, "writer-safe checks the wright runs") {
 			t.Fatalf("round %d: code=%d\n%s", i, code, out)
 		}
 	}

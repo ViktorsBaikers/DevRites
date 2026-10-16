@@ -441,6 +441,9 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 			lines = append(lines, fmt.Sprintf("dispatch: WARNING: %s earlier wave(s) %s never returned; record `dispatch return` or `dispatch abandon --reason`", id, strings.Join(unreturned, ",")))
 		}
 	}
+	if kind == "wright" {
+		lines = append(lines, "dispatch: wright contract: name the writer-safe checks the wright runs (syntax/type/lint, unit and self-check suites, a narrow local smoke) and never forbid them; only artifact-producing, consumptive, or full canonical gates stay root-owned")
+	}
 	if len(overCap) == 0 {
 		if review != "" {
 			fmt.Fprintf(stderr, "dispatch: --reslice-review given but no slice has reached its %d-round cap\n", wrightRoundsPerReview)
