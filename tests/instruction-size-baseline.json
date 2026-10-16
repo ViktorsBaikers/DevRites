@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1494625,
+  "total_bytes": 1495047,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -166,7 +166,7 @@
     "pack/.claude/skills/rite-build/reference/afk-discipline.md": 7570,
     "pack/.claude/skills/rite-build/reference/anti-patterns.md": 1410,
     "pack/.claude/skills/rite-build/reference/checkpoint-protocol.md": 4953,
-    "pack/.claude/skills/rite-build/reference/checkpoint.md": 3392,
+    "pack/.claude/skills/rite-build/reference/checkpoint.md": 3622,
     "pack/.claude/skills/rite-build/reference/frontend-trigger.md": 2137,
     "pack/.claude/skills/rite-build/reference/one-slice-cycle.md": 3283,
     "pack/.claude/skills/rite-build/reference/output.md": 1259,
@@ -250,7 +250,7 @@
     "pack/.claude/skills/rite-seal/SKILL.md": 8374,
     "pack/.claude/skills/rite-ship/reference/anti-patterns.md": 1815,
     "pack/.claude/skills/rite-ship/reference/close-out.md": 4046,
-    "pack/.claude/skills/rite-ship/reference/git-ship.md": 7310,
+    "pack/.claude/skills/rite-ship/reference/git-ship.md": 7502,
     "pack/.claude/skills/rite-ship/reference/rollout.md": 3654,
     "pack/.claude/skills/rite-ship/reference/ship-template.md": 1171,
     "pack/.claude/skills/rite-ship/SKILL.md": 6783,

@@ -74,7 +74,9 @@ Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
 2. **Exact staging.** Run `git add -- "$path"` once for each disclosed manifest
    row, passing each validated project-relative path as its own quoted argv
    element. Use no glob, directory, `-A`, `.env`, secret, out-of-scope path,
-   `eval`, or interpolated command string.
+   `eval`, or interpolated command string. A row that `git check-ignore -v --no-index`
+   matches, tracked or not, is disclosed and staged with `git add -f --`: plain
+   `git add` exits 1 on a named ignored path even after staging it.
 3. **Compare staged scope.** Compare the NUL-delimited output of
    `git diff --cached --name-status --no-renames -z` to the manifest's exact
    state/path set. `present` maps only to `A` or `M`; `deleted` maps only to `D`.
