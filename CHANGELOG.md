@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.1.3](https://github.com/ViktorsBaikers/DevRites/compare/v6.1.2...v6.1.3) (2026-10-16)
+
+### Changed
+
+* **devrites:** apply plan bundles in the engine and overlap phase work ([#109](https://github.com/ViktorsBaikers/DevRites/issues/109)) ([4394b0a](https://github.com/ViktorsBaikers/DevRites/commit/4394b0af21677da279be0ca5c359af728e482fd9))
+
 ## [6.1.2](https://github.com/ViktorsBaikers/DevRites/compare/v6.1.1...v6.1.2) (2026-10-16)
 
 ### Fixed
