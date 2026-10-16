@@ -27,7 +27,10 @@ A native-worktree `transfer_commit` is transport on the worker branch only.
 ## The commit
 Stage the exact candidate paths from the manifest, each as its own argv.
 Never stage `touched-files.md`, a directory, glob, unrelated path, or user change.
-Verify the staged set, then commit locally.
+Before planning, run `git check-ignore -v --no-index -- <paths>`: every match, tracked
+or not, goes in the `git add -f --` list, because `git add` exits 1 on a named ignored
+path even after staging it. Keep each command's stderr. Verify the staged set, then
+commit locally.
 
 Subject: `WIP(<slug>):` plus an imperative summary of the change (from the
 goal). Never a slice id, `SLICE-###`, a slice number, or "this slice"
