@@ -23,7 +23,9 @@ DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). 
             (independent claims, fresh contexts); wright fixes stay serial — writers share files
 PROVE     → root, concurrent with the reviews on the same frozen candidate:
             required build/browser/E2E (narrow self-check/smoke first, full gate only
-            after it is green, long runs in the background), then returned-diff/path recheck; fail-on-red
+            after it is green, long runs in the background; cancel one still running once
+            review or proof sends the candidate back, keeping its partial output as
+            diagnostics), then returned-diff/path recheck; fail-on-red
             (red/gap → repair wright, then re-review and re-prove; do not commit yet)
 RECORD    → orchestrator: after green verification, update state.md/evidence.md and
             upsert the authoritative candidate manifest from the actual scoped diff
