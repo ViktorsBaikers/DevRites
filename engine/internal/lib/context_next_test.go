@@ -802,6 +802,44 @@ func TestContextSliceScopesWorkspaceAndRole(t *testing.T) {
 	}
 }
 
+func TestContextSliceTakesLargeUnderBudgetArtifactsByReference(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	skills := newSkillsRoot(t)
+	writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), "---\nname: rite-build\n---\n<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\"],\"workspace\":[\"tasks.md\",\"plan.md\",\"spec.md\"]} -->\n# build\n")
+	writeFile(t, filepath.Join(featureDir, "tasks.md"), "# Tasks\n\n## SLICE-001 Only\nGoal: only body\nSatisfies: AC-001\n")
+	// 60 long lines: under plan.md's 220-line budget, over the 16 KiB slice cap.
+	longRow := strings.Repeat("wide plan prose ", 24) + "\n"
+	writeFile(t, filepath.Join(featureDir, "plan.md"), "# Plan\n## SLICE-001 seam\n"+strings.Repeat(longRow, 60))
+	writeFile(t, filepath.Join(featureDir, "spec.md"), "# Spec\nAC-001 whole spec\n"+strings.Repeat(longRow, 60))
+
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunContext(root, []string{"feat", "--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001", "--skills-root", skills}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+	}
+	raw, err := os.ReadFile(filepath.Join(featureDir, "ctx", "build-slice-wright.SLICE-001.bundle.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, want := range []string{"workspace/plan.md (by reference)", "- L2 ## SLICE-001 seam", "- SLICE-001: L2\n", "AC-001 whole spec"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("slice bundle missing %q:\n%s", want, text)
+		}
+	}
+	if strings.Count(text, "wide plan prose") != 60*24 {
+		t.Fatalf("only spec.md's rows may be inlined; got %d", strings.Count(text, "wide plan prose"))
+	}
+
+	// Without --slice the role bundle still reads plan.md whole.
+	if code := RunContext(root, []string{"feat", "--phase", "build", "--role", "slice-wright", "--skills-root", skills}, stdout, stderr); code != 0 {
+		t.Fatalf("role bundle code=%d\n%s", code, stderr)
+	}
+	whole, err := os.ReadFile(filepath.Join(featureDir, "ctx", "build-slice-wright.bundle.md"))
+	if err != nil || strings.Contains(string(whole), "(by reference)") {
+		t.Fatalf("non-slice role bundle must stay whole: err=%v\n%s", err, whole)
+	}
+}
+
 func TestContextSliceRejectsBadOrUnknownID(t *testing.T) {
 	root, featureDir := newWorkspace(t, "build")
 	skills := newSkillsRoot(t)

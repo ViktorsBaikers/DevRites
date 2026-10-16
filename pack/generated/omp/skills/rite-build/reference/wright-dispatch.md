@@ -95,7 +95,9 @@ live foreign session releases the retained claim and stops the dispatch, per
 [`agents.md`](skill://devrites-lib/reference/standards/agents.md). `.devrites/**`
 is never a task path; see [Workflow Artifact admission](skill://devrites-lib/reference/standards/workflow-artifacts.md).
 Write the exact contract, with its `Writer-safe checks:` line, to
-`packets/<wave>.contract.md` and hand the wright that text verbatim. Ask the host
+`packets/<wave>.contract.md` and hand the wright that text verbatim. Reviewers read
+that file, so it states each defect to fix with its anchor, never a reviewer's verdict,
+count, or pass status ("code review is no-findings" voids the next review). Ask the host
 for the exact writer in fresh context; a repair round on the same slice whose
 returned wright the host can still continue goes to that wright on its existing
 handle instead, so it does not re-read the slice from scratch. Wait, and track it

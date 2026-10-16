@@ -46,8 +46,9 @@ Emits one deduplicated context bundle for a phase or standalone skill
 reads a single file. With --skill, slug may be omitted; then --out is
 required and no workspace section is included. --slice scopes the
 workspace section to one slice: tasks.md contributes that slice's block,
-and an artifact over its line/byte budget becomes a by-reference index
-(path, SHA-256, headings, and line hits for every ID the block cites).
+and an artifact over its line/byte budget or over 16 KiB (spec.md excepted)
+becomes a by-reference index (path, SHA-256, headings, and line hits for
+every ID the block cites).
 Repeat --slice for a recheck that spans several slices.
 `
 
@@ -348,9 +349,16 @@ func expandIncludes(abs string, data []byte) []byte {
 	})
 }
 
+// sliceInlineMaxBytes caps a workspace artifact inlined whole into a --slice
+// bundle. Planning budgets size a whole feature, not one slice's read; a
+// larger artifact goes by reference so the slice's agent reads only the
+// sections its block cites. spec.md, the acceptance source, stays whole.
+const sliceInlineMaxBytes = 16 << 10
+
 // writeSliceEntry writes one workspace artifact of a --slice or root bundle:
-// with a slice, tasks.md as the slice block plus a by-reference index; any
-// canonical artifact over its line/byte budget as a by-reference index;
+// with a slice, tasks.md as the slice block plus a by-reference index and any
+// other artifact but spec.md over sliceInlineMaxBytes as a by-reference index;
+// any canonical artifact over its line/byte budget as a by-reference index;
 // everything else whole.
 func writeSliceEntry(bundle *strings.Builder, project, abs, label, slice, block string, ids []citedID, seen map[string]bool) (loaded, byRef bool) {
 	if seen[abs] {
@@ -361,6 +369,8 @@ func writeSliceEntry(bundle *strings.Builder, project, abs, label, slice, block 
 	if err == nil && name == "tasks.md" && slice != "" {
 		seen[abs] = true
 		fmt.Fprintf(bundle, "===== %s (%s block) =====\n%s\n", label, slice, block)
+	} else if err == nil && slice != "" && name != "spec.md" && len(data) > sliceInlineMaxBytes {
+		seen[abs] = true
 	} else if status, ok := state.ArtifactBudget(name, data); err != nil || !ok || !status.Over {
 		return writeContextEntry(bundle, abs, label, seen, false), false
 	} else {
