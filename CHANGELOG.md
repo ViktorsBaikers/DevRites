@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.4.3](https://github.com/ViktorsBaikers/DevRites/compare/v6.4.2...v6.4.3) (2026-10-16)
+
+### Fixed
+
+* **devrites:** wrights use mktemp scratch and the edit tool ([#117](https://github.com/ViktorsBaikers/DevRites/issues/117)) ([0b274e8](https://github.com/ViktorsBaikers/DevRites/commit/0b274e8375445c61421390c5e69105695a8f9fad))
+
 ## [6.4.2](https://github.com/ViktorsBaikers/DevRites/compare/v6.4.1...v6.4.2) (2026-10-16)
 
 ### Changed
