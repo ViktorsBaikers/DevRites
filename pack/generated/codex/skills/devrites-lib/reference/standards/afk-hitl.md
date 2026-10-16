@@ -389,13 +389,19 @@ access, safety and irreversible-action boundaries independently stop work.
   the fingerprint's current *strategy*, not the work. Record that strategy and its
   attempts under `## Dead ends`, then the controlling caller escalates inline in the
   same invocation: re-diagnose from the reproduction and dead ends, take the first
-  class below that still has an untried strategy, run `$rite-plan repair` plus
-  narrow Vet for it, and resume with a fresh three-attempt budget. Classes, in order:
-  (1) **shared root cause**: fix the owner every failing path routes through and
-  enforce it across all callers instead of another local guard; (2) **boundary
-  redesign**: acceptance-preserving reslice or redesign of the failing seam;
-  (3) **diagnostic amplification**: add discriminating probes or fixtures, then
-  correct from that evidence. A recorded strategy, or a rewording of one, never
+  class below that still has an untried strategy, and resume with a fresh
+  three-attempt budget. Re-plan only when the strategy must change a planning
+  input (writer allowlist, interface or contract, slice topology, or a
+  `test-plan.md` proof row): run `$rite-plan repair` plus narrow Vet for it. A
+  strategy that fits the vetted plan, with `devrites-engine check readiness <slug>`
+  still passing, goes straight to the wright with the dead ends in its contract;
+  Build's review and proof still gate it. Classes, in order, cheapest evidence
+  before costliest change: (1) **shared root cause**: fix the owner every failing
+  path routes through and enforce it across all callers instead of another local
+  guard; (2) **diagnostic amplification**: add discriminating probes or fixtures,
+  then correct from that evidence (last for a consumptive action, whose attempt
+  needs fresh authorization); (3) **boundary redesign**: acceptance-preserving
+  reslice or redesign of the failing seam, built on that evidence. A recorded strategy, or a rewording of one, never
   repeats. Escalation never weakens tests, validators or acceptance. Each
   fingerprint gets at most three escalations per activation; record each in
   `drift.md` with its class and strategy.

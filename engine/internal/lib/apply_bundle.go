@@ -28,6 +28,15 @@ const maxBundleBytes = 8 << 20
 // a planning defect: an AC, slice, or horizon item never vanishes unrecorded.
 var trackedIDRE = regexp.MustCompile(`\b(?:AC|REQ|HZN|SLICE|PF|INV|DEC|PROH|EDGE|DRIFT|ASM|Q|EVID)-\d+(?:-[A-Z][A-Z0-9]*)*\b`)
 
+// datedHeadingRE finds a dated section heading. In the current-state planning
+// artifacts it marks an appended repair delta that leaves the superseded clause
+// beside its replacement, growing the file and the next review's surface.
+var datedHeadingRE = regexp.MustCompile(`(?m)^#{2,4}\s.*\b\d{4}-\d{2}-\d{2}\b`)
+
+var currentStatePlanning = map[string]bool{
+	"architecture.md": true, "plan.md": true, "tasks.md": true, "test-plan.md": true, "traceability.md": true,
+}
+
 // candidateBundle is the plan-drafter's candidate_files result. Unknown fields
 // (acceptance_map, technical_decisions, ...) are the root's to reconcile and
 // are ignored here.
@@ -389,6 +398,10 @@ func checkBundleResult(targets []*bundleTarget, retired map[string]bool) []strin
 					problems = append(problems, "tasks.md: "+p)
 				}
 			}
+		}
+		if filepath.Dir(target.rel) == "." && currentStatePlanning[name] &&
+			len(datedHeadingRE.FindAllIndex(target.after, -1)) > len(datedHeadingRE.FindAllIndex(target.before, -1)) {
+			problems = append(problems, target.rel+": adds a dated delta section; rewrite the owning clause in place (rationale to decisions.md, closed narrative to history/)")
 		}
 		if filepath.Dir(target.rel) != "." || !state.ArtifactBudgetGateApplies(name) {
 			continue

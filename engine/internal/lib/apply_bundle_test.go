@@ -132,6 +132,10 @@ func TestApplyBundleRefusesAndWritesNothing(t *testing.T) {
 			content := "x"
 			return []candidateFile{{Path: "../other/plan.md", Operation: "create", Content: &content}}, nil, nil
 		}, "inside the feat workspace"},
+		{"dated delta section", func(dir string) ([]candidateFile, map[string]string, []string) {
+			return []candidateFile{patch("plan.md", candidateHunk{OldText: "ship in order.\n", NewText: "ship in order.\n\n## Repair delta, 2026-10-16\nAC-001 ships first.\n"})},
+				map[string]string{"plan.md": pinOf(t, dir, "plan.md")}, nil
+		}, "dated delta section"},
 		{"budget growth", func(dir string) ([]candidateFile, map[string]string, []string) {
 			return []candidateFile{patch("plan.md", candidateHunk{OldText: "# Plan\n", NewText: "# Plan\n" + strings.Repeat("line\n", 400)})},
 				map[string]string{"plan.md": pinOf(t, dir, "plan.md")}, nil

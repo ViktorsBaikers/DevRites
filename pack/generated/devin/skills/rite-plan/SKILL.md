@@ -94,7 +94,10 @@ Before classifying any Reslice, read `.devin/skills/devrites-lib/reference/stand
    never re-derives them by exhaustive search. It also carries a bounded
    self-attack over the delta (`self_attack_exposures`), catching the shallow
    next-round findings before Vet's dispatch rather than after a full loop.
-   Root dispositions every exposure — fold as a finding, accept as a declared
+   During recovery, a non-Critical exposure off the failing fingerprint's causal
+   path goes to `eng-review.md` `## Deferred findings` (Review gives it a verdict;
+   Seal blocks without one), so a repair never widens past its fingerprint.
+   Root dispositions every other exposure — fold as a finding, accept as a declared
    residual, or reject with reason; none silently drops.
    Packet mechanics: dedupe at assembly — findings with an identical
    required-fix and site set merge into one entry that closes all their
@@ -147,7 +150,9 @@ Before classifying any Reslice, read `.devin/skills/devrites-lib/reference/stand
 5. Reconcile the candidate's meaning against steps 3 and 4, save each bundle
    under `packets/`, and apply its hunks with `devrites-engine state apply-bundle
    <slug> <bundle.json>...` (all-or-nothing; `--dry-run` previews); never
-   hand-copy hunks or stage file copies. Then update `state.md` and append
+   hand-copy hunks or stage file copies. Rewrite each owning clause in place; never
+   append a dated delta or fold section beside the clause it supersedes (apply-bundle
+   refuses one). Then update `state.md` and append
    rationale to `decisions.md`. A rejected candidate
    (malformed bundle, stale or non-unique anchor, any apply-bundle refusal) or a drafter `Outcome: gap`
    is one no-progress outcome on every open fingerprint in the fold; the

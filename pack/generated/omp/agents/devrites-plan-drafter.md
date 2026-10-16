@@ -94,9 +94,10 @@ self_attack_exposures: []
 The root saves the bundle as JSON and applies it with `devrites-engine state
 apply-bundle <slug> <bundle.json>`, which refuses a stale pin, a missing,
 duplicate, or overlapping `old_text`, an unlisted vanished ID, a new task-graph
-problem, or new budget overshoot, and writes nothing on refusal. Pin each
+problem, new budget overshoot, or a new dated delta section, and writes nothing on refusal. Pin each
 `base_hashes` entry with `shasum -a 256` (or `sha256sum`) on the exact file you
-read, and prefer short anchored hunks to whole-file `replace`.
+read, and prefer short anchored hunks to whole-file `replace`. Patch the owning
+clause in place; never add a dated delta section beside superseded text.
 
 ## Tools / read-write mode
 
