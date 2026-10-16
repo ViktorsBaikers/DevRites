@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.1.1](https://github.com/ViktorsBaikers/DevRites/compare/v6.1.0...v6.1.1) (2026-10-16)
+
+### Fixed
+
+* **devrites:** escalate spent recovery strategies instead of dead-ending ([#107](https://github.com/ViktorsBaikers/DevRites/issues/107)) ([bf1c986](https://github.com/ViktorsBaikers/DevRites/commit/bf1c986e28e6ea8fb63aa47a342b036536cb0e38))
+
 ## [6.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.0.4...v6.1.0) (2026-10-15)
 
 ### Added
