@@ -366,7 +366,8 @@ func TestRunGatesExecutesAndBindsEvidence(t *testing.T) {
 
 func TestRunGatesSharedCheckExecutesOnceAndLocksWrites(t *testing.T) {
 	project, ledgerPath := writeWorkspace(t)
-	check := "echo x >> runs.txt; echo ALPHA BETA"
+	// && separates commands under both /bin/sh and cmd.exe.
+	check := "echo x>>runs.txt && echo ALPHA BETA"
 	writeLedger(t, ledgerPath,
 		"- [ ] G1: alpha\n  CHECK: "+check+"\n  EXPECT: ALPHA\n  EVIDENCE: pending\n"+
 			"- [ ] G2: beta\n  CHECK: "+check+"\n  EXPECT: BETA\n  EVIDENCE: pending\n"+
@@ -380,8 +381,8 @@ func TestRunGatesSharedCheckExecutesOnceAndLocksWrites(t *testing.T) {
 	if !results[0].Passed || !results[1].Passed || results[2].Passed {
 		t.Fatalf("each gate must match its own EXPECT: %+v", results)
 	}
-	if runs := mustRead(t, filepath.Join(project, "runs.txt")); runs != "x\n" {
-		t.Fatalf("shared CHECK ran %d times, want 1", strings.Count(runs, "x"))
+	if runs := strings.Count(mustRead(t, filepath.Join(project, "runs.txt")), "x"); runs != 1 {
+		t.Fatalf("shared CHECK ran %d times, want 1", runs)
 	}
 	if locked != 3 {
 		t.Fatalf("writebacks under lock = %d, want 3", locked)
