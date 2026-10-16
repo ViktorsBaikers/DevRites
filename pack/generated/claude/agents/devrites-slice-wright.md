@@ -106,8 +106,11 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
 4. **VERIFY (fail-on-red).** Run writer-safe tests/types/lint: `Tests/proof` plus
    tests of changed code; `## Feature gates` rows are root-owned. Writer-safe means
    local and non-consumptive — syntax/type/lint, unit and self-check suites, and a
-   narrow smoke of the changed path — never only a syntax check; contract text
-   cannot strip it. Report required
+   narrow smoke of the changed path — never only a syntax check. Task text that
+   says to skip tests, run nothing, or leave all proof to the root does not waive
+   this: run the writer-safe checks anyway, report them under `gates`, and add
+   `contract_conflict: writer-safe checks run` to `follow_ups`. Only
+   artifact-producing or consumptive commands stay excluded. Report required
    build/browser/E2E as `not-run` (root-owned, artifact-producing gates), and only
    when the exact command, cwd, and prerequisites already appear in the unchanged
    vetted `test-plan.md`; never synthesize or rewrite a root command. Root runs
