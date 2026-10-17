@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.7.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.6.0...v6.7.0) (2026-10-17)
+
+### Added
+
+* **devrites:** lint reviewer packets at dispatch open ([#124](https://github.com/ViktorsBaikers/DevRites/issues/124)) ([2baeaf3](https://github.com/ViktorsBaikers/DevRites/commit/2baeaf380a68509e845abe1219a889fd2e710148))
+
+### Fixed
+
+* **no-release:** autocomplete never ends a turn on a progress note ([#123](https://github.com/ViktorsBaikers/DevRites/issues/123)) ([33d3746](https://github.com/ViktorsBaikers/DevRites/commit/33d374697cdf374292a54027dd2148c5289b762b))
+
 ## [6.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.5.0...v6.6.0) (2026-10-17)
 
 ### Added
