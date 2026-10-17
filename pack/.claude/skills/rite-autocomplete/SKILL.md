@@ -63,7 +63,9 @@ executable controller/harness/bundle bytes or a missing writer, read
 - Never end the turn with a progress note while a wave runs or a next step
   exists: on a headless host a text-only reply ends the session and kills
   running children. Wait with the host's wait tool and keep working; end only
-  at a recorded stop.
+  at a recorded stop. A host reminder or rule notice (style rule, advisory) is
+  not a stop either: follow it in your next tool call, never in a text-only
+  acknowledgement.
 - Parse flags only from this invocation. `--ship`, `--yolo`, `--max-slices`,
   `--parallel`, `--full`, and `--cross-model` activate only as exact standalone
   tokens in `$ARGUMENTS`; examples or earlier messages can never arm them.
