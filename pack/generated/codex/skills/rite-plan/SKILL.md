@@ -117,6 +117,10 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
    else 1) so the threshold is counted rather than judged; a packet that reports the same
    seam without the counter is malformed. At the third
    same-seam packet, mark it `convergence_pressure: true` with the seam named.
+   Under pressure the drafter first asks whether a different mechanism removes the
+   recurring failure class (read content-addressed Git objects instead of walking a live
+   directory; a bounded parser instead of hand checks) and proposes that swap before
+   another pin; acceptance stays unchanged. Accreting checks on one seam is the loop.
    Under pressure the drafter may close a finding marked as a refinement of an
    already-pinned clause by folding an explicit, bounded declared
    residual/limitation into the contract text instead of another precision
