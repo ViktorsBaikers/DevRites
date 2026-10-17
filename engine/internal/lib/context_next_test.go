@@ -870,7 +870,7 @@ func TestDispatchWrightRoundCap(t *testing.T) {
 	if code, out := run("open", "--phase", "build", "--wave", "w0", "--role", "slice-wright"); code != 2 || !strings.Contains(out, "needs --slice") {
 		t.Fatalf("missing --slice: code=%d\n%s", code, out)
 	}
-	if code, out := run("open", "--phase", "vet", "--wave", "v1", "--role", "plan-reviewer"); code != 0 {
+	if code, out := run("open", "--phase", "vet", "--wave", "v1", "--role", "plan-reviewer", "--packet", reviewerPacketPath(t)); code != 0 {
 		t.Fatalf("non-build wave must not need --slice: code=%d\n%s", code, out)
 	}
 	for i := 1; i <= wrightRoundsPerReview; i++ {
@@ -919,7 +919,7 @@ func TestDispatchVetRoundsCountSeparately(t *testing.T) {
 		return code, stdout.String() + stderr.String()
 	}
 	for i := 0; i < 7; i++ {
-		if code, out := run("open", "--phase", "vet", "--wave", "full"+string(rune('a'+i)), "--role", "plan-reviewer"); code != 0 {
+		if code, out := run("open", "--phase", "vet", "--wave", "full"+string(rune('a'+i)), "--role", "plan-reviewer", "--packet", reviewerPacketPath(t)); code != 0 {
 			t.Fatalf("full Vet without --slice stays uncapped: code=%d\n%s", code, out)
 		}
 	}
@@ -927,15 +927,15 @@ func TestDispatchVetRoundsCountSeparately(t *testing.T) {
 		t.Fatalf("wright round must not see vet waves: code=%d\n%s", code, out)
 	}
 	for i := 1; i <= wrightRoundsPerReview; i++ {
-		if code, out := run("open", "--phase", "vet", "--wave", "v"+string(rune('0'+i)), "--role", "plan-reviewer", "--slice", "SLICE-001"); code != 0 || !strings.Contains(out, "vet round "+string(rune('0'+i))) {
+		if code, out := run("open", "--phase", "vet", "--wave", "v"+string(rune('0'+i)), "--role", "plan-reviewer", "--packet", reviewerPacketPath(t), "--slice", "SLICE-001"); code != 0 || !strings.Contains(out, "vet round "+string(rune('0'+i))) {
 			t.Fatalf("vet round %d: code=%d\n%s", i, code, out)
 		}
 	}
-	if code, out := run("open", "--phase", "vet", "--wave", "v6", "--role", "plan-reviewer", "--slice", "SLICE-001"); code != 3 || !strings.Contains(out, "reached 5 vet rounds") {
+	if code, out := run("open", "--phase", "vet", "--wave", "v6", "--role", "plan-reviewer", "--packet", reviewerPacketPath(t), "--slice", "SLICE-001"); code != 3 || !strings.Contains(out, "reached 5 vet rounds") {
 		t.Fatalf("vet round 6 must block: code=%d\n%s", code, out)
 	}
 	writeFile(t, filepath.Join(featureDir, "drift.md"), "## D-001 — SLICE-001 reslice review: proof seam already minimal\n")
-	if code, out := run("open", "--phase", "vet", "--wave", "v6", "--role", "plan-reviewer", "--slice", "SLICE-001", "--reslice-review", "D-001"); code != 0 {
+	if code, out := run("open", "--phase", "vet", "--wave", "v6", "--role", "plan-reviewer", "--packet", reviewerPacketPath(t), "--slice", "SLICE-001", "--reslice-review", "D-001"); code != 0 {
 		t.Fatalf("reviewed vet round 6: code=%d\n%s", code, out)
 	}
 	if code, out := run("open", "--phase", "plan", "--wave", "p1", "--role", "plan-drafter", "--slice", "SLICE-001"); code != 2 {

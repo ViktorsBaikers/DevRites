@@ -21,9 +21,9 @@ import (
 // fan-out cannot silently degrade to serial (open -> every role started ->
 // seal -> returns -> complete). start/return also auto-record metrics events.
 //
-//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>]
+//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>]
 
-const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>]
+const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
 role has a distinct handle; return fails before seal. status --wave exits
@@ -117,7 +117,7 @@ func nowStamp() string { return time.Now().UTC().Format(time.RFC3339) }
 
 // RunDispatch implements the dispatch wave state machine.
 func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
-	var slug, sub, phase, wave, role, handle, reason, review, contract string
+	var slug, sub, phase, wave, role, handle, reason, review, contract, packet string
 	var roles, sliceIDs []string
 	var positional []string
 	for i := 0; i < len(args); i++ {
@@ -140,6 +140,8 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			review = value
 		case "--contract":
 			contract = value
+		case "--packet":
+			packet = value
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(stderr, "dispatch: unknown flag %q\n", args[i])
@@ -163,7 +165,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	// an update and strand the wave short of complete.
 	code := 0
 	if err := state.WithFeatureLock(root, slug, func() error {
-		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, stdout, stderr)
+		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, stdout, stderr)
 		return nil
 	}); err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -172,7 +174,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract string, stdout, stderr io.Writer) int {
+func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet string, stdout, stderr io.Writer) int {
 	f, path, err := loadDispatch(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -214,6 +216,14 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if isBuildWrightWave(w) {
 			if err := lintWrightContract(contract); err != nil {
 				return fail("BLOCKED: %v", err)
+			}
+		}
+		for _, r := range roles {
+			if isReviewerRole(r) {
+				if err := lintReviewerPacket(packet); err != nil {
+					return fail("BLOCKED: %v", err)
+				}
+				break
 			}
 		}
 		f.Waves[wave] = w

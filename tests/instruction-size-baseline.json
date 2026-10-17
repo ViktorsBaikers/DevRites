@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1496551,
+  "total_bytes": 1496754,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -65,7 +65,7 @@
     "pack/.claude/skills/devrites-lib/reference/candidate-integrity.md": 3496,
     "pack/.claude/skills/devrites-lib/reference/intent-map.md": 8929,
     "pack/.claude/skills/devrites-lib/reference/orchestration-profiles.md": 2832,
-    "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md": 10725,
+    "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md": 10928,
     "pack/.claude/skills/devrites-lib/reference/reply-contract.md": 5498,
     "pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md": 3792,
     "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 28537,
