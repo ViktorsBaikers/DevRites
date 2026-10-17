@@ -68,7 +68,7 @@ func TestDispatchOpenRefusesBlindWrightContract(t *testing.T) {
 	if code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "b1", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)); code != 0 || !strings.Contains(out, "wright round 1") {
 		t.Fatalf("valid contract after refusals must open round 1: code=%d\n%s", code, out)
 	}
-	if code, out := runDispatchT(t, root, "open", "--phase", "vet", "--wave", "v1", "--role", "plan-reviewer"); code != 0 {
+	if code, out := runDispatchT(t, root, "open", "--phase", "vet", "--wave", "v1", "--role", "plan-reviewer", "--packet", reviewerPacketPath(t)); code != 0 {
 		t.Fatalf("non-wright waves need no contract: code=%d\n%s", code, out)
 	}
 }

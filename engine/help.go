@@ -58,7 +58,7 @@ const (
   metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   metrics summary [slug] [--by-slice]
 `
-	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>]`
+	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>]`
 	claimUsageText = `usage: devrites-engine claim <add|release|list|check> ...
 
   claim add --session <id> [--ttl <minutes>] [--reason <s>] <path>...
