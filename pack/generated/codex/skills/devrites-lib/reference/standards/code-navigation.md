@@ -35,7 +35,9 @@ Review.
    oversized server, a pre-edit result, or a timed-out probe is `stale` (or `unavailable:
    <reason>` when none ran), never clean; fall back to the project typecheck/compile command. **Failing case:**
    the language server returns 0 diagnostics before the project finishes compiling and
-   the slice records "diagnostics clean".
+   the slice records "diagnostics clean". The converse holds: an error that the project
+   compile/typecheck of the current bytes does not reproduce is stale. Record it once
+   with that command's result and move on; never stub, suppress, or re-chase it.
 
 Skipping step 1 on a multi-file slice is a Build orient gap unless recorded
 `cannot_verify`.
