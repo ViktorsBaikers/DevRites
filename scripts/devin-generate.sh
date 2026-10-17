@@ -213,7 +213,7 @@ This project has DevRites installed for Devin CLI.
 - Custom profiles do not inherit interactive tool grants, and background subagents auto-deny unapproved tools. Dispatch the write-capable wright in the foreground, or make sure its `edit`, `write`, and `exec` tools are approved first. Specialists cannot use `ask_user_question`; the root relays user questions and answers through the task text and returned result.
 - DevRites runtime helpers run through the installed `devrites-engine` binary.
 - Skills and agent profiles are loaded when a session starts. If they were installed while this session was open, restart the session or reopen the project before relying on them.
-- A seal GO, AFK mode, or autocomplete flag never authorizes an irreversible action. Disclose the exact commit/push/tag/PR plan and obtain fresh explicit user approval for that attempt; any changed or retried plan needs fresh approval.
+- A seal GO, AFK mode, or autocomplete flag never authorizes an irreversible action. Disclose the exact push/tag/PR/ship-commit plan and obtain fresh explicit user approval for that attempt; any changed or retried plan needs fresh approval. Local unpushed `WIP(<slug>):` checkpoint commits under the checkpoint protocol are not irreversible and land without a prompt.
 
 ## Workflow contract
 
