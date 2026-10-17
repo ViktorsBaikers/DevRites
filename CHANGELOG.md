@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.7.2](https://github.com/ViktorsBaikers/DevRites/compare/v6.7.1...v6.7.2) (2026-10-17)
+
+### Fixed
+
+* **devrites:** reslice review re-admits the findings driving rounds ([#126](https://github.com/ViktorsBaikers/DevRites/issues/126)) ([3339ac4](https://github.com/ViktorsBaikers/DevRites/commit/3339ac40692f4a3fb0a7efb8677c1770c613504e))
+
 ## [6.7.1](https://github.com/ViktorsBaikers/DevRites/compare/v6.7.0...v6.7.1) (2026-10-17)
 
 ### Fixed
