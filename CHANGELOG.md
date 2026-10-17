@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.7.3](https://github.com/ViktorsBaikers/DevRites/compare/v6.7.2...v6.7.3) (2026-10-17)
+
+### Fixed
+
+* **devrites:** a repair contract is never a finding anchor ([#127](https://github.com/ViktorsBaikers/DevRites/issues/127)) ([ec8d427](https://github.com/ViktorsBaikers/DevRites/commit/ec8d427b525fe9852e99c4af6a46ce79ba75230d))
+
 ## [6.7.2](https://github.com/ViktorsBaikers/DevRites/compare/v6.7.1...v6.7.2) (2026-10-17)
 
 ### Fixed
