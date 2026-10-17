@@ -105,7 +105,10 @@ through the launch barrier — `devrites-engine dispatch <slug> open --phase bui
 <slice-id> --role slice-wright --slice <SLICE-ID> --contract <file>` (it refuses a
 contract that forbids writer-safe checks or names none), then `start` with the host handle, `seal`, and
 `return` on completion (auto-records dispatch/return metrics). Every 5 wright
-rounds on one slice, `open` blocks for a reslice review: propose an
+rounds on one slice, `open` blocks for a reslice review. First re-admit each
+finding still driving rounds under the Proportionality rule of
+[agents.md § Result admission](skill://devrites-lib/reference/standards/agents.md#result-admission): one without a broken anchor or a reachable trigger becomes a
+Suggestion and drives no further round. Then propose an
 acceptance-preserving split (`root_no_change_analysis` → `FOLD` per
 [acceptance-preserving-reslice](skill://devrites-lib/reference/standards/acceptance-preserving-reslice.md);
 open findings move to the new slice owning their paths), or record
