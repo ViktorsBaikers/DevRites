@@ -16,7 +16,7 @@ This project has DevRites installed for pi.
 - The explicit `/rite-fast` skill ships its own `fast-*` agents. Only `fast-builder` carries write tools; `fast-planner`, `fast-checker`, and `fast-critic` stay read-only. `/rite-fast` dispatches them itself and applies its own exact-path contracts.
 - DevRites runtime helpers run through the installed `devrites-engine` binary.
 - Installed `.pi/` content loads only after the project is trusted. If pi has not trusted this project, the skills, agents, and prompts above are not active.
-- A seal GO, AFK mode, or autocomplete flag never authorizes an irreversible action. Disclose the exact commit/push/tag/PR plan and obtain fresh explicit user approval for that attempt; any changed or retried plan needs fresh approval.
+- A seal GO, AFK mode, or autocomplete flag never authorizes an irreversible action. Disclose the exact push/tag/PR/ship-commit plan and obtain fresh explicit user approval for that attempt; any changed or retried plan needs fresh approval. Local unpushed `WIP(<slug>):` checkpoint commits under the checkpoint protocol are not irreversible and land without a prompt (ADR-0037).
 
 ## Workflow contract
 

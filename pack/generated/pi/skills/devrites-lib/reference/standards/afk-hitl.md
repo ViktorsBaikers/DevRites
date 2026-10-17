@@ -247,6 +247,11 @@ prove the old path unused before removing it, and a rollback for every destructi
 ([`deprecation.md`](deprecation.md)). The gate requires the safe path; it does not
 cancel the work.
 
+A writer's overwrite or removal of a path outside the workspace that it created itself in
+the same wave is not destruction. The root proves it with each path's birth time
+(`stat -c %W`) at or after the wave's `started` time and the writer's ownership, records
+that evidence, and continues without a question. Any path it cannot prove pauses as above.
+
 By default, AFK widens what's *automatic*; it never widens what's *irreversible*.
 
 Red checks remain hard non-advance build gates, but are not inherently irreversible or

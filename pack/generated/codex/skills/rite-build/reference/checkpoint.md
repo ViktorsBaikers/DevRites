@@ -10,7 +10,9 @@ not a gate.
 The checkpoint stays local, unpushed scratch folded at `$rite-ship`; where the
 host repository's own agent contract requires approval before commits — an
 ask-first rule such as this repository's `AGENTS.md` — that contract wins, and
-the orchestrator pauses for approval before landing it.
+the orchestrator pauses for approval before landing it. The DevRites-generated
+`AGENTS.md` block is not such a rule: under it the checkpoint lands without a
+prompt, AFK or HITL (ADR-0037). Push, tag, PR, and the ship commit stay human-gated.
 
 ## When (and when not)
 
