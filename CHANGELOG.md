@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.4.5...v6.5.0) (2026-10-17)
+
+### Added
+
+* **devrites:** autocomplete lands local checkpoints without a prompt ([#121](https://github.com/ViktorsBaikers/DevRites/issues/121)) ([82831f2](https://github.com/ViktorsBaikers/DevRites/commit/82831f21c9556391452dbdcc4a9f68dd4d729ccf))
+
+### Fixed
+
+* **no-release:** treat uncompiled LSP errors as stale ([#120](https://github.com/ViktorsBaikers/DevRites/issues/120)) ([c1b0cb2](https://github.com/ViktorsBaikers/DevRites/commit/c1b0cb2fd929923f2edc00121b4d7ba8ad2c7c30))
+
 ## [6.4.5](https://github.com/ViktorsBaikers/DevRites/compare/v6.4.4...v6.4.5) (2026-10-16)
 
 ### Fixed
