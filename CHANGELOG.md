@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.7.4](https://github.com/ViktorsBaikers/DevRites/compare/v6.7.3...v6.7.4) (2026-10-17)
+
+### Fixed
+
+* **devrites:** a host reminder is not a turn end ([#128](https://github.com/ViktorsBaikers/DevRites/issues/128)) ([45f4922](https://github.com/ViktorsBaikers/DevRites/commit/45f492269f568449572f27d355641d181d6dd21c))
+
 ## [6.7.3](https://github.com/ViktorsBaikers/DevRites/compare/v6.7.2...v6.7.3) (2026-10-17)
 
 ### Fixed
