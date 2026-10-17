@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1495959,
+  "total_bytes": 1496302,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -204,7 +204,7 @@
     "pack/.claude/skills/rite-plan/reference/replan-and-repair.md": 5442,
     "pack/.claude/skills/rite-plan/reference/slicing.md": 11656,
     "pack/.claude/skills/rite-plan/reference/task-breakdown.md": 3300,
-    "pack/.claude/skills/rite-plan/SKILL.md": 16554,
+    "pack/.claude/skills/rite-plan/SKILL.md": 16897,
     "pack/.claude/skills/rite-polish/reference/adr-promotion.md": 617,
     "pack/.claude/skills/rite-polish/reference/anti-ai-slop.md": 15453,
     "pack/.claude/skills/rite-polish/reference/anti-patterns.md": 2040,
