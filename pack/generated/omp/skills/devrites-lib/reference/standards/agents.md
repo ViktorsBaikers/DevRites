@@ -119,7 +119,15 @@ Basis: <files read · commands run to reach this finding>
   quote like the `file:line` quote. No anchor, or one the defect does not break,
   admits the row as Suggestion logged `Deferred: <claim> — no spec anchor` for an
   optional follow-up slice; it never drives a repair round. Hardening no spec line
-  asks for is a Suggestion, however plausible.
+  asks for is a Suggestion, however plausible. The `when` must also be reachable:
+  a hostile actor enters only through a trust boundary the feature really has
+  (users, network, external systems, untrusted files). A trigger that needs one it
+  never faces — the code under test forging its own evidence, a tampering second
+  user on a single-owner dev host, a swapped remote daemon under a local dev tool —
+  is a Suggestion too. So is an environment state the feature's declared
+  environment does not have (a mount option, kernel setting or daemon location
+  absent from the target host): guard against it only when the spec names it.
+  A finding never pulls a deferred slice's scope forward.
 - **`no-findings`:** `No-findings:` names checks and inspected evidence. Bare
   pass, empty list, or “looks good” is malformed.
 - **`gap`:** names missing/unreadable/stale input; skipped/failed required check;
