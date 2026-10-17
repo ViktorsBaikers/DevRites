@@ -116,7 +116,9 @@ Basis: <files read · commands run to reach this finding>
 - **Proportionality:** a Critical/Important row's `breaks` quotes the line it violates:
   a spec ID (`AC`/`REQ`/`INV`/`PROH`/`DEC`/`EDGE`) or a shipped standard rule
   (`<standard>.md § <section>`: security, regression, principles). Root anchors the
-  quote like the `file:line` quote. No anchor, or one the defect does not break,
+  quote like the `file:line` quote. A repair contract, recheck packet or earlier
+  finding only restates a prior claim and is never an anchor. No anchor, or one
+  the defect does not break,
   admits the row as Suggestion logged `Deferred: <claim> — no spec anchor` for an
   optional follow-up slice; it never drives a repair round. Hardening no spec line
   asks for is a Suggestion, however plausible. The `when` must also be reachable:
