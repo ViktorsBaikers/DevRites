@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.6.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.5.0...v6.6.0) (2026-10-17)
+
+### Added
+
+* **devrites:** swap the mechanism before pinning a pressured seam again ([#122](https://github.com/ViktorsBaikers/DevRites/issues/122)) ([92de92e](https://github.com/ViktorsBaikers/DevRites/commit/92de92e7e77d9d134f9fec46d5367a457f84fa67))
+
 ## [6.5.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.4.5...v6.5.0) (2026-10-17)
 
 ### Added
