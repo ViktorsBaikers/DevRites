@@ -60,6 +60,10 @@ executable controller/harness/bundle bytes or a missing writer, read
 - Do not stop on `--max-slices`, sentinel `max_slices`, `max_agents`,
   `max_minutes`, or `max_review_queue`. Count failed, malformed, and
   unavailable leaf calls.
+- Never end the turn with a progress note while a wave runs or a next step
+  exists: on a headless host a text-only reply ends the session and kills
+  running children. Wait with the host's wait tool and keep working; end only
+  at a recorded stop.
 - Parse flags only from this invocation. `--ship`, `--yolo`, `--max-slices`,
   `--parallel`, `--full`, and `--cross-model` activate only as exact standalone
   tokens in `$ARGUMENTS`; examples or earlier messages can never arm them.
