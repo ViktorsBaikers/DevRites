@@ -51,7 +51,10 @@ If the candidate diff has no matching surfaces, record
    a reviewer, auditor, or test-analyst wave adds `--packet <file>`, the exact packet
    those agents receive, and `open` refuses one that seeds a gate result, outcome,
    count, or "already passed" claim; at Review and Seal it also needs the packet to
-   name the frozen candidate diff and the manifest to cover every checkpointed path), launch every native agent nonblocking, record each returned host handle
+   name the frozen candidate diff and the manifest to cover every checkpointed path), launch every native agent nonblocking through the host's own agent
+   tool (never a shell-launched host CLI such as `omp -p` or `claude -p`: that is a
+   dispatch bridge, its PID handle dies with the session, and its return is a `gap`),
+   record each returned host handle
    (`dispatch ... start --wave <w> --role <r> --handle <id>`), then `seal` —
    seal fails until every declared role has a distinct handle, which makes a
    serial launch-then-wait pattern impossible to record. Record each completion
