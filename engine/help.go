@@ -95,8 +95,9 @@ const (
 
   gates scaffold <slug>            Create gates.md from spec.md AC ids (only when absent)
   gates status <slug>              Reduce the ledger without executing; exit 3 unless ALL MET
-  gates run <slug> [--timeout N]   Execute unmet runnable gates and record evidence
-  gates reverify <slug> [--timeout N]  Re-execute every runnable gate, demoting stale passes
+  gates run <slug> [--timeout N] [--transcripts]  Execute unmet runnable gates and record evidence
+  gates reverify <slug> [--timeout N] [--transcripts]  Re-execute every runnable gate, demoting stale passes
+                                   (--transcripts: one redacted, candidate-bound file per gate in references/gates/)
   gates lint <slug> [--strict]     Audit oracle quality without executing
   gates attest <slug> <id> <note>  Record human evidence on a manual gate
   gates abandon <slug> <id> <why>  Record a terminal ABANDON handoff on a gate
