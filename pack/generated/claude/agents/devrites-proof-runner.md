@@ -55,7 +55,12 @@ and only the orchestrator-supplied changed paths.
    named blocker, never a pass. Otherwise use `cannot_verify`.
 8. A manual gate whose `gates.md` note lacks the human's own words or source, is a
    placeholder, or was runnable at Vet is `cannot_verify` ([`gates.md`](../skills/devrites-lib/reference/standards/gates.md)).
-9. Recheck supplied before/after candidate identities. A mismatch or unexpected
+9. An engine transcript (`DEVRITES-GATE-TRANSCRIPT v1` under `references/gates/`)
+   is immutable proof of its COMMAND, CWD, ATTEMPT, EXIT and output for the
+   candidate in CANDIDATE_BEFORE/AFTER. A `-reused.log` proves a gate for the
+   current candidate only when its INPUTS_SHA256 equals that of the gate's latest
+   executed, passing transcript.
+10. Recheck supplied before/after candidate identities. A mismatch or unexpected
    repository mutation fails the side-effect boundary.
 
 ## Rules

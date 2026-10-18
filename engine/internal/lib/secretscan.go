@@ -8,10 +8,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/devrites/devrites/internal/secretpattern"
 )
 
 type secretFinding struct {
@@ -71,17 +72,7 @@ func (w *boundedSecretScanBuffer) Len() int {
 	return w.buffer.Len()
 }
 
-var secretPatterns = []struct {
-	sev, kind string
-	re        *regexp.Regexp
-}{
-	{"HIGH", "private-key", regexp.MustCompile(`-----BEGIN (RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----`)},
-	{"HIGH", "aws-secret", regexp.MustCompile(`(?i)aws(.{0,20})?(secret|access).{0,20}[=:]\s*['\"]?[A-Za-z0-9/+=]{30,}`)},
-	{"HIGH", "github-token", regexp.MustCompile(`gh[pousr]_[A-Za-z0-9_]{30,}`)},
-	{"HIGH", "slack-token", regexp.MustCompile(`xox[baprs]-[A-Za-z0-9-]{20,}`)},
-	{"MEDIUM", "generic-secret", regexp.MustCompile(`(?i)(api[_-]?key|token|secret|password)\s*[:=]\s*['\"][^'\"\n]{16,}['\"]`)},
-	{"LOW", "placeholder-secret", regexp.MustCompile(`(?i)(api[_-]?key|token|secret|password).{0,20}(example|changeme|placeholder|dummy)`)},
-}
+var secretPatterns = secretpattern.Patterns
 
 // SecretScan scans staged blobs, stdin, or touched files for credentials. HIGH exits 3.
 func SecretScan(root string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -253,12 +244,12 @@ func scanCountedSecrets(path string, content []byte, budget *secretScanBudget) (
 	var out []secretFinding
 	source := secretSourceLabel(path)
 	for _, pattern := range secretPatterns {
-		matches := pattern.re.FindAllIndex(content, budget.findingsRemaining+1)
+		matches := pattern.Re.FindAllIndex(content, budget.findingsRemaining+1)
 		if len(matches) > budget.findingsRemaining {
 			return nil, errSecretScanLimit
 		}
 		for _, match := range matches {
-			out = append(out, secretFinding{Severity: pattern.sev, Path: source, Kind: pattern.kind, Offset: match[0]})
+			out = append(out, secretFinding{Severity: pattern.Sev, Path: source, Kind: pattern.Kind, Offset: match[0]})
 		}
 		budget.findingsRemaining -= len(matches)
 	}
@@ -267,7 +258,7 @@ func scanCountedSecrets(path string, content []byte, budget *secretScanBudget) (
 
 func secretSourceLabel(path string) string {
 	for _, pattern := range secretPatterns {
-		if pattern.re.FindStringIndex(path) != nil {
+		if pattern.Re.FindStringIndex(path) != nil {
 			return "<redacted-path>"
 		}
 	}
