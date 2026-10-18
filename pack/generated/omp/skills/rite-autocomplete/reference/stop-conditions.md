@@ -79,7 +79,12 @@ class or park; only a real human/risk/scope gate stops for a human.
 - **Seal:** remaining NO-GO after recommended-option questions are closed, with
   every remaining blocker and fix direction. Never round up to GO. An open
   recommended-option blocking question is not a Seal stop: resolve it, recover
-  agent-owned findings, then re-enter Seal.
+  agent-owned findings, then re-enter Seal. A first NO-GO is not a stop either:
+  recover every agent-owned blocker (missing or unbound proof, a reviewer gap root
+  can close, a finding with a fix direction, a missing `review.md` verdict), then
+  re-enter Seal. The unattended `N` to accepting Important risks means repair, not
+  stop. Stop only for blockers that need a human: accepting a risk, changing scope
+  or an acceptance criterion, or access. Record each one as a question.
 - **Reslice:** execute its marked action before deciding continue/stop.
 - **Slice budget:** do not stop on `--max-slices`. Leftover
   pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count
