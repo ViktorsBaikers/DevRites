@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.9.1](https://github.com/ViktorsBaikers/DevRites/compare/v6.9.0...v6.9.1) (2026-10-18)
+
+### Fixed
+
+* **devrites:** list --transcripts in the main gates help ([#132](https://github.com/ViktorsBaikers/DevRites/issues/132)) ([f9da5f6](https://github.com/ViktorsBaikers/DevRites/commit/f9da5f6b6940b1728925eff92f5f0e58a30d962d)), references [#131](https://github.com/ViktorsBaikers/DevRites/issues/131)
+
 ## [6.9.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.8.1...v6.9.0) (2026-10-18)
 
 ### Added
