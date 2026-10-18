@@ -149,7 +149,8 @@ keeps chaining pending slices. One Autocomplete invocation owns all internal
 backtracking. Context pressure, compaction, or a nested completion footer does
 not create a stop; persist and resume the cursor.
 
-Use one terse line:
+Reply only at a final state, never as mid-run progress: a text-only turn ends
+the run, so after a compaction or phase change keep calling tools. Use one terse line:
 
 ```text
 Autocomplete: <slug>
