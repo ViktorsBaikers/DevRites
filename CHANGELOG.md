@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.9.2](https://github.com/ViktorsBaikers/DevRites/compare/v6.9.1...v6.9.2) (2026-10-18)
+
+### Fixed
+
+* **devrites:** print the autocomplete card only at a final state ([#133](https://github.com/ViktorsBaikers/DevRites/issues/133)) ([fd1c5cf](https://github.com/ViktorsBaikers/DevRites/commit/fd1c5cfd89877de82d7ca2433704f578e40d5251))
+
 ## [6.9.1](https://github.com/ViktorsBaikers/DevRites/compare/v6.9.0...v6.9.1) (2026-10-18)
 
 ### Fixed
