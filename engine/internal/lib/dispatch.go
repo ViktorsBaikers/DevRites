@@ -223,6 +223,11 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 				if err := lintReviewerPacket(packet); err != nil {
 					return fail("BLOCKED: %v", err)
 				}
+				if strings.EqualFold(phase, "review") || strings.EqualFold(phase, "seal") {
+					if err := lintReviewCandidate(root, slug, packet); err != nil {
+						return fail("BLOCKED: %v", err)
+					}
+				}
 				break
 			}
 		}

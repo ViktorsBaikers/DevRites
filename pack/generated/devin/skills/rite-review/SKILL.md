@@ -88,7 +88,12 @@ Pull these via `Read` when the diff demands them:
    what the spec asked but breaks project conventions (Spec pass, Code-review fail).
    Separate contexts prevent one axis from masking the other. This is the initial
    full pass; a correction uses step 7's bounded recheck:
-   - Freeze that closed digest and give the same digest to the **two** axis reviewers (three when
+   - Freeze that closed digest: write the candidate diff (feature base to HEAD, plus any
+     uncommitted candidate change) to `packets/<wave>.diff` and name that file in the
+     packet. `dispatch open` refuses a Review or Seal reviewer wave whose packet names
+     no existing diff, or whose manifest omits a path the feature's `WIP(<slug>):`
+     checkpoints changed.
+     Give the same digest and diff to the **two** axis reviewers (three when
      [engineering lanes](../devrites-lib/reference/parallel-dispatch.md) split the code axis) in
      parallel, each with its own narrow brief and no
      cross-pollination — and evaluate the frontend (step 4), security (step 5),

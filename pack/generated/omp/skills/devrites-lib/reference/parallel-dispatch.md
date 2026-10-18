@@ -50,7 +50,8 @@ If the candidate diff has no matching surfaces, record
    (`devrites-engine dispatch <slug> open --phase <p> --wave <w> --role <r>...`;
    a reviewer, auditor, or test-analyst wave adds `--packet <file>`, the exact packet
    those agents receive, and `open` refuses one that seeds a gate result, outcome,
-   count, or "already passed" claim), launch every native agent nonblocking, record each returned host handle
+   count, or "already passed" claim; at Review and Seal it also needs the packet to
+   name the frozen candidate diff and the manifest to cover every checkpointed path), launch every native agent nonblocking, record each returned host handle
    (`dispatch ... start --wave <w> --role <r> --handle <id>`), then `seal` —
    seal fails until every declared role has a distinct handle, which makes a
    serial launch-then-wait pattern impossible to record. Record each completion
