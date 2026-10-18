@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.8.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.7.4...v6.8.0) (2026-10-18)
+
+### Added
+
+* **devrites:** reuse unchanged gates and refuse voided review waves ([#129](https://github.com/ViktorsBaikers/DevRites/issues/129)) ([51349fe](https://github.com/ViktorsBaikers/DevRites/commit/51349fe0ce8f96ad890461c0e796bf3184e49079))
+
 ## [6.7.4](https://github.com/ViktorsBaikers/DevRites/compare/v6.7.3...v6.7.4) (2026-10-17)
 
 ### Fixed
