@@ -30,6 +30,7 @@ type Gate struct {
 	Check    string
 	Expect   string
 	Cwd      string
+	Inputs   string // optional whitespace-separated paths/globs the result depends on
 	Evidence string
 	Line     int // 1-based line of the "- [ ]" row in the original text
 }
@@ -46,8 +47,8 @@ type Document struct {
 
 var (
 	gateLineRE      = regexp.MustCompile(`^\s*- \[([ xX])\] ([^\s:]+): (.*)$`)
-	attrLineRE      = regexp.MustCompile(`^(\s+)(CHECK|EXPECT|CWD|EVIDENCE):(.*)$`)
-	unindentedAttr  = regexp.MustCompile(`^(CHECK|EXPECT|CWD|EVIDENCE):`)
+	attrLineRE      = regexp.MustCompile(`^(\s+)(CHECK|EXPECT|CWD|INPUTS|EVIDENCE):(.*)$`)
+	unindentedAttr  = regexp.MustCompile(`^(CHECK|EXPECT|CWD|INPUTS|EVIDENCE):`)
 	abandonLineRE   = regexp.MustCompile(`^ABANDON: (\S+)\s*(.*)$`)
 	indentedAbandon = regexp.MustCompile(`^\s+ABANDON:`)
 	expectSlashRE   = regexp.MustCompile(`^/(.*)/([ims]*)$`)
@@ -114,6 +115,8 @@ func ParseLedger(text string) *Document {
 				current.Expect = value
 			case "CWD":
 				current.Cwd = value
+			case "INPUTS":
+				current.Inputs = value
 			case "EVIDENCE":
 				current.Evidence = value
 			}

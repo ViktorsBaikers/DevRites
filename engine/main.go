@@ -225,6 +225,10 @@ func cmdCandidate(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "candidate: BLOCKED: %v\n", err)
 		return exitBlocked
 	}
+	if err := lib.CheckCandidateCoverage(root, args[0]); err != nil {
+		fmt.Fprintf(stderr, "candidate: BLOCKED: %v\n", err)
+		return exitBlocked
+	}
 	fmt.Fprintf(stdout, "candidate-sha256: %s\ncandidate-files: %d\n", digest, files)
 	return exitOK
 }

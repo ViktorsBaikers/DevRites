@@ -25,14 +25,19 @@ const (
 // manual gate keeps human attestation.
 const EvidenceMarker = "automatic-evidence=v1"
 
-var automaticEvidenceRE = regexp.MustCompile(`^automatic-evidence=v1; def=([0-9a-f]{64}); exit=0; expect=matched; output-sha256=([0-9a-f]{64}); output-bytes=([0-9]+); at=(\S+)$`)
+var automaticEvidenceRE = regexp.MustCompile(`^automatic-evidence=v1; def=([0-9a-f]{64}); exit=0; expect=matched; output-sha256=([0-9a-f]{64}); output-bytes=([0-9]+)(?:; inputs=([0-9a-f]{64}))?; at=(\S+)$`)
 
 // DefinitionDigest is the environment-independent SHA-256 binding of the
-// parsed CHECK, EXPECT, and raw CWD fields. Editing any bound input renders
-// previously recorded evidence stale. The digest is unkeyed drift detection,
-// not tamper proof: a ledger editor can write a syntactically valid line.
+// parsed CHECK, EXPECT, raw CWD and (when declared) INPUTS fields. Editing any
+// bound input renders previously recorded evidence stale. The digest is unkeyed
+// drift detection, not tamper proof: a ledger editor can write a syntactically
+// valid line.
 func DefinitionDigest(gate *Gate) string {
-	sum := sha256.Sum256([]byte("v1\x00" + gate.Check + "\x00" + gate.Expect + "\x00" + gate.Cwd))
+	definition := "v1\x00" + gate.Check + "\x00" + gate.Expect + "\x00" + gate.Cwd
+	if gate.Inputs != "" {
+		definition += "\x00inputs\x00" + gate.Inputs
+	}
+	sum := sha256.Sum256([]byte(definition))
 	return hex.EncodeToString(sum[:])
 }
 
@@ -40,6 +45,24 @@ func DefinitionDigest(gate *Gate) string {
 func FormatEvidence(gate *Gate, outputDigest string, outputBytes int, at string) string {
 	return fmt.Sprintf("%s; def=%s; exit=0; expect=matched; output-sha256=%s; output-bytes=%d; at=%s",
 		EvidenceMarker, DefinitionDigest(gate), outputDigest, outputBytes, at)
+}
+
+// withInputs adds the INPUTS content digest to an evidence payload, so a later
+// run can tell whether the files the result depends on are unchanged.
+func withInputs(evidence, inputsDigest string) string {
+	if inputsDigest == "" {
+		return evidence
+	}
+	at := strings.LastIndex(evidence, "; at=")
+	return evidence[:at] + "; inputs=" + inputsDigest + evidence[at:]
+}
+
+// recordedInputs is the INPUTS digest a gate's automatic evidence carries, or "".
+func recordedInputs(gate *Gate) string {
+	if match := automaticEvidenceRE.FindStringSubmatch(strings.TrimSpace(gate.Evidence)); match != nil {
+		return match[4]
+	}
+	return ""
 }
 
 // OutputDigest is the recorded fingerprint of the canonical successful output

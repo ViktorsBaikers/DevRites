@@ -87,9 +87,22 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 			results = append(results, GateResult{ID: gate.ID, Detail: "manual gate; evidence is judged, not executed"})
 			continue
 		}
-		if GateState(gate, doc) == StateMet && !reverify {
-			results = append(results, GateResult{ID: gate.ID, Passed: true, Detail: "already met"})
-			continue
+		inputs := ""
+		if gate.Inputs != "" {
+			// An unreadable or unmatched spec yields "", which never matches, so the gate re-executes.
+			inputs, _ = InputsDigest(root, gate.Inputs)
+		}
+		if GateState(gate, doc) == StateMet {
+			if gate.Inputs == "" && !reverify {
+				results = append(results, GateResult{ID: gate.ID, Passed: true, Detail: "already met"})
+				continue
+			}
+			// A gate that declares INPUTS is reused, under run and reverify alike,
+			// exactly while the files it depends on are byte-identical; any change re-executes it.
+			if inputs != "" && inputs == recordedInputs(gate) {
+				results = append(results, GateResult{ID: gate.ID, Passed: true, Detail: "reused: inputs unchanged"})
+				continue
+			}
 		}
 		if !Approved(gate.Check, gate.Cwd, approved) {
 			results = append(results, GateResult{ID: gate.ID, Detail: "CHECK/CWD is not an approved test-plan.md preflight row; not executed"})
@@ -111,7 +124,7 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 			outcomes[key] = outcome
 		}
 		if outcome.Err == nil && outcome.ExitCode == 0 && expectation.Matches(outcome.Output) {
-			evidence := FormatEvidence(gate, OutputDigest(outcome.Output), outcome.OutputBytes, time.Now().UTC().Format(time.RFC3339))
+			evidence := withInputs(FormatEvidence(gate, OutputDigest(outcome.Output), outcome.OutputBytes, time.Now().UTC().Format(time.RFC3339)), inputs)
 			writeErr := write(gate, evidence, true)
 			results = append(results, GateResult{
 				ID: gate.ID, Ran: true, Passed: true,
@@ -170,7 +183,7 @@ func writeResult(ledgerPath string, ran *Gate, evidence string, checked bool) er
 	if current == nil {
 		return fmt.Errorf("%w: gate %s disappeared", ErrOracleMoved, ran.ID)
 	}
-	if current.Check != ran.Check || current.Expect != ran.Expect || current.Cwd != ran.Cwd {
+	if current.Check != ran.Check || current.Expect != ran.Expect || current.Cwd != ran.Cwd || current.Inputs != ran.Inputs {
 		return fmt.Errorf("%w: gate %s definition edited", ErrOracleMoved, ran.ID)
 	}
 

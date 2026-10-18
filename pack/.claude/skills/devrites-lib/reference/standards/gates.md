@@ -19,6 +19,7 @@ every later phase requires its presence; proof phases require every gate met.
   CHECK: <exact command from test-plan.md Build-entry preflight>
   EXPECT: <substring | /regex/flags>
   CWD: <repository-relative path; omit for repo root>
+  INPUTS: <optional project-relative paths, directories or globs>
   EVIDENCE: pending
 
 - [x] AC-002: <human-judged outcome>
@@ -33,6 +34,10 @@ ABANDON: AC-003 <why the outcome can never be met>
 - Attributes are indented beneath their gate. Fenced code examples never parse.
 - `EXPECT` is a substring, or `/pattern/flags` with `i`, `m`, `s` flags.
 - `CWD` is repository-relative; absolute paths and `..` segments are rejected.
+- `INPUTS` (optional) lists every file the gate's result depends on: sources,
+  tests, fixtures, build and lock files, and the gate's own scripts. Each pattern
+  must match a file. A gate whose verdict depends on state that no file
+  captures (network, wall clock, live host load) takes no `INPUTS`.
 - `ABANDON:` starts at column 1, names a known gate, and requires a reason.
   An abandoned gate blocks completion and demands a handoff — it can never
   read as a pass.
@@ -53,8 +58,8 @@ directory with a bounded timeout; pass requires exit 0 **and** output matching
 EXPECT. Output is captured but never persisted — only its digest.
 
 After Vet READY the runnable set is fixed: converting a runnable gate to manual,
-loosening EXPECT, changing CHECK or CWD, or removing a row is Plan repair plus
-re-Vet, never a Prove or Seal edit. A runnable gate that cannot execute stays unmet
+loosening EXPECT, changing CHECK or CWD, adding or narrowing INPUTS, or removing
+a row is Plan repair plus re-Vet, never a Prove or Seal edit. A runnable gate that cannot execute stays unmet
 with `unavailable: <reason>`. Prove attests only gates that were manual at Vet,
 checked by diffing `gates.md` against the Vet record. **Failing case:** AC-003's
 runnable gate fails at Prove, the root deletes CHECK/EXPECT and attests "verified
@@ -63,9 +68,13 @@ manually", and `gates status` reads `all-met`.
 ## Evidence binding
 
 A successful run writes `EVIDENCE: automatic-evidence=v1; def=<sha256>; …`
-where `def` binds the exact CHECK/EXPECT/CWD the run executed. Editing any of
-the three renders prior evidence `stale-unmet` — a stale pass cannot hide
-behind an edited oracle. Prose evidence on a runnable gate is also stale:
+where `def` binds the exact CHECK/EXPECT/CWD (and INPUTS, when declared) the run
+executed. Editing any of them renders prior evidence `stale-unmet` — a stale pass
+cannot hide behind an edited oracle. A gate with `INPUTS` also records
+`inputs=<sha256>` of those files' content. `gates run` and `gates reverify`
+both reuse such a gate while the files are byte-identical, and re-execute it
+when any of them changes. A gate without `INPUTS` keeps the plain rule:
+`run` skips it once met, and `reverify` re-executes it. Prose evidence on a runnable gate is also stale:
 only automatic evidence bound to the current definition counts.
 
 Manual gates are met when checked with non-placeholder human evidence;
@@ -85,8 +94,8 @@ self-attests.
 ```text
 devrites-engine gates scaffold <slug>     create gates.md from spec.md AC ids
 devrites-engine gates status <slug>       reduce without executing; all-met/handoff/not-met/malformed
-devrites-engine gates run <slug>          execute unmet runnable gates, write bound evidence
-devrites-engine gates reverify <slug>     re-execute every runnable gate; demote stale passes
+devrites-engine gates run <slug>          execute unmet runnable gates (and INPUTS gates whose files changed)
+devrites-engine gates reverify <slug>     re-execute every runnable gate except INPUTS gates with unchanged files
 devrites-engine gates lint <slug>         audit oracle quality without executing
 devrites-engine gates attest <slug> <id> <note>   record human evidence on a manual gate
 devrites-engine gates abandon <slug> <id> <why>   record a terminal ABANDON handoff
