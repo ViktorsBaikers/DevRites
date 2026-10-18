@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.8.1](https://github.com/ViktorsBaikers/DevRites/compare/v6.8.0...v6.8.1) (2026-10-18)
+
+### Fixed
+
+* **devrites:** a first seal NO-GO recovers before it stops ([#130](https://github.com/ViktorsBaikers/DevRites/issues/130)) ([17c1340](https://github.com/ViktorsBaikers/DevRites/commit/17c1340ec4e30307f56948a8a1e86480224a198c))
+
 ## [6.8.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.7.4...v6.8.0) (2026-10-18)
 
 ### Added
