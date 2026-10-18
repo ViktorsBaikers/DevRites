@@ -81,7 +81,9 @@ Follow [`reference/phase-contract.md`](reference/phase-contract.md)
    that is malformed, unmet,
    stale, unapproved, or abandoned — a seal-side `gates status` reading anything
    but `all-met` means Prove's evidence is not current; return there, never
-   attest past it. It likewise refuses a malformed `notes.md` or any anchor
+   attest past it. Before the Seal wave, run `devrites-engine gates reverify <slug>
+   --transcripts` on the frozen candidate, so every gate has a transcript bound to
+   this digest for the proof runner. It likewise refuses a malformed `notes.md` or any anchor
    graded other than `exact`: `devrites-engine note check <slug> --repair`
    re-anchors `moved` notes; `stale`/`ambiguous`/`lost` ones are corrected or
    removed before GO.

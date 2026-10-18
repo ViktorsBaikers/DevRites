@@ -55,7 +55,12 @@ execute unreviewed code.
 
 Execution contract: the command runs through the platform shell in the named
 directory with a bounded timeout; pass requires exit 0 **and** output matching
-EXPECT. Output is captured but never persisted — only its digest.
+EXPECT. Without `--transcripts`, output is captured but never persisted, only its
+digest. `--transcripts` writes one file per executed or reused gate under
+`references/gates/<gate-id>/`. Each file holds the command, cwd, attempt, times,
+exit, EXPECT verdict, the candidate digest read before and after the run, and the
+output with known credential shapes masked and capped at 1 MiB. Its
+`OUTPUT_SHA256` equals the ledger evidence digest.
 
 After Vet READY the runnable set is fixed: converting a runnable gate to manual,
 loosening EXPECT, changing CHECK or CWD, adding or narrowing INPUTS, or removing

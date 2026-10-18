@@ -99,6 +99,15 @@ func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }
 
+func init() {
+	// acceptance cannot import lib (lib imports it), so gate transcripts get
+	// the candidate identity through this hook.
+	acceptance.CandidateDigest = func(root, slug string) (string, error) {
+		digest, _, err := lib.CandidateIdentity(root, slug)
+		return digest, err
+	}
+}
+
 // run is the testable entry point. It returns the process exit code.
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {

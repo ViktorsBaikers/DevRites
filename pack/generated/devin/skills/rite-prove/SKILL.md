@@ -83,10 +83,13 @@ test changes.
    pass is `flaky` per [`testing.md`](../devrites-lib/reference/standards/testing.md#determinism-no-flaky-tests),
    never green. Static gates prove only their named
    static criterion.
-   Run the acceptance ledger: `devrites-engine gates run <slug>` executes every
-   unmet runnable gate against the same approved preflight rows and records
-   definition-bound evidence; `gates reverify <slug>` re-executes all of them
-   when any prior pass is in doubt. Attest manual gates with `gates attest
+   Run the acceptance ledger with `--transcripts`: `devrites-engine gates run <slug>
+   --transcripts` executes every unmet runnable gate against the same approved
+   preflight rows, records definition-bound evidence, and writes one redacted,
+   candidate-bound transcript per gate under `references/gates/<gate-id>/`;
+   `gates reverify <slug> --transcripts` re-executes all of them when any prior
+   pass is in doubt. Hand the proof runner those transcripts, never hand-built
+   logs. Attest manual gates with `gates attest
    <slug> <id> <note>` only against observed judgment whose note cites the
    human's own words or source; placeholder notes are unmet and an AFK run never
    self-attests. Only gates manual at Vet are attested; runnable-to-manual

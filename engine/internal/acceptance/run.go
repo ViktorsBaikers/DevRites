@@ -30,6 +30,12 @@ type GateResult struct {
 	Detail    string // exit/match/timeout/approval diagnostic
 	Discarded bool   // result dropped: ledger changed under the run
 	WriteErr  error  // evidence writeback failed for a reason other than drift
+	Reused    bool   // met gate kept because its INPUTS are unchanged
+	Inputs    string // INPUTS content digest at run time, when declared
+	// Outcome, Started and Ended describe the execution this result judged;
+	// they are zero when the gate did not execute.
+	Outcome        RunOutcome
+	Started, Ended time.Time
 }
 
 var (
@@ -72,6 +78,7 @@ func ReadLedgerFile(ledgerPath string) (string, error) {
 func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, approved []ApprovedCommand, reverify bool, timeout time.Duration, writeLock func(func() error) error) []GateResult {
 	var results []GateResult
 	outcomes := map[string]RunOutcome{}
+	spans := map[string][2]time.Time{}
 	write := func(gate *Gate, evidence string, checked bool) error {
 		if writeLock == nil {
 			return writeResult(ledgerPath, gate, evidence, checked)
@@ -100,7 +107,7 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 			// A gate that declares INPUTS is reused, under run and reverify alike,
 			// exactly while the files it depends on are byte-identical; any change re-executes it.
 			if inputs != "" && inputs == recordedInputs(gate) {
-				results = append(results, GateResult{ID: gate.ID, Passed: true, Detail: "reused: inputs unchanged"})
+				results = append(results, GateResult{ID: gate.ID, Passed: true, Reused: true, Inputs: inputs, Detail: "reused: inputs unchanged"})
 				continue
 			}
 		}
@@ -120,9 +127,12 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 		key := gate.Check + "\x00" + cwd
 		outcome, ran := outcomes[key]
 		if !ran {
+			started := time.Now().UTC()
 			outcome = Execute(ctx, gate.Check, cwd, timeout)
 			outcomes[key] = outcome
+			spans[key] = [2]time.Time{started, time.Now().UTC()}
 		}
+		span := spans[key]
 		if outcome.Err == nil && outcome.ExitCode == 0 && expectation.Matches(outcome.Output) {
 			evidence := withInputs(FormatEvidence(gate, OutputDigest(outcome.Output), outcome.OutputBytes, time.Now().UTC().Format(time.RFC3339)), inputs)
 			writeErr := write(gate, evidence, true)
@@ -130,6 +140,7 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 				ID: gate.ID, Ran: true, Passed: true,
 				Discarded: errors.Is(writeErr, ErrOracleMoved), WriteErr: writeErr,
 				Detail: resultDetail(writeErr, "pass"),
+				Inputs: inputs, Outcome: outcome, Started: span[0], Ended: span[1],
 			})
 		} else {
 			writeErr := write(gate, "pending", false)
@@ -137,6 +148,7 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 				ID: gate.ID, Ran: true,
 				Discarded: errors.Is(writeErr, ErrOracleMoved), WriteErr: writeErr,
 				Detail: resultDetail(writeErr, failDetail(outcome, expectation)),
+				Inputs: inputs, Outcome: outcome, Started: span[0], Ended: span[1],
 			})
 		}
 	}

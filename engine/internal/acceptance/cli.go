@@ -26,8 +26,12 @@ const gatesUsage = `usage: devrites-engine gates <subcommand> <slug>
 Subcommands:
   scaffold <slug>            Create gates.md from spec.md AC ids (only when absent)
   status <slug>              Reduce the ledger without executing; exit 3 unless ALL MET
-  run <slug> [--timeout N]   Execute unmet runnable gates and record evidence
-  reverify <slug> [--timeout N]  Re-execute every runnable gate, demoting stale passes
+  run <slug> [--timeout N] [--transcripts]
+                             Execute unmet runnable gates and record evidence
+  reverify <slug> [--timeout N] [--transcripts]
+                             Re-execute every runnable gate, demoting stale passes
+                             (--transcripts writes one redacted, candidate-bound
+                             file per gate under references/gates/<gate-id>/)
   lint <slug> [--strict]     Audit oracle quality without executing
   attest <slug> <id> <note>  Record human evidence on a manual gate
   abandon <slug> <id> <why>  Record a terminal ABANDON handoff on a gate
@@ -216,7 +220,12 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 	var slug string
 	timeout := DefaultTimeout
 	positional := 0
+	transcripts := false
 	for i := 0; i < len(args); i++ {
+		if args[i] == "--transcripts" {
+			transcripts = true
+			continue
+		}
 		if args[i] == "--timeout" {
 			if i+1 >= len(args) {
 				fmt.Fprintf(stderr, "gates %s: --timeout requires seconds\n", verb)
@@ -232,21 +241,27 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 			continue
 		}
 		if strings.HasPrefix(args[i], "-") || positional > 0 {
-			fmt.Fprintf(stderr, "usage: devrites-engine gates %s <slug> [--timeout N]\n", verb)
+			fmt.Fprintf(stderr, "usage: devrites-engine gates %s <slug> [--timeout N] [--transcripts]\n", verb)
 			return ExitUsage
 		}
 		slug = args[i]
 		positional++
 	}
 	if slug == "" {
-		fmt.Fprintf(stderr, "usage: devrites-engine gates %s <slug> [--timeout N]\n", verb)
+		fmt.Fprintf(stderr, "usage: devrites-engine gates %s <slug> [--timeout N] [--transcripts]\n", verb)
 		return ExitUsage
 	}
-	_, ledgerPath, testPlanPath, project, err := featurePaths(root, slug)
+	work, ledgerPath, testPlanPath, project, err := featurePaths(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "gates %s: %v\n", verb, err)
 		return ExitBlocked
 	}
+	before := ""
+	if transcripts {
+		before = candidateLabel(root, slug)
+	}
+	var ran []GateResult
+	var ranDoc *Document
 
 	// The gates lock serializes check execution; the feature lock is held only
 	// to read inputs and per writeback, so dispatch and other workspace writers
@@ -270,7 +285,8 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 			}
 			return nil
 		}
-		for _, result := range RunGates(context.Background(), project, ledgerPath, doc, approved, reverify, timeout, featureLock) {
+		ran, ranDoc = RunGates(context.Background(), project, ledgerPath, doc, approved, reverify, timeout, featureLock), doc
+		for _, result := range ran {
 			switch {
 			case !result.Ran:
 				fmt.Fprintf(stdout, "gate %s: skipped (%s)\n", result.ID, result.Detail)
@@ -285,6 +301,16 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 	if lockErr != nil {
 		fmt.Fprintf(stderr, "gates %s: %v\n", verb, lockErr)
 		return ExitBlocked
+	}
+	if transcripts && ranDoc != nil {
+		paths, err := writeTranscripts(work, ranDoc, ran, before, candidateLabel(root, slug))
+		for _, path := range paths {
+			fmt.Fprintf(stdout, "transcript: %s\n", path)
+		}
+		if err != nil {
+			fmt.Fprintf(stderr, "gates %s: transcript: %v\n", verb, err)
+			return ExitBlocked
+		}
 	}
 	fmt.Fprintln(stdout, "---")
 	return reportStatus(slug, ledgerPath, testPlanPath, stdout, stderr)
