@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.10.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.9.6...v6.10.0) (2026-10-19)
+
+### Added
+
+* **devrites:** try ego-lite and browser-harness before Playwright MCP ([#141](https://github.com/ViktorsBaikers/DevRites/issues/141)) ([34d3c82](https://github.com/ViktorsBaikers/DevRites/commit/34d3c82c500faa39a04278c33d98e2c4d2acc10d))
+
 ## [6.9.6](https://github.com/ViktorsBaikers/DevRites/compare/v6.9.5...v6.9.6) (2026-10-19)
 
 ### Fixed
