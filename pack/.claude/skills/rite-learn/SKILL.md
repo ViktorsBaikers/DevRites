@@ -24,8 +24,10 @@ of one authority; it cannot promote a rule alone.
    Before bounding, fixed-string search all of `.devrites/archive/` and active
    `decisions.md` for `rite-learn: accepted` and `rite-learn: declined`; read every hit
    whole. Then bound the archive; inspect applicable `AGENTS.md`/`CLAUDE.md`, accepted ADRs, and relevant `.devrites/archive/*/{decisions,drift,review,seal}.md`.
+   Over the same window, collect reverts (`git log --grep='^Revert'`), repeat fixes to the same
+   paths, and (when `gh` is authenticated) merged-PR review comments into one scratch excerpt; each is an external signal.
    **Failing case:** a declined proposal returns because its feature fell outside the bound.
-2. Broad mode dispatches exact fresh/read-only `devrites-retrospector`; reconcile its claims against cited files.
+2. Broad mode dispatches exact fresh/read-only `devrites-retrospector` with the archive paths and history excerpt; reconcile its claims against cited files.
    A missing, failed, timed-out, or malformed result reports `Candidate: NOT-RUN
    (unavailable: <reason>)` as a gap, never `Candidate: none`; an unavailable role stops
    for HITL per [`agents.md`](../devrites-lib/reference/standards/agents.md) (trigger `agents`).
@@ -62,7 +64,7 @@ of one authority; it cannot promote a rule alone.
 - Promotion path is fixed: lesson → artifact type (retrospector class) → one canonical
   owner → human approval of the exact edit. A skipped stage is no promotion.
 - **Recurrence ⇒ mechanism.** When `Authority: existing <path>` already holds the violated
-  rule, the candidate is a check, gate, template slot, or default at that owner
+  rule, the candidate is the highest-level mechanism that works (removed possibility, type, check, gate, template slot, or default) at that owner
   ([`skill-authoring.md`](../devrites-lib/reference/standards/skill-authoring.md#match-form-to-failure) § Match form to failure),
   never a reworded, bolder, or relocated copy; otherwise record `no mechanical form
   possible: <reason>` and narrow the proposal. An unwired or broken existing check is
@@ -70,8 +72,9 @@ of one authority; it cannot promote a rule alone.
   rule that two archived features already violated.
 - A lesson proposing a new recurring check names its **controls**: the real past
   instance it would have caught (positive) and a near-miss class it must not fire on
-  (negative). **Failing case:** a trigger patterned on an imagined command that never
-  matched real history.
+  (negative). Before approval, run the check: it fails on the positive, passes on the
+  negative and the current tree; record command and output. **Failing case:** a trigger
+  patterned on an imagined command that never matched real history.
 - Contradiction outranks staleness: actively misleading guidance outranks merely old guidance.
 - A proposal names the **retrospective failing case**: the concrete past feature/artifact the
   rule would have caught. None → generic advice — drop.

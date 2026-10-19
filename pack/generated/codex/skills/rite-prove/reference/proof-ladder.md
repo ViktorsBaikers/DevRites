@@ -12,7 +12,7 @@ rung you used. Detect, don't install: browser tooling setup is the user's call.
    perf trace, deeper DOM inspection, screenshots, console, network, performance, and the
    accessibility tree.
 3. **Claude Code `/run` and `/verify`** (if available): launch and observe the app;
-   prefer a project-specific run/verify skill if one exists.
+   prefer a project-specific `verify-*` skill if one exists; with none, suggest `$rite-harness`.
 4. **Project-native E2E** (only if already present). Playwright, Cypress, Capybara,
    Selenium. Use the project's existing commands; don't add a new framework.
 5. **Manual fallback:** no tooling available: record the limitation and write exact

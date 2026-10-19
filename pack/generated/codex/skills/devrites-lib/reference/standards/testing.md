@@ -84,6 +84,8 @@ discriminates the required result.
 - **Don't mirror the implementation.** A test whose assertions restate the code under test
   (same constant, same formula, same branch) stays green even when the logic is wrong. Assert
   an **independently-derived** expected value: reasoned from the spec, not copied from the code.
+- **Survive a refactor.** Keep every observable result, restructure internals: a test that now
+  fails is pinned to the implementation. Assert through the users' interface, not private helpers or call order.
 - **Don't grep the source.** A test that reads a source file as text and asserts it
   `contains("foo")` proves a string exists, not that the behavior works. It passes on dead code
   and breaks on a harmless rename. **Execute** the code and assert its effect; reserve text

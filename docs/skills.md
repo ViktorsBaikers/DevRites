@@ -1,6 +1,6 @@
-# All 46 skills
+# All 47 skills
 
-The pack contains 46 skills: the `rite` menu, 33 user-invocable `rite-*`
+The pack contains 47 skills: the `rite` menu, 34 user-invocable `rite-*`
 workflow and utility skills, the standalone `overhaul` skill,
 10 model-invoked `devrites-*` specialists, and the internal `devrites-lib` library. `devrites-lib` is not a command. It holds shared
 references and the few explicit script exceptions.
@@ -44,7 +44,7 @@ contract when a rite names parallel reviewers.
 
 `rite-*` is the namespace for lifecycle and utility commands. Its utilities are
 `rite-quick`, `rite-fast`, `rite-frame`, `rite-adopt`, `rite-learn`, `rite-customize`,
-`rite-explain`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`, `rite-watch-pr`, `rite-doctor`,
+`rite-explain`, `rite-pov`, `rite-dogfood`, `rite-harness`, `rite-pr-feedback`, `rite-watch-pr`, `rite-doctor`,
 `rite-upgrade`, `rite-prototype`, `rite-handoff`, `rite-zoom-out`, and
 `rite-pressure-test`.
 Some specialized utilities set `disable-model-invocation: true` and run only
@@ -241,6 +241,7 @@ and `Shipped`. Utility commands keep the same compact labels and one-next-action
 | [`rite-explain`](../pack/.claude/skills/rite-explain/SKILL.md) | The human half of the learning loop: turns a concept, diff, idea, or recent work into a dense explainer; diff inputs can instead produce a concern-ordered human review walkthrough. | Explicit-only: `/rite-explain` / `/rite explain`. |
 | [`rite-pov`](../pack/.claude/skills/rite-pov/SKILL.md) | Project-grounded verdict on a named external option: adopt / trial / hold / reject / not-our-problem after project + external floors clear. | "should we adopt X", "switch to Y", CVE/deprecation relevance, bounded external comparisons. |
 | [`rite-dogfood`](../pack/.claude/skills/rite-dogfood/SKILL.md) | Diff-scoped browser QA: map changed user journeys, run scenario matrix, fix small obvious breakages, write `dogfood.md`. | Explicit-only after prove/polish/review when browser UX confidence matters. |
+| [`rite-harness`](../pack/.claude/skills/rite-harness/SKILL.md) | Generate a project-local `verify-<app>` skill (Launch, Doctor, Drive, Evidence, Cleanup, feature map) and self-prove it; `--maintain` re-audits the map from source plus one live pass. | Explicit-only when a project has no scripted way to drive the app, or its verify skill drifted. |
 | [`rite-pr-feedback`](../pack/.claude/skills/rite-pr-feedback/SKILL.md) | Resolve PR review feedback: fetch unresolved threads, judge centrally, fix valid items, reply, resolve. | Explicit-only: `/rite-pr-feedback` / `/rite pr-feedback`. |
 | [`rite-watch-pr`](../pack/.claude/skills/rite-watch-pr/SKILL.md) | Observe one PR/CI/review snapshot and report one next action without mutation. | Read-only capability-admitted native schedule/event observation or `/rite-watch-pr`. |
 

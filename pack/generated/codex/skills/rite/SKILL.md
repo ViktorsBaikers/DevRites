@@ -56,6 +56,7 @@ What each verb does lives once, in the Menu below; this table is the invocation 
 | `explain [concept \| diff \| idea \| recap]` | `$rite-explain` |
 | `pov [candidate]` | `$rite-pov` |
 | `dogfood [--port N]` | `$rite-dogfood` |
+| `harness [app] [--maintain]` | `$rite-harness` |
 | `pr-feedback [PR\|thread]` | `$rite-pr-feedback` |
 | `watch-pr [PR\|URL]` | `$rite-watch-pr` |
 | `customize [instruction \| skill \| agent \| plugin]` | `$rite-customize` |
@@ -129,6 +130,7 @@ LEARN         $rite learn ...          ≡    $rite-learn       review captured 
 EXPLAIN       $rite explain ...        ≡    $rite-explain     grounded concept/diff/idea/recap explainer
 POV           $rite pov ...            ≡    $rite-pov         decide adopt / trial / hold / reject for an external option
 DOGFOOD       $rite dogfood ...        ≡    $rite-dogfood     browser QA by changed user journey
+HARNESS       $rite harness ...        ≡    $rite-harness     generate/maintain a project verify-<app> skill
 PR FEEDBACK   $rite pr-feedback ...    ≡    $rite-pr-feedback fix and resolve PR review threads
 WATCH PR      $rite watch-pr ...       ≡    $rite-watch-pr    observe PR/CI once without mutation
 CUSTOMIZE     $rite customize ...      ≡    $rite-customize   author overrides/extensions without forking the pack

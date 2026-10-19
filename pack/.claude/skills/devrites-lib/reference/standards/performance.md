@@ -9,6 +9,9 @@ Measure first. An optimization without a measurement is a guess that adds comple
   against a budget or a baseline. Hold workload, dataset, cache state, and named
   environment comparable; use repeated samples and report spread/noise rather
   than selecting the best run.
+- Before reporting a number, explain it: name the limiter ("why not twice as fast?") from a
+  profile, confirm the work ran inside the timed region with no errors, and check Amdahl (cutting
+  a 10% piece caps the win near 11%). Interleaved A/B protocol: [`repair-and-measurement.md`](../../../overhaul/references/repair-and-measurement.md).
 - No measurement → no performance claim, and usually no change. "Feels slow" is a
   hypothesis to test, not a reason to refactor.
 
