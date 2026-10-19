@@ -197,6 +197,10 @@ HIGH findings (injection override prose, suspicious Unicode, credential exfil, s
 - Wrong shape → positive template/recipe; prohibitions reinforce that shape.
 - Missing element → artifact-template slot, not prose reminder.
 - Conditional behavior → observable predicate, not negotiable exemption prose.
+- Recurring code mistake → the highest level that works, recording why each higher one did not:
+  remove the possibility (one owner per state, one supported way, unreachable internals, derived
+  list) > type > check whose error names the fix (fail only on growth when violations exist) >
+  behavior test > template/default > prose.
 
 ## Degrees of freedom
 

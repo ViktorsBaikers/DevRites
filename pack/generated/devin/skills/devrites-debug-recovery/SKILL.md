@@ -40,7 +40,9 @@ has no clear next move. Optional slug selects the active workspace; defaults to
 4. **Trace when ambiguous:** if the cause is unclear, flaky, causal, or one fix
    already failed, run the competing-hypothesis trace branch before editing.
    Completion: top hypothesis has evidence for/against plus one discriminating probe.
-   See [trace.md](reference/trace.md).
+   See [trace.md](reference/trace.md). **Attack the premise:** once two fixes sharing one
+   premise failed the same gate, write that premise down and test it directly before a third.
+   A guard fixes only a legitimate state; otherwise find what produced the state.
 5. **Instrument:** debugger > logs > "log everything and grep". One variable
    at a time. Tagged debug-log prefixes.
    **Completion:** one discriminating signal is captured for the top hypothesis.

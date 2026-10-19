@@ -33,7 +33,7 @@ cursor readers, traceability rules, and phase-relative completeness model, see
 2. **Public utility and on-ramp skills**: `rite-adopt`, `rite-quick`, `rite-fast`,
    `rite-frame`, `rite-status`, `rite-doctor`, `rite-upgrade`, `rite-learn`, `rite-explain`,
    `rite-customize`, `rite-zoom-out`, `rite-prototype`, `rite-handoff`,
-   `rite-pressure-test`, `rite-pov`, `rite-dogfood`, `rite-pr-feedback`,
+   `rite-pressure-test`, `rite-pov`, `rite-dogfood`, `rite-harness`, `rite-pr-feedback`,
    `rite-watch-pr`, and `rite-autocomplete`. These are public commands. `rite-autocomplete` is the
    unattended orchestrator. By default it drives the reversible lifecycle
    through Seal GO and stops. Explicit `--ship` enters Ship preflight but still
@@ -391,8 +391,8 @@ contract.
 
 ## Design choices at a glance
 
-- **Surface**: 33 public `rite-*` skills (46 total), plus the thin `/rite`
-  menu and the standalone `overhaul` skill: 35 public and 11 internal. The lifecycle
+- **Surface**: 34 public `rite-*` skills (47 total), plus the thin `/rite`
+  menu and the standalone `overhaul` skill: 36 public and 11 internal. The lifecycle
   includes mandatory adaptive Clarify, optional Temper, mandatory Vet, and
   Converge recovery; Seal **decides** and Ship **executes + closes**. Ten
   `devrites-*` specialist skills are model-invoked; `devrites-lib` is the
