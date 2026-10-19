@@ -120,6 +120,12 @@ as source evidence. Missing reachability or control evidence is
 `needs_validation`, not a confirmed vulnerability or a clean bill of health.
 Required unresolved evidence blocks proof and Seal. Dead or unshipped paths
 need their actual exposure stated; hypothetical future wiring is not impact.
+Per-advisory applicability is required only for a component that untrusted input
+reaches through a trust boundary the feature has. For any other component, a
+recorded reachability disposition (its role, the boundaries checked, and the
+evidence) closes its advisories. "No fixed version" alone never means unaffected.
+**Failing case:** Seal stays NO-GO for rounds on per-CVE applicability of no-fix OS
+packages in a dev image that no untrusted input reaches.
 
 ## Architecture-level signals
 

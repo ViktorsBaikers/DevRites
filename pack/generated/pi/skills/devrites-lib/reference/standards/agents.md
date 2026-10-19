@@ -133,7 +133,12 @@ Basis: <files read · commands run to reach this finding>
 - **`no-findings`:** `No-findings:` names checks and inspected evidence. Bare
   pass, empty list, or “looks good” is malformed.
 - **`gap`:** names missing/unreadable/stale input; skipped/failed required check;
-  tool/reviewer failure; or another limit. Required gaps block.
+  tool/reviewer failure; or another limit. Required gaps block. A reviewer gap
+  that asks for more evidence without showing a defect is required only when it
+  quotes the anchor that demands that evidence, as Proportionality does: a spec ID,
+  an owner decision, or a shipped standard rule. Without one, root logs it
+  `Deferred: <claim> — no anchor`. Advisory gaps follow
+  [security.md § Reachability sets severity](security.md#reachability-sets-severity).
 - **Transport failure is not a finding.** A read-only leaf aborted, timed out, lost,
   or with host-rejected output is `gap` quoting the host error. Re-dispatch one fresh
   child with the same brief and read-set — never a resume of the failed child. The
