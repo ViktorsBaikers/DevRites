@@ -19,7 +19,7 @@ see [standards/anti-patterns.md](skill://devrites-lib/reference/standards/anti-p
 ## Red Flags
 
 - Reporting "pass" for a command you didn't run.
-- Skipping browser-proof rungs 1-3 because rung 4 (project E2E) was easier.
+- Skipping browser-proof rungs 1-5 because rung 6 (project E2E) was easier.
 - An acceptance criterion left "unproven" without a corresponding blocker note.
 - Tests recorded green but the diff shows the test file wasn't touched (stale run).
 - About to write `evidence.md` without command + output.

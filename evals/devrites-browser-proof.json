@@ -55,7 +55,7 @@
     {
       "text": "Take a screenshot of the settings page with Playwright MCP.",
       "expected": "should_trigger",
-      "rationale": "Names the top rung of the ladder directly."
+      "rationale": "Names a ladder rung directly."
     },
     {
       "text": "Verify the responsive layout looks right on small and large screens.",

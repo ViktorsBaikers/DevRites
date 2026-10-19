@@ -30,7 +30,8 @@ Step 0: Read `.devin/skills/devrites-lib/reference/standards/core.md`, then
 ## Create (default)
 1. **Interview.** Find the surface a user touches (web, CLI/TUI, desktop, API), the documented
    start command, ports, env, seed data, and auth. Pick the driver: an existing harness
-   (Playwright/Cypress specs, PTY helpers) first, then Playwright MCP/CDP, tmux/PTY, or HTTP.
+   (Playwright/Cypress specs, PTY helpers) first, then ego-lite, browser-harness, Playwright
+   MCP/CDP, tmux/PTY, or HTTP.
    Note isolation: can two instances run side by side? If not, say so in the skill.
    A checkout that does not start is fixed through the wright or reported exactly, before generating.
 2. **Generate.** Write `verify-<app>/SKILL.md` in each host skill dir the repo already uses
