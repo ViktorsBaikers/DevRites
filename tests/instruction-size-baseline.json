@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1512478,
+  "total_bytes": 1512829,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -203,7 +203,7 @@
     "pack/.claude/skills/rite-learn/SKILL.md": 8212,
     "pack/.claude/skills/rite-plan/reference/anti-patterns.md": 2241,
     "pack/.claude/skills/rite-plan/reference/dependency-graph.md": 2476,
-    "pack/.claude/skills/rite-plan/reference/replan-and-repair.md": 5442,
+    "pack/.claude/skills/rite-plan/reference/replan-and-repair.md": 5793,
     "pack/.claude/skills/rite-plan/reference/slicing.md": 11656,
     "pack/.claude/skills/rite-plan/reference/task-breakdown.md": 3300,
     "pack/.claude/skills/rite-plan/SKILL.md": 16897,

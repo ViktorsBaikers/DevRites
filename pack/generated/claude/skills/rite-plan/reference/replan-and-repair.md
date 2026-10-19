@@ -32,7 +32,11 @@ A drift event stopped the build. Steps:
    Fold each `decisions.md` carry-forward constraint into `Prior-slice learnings`
    of the remaining slices it affects.
 3. Update `spec.md` (only the affected sections) and `plan.md`/`tasks.md` to match
-   reality. Adjust acceptance criteria if they were wrong.
+   reality. Fix acceptance wording only when its meaning stays the same. An
+   acceptance meaning change needs a user directive or a recorded user decision
+   ([provenance](../../devrites-lib/reference/standards/acceptance-preserving-reslice.md));
+   without one, ask with a recommended option. **Failing case:** root rewords an
+   AC so a bound may be exceeded, records its own decision, and sends it to Vet.
    **Write the pointer, not the history.** Name the findings a fold closes by ID, one line
    of meaning each; never restate prior folds, prior DEC lists, or closed-round narrative in
    `architecture.md`/`plan.md`/`tasks.md`/`traceability.md`. That text belongs in
