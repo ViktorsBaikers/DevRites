@@ -486,8 +486,9 @@ a vertical slice through the UI.
 
 DevRites works without extra tools. When available, codegraph or graphify can
 answer structural questions,
+[ego-lite](https://github.com/citrolabs/ego-lite), browser-harness, or
 [Playwright MCP](https://github.com/microsoft/playwright-mcp) can collect
-browser evidence, and Chrome DevTools MCP can add Lighthouse and performance
+browser evidence (tried in that order), and Chrome DevTools MCP can add Lighthouse and performance
 traces. DevRites detects these tools but does not install them.
 
 ## Security model

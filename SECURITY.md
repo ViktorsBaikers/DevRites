@@ -214,9 +214,9 @@ Unrelated Git variables are preserved. Go and shell parity is covered by
 DevRites vendors no third-party code (see `NOTICE.md`). It runs through the
 external host selected by the user (Claude Code, Codex, omp, pi, or Devin CLI)
 and is independent of, and not affiliated with or endorsed by, any of these
-hosts or their makers. Codegraph, graphify, and Playwright MCP are optional
-user-selected tools that DevRites calls through their documented interfaces
-rather than bundling them.
+hosts or their makers. Codegraph, graphify, ego-lite, browser-harness, and
+Playwright MCP are optional user-selected tools that DevRites calls through
+their documented interfaces rather than bundling them.
 
 Repository npm-audit exceptions are temporary trust records, not claims that an
 upstream issue is fixed. Each entry in `scripts/npm-audit-exceptions.json` is

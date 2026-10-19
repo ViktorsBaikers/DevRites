@@ -8,7 +8,8 @@ risk is visible. Detect existing tooling; do not install any.
    INP: record `not measured (no interaction)` unless a timespan or trace drives a
    named interaction ([`performance.md`](../../devrites-lib/reference/standards/performance.md)
    § Frontend).
-2. Playwright MCP: read LCP/CLS from the live page, and INP only after a scripted
+2. The driving rung (ego-lite `page.evaluate`, browser-harness JS eval, or Playwright MCP
+   `browser_evaluate`): read LCP/CLS from the live page, and INP only after a scripted
    interaction; label it `Trace (DevTools)`. Pair with Lighthouse when both are available.
 3. CrUX/PageSpeed Insights: only with a user-supplied key; label p75 data `Field
    (CrUX)`.
