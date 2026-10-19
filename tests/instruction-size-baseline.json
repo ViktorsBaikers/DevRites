@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1512003,
+  "total_bytes": 1512478,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -122,7 +122,7 @@
     "pack/.claude/skills/devrites-lib/reference/standards/skill-authoring.md": 15441,
     "pack/.claude/skills/devrites-lib/reference/standards/spec-grammar.md": 13137,
     "pack/.claude/skills/devrites-lib/reference/standards/test-proof-checklist.md": 1062,
-    "pack/.claude/skills/devrites-lib/reference/standards/testing.md": 20204,
+    "pack/.claude/skills/devrites-lib/reference/standards/testing.md": 20679,
     "pack/.claude/skills/devrites-lib/reference/standards/tooling.md": 11476,
     "pack/.claude/skills/devrites-lib/reference/standards/verification-methods.md": 8150,
     "pack/.claude/skills/devrites-lib/reference/standards/windows.md": 2912,

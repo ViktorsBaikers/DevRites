@@ -266,6 +266,12 @@ Dismiss an irrelevant case with a reason; silently omitting an applicable case i
   triage. A diff that adds or raises runner retries is a test-integrity finding.
   **Failing case:** run 1 exits 1, an unchanged rerun exits 0, `check candidate`
   digests match, and `evidence.md` records green.
+- **A precondition-invalid attempt is not a failed attempt.** When the command's own
+  precondition check rejects the run as invalid and names the cause (a benchmark judge
+  reporting `INVALID reason=overlap`, say), no test verdict exists. Once that named
+  cause is corrected and the correction recorded, the next attempt on the same digest
+  is the first valid one; keep both attempts recorded. A test failure relabelled
+  "infra" with no named precondition stays `flaky`.
 - Mock/stub external services so tests are predictable and fast. Use stable selectors in
   UI tests, not brittle positional ones.
 - No hidden shared state or order-dependence between tests.
