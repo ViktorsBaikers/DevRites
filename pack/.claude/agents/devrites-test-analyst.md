@@ -41,7 +41,9 @@ paths to inspect the code and tests, then read the test files.
   Report unmapped criteria as gaps.
 - **Test strength:** would each test **fail** if the code were wrong? Flag
   assertion-free tests, tautologies, over-mocking that tests the mock, and snapshot
-  tests that assert nothing meaningful. Apply the positive, discriminating proof rule:
+  tests that assert nothing meaningful. Also flag the reverse: a test that fails when only
+  internals change (private helper, call order) is pinned to the implementation, and an
+  assertion on data the test itself built proves nothing. Apply the positive, discriminating proof rule:
   skipped/focused/filtered/pending and zero-test results cannot prove behavior, nor can an
   unexecuted command or exit status without a decisive assertion.
 - **Verification gap:** trace each behavioral change to its consumer and confirm that

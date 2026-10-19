@@ -172,6 +172,7 @@ equivalent.
 | [`/rite-zoom-out`](pack/.claude/skills/rite-zoom-out/SKILL.md) | Map unfamiliar code: modules, callers, callees, and relevant decisions. |
 | [`/rite-explain`](pack/.claude/skills/rite-explain/SKILL.md) | Learn one concept, diff, or recent change, with an optional check-in. |
 | [`/rite-dogfood`](pack/.claude/skills/rite-dogfood/SKILL.md) | Run explicit browser QA for the active feature or branch. |
+| [`/rite-harness`](pack/.claude/skills/rite-harness/SKILL.md) | Generate or maintain a project-local verify skill that launches, drives, and proves the app. |
 | [`/rite-pr-feedback`](pack/.claude/skills/rite-pr-feedback/SKILL.md) | Resolve GitHub PR review feedback. |
 | [`/rite-watch-pr`](pack/.claude/skills/rite-watch-pr/SKILL.md) | Watch one PR and its CI state without mutating anything. |
 | [`/rite-learn`](pack/.claude/skills/rite-learn/SKILL.md) | Turn recurring cross-feature evidence into durable project guidance. |
@@ -448,7 +449,7 @@ through Claude Code or Codex plugin stores.
 
 ## Skills and agents
 
-The pack ships 46 skills: 35 public and 11 internal. The public surface
+The pack ships 47 skills: 36 public and 11 internal. The public surface
 contains the `rite` menu, 33 `rite-*` workflows and utilities, and the
 standalone, explicit-only `/overhaul`. Ten `devrites-*` specialists load when a
 matching task needs them; `devrites-lib` carries the shared contracts and

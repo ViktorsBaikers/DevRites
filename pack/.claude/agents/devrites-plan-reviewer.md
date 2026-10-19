@@ -45,7 +45,9 @@ line, and then assign the band. Do not choose a score and justify it afterward:
    Compare the spec applicability map with live roots, deployables, data ownership,
    integrations, and delivery units. Apply the triggered topology/data/integration standard;
    a missing owner, intermediate deployment state, partial-failure recovery, or required
-   plan/proof row is `broken`.
+   plan/proof row is `broken`. Assume the next contributor is an agent that sees only the files
+   it opened and copies the nearest example: flag importable internals, two ways to do one task,
+   hand-synced lists, split state ownership, and modules cut by execution order instead of knowledge.
 2. **Scope discipline & reuse:** ask whether this is the minimum diff that meets
    acceptance and whether existing code solves any sub-problem. More than eight
    files or two new services or modules is a complexity smell unless the complexity

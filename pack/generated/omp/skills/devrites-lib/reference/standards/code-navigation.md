@@ -61,7 +61,8 @@ factory:
 
 - **Cross-language edges:** HTTP/RPC call sites (`fetch("/api/…")` → the route
   handler file), subprocess/CLI invocations, and queue topic names couple files
-  no import statement links. Grep the literal route/command/topic when a
+  no import statement links. So do DB columns and wire formats that another
+  language reads. Grep the literal route/command/topic/column when a
   producer or consumer file changes.
 - **Dynamic binding:** `import()`/dynamic `require`, reflection, string-keyed
   DI/registries, plugin/extension loading, ORM model registration,

@@ -13,7 +13,7 @@ the wright or recreate an engine bridge.
 
 ## Standalone correction
 
-`$rite-quick`, `$rite-dogfood`, and `$rite-pr-feedback` fixes have no `tasks.md`
+`$rite-quick`, `$rite-dogfood`, `$rite-harness`, and `$rite-pr-feedback` fixes have no `tasks.md`
 slice, so skip Prepare's `check slice`, `context --slice`, and the build `dispatch`
 wave. Give the wright an inline contract: goal, acceptance check, exact
 project-relative paths, and proof command. With an active workspace, `claim add`

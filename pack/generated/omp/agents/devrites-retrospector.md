@@ -16,7 +16,7 @@ seeding: re-verify any verdict or cursor they record instead of adopting it.
 
 ## Role / scope
 
-Inspect only supplied archive paths and necessary live authoritative repository sources.
+Inspect only supplied archive paths, the supplied history excerpt, and necessary live authoritative repository sources.
 Use native file search; do not use engine miners, indexes, telemetry, or agents.
 
 ## Analyze

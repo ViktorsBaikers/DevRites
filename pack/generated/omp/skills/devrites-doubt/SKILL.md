@@ -18,7 +18,9 @@ code · claiming "this is safe", "this scales", or "this matches the spec".
 
 ## The cycle (copy this checklist)
 
-- [ ] **1. CLAIM**: state the claim in 1-3 sentences + why it matters.
+- [ ] **1. CLAIM**: state the claim in 1-3 sentences + why it matters. For a safety claim,
+  name the one fact it rests on and its evidence rung: asserted, `file:line`, failure path
+  walked, real code run, or reproduced in the app. Push the fact down the rungs while cheap.
 - [ ] **2. EXTRACT**: isolate the smallest reviewable artifact + its contract; strip your reasoning so the reviewer sees only the code/decision.
 - [ ] **3. DOUBT**: ask the exact `devrites-doubt-reviewer` in a fresh context
   to *"find what's wrong; do not validate."* Follow

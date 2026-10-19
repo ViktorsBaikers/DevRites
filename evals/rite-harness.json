@@ -1,0 +1,34 @@
+{
+  "skill": "rite-harness",
+  "description": "Direct-invocation evals for generating or maintaining a project verify skill.",
+  "queries": [
+    {
+      "text": "/rite-harness",
+      "expected": "should_trigger",
+      "rationale": "Direct invocation."
+    },
+    {
+      "text": "$rite-harness --maintain",
+      "expected": "should_trigger",
+      "rationale": "Direct Codex invocation."
+    },
+    {
+      "text": "/rite harness notes-app",
+      "expected": "should_trigger",
+      "rationale": "Router invocation."
+    },
+    {
+      "text": "Make a verification skill for this app.",
+      "expected": "should_not_trigger",
+      "owner": null,
+      "owner_rationale": "Explicit-only utility; natural language must not invoke it.",
+      "rationale": "Explicit-only boundary."
+    },
+    {
+      "text": "Prove every acceptance criterion.",
+      "expected": "should_not_trigger",
+      "owner": "rite-prove",
+      "rationale": "Acceptance proof belongs to rite-prove."
+    }
+  ]
+}
