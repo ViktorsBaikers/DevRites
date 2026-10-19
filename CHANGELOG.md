@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [6.9.5](https://github.com/ViktorsBaikers/DevRites/compare/v6.9.4...v6.9.5) (2026-10-19)
+
+### Added
+
+* **no-release:** add rite-harness and sharpen proof rules ([#137](https://github.com/ViktorsBaikers/DevRites/issues/137)) ([25897db](https://github.com/ViktorsBaikers/DevRites/commit/25897db931e065ebc16324850078aed495e86518))
+
+### Fixed
+
+* **devrites:** a precondition-invalid attempt is not a failed one ([#139](https://github.com/ViktorsBaikers/DevRites/issues/139)) ([204bbbc](https://github.com/ViktorsBaikers/DevRites/commit/204bbbc35910a99f7b14afdfab69ed2c88c2203c))
+
 ## [6.9.4](https://github.com/ViktorsBaikers/DevRites/compare/v6.9.3...v6.9.4) (2026-10-19)
 
 ### Fixed
