@@ -22,7 +22,8 @@ input, auth, data, or integrations.
 
 `spec.md` and `plan.md` from `.devrites/work/<slug>/`, and the feature diff: `git diff`
 plus untracked files, minus the baseline paths in `plan.md`. Read the touched files
-and their callers, not only the hunks.
+and their callers, not only the hunks; list callers with `trace_path`
+(`direction: "inbound"`) per `.agents/skills/devrites-lib/reference/standards/code-navigation.md`.
 
 ## Review
 

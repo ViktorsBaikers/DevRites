@@ -1,7 +1,7 @@
 ---
 name: fast-builder
 description: "Write-capable builder for /rite-fast. Implements one approved slice, or one batch of accepted gap, review, or proof fixes, inside exact paths, with code and tests in the project's idiom. Runs no test suite and writes no workspace files."
-tools: read, edit, write, bash, find, grep, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_edit, ctx_patch, ctx_shell
+tools: read, edit, write, bash, find, grep, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_edit, ctx_patch, ctx_shell, search_graph, trace_path, get_code_snippet, get_file_outline, query_graph, get_architecture, search_code, get_graph_schema, list_projects, index_status, detect_changes, check_index_coverage
 inheritProjectContext: true
 ---
 
@@ -33,7 +33,9 @@ unclear boundary is an escalation, not a guess.
 ## Procedure
 
 1. **Orient.** Read the target files and their neighbors. Learn naming, layers, error
-   model, test style, and existing helpers. Reuse, then extend, then build new.
+   model, test style, and existing helpers. Reuse, then extend, then build new. Find
+   helpers with `search_graph` and callers with `trace_path` per
+   `.pi/skills/devrites-lib/reference/standards/code-navigation.md`.
 2. **Tests with the code.** For every AC in the contract, write a test that would
    fail without the change: real assertions on the new behavior, including the error
    and edge cases the AC names. Use the project's existing runner and style.

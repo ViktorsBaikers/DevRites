@@ -25,9 +25,9 @@ slice.
 | **partial** | Some of it exists: happy path only, un-wired, untested, a TODO stub, or an edge case from the scenario's WHEN/THEN missing. | Append a slice for the **remainder**, its `Known-Gotchas` naming what's already there so `/rite-build` extends rather than rebuilds. |
 | **absent** | No code implements it. | Append a full slice. |
 
-Read the code to decide: do not infer from the plan. Apply [`tooling.md`](skill://devrites-lib/reference/standards/tooling.md): use the
-primary available code index, cross-check only a named unresolved predicate, then use LSP/file
-search so the verdict reflects live code. Read `traceability.md` to see what is mapped; only
+Read the code to decide: do not infer from the plan. Apply [`code-navigation.md`](skill://devrites-lib/reference/standards/code-navigation.md): locate
+code with codebase-memory `search_graph`, confirm cited paths with `check_index_coverage`, then use
+LSP/file search so the verdict reflects live code. Read `traceability.md` to see what is mapped; only
 code and tests tell you what is built.
 
 Treat accepted invariants, failure/recovery rows, and triggered applicability obligations as

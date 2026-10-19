@@ -26,7 +26,7 @@ workflow strategy.
 | `check slice <slug> <SLICE-ID>` | Pre-dispatch lint of one slice's wright contract: contract present, exact Writer allowlist paths, resolvable `Satisfies` AC ids, bounded scope. Same non-blocking size advisory as `check task-graph`, plus the `check drift` proportion advisory for that slice. |
 | `check diff-scope <slug> --allow <csv>\|--allow-file <path> [--worktree\|--staged\|--base <ref>]` | Verify the changed-path set stays inside the declared allowlist; the mechanical gate run before reviewer dispatch. |
 | `check skill-trust <path>` | Scan one skill/agent Markdown file for structural trust violations. |
-| `check indexes [--root <dir>]` | Report install manifest and code-index presence as JSON. |
+| `check indexes [--root <dir>]` | Report install manifest and in-repo code-index artifact presence (`.codebase-memory/`) as JSON. codebase-memory-mcp normally indexes into its central store, so its `index_status` is authoritative. |
 | `observe summary <slug>` | Emit sanitized JSON workspace summary from one retained observation. `task_graph.ok` is true iff `task_graph.problems` is empty; `problems` lists cycle, unknown-dep, malformed-token, duplicate-id, and missing-`Dependencies` blockers. `inflight_waves` lists dispatch waves still `open` or `sealed`, with their pending roles. |
 | `orient <slug>` | Alias for `observe summary`. |
 | `observe slice <slug> <SLICE-ID>` | Print one `SLICE-###` section of `tasks.md` so Build reads a slice, not the file. |

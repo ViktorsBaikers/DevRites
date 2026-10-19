@@ -5,7 +5,7 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/testing.md","rite-converge/reference/convergence-assessment.md","rite-converge/reference/anti-patterns.md","rite-build/reference/spec-drift-guard.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"principles":["devrites-lib/reference/standards/principles.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md"],"workspaceByRole":{"evidence-scout":["spec.md","plan.md","tasks.md","state.md","evidence.md"]}} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/testing.md","rite-converge/reference/convergence-assessment.md","rite-converge/reference/anti-patterns.md","rite-build/reference/spec-drift-guard.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"principles":["devrites-lib/reference/standards/principles.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md"],"workspaceByRole":{"evidence-scout":["spec.md","plan.md","tasks.md","state.md","evidence.md"]}} -->
 > Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase converge` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -33,8 +33,8 @@ Pull on demand:
 - [`spec-grammar.md`](skill://devrites-lib/reference/standards/spec-grammar.md): buildable acceptance criteria vs `## Success metrics` (outcome KPIs the
   code can't make true and this pass never enqueues); structured `### Requirement:` /
   `#### Scenario:` blocks, each scenario one behavior to check as built / partial / absent.
-- [`tooling.md`](skill://devrites-lib/reference/standards/tooling.md): use the primary available code index; cross-check only a named unresolved
-  predicate, then fall back to LSP/file search. Read live code, not artifact claims.
+- [`code-navigation.md`](skill://devrites-lib/reference/standards/code-navigation.md): find each unit's code with codebase-memory `search_graph`
+  and `get_code_snippet`, check cited paths with `check_index_coverage`, then fall back to LSP/file search. Read live code, not artifact claims.
 - [`testing.md`](skill://devrites-lib/reference/standards/testing.md): a criterion with code but no covering test is *partial*, not done.
 - [`repository-topology.md`](skill://devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](skill://devrites-lib/reference/standards/data-integrity.md), [`integration-reliability.md`](skill://devrites-lib/reference/standards/integration-reliability.md): only for
   triggered applicability rows; missing failure/recovery behavior is partial or absent.
@@ -94,7 +94,7 @@ Pull on demand:
    proof still agrees with its `test-plan.md` row, and the mapped prose preserves the
    requirement's meaning. Record orphaned, invented, duplicate, or contradictory
    mappings as gaps. Then read the live code
-   (code-intelligence index per [`tooling.md`](skill://devrites-lib/reference/standards/tooling.md)); artifact mappings never prove implementation.
+   (codebase-memory per [`code-navigation.md`](skill://devrites-lib/reference/standards/code-navigation.md)); artifact mappings never prove implementation.
 4. **Assess each unit as built / partial / absent** against the live code (the rubric is in
    [`reference/convergence-assessment.md`](reference/convergence-assessment.md)): every
    acceptance criterion / scenario, every plan touch-point, and every existing slice's stated

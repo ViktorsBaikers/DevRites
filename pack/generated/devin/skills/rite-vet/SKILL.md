@@ -73,8 +73,8 @@ plan declares a root-authored executable workflow file, read
 0. **Orient.** Read core. Resolve active slug, require state, and read plan,
    tasks, spec, decision coverage, optional strategy/design brief, decisions,
    assumptions, and state. Require approved Plan and `Decision coverage: CLEAR`;
-   otherwise stop for Define or Clarify. Use code intelligence for placement,
-   blast radius, and reuse.
+   otherwise stop for Define or Clarify. Check placement (`get_architecture`),
+   blast radius (`trace_path`), and reuse (`search_graph`) per [`code-navigation.md`](../devrites-lib/reference/standards/code-navigation.md).
 1. **Select depth.** Apply `reference/depth.md` exactly; never skip. Every initial
    pass records an engineering verdict and test-plan coverage. A valid Recovery
    recheck retains prior depth and enters 1b.

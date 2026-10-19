@@ -111,7 +111,7 @@ func TestCheckIndexesJSONContract(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(manifestDir, "devrites.manifest"), []byte("devrites\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(project, ".codegraph"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(project, ".codebase-memory"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("DEVRITES_ROOT", root)
@@ -144,10 +144,7 @@ func TestCheckIndexesJSONContract(t *testing.T) {
 		path    string
 		present bool
 	}{
-		{".codegraph", true},
-		{".code-review-graph", false},
-		{".codebase-memory", false},
-		{"graph.json", false},
+		{".codebase-memory", true},
 	}
 	if len(report.Indexes) != len(wantIndexes) {
 		t.Fatalf("indexes=%d, want %d", len(report.Indexes), len(wantIndexes))

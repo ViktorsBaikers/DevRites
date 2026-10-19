@@ -1,7 +1,7 @@
 ---
 name: devrites-security-auditor
 description: Audits one DevRites feature for /rite-seal from a fresh context. Checks the diff independently for OWASP Top 10 issues, trust-boundary violations, secrets, and dependency risk. For model calls, agents, RAG, or tool use, also checks the OWASP LLM Top 10. Assumes all input is hostile.
-tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, Bash, mcp__codebase-memory-mcp__*
 permissionMode: plan
 ---
 
@@ -35,7 +35,8 @@ supply-chain risk. Use the current file rather than memory.
 
 In workspace `.devrites/work/<slug>/`, read `spec.md` for the data model, API, and
 affected areas, then `decisions.md` and `touched-files.md`. Run `git diff` and
-inspect the touched files.
+inspect the touched files. For source-to-sink candidates use `trace_path`
+(`mode: "data_flow"`) per `.claude/skills/devrites-lib/reference/standards/code-navigation.md`, then confirm each hop by reading it.
 
 ## Audit (feature scope, OWASP-oriented)
 

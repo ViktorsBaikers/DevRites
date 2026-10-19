@@ -254,6 +254,20 @@ else
   ok "pi reviewer agent stays read-only"
 fi
 
+# Agents granted codebase-memory-mcp get its read-only tools in each host's naming;
+# agents without the grant and every write tool stay out.
+grep -q '^tools: .*\bmcp__codebase_memory_mcp_search_graph\b.*\bmcp__codebase_memory_mcp_check_index_coverage\b' "$OUT/omp/agents/devrites-code-reviewer.md" &&
+  grep -q '^tools: .*, search_graph, .*\bcheck_index_coverage\b' "$OUT/pi/agents/devrites-code-reviewer.md" &&
+  ok "omp and pi reviewers get codebase-memory read-only tools" ||
+  no "omp or pi reviewer missing codebase-memory tools"
+if grep -qE '^tools: .*(search_graph|index_repository|delete_project|manage_adr|ingest_traces)' \
+  "$OUT/omp/agents/devrites-proof-runner.md" "$OUT/pi/agents/devrites-proof-runner.md" ||
+  grep -qE '^tools: .*(index_repository|delete_project|manage_adr|ingest_traces)' "$OUT"/omp/agents/*.md "$OUT"/pi/agents/*.md; then
+  no "omp/pi agents gained ungranted or write codebase-memory tools"
+else
+  ok "omp/pi codebase-memory tools stay granted-only and read-only"
+fi
+
 _pi_tools_has() {
   local _line="$1" _name="$2"
   case ", ${_line#tools: }, " in

@@ -5,7 +5,7 @@ argument-hint: "[a concept | a diff ref | an idea | \"what did I do this week?\"
 user-invocable: true
 disable-model-invocation: true
 ---
-<!-- loads: {"always":["rite-explain/reference/intake.md"],"triggers":{"repo":["devrites-lib/reference/standards/tooling.md"],"style":["devrites-lib/reference/standards/prose-style.md"],"principles":["devrites-lib/reference/standards/principles.md"]}} -->
+<!-- loads: {"always":["rite-explain/reference/intake.md"],"triggers":{"repo":["devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/code-navigation.md"],"style":["devrites-lib/reference/standards/prose-style.md"],"principles":["devrites-lib/reference/standards/principles.md"]}} -->
 > Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill rite-explain` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # $rite-explain: the human half of the learning loop

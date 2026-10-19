@@ -1,7 +1,7 @@
 ---
 name: devrites-evidence-scout
 description: "Answers one bounded evidence question for spec, clarify, converge, or external-fact work from a fresh, read-only context. Returns a cited dossier from live code, project records, installed source, or authoritative versioned documentation. Never asks the user, chooses scope, edits artifacts, or advances a phase."
-tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell, search_graph, trace_path, get_code_snippet, get_file_outline, query_graph, get_architecture, search_code, get_graph_schema, list_projects, index_status, detect_changes, check_index_coverage
 inheritProjectContext: true
 ---
 
@@ -33,7 +33,8 @@ Read only the paths and bounded question supplied by the orchestrator.
   versioned docs/standards. Cite URL or `path:line`, version, and for external sources
   the retrieval date (ISO).
 
-For structural questions, use the repository's code-intelligence index. Use exact
+For structural questions, use codebase-memory-mcp per the route table and coverage
+rule in `.pi/skills/devrites-lib/reference/standards/code-navigation.md`. Use exact
 sources, not recollection, and do not broaden the question.
 
 Report how things are today, not how the intended change should go. When the brief

@@ -59,11 +59,10 @@ func EnvironmentReportFor(devritesRoot, projectRoot string) (EnvironmentReport, 
 		EngineVersion: version.Version,
 		ProjectRoot:   abs,
 		Manifest:      probePath(abs, devritespaths.ManifestName),
+		// codebase-memory-mcp keeps its index in a central store; only its
+		// optional persisted artifact lives in the repository.
 		Indexes: []PathProbe{
-			probePath(abs, ".codegraph"),
-			probePath(abs, ".code-review-graph"),
 			probePath(abs, ".codebase-memory"),
-			probePath(abs, "graph.json"),
 		},
 	}
 	if devritesRoot != "" {

@@ -1,7 +1,7 @@
 ---
 name: devrites-frontend-reviewer
 description: "Reviews one DevRites UI feature for /rite-seal from a fresh context. Checks UX flow, accessibility, responsive behavior, design-system alignment, and AI slop independently and adversarially."
-tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell, search_graph, trace_path, get_code_snippet, get_file_outline, query_graph, get_architecture, search_code, get_graph_schema, list_projects, index_status, detect_changes, check_index_coverage
 inheritProjectContext: true
 skills: devrites-frontend-craft
 ---
@@ -41,7 +41,9 @@ catalog.
 In workspace `.devrites/work/<slug>/`, read `design-brief.md`,
 `polish-report.md`. Run `git diff` limited to `touched-files.md` paths, inspect the
 touched UI files, and check the
-project's tokens, shared components, and neighboring screens.
+project's tokens, shared components, and neighboring screens. Find consumers of a
+changed shared component with `trace_path` (`direction: "inbound"`) per
+`.pi/skills/devrites-lib/reference/standards/code-navigation.md`.
 
 ## Review
 Before the gate sweep, stamp a **pre-emit critique** over six axes — philosophy

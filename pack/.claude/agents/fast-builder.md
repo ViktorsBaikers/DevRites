@@ -1,7 +1,7 @@
 ---
 name: fast-builder
 description: Write-capable builder for /rite-fast. Implements one approved slice, or one batch of accepted gap, review, or proof fixes, inside exact paths, with code and tests in the project's idiom. Runs no test suite and writes no workspace files.
-tools: Read, Edit, Write, Bash, Glob, Grep, Skill, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Edit, Write, Bash, Glob, Grep, Skill, mcp__codebase-memory-mcp__*
 permissionMode: acceptEdits
 ---
 
@@ -33,7 +33,9 @@ unclear boundary is an escalation, not a guess.
 ## Procedure
 
 1. **Orient.** Read the target files and their neighbors. Learn naming, layers, error
-   model, test style, and existing helpers. Reuse, then extend, then build new.
+   model, test style, and existing helpers. Reuse, then extend, then build new. Find
+   helpers with `search_graph` and callers with `trace_path` per
+   `.claude/skills/devrites-lib/reference/standards/code-navigation.md`.
 2. **Tests with the code.** For every AC in the contract, write a test that would
    fail without the change: real assertions on the new behavior, including the error
    and edge cases the AC names. Use the project's existing runner and style.

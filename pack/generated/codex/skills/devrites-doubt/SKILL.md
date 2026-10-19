@@ -3,7 +3,7 @@ name: devrites-doubt
 description: Stress-test one consequential decision independently. Use for uncertainty around boundaries, data, auth, APIs, or migrations; not trivial choices.
 user-invocable: false
 ---
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/agents.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"security":["devrites-lib/reference/standards/security.md"],"tooling":["devrites-lib/reference/standards/tooling.md"]},"workspace":["spec.md","plan.md","tasks.md","state.md","decisions.md"],"workspaceByRole":{"doubt-reviewer":["spec.md","plan.md","tasks.md","state.md","decisions.md"]}} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/agents.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"security":["devrites-lib/reference/standards/security.md"],"tooling":["devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/code-navigation.md"]},"workspace":["spec.md","plan.md","tasks.md","state.md","decisions.md"],"workspaceByRole":{"doubt-reviewer":["spec.md","plan.md","tasks.md","state.md","decisions.md"]}} -->
 > Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill devrites-doubt` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # devrites-doubt: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP
@@ -42,10 +42,10 @@ complexity reappears across N callers, the abstraction concentrates real complex
 Wait for a second real caller before keeping a pass-through that fails this test.
 
 ## Rules
-- For "where does this claim reach / what would change with it" questions, prefer a
-  code-intelligence index under [`tooling.md`](../devrites-lib/reference/standards/tooling.md): use the primary available index,
-  add at most one cross-check for a named incomplete/stale/conflicting predicate, then fall
-  back to LSP or file search. Do not query several indexes for reassurance.
+- For "where does this claim reach / what would change with it" questions (trigger
+  `tooling`), use codebase-memory `trace_path` (`direction: "inbound"`) per
+  [`code-navigation.md`](../devrites-lib/reference/standards/code-navigation.md),
+  then fall back to LSP or file search. Do not repeat a query for reassurance.
 - The reviewer prompt must be adversarial: its job is to break the claim, not to agree.
 - Strip your own justification before review; reasoning anchors the reviewer toward
   agreement.

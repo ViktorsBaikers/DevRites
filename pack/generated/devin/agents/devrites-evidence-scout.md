@@ -38,7 +38,8 @@ Read only the paths and bounded question supplied by the orchestrator.
   versioned docs/standards. Cite URL or `path:line`, version, and for external sources
   the retrieval date (ISO).
 
-For structural questions, use the repository's code-intelligence index. Use exact
+For structural questions, use codebase-memory-mcp per the route table and coverage
+rule in `.devin/skills/devrites-lib/reference/standards/code-navigation.md`. Use exact
 sources, not recollection, and do not broaden the question.
 
 Report how things are today, not how the intended change should go. When the brief

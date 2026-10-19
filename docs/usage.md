@@ -82,7 +82,7 @@ The shape of this directory is also documented in
 You: I want some kind of reporting thing for admins.
 
 /rite-spec admin-usage-report
-  → investigates deeply (codegraph/graphify): current behavior, placement,
+  → investigates deeply (codebase-memory-mcp when installed): current behavior, placement,
     what it resolves
   → asks you one question at a time, each with options + a best guess,
     until gaps are closed
@@ -274,8 +274,8 @@ Other modes: `quieter` · `distill` · `harden`.
   → returns a map: the area in 1 sentence (project's vocabulary), modules in
     scope, callers in / calls out, ADR / decisions.md entries touching the
     area, smallest sensible change-scope.
-  → uses codegraph_context + codegraph_explore if available; falls back to
-    Grep + Read otherwise.
+  → uses codebase-memory get_architecture + trace_path if available; falls
+    back to Grep + Read otherwise.
 ```
 
 ## 8) Mid-flight handoff

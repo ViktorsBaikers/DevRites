@@ -6,7 +6,7 @@ Removing behavior is riskier than adding it because hidden consumers may depend 
 
 ## Prove it is unused
 
-Find callers, subscribers, stored data, external clients, and scheduled jobs with code intelligence, then confirm runtime usage through [`observability.md`](observability.md). Static absence alone does not prove zero consumers. If zero usage cannot be proven, deprecate instead of deleting.
+Find callers, subscribers, stored data, external clients, and scheduled jobs with codebase-memory `trace_path` (`direction: "inbound"`, `mode: "cross_service"` for service edges; [`code-navigation.md`](code-navigation.md)), then confirm runtime usage through [`observability.md`](observability.md). Static absence alone does not prove zero consumers. If zero usage cannot be proven, deprecate instead of deleting.
 
 ### Dead-code confidence
 

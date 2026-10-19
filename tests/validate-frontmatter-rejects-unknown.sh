@@ -361,7 +361,7 @@ assert_fail "agent-missing-closing-fence" "$TMP/agents/devrites-fx-no-close.md"
 # 19) shipped forms: camelCase keys, '*' in tool tokens, and a flat block list under a list key
 agent_fx camel '---\nname: devrites-fx-camel\n'"$G"'tools: Read, Grep\npermissionMode: plan\n---\nbody\n'
 assert_ok "agent-camelcase-key" "$TMP/agents/devrites-fx-camel.md"
-agent_fx wild '---\nname: devrites-fx-wild\n'"$G"'tools: Read, mcp__codegraph__*, mcp__graphify__*\n---\nbody\n'
+agent_fx wild '---\nname: devrites-fx-wild\n'"$G"'tools: Read, mcp__codebase-memory-mcp__*, mcp__example__*\n---\nbody\n'
 assert_ok "agent-tools-wildcard" "$TMP/agents/devrites-fx-wild.md"
 agent_fx skills-block '---\nname: devrites-fx-skills-block\n'"$G"'tools: Read\nskills:\n  - devrites-frontend-craft\n  - devrites-ux-shape\npermissionMode: plan\n---\nbody\n'
 assert_ok "agent-skills-block-list" "$TMP/agents/devrites-fx-skills-block.md"

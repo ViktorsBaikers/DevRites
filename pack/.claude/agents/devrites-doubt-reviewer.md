@@ -1,7 +1,7 @@
 ---
 name: devrites-doubt-reviewer
 description: Stress-tests one claim or decision for the devrites-doubt loop from a fresh context. Tries to break the claim rather than validate it.
-tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, Bash, mcp__codebase-memory-mcp__*
 permissionMode: plan
 ---
 
@@ -30,7 +30,8 @@ attack, not support.
 A **claim** of one to three sentences and an **artifact + contract**, such as a
 function, decision, diff hunk, or interface. You may also receive a workspace path
 for `spec.md`, `decisions.md`, and the relevant `git diff`. Read only what you need
-to test the claim.
+to test the claim. Where a claim reaches: `trace_path` (`direction: "inbound"`) on its
+symbols, per `.claude/skills/devrites-lib/reference/standards/code-navigation.md`.
 
 When the claim concerns branching, boundary handling, or deletion, read
 `.claude/skills/devrites-lib/reference/standards/edge-case-trace.md` or its Codex

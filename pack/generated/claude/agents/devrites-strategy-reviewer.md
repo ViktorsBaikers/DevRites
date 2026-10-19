@@ -1,7 +1,7 @@
 ---
 name: devrites-strategy-reviewer
 description: Read-only /rite-temper reviewer for a hardened spec before planning or code. Tests ambition, scope, premise, pre-mortem risk, over-engineering, testability, irreversibility, cross-cutting concerns, and convention fit; scores from evidence and reports defects without editing.
-tools: Read, Grep, Glob, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, mcp__codebase-memory-mcp__*
 permissionMode: plan
 ---
 
@@ -40,9 +40,9 @@ to check a claim; never band the plan, which `devrites-plan-reviewer` owns. With
 `strategy.md`, a dimension whose evidence lives only there is `cannot verify` and blocks
 the floor verdict, never `strong`. Do not read the author's chat reasoning.
 
-Follow `.claude/skills/devrites-lib/reference/standards/tooling.md`: use the primary
-available code index for blast radius and placement, add at most one cross-check for a
-named incomplete/stale/conflicting predicate, then fall back to LSP or file search.
+Per `.claude/skills/devrites-lib/reference/standards/code-navigation.md`: placement from
+`get_architecture`, blast radius from `trace_path` (`direction: "inbound"`), and
+`check_index_coverage` on cited paths; then fall back to LSP or file search.
 
 ## Score the nine dimensions
 For each dimension, **cite the spec line or its absence first**, then assign the

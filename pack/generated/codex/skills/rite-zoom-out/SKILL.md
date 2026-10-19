@@ -5,7 +5,7 @@ argument-hint: "[symbol | file | area to map]"
 user-invocable: true
 disable-model-invocation: true
 ---
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/tooling.md"],"workspace":["spec.md","plan.md","decisions.md","state.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/tooling.md"],"workspace":["spec.md","plan.md","decisions.md","state.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill rite-zoom-out` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # $rite-zoom-out: step up one abstraction layer
@@ -34,12 +34,12 @@ A **structural map**: terse. One pass should answer:
 - **Smallest sensible change-scope:** where a fix would naturally land, so the next
   step doesn't drift into a project-wide refactor.
 
-## Prefer a code-intelligence index (if available)
+## Prefer codebase-memory-mcp (if available)
 
-Apply `.agents/skills/devrites-lib/reference/standards/tooling.md`: use the primary
-available architecture/code index, add at most one cross-check for a named incomplete,
-stale, or conflicting predicate, then fall back to LSP and file search. Do not query
-multiple indexes merely to confirm the same map.
+Apply `.agents/skills/devrites-lib/reference/standards/code-navigation.md`:
+`get_architecture` (`aspects: ["overview"]`, `path` = the area) for modules,
+`trace_path` (`direction: "inbound"` / `"outbound"`) for callers and calls, then fall
+back to LSP and file search. Do not repeat a query merely to confirm the same map.
 
 ## Vocabulary discipline
 

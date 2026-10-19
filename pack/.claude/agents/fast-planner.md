@@ -1,7 +1,7 @@
 ---
 name: fast-planner
 description: Read-only planner for /rite-fast. From a fresh context, reads the repository, drafts acceptance criteria and up to ten vertical slices, ranks the decisions the user must make with recommended answers, and flags risk. Never asks the user or writes files.
-tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, Bash, mcp__codebase-memory-mcp__*
 permissionMode: plan
 ---
 
@@ -30,8 +30,8 @@ Formats live in `.claude/skills/rite-fast/reference/artifacts.md`
 
 1. **Facts from the repository, not from the user.** Find where the change lives,
    the existing helpers, types, and patterns to reuse, the test runner and test
-   style, and the callers the change affects. Use a code-intelligence index when
-   available, then Read/Grep/Glob. A question whose answer sits in a file is a
+   style, and the callers the change affects. Use `search_graph` and `trace_path`
+   (`direction: "inbound"`) per `.claude/skills/devrites-lib/reference/standards/code-navigation.md`, then Read/Grep/Glob. A question whose answer sits in a file is a
    defect in your output.
 2. **Acceptance criteria.** Observable behavior at a named surface, one test able
    to show each. Include error and edge behavior the task implies. No criteria for

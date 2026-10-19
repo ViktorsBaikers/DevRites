@@ -38,7 +38,9 @@ catalog.
 In workspace `.devrites/work/<slug>/`, read `design-brief.md`,
 `polish-report.md`. Run `git diff` limited to `touched-files.md` paths, inspect the
 touched UI files, and check the
-project's tokens, shared components, and neighboring screens.
+project's tokens, shared components, and neighboring screens. Find consumers of a
+changed shared component with `trace_path` (`direction: "inbound"`) per
+`.agents/skills/devrites-lib/reference/standards/code-navigation.md`.
 
 ## Review
 Before the gate sweep, stamp a **pre-emit critique** over six axes — philosophy

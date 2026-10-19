@@ -10,8 +10,8 @@ so they agree on when it fires.
   irreversible-risk list: destructive data migration, auth/authz boundary, public-API break,
   external-service contract, filesystem destruction outside the workspace.
 - **Data model:** new/changed entities, relationships, or persistence shape.
-- **Cross-module blast radius:** the impact (from a code-intelligence index if available (see
-  `../../devrites-lib/reference/standards/tooling.md`) or an honest estimate) crosses
+- **Cross-module blast radius:** the impact (from codebase-memory `trace_path` per
+  `../../devrites-lib/reference/standards/code-navigation.md`, or an honest estimate) crosses
   module/service boundaries or has many dependents.
 - **Greenfield / ambiguous scope:** a new surface with no existing seam to follow, or a spec
   whose "right size" is genuinely open (multiple defensible scopes).

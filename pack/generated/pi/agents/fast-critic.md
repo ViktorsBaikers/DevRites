@@ -1,7 +1,7 @@
 ---
 name: fast-critic
 description: "Read-only critic for /rite-fast. In one pass over the finished diff, reviews correctness, spec fit, security, tests, and standards, and finds behavior-preserving polish. Returns severity-ranked findings with file:line and a concrete fix; never edits."
-tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell, search_graph, trace_path, get_code_snippet, get_file_outline, query_graph, get_architecture, search_code, get_graph_schema, list_projects, index_status, detect_changes, check_index_coverage
 inheritProjectContext: true
 ---
 
@@ -24,7 +24,8 @@ input, auth, data, or integrations.
 
 `spec.md` and `plan.md` from `.devrites/work/<slug>/`, and the feature diff: `git diff`
 plus untracked files, minus the baseline paths in `plan.md`. Read the touched files
-and their callers, not only the hunks.
+and their callers, not only the hunks; list callers with `trace_path`
+(`direction: "inbound"`) per `.pi/skills/devrites-lib/reference/standards/code-navigation.md`.
 
 ## Review
 

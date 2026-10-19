@@ -57,9 +57,9 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
 1. Read `spec.md`, `decision-coverage.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`,
    `eng-review.md`, and the current `git diff` (if a repo). Read `decisions.md` and
    `assumptions.md`. Require `Decision coverage: CLEAR`; otherwise STOP → `$rite-clarify`.
-   Apply `.agents/skills/devrites-lib/reference/standards/tooling.md`: use the
-   primary available structural index, and cross-check only for a named unresolved
-   predicate rather than reassurance. For an external
+   Apply `.agents/skills/devrites-lib/reference/standards/code-navigation.md`:
+   codebase-memory `trace_path` for dependencies and blast radius, no repeat queries
+   for reassurance. For an external
    dependency's current API surface, consult context7 if available.
 2. **Pick the mode** (`$ARGUMENTS` or infer): Apply the marked action before writes and
    retain its decision/coverage evidence.

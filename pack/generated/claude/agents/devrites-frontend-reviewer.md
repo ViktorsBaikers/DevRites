@@ -1,7 +1,7 @@
 ---
 name: devrites-frontend-reviewer
 description: Reviews one DevRites UI feature for /rite-seal from a fresh context. Checks UX flow, accessibility, responsive behavior, design-system alignment, and AI slop independently and adversarially.
-tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, Bash, mcp__codebase-memory-mcp__*
 skills:
   - devrites-frontend-craft
 permissionMode: plan
@@ -42,7 +42,9 @@ catalog.
 In workspace `.devrites/work/<slug>/`, read `design-brief.md`,
 `polish-report.md`. Run `git diff` limited to `touched-files.md` paths, inspect the
 touched UI files, and check the
-project's tokens, shared components, and neighboring screens.
+project's tokens, shared components, and neighboring screens. Find consumers of a
+changed shared component with `trace_path` (`direction: "inbound"`) per
+`.claude/skills/devrites-lib/reference/standards/code-navigation.md`.
 
 ## Review
 Before the gate sweep, stamp a **pre-emit critique** over six axes — philosophy

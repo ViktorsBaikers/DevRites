@@ -14,8 +14,8 @@ Diverge on the *real problem*, not the obvious path. Ask:
 
 Ambition aims at the **outcome** (problem definition, success bar, user value) and at
 complexity-**neutral** future-proofing. It never aims at the **solution surface** (that's Pass 2's
-job to prune). Ground every ambitious idea in the codebase's real seams and blast radius. Use a
-code-intelligence index if available (see `skill://devrites-lib/reference/standards/tooling.md`). Don't invent greenfield scope a
+job to prune). Ground every ambitious idea in the codebase's real seams and blast radius. Use
+codebase-memory `get_architecture` and `trace_path` if available (see `skill://devrites-lib/reference/standards/code-navigation.md`). Don't invent greenfield scope a
 constrained codebase can't absorb.
 
 ## Pass 2: INVERSION (quench: pre-mortem + prune)

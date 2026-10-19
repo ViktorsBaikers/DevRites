@@ -33,8 +33,8 @@ Formats live in `.devin/skills/rite-fast/reference/artifacts.md`
 
 1. **Facts from the repository, not from the user.** Find where the change lives,
    the existing helpers, types, and patterns to reuse, the test runner and test
-   style, and the callers the change affects. Use a code-intelligence index when
-   available, then Read/Grep/Glob. A question whose answer sits in a file is a
+   style, and the callers the change affects. Use `search_graph` and `trace_path`
+   (`direction: "inbound"`) per `.devin/skills/devrites-lib/reference/standards/code-navigation.md`, then Read/Grep/Glob. A question whose answer sits in a file is a
    defect in your output.
 2. **Acceptance criteria.** Observable behavior at a named surface, one test able
    to show each. Include error and edge behavior the task implies. No criteria for

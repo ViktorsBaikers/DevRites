@@ -4,10 +4,10 @@ Understand the requirement, decide where it belongs, define the outcome, and ide
 every issue and gap. Resolve material gaps with the user before the spec is ready. A
 gap first found during `/rite-build` is a drift event.
 
-Use a code-intelligence index if available (see
-`skill://devrites-lib/reference/standards/tooling.md`) for structural questions such as
-where code lives, what calls it, and what it could break. With none present, use
-Read/Grep/Glob. When a gap depends on an external fact, such as a standard, UX pattern,
+Use codebase-memory-mcp if available (routes, preflight, and coverage in
+`skill://devrites-lib/reference/standards/code-navigation.md`) for structural questions:
+`get_architecture` for where code lives, `search_graph` for reuse, `trace_path` for
+what calls it and what it could break. With none present, use Read/Grep/Glob. When a gap depends on an external fact, such as a standard, UX pattern,
 or comparable product, **search the web if available** (brave MCP preferred;
 `skill://devrites-lib/reference/standards/tooling.md`). Cite the finding in the option
 presented to the human.
@@ -41,7 +41,7 @@ Use native file search over `.devrites/archive/*/{spec,decisions}.md`.
    anything that makes the obvious approach wrong. Each issue gets a disposition.
 6. **Gaps:** unknowns, ambiguities, undecided behavior, missing inputs. **Every gap
    becomes a question** (next section).
-7. **Blast radius:** what this change could break (use the code graph's impact/callers).
+7. **Blast radius:** what this change could break (`trace_path` with `direction: "inbound"` on the symbols to change).
    Informs risks, test strategy, and rollback.
 8. **Human prerequisites:** credentials, accounts, approval windows, or irreversible
    action-time decisions the acceptance path requires. Separate these from agent-owned

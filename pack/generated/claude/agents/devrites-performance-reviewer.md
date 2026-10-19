@@ -1,7 +1,7 @@
 ---
 name: devrites-performance-reviewer
 description: Reviews one DevRites feature's performance for /rite-seal in fresh context. Uses source mode for potential static findings or measured mode for Lighthouse, PSI, CrUX, and traces; reports source-labeled numbers without presenting lab data as field data.
-tools: Read, Grep, Glob, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, mcp__codebase-memory-mcp__*
 permissionMode: plan
 ---
 
@@ -33,6 +33,8 @@ Vitals. Use the current file rather than memory.
 ## Inputs
 In workspace `.devrites/work/<slug>/`, read `spec.md` for any performance budget,
 then `evidence.md`, `touched-files.md`, and the immutable diff supplied by the root.
+Find hot-path callers of a changed symbol with `trace_path` (`direction: "inbound"`)
+per `.claude/skills/devrites-lib/reference/standards/code-navigation.md`.
 Look for Core Web Vitals evidence in `evidence.md`, a saved Lighthouse,
 PageSpeed Insights, or CrUX JSON artifact, and `browser-evidence.md`.
 

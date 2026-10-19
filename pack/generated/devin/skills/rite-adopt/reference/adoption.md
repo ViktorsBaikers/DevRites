@@ -2,7 +2,7 @@
 
 Loaded by `/rite-adopt`; record code reality before forward work.
 
-Capture visible behavior; architecture/placement/callers/seams; repository/CI commands;
+Capture visible behavior; architecture/placement/callers/seams (codebase-memory `get_architecture`/`trace_path` when available); repository/CI commands;
 live naming/layering/error/data/test conventions; and non-obvious constraints.
 
 A convention claim cites conforming sites, then searches the same scope for nonconforming
