@@ -33,7 +33,7 @@ Usage:
                                          Verify slice path sets are pairwise disjoint
   devrites-engine check task-graph <slug>  Validate tasks.md slice dependency graph
   devrites-engine check slice <slug> <SLICE-ID>  Pre-dispatch lint of one slice's wright contract
-  devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path> [--worktree|--staged|--base <ref>]
+  devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path> [--worktree|--staged|--base <ref>] [--snapshot|--baseline] [--verbose]
                                          Verify the changed-path set stays inside the declared allowlist
   devrites-engine check skill-trust <path> Scan one skill/agent Markdown for trust violations
   devrites-engine check regression <slug> [--update]
@@ -50,7 +50,7 @@ Usage:
   devrites-engine handoff [slug]           Emit the deterministic resume record (cursor, blocking gates, ledger, dead ends)
   devrites-engine recall --paths <csv> [--limit n]
                                          Point at archived features that touched these paths: decisions, constraints, findings (read-only)
-  devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <id>] [--trigger a,b]
+  devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <id>] [--recheck <inventory>] [--trigger a,b] [--inline-contract]
                                          Emit one deduplicated read-set bundle for a phase, skill, or dispatch role
   devrites-engine metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   devrites-engine metrics summary [slug] [--by-slice]  Summarize the metrics ledger, or per-slice rounds and agent-minutes

@@ -1,5 +1,7 @@
 # Slice-wright dispatch
 
+> Root-only: not inlined in --role bundles.
+
 `/rite-build` gives one bounded task to exact `devrites-slice-wright`.
 Root owns scope/artifacts/inspection; never writes source/tests.
 Wright alone writes; no agents.
@@ -81,8 +83,8 @@ worktrees stay forbidden.
    them: a wright that cannot execute writes blind and its failures surface a
    whole review round later. Only artifact-producing, consumptive, or full
    canonical feature gates stay root-owned.
-3. Record `git diff --name-only` before dispatch so unrelated work remains
-   distinguishable. For an isolated pilot, also record committed base SHA and exact
+3. Run `devrites-engine check diff-scope <slug> --snapshot` before dispatch so
+   unrelated work remains distinguishable (it fingerprints every dirty path). For an isolated pilot, also record committed base SHA and exact
    baseline status before asking the host for isolation. **Failing case:** paths that
    were dirty at that baseline are listed as slice-owned after dispatch.
 
@@ -130,8 +132,9 @@ TTL is crash recovery, not normal cleanup.
 ## Inspect and prove
 
 1. Compare the returned file list and `git diff --name-only` with task paths.
-   `devrites-engine check diff-scope <slug> --allow <task-paths>` is the
-   mechanical subset gate — run it before any reviewer dispatch; a violation
+   `devrites-engine check diff-scope <slug> --allow <task-paths> --baseline` is the
+   mechanical subset gate (a step-3 path whose bytes are unchanged is not a
+   violation; a changed one still is) — run it before any reviewer dispatch; a violation
    restores through the bounded wright without spending review, but only for a
    path the wright's `files_changed` or diff trace attributes to it. An
    unattributed extra path that was clean at the step-3 baseline is preserved

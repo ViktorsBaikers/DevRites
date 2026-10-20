@@ -3,7 +3,7 @@ name: devrites-doubt
 description: Stress-test one consequential decision independently. Use for uncertainty around boundaries, data, auth, APIs, or migrations; not trivial choices.
 user-invocable: false
 ---
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/agents.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"security":["devrites-lib/reference/standards/security.md"],"tooling":["devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/code-navigation.md"]},"workspace":["spec.md","plan.md","tasks.md","state.md","decisions.md"],"workspaceByRole":{"doubt-reviewer":["spec.md","plan.md","tasks.md","state.md","decisions.md"]}} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/agents.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"security":["devrites-lib/reference/standards/security.md"],"tooling":["devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md"]},"workspace":["spec.md","plan.md","tasks.md","state.md","decisions.md"],"workspaceByRole":{"doubt-reviewer":["spec.md","plan.md","tasks.md","state.md","decisions.md"]},"rootOnly":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/tooling.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill devrites-doubt` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
 
 # devrites-doubt: CLAIM → EXTRACT → DOUBT → RECONCILE → STOP

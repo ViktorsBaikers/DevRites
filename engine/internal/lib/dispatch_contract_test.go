@@ -72,3 +72,39 @@ func TestDispatchOpenRefusesBlindWrightContract(t *testing.T) {
 		t.Fatalf("non-wright waves need no contract: code=%d\n%s", code, out)
 	}
 }
+
+// A named agent already has its role contract as its system prompt, so both
+// packet lints refuse a line that tells it to read an installed contract.
+func TestLintsRefuseRoleContractRead(t *testing.T) {
+	cases := []struct {
+		name, body string
+		refuse     bool
+	}{
+		{"read-first heading", "## Read first\n\n- /root/proj/.omp/agents/devrites-code-reviewer.md\n- spec.md\n", true},
+		{"read-first label", "**Read first:**\n- .codex/agents/devrites-code-reviewer.toml\n", true},
+		{"inline read", "Read agents/devrites-slice-wright.md before editing.\n", true},
+		{"canonical source", "## Read first\n- pack/.claude/agents/devrites-code-reviewer.md\n", false},
+		{"changed path under scope", "## Read first\n- spec.md\n## Scope\n- .claude/agents/devrites-code-reviewer.md\n", false},
+		{"read-only is not read", "Read-only review of .omp/agents/devrites-doubt.md wording.\n", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for name, lint := range map[string]func(string) error{"reviewer packet": lintReviewerPacket, "wright contract": lintWrightContract} {
+				path := filepath.Join(t.TempDir(), "p.md")
+				if err := os.WriteFile(path, []byte(tc.body+"\nWriter-safe checks: go vet ./...\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				err := lint(path)
+				if !tc.refuse {
+					if err != nil {
+						t.Fatalf("%s: want pass, got %v", name, err)
+					}
+					continue
+				}
+				if err == nil || !strings.Contains(err.Error(), name+" "+path+":") || !strings.Contains(err.Error(), "tells the agent to read a role contract") {
+					t.Fatalf("%s: want refusal, got %v", name, err)
+				}
+			}
+		})
+	}
+}

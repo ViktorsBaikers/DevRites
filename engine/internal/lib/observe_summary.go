@@ -157,13 +157,11 @@ func missingSectionNames(sections []state.Section) []string {
 	return out
 }
 
-// WriteObserveSummaryJSON prints one JSON object to stdout.
+// WriteObserveSummaryJSON prints one compact JSON object line to stdout.
 func WriteObserveSummaryJSON(root, slug string, stdout io.Writer) error {
 	summary, err := ObserveSummaryFor(root, slug)
 	if err != nil {
 		return err
 	}
-	enc := json.NewEncoder(stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(summary)
+	return json.NewEncoder(stdout).Encode(summary)
 }

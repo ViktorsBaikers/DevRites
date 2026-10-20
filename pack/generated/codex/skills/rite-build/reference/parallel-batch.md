@@ -1,5 +1,7 @@
 # Parallel batch (`--parallel N`)
 
+> Root-only: not inlined in --role bundles.
+
 Opt-in only. Default `$rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.md).
 
 ## Entry

@@ -29,8 +29,9 @@ func isReviewerRole(role string) bool {
 	return strings.HasSuffix(base, "-reviewer") || strings.HasSuffix(base, "-auditor") || base == "test-analyst"
 }
 
-// lintReviewerPacket refuses a reviewer packet that seeds a conclusion, so a
-// voided review is rejected before launch rather than discovered after it.
+// lintReviewerPacket refuses a reviewer packet that seeds a conclusion or
+// tells the reviewer to read its installed role contract, so a voided review
+// is rejected before launch rather than discovered after it.
 // Placeholder text inside <...> (an output template) is not a conclusion.
 func lintReviewerPacket(path string) error {
 	if path == "" {
@@ -52,7 +53,7 @@ func lintReviewerPacket(path string) error {
 				path, i+1, strings.TrimSpace(line[loc[0]:loc[1]]))
 		}
 	}
-	return nil
+	return lintContractRead("reviewer packet", path, raw)
 }
 
 func insidePlaceholder(line string, start, end int) bool {

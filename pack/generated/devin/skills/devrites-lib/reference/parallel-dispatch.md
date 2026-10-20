@@ -1,5 +1,7 @@
 # Native review dispatch
 
+> Root-only: not inlined in --role bundles.
+
 Host dispatch; DevRites governs.
 
 ## Roster
@@ -143,13 +145,14 @@ session, the claim proof below settles it. A result classification alone
 does not prove host termination.
 
 On resume (compaction or a new session), run `devrites-engine dispatch <slug>
-status`, `parallel status`, and `claim list --all` before any dispatch. A read-only
+status`, `parallel status`, and `claim list` before any dispatch. A read-only
 wave whose handles this session cannot query: `abandon` it, record each unreturned
 role `gap`, and re-dispatch fresh on the current digest; its late returns are
 `stale`. A writer keeps its claim and lease — no relaunch on those paths until the
 claim is released or its holder is proven terminal. For an unqueryable writer,
-`claim list --all` showing its claim `released` or `dead` (the engine proved the
-holding session exited on this host) is that proof: `abandon` the wave, record the
+`claim list` showing its claim `dead` (the engine proved the holding session
+exited on this host), or `claim list --all --session <id>` showing it `released`
+(bare `list` only counts released rows), is that proof: `abandon` the wave, record the
 role `gap`, claim the paths, and re-dispatch without waiting on the launching
 session. `live` or `expired` stays held. A wright that never returned an
 admitted result leaves unadmitted bytes: task-path changes since its pre-dispatch

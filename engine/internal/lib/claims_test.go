@@ -128,18 +128,54 @@ func TestClaimExpiry(t *testing.T) {
 	if err := os.WriteFile(path, append(line, '\n'), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	// Expired claims do not conflict and do not list by default.
+	// Expired claims do not conflict but still list by default: the hold
+	// protocol reads them.
 	code, _, errOut := runClaim(t, root, "add", "--session", "s2", "pkg/a.go")
 	if code != 0 {
 		t.Fatalf("add over expired: %d %s", code, errOut)
 	}
 	code, out, _ := runClaim(t, root, "list")
-	if code != 0 || strings.Contains(out, "cl-old") {
-		t.Fatalf("list should hide expired: %d %q", code, out)
+	if code != 0 || !strings.Contains(out, "cl-old") || !strings.Contains(out, "expired") {
+		t.Fatalf("list should show expired: %d %q", code, out)
 	}
 	code, out, _ = runClaim(t, root, "list", "--all")
 	if code != 0 || !strings.Contains(out, "cl-old") || !strings.Contains(out, "expired") {
 		t.Fatalf("list --all should show expired: %d %q", code, out)
+	}
+}
+
+// Bare list hides released history behind one count line; --all and a
+// --session filter still reach the released rows.
+func TestClaimListFoldsReleased(t *testing.T) {
+	root := claimTestRoot(t)
+	ids := map[string]string{}
+	for _, s := range []string{"s1", "s2", "s3"} {
+		code, out, errOut := runClaim(t, root, "add", "--session", s, "pkg/"+s+".go")
+		if code != 0 {
+			t.Fatalf("add %s: %d %s", s, code, errOut)
+		}
+		ids[s] = strings.Fields(strings.TrimPrefix(out, "claim: "))[0]
+	}
+	for _, s := range []string{"s1", "s2"} {
+		if code, _, errOut := runClaim(t, root, "release", "--session", s, "--id", ids[s]); code != 0 {
+			t.Fatalf("release %s: %d %s", s, code, errOut)
+		}
+	}
+	code, out, _ := runClaim(t, root, "list")
+	if code != 0 || strings.Contains(out, "released session=") || !strings.Contains(out, ids["s3"]) || !strings.Contains(out, "claim: 2 released (use --all)") {
+		t.Fatalf("bare list: %d %q", code, out)
+	}
+	code, out, _ = runClaim(t, root, "list", "--all")
+	if code != 0 || strings.Count(out, "released session=") != 2 || strings.Contains(out, "use --all") {
+		t.Fatalf("list --all: %d %q", code, out)
+	}
+	code, out, _ = runClaim(t, root, "list", "--all", "--session", "s1")
+	if code != 0 || !strings.Contains(out, ids["s1"]+" released") || strings.Contains(out, ids["s2"]) {
+		t.Fatalf("list --all --session: %d %q", code, out)
+	}
+	code, out, _ = runClaim(t, root, "list", "--session", "s1")
+	if code != 0 || !strings.Contains(out, "claim: no claims") || !strings.Contains(out, "claim: 1 released (use --all)") {
+		t.Fatalf("list --session of a released holder: %d %q", code, out)
 	}
 }
 

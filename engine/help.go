@@ -21,7 +21,8 @@ const (
   check path-disjoint [--root <dir>] [<json-file>|-]
   check task-graph <slug>
   check slice <slug> <SLICE-ID>
-  check diff-scope <slug> --allow <csv> | --allow-file <path> [--worktree|--staged|--base <ref>] [--allow-empty] [--cwd <dir>]
+  check diff-scope <slug> --allow <csv> | --allow-file <path> [--worktree|--staged|--base <ref>] [--allow-empty] [--baseline] [--verbose] [--cwd <dir>]
+  check diff-scope <slug> --snapshot [--worktree|--staged|--base <ref>] [--cwd <dir>]
   check skill-trust <path>
   check indexes [--root <dir>]
   check regression <slug> [--update]
@@ -54,13 +55,13 @@ const (
 	orientUsage  = "usage: devrites-engine orient [slug]"
 	nextUsage    = "usage: devrites-engine next [slug]"
 	handoffUsage = "usage: devrites-engine handoff [slug]"
-	contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--trigger a,b] [--skills-root <dir>] [--out <path>]`
+	contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--skills-root <dir>] [--out <path>]`
 	metricsUsage = `usage: devrites-engine metrics <record|summary> ...
 
   metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   metrics summary [slug] [--by-slice]
 `
-	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>]`
+	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all]`
 	claimUsageText = `usage: devrites-engine claim <add|release|list|check> ...
 
   claim add --session <id> [--ttl <minutes>] [--reason <s>] <path>...
@@ -68,8 +69,9 @@ const (
   claim list [--session <id>] [--all]
   claim check [--session <id>] <path>...
 `
-	diffScopeUsage = `usage: devrites-engine check diff-scope <slug> --allow <csv> | --allow-file <path> [--worktree|--staged|--base <ref>] [--allow-empty] [--cwd <dir>]`
-	migrateUsage   = "usage: devrites-engine migrate <slug> [--dry-run] [--answer id=choice]"
+	diffScopeUsage = `usage: devrites-engine check diff-scope <slug> --allow <csv> | --allow-file <path> [--worktree|--staged|--base <ref>] [--allow-empty] [--baseline] [--verbose] [--cwd <dir>]
+       devrites-engine check diff-scope <slug> --snapshot [--worktree|--staged|--base <ref>] [--cwd <dir>]`
+	migrateUsage = "usage: devrites-engine migrate <slug> [--dry-run] [--answer id=choice]"
 	// scanCmdUsage is help text for `secret-scan`. The identifier must not
 	// contain "secret": gosec G101 treats secret* string consts as credentials.
 	scanCmdUsage        = "usage: devrites-engine secret-scan [--staged] [--stdin] [slug]"

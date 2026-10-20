@@ -23,14 +23,16 @@ import (
 // fan-out cannot silently degrade to serial (open -> every role started ->
 // seal -> returns -> complete). start/return also auto-record metrics events.
 //
-//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>]
+//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all]
 
-const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>]
+const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
 role has a distinct handle; return fails before seal. status --wave exits
-nonzero until that wave is complete; bare status lists every wave and exits
-nonzero while any wave is open or sealed (abandoned waves are listed only).
+nonzero until that wave is complete; bare status lists every open, sealed,
+or abandoned wave, folds complete waves into one count line (--all lists
+them too), and exits nonzero while any wave is open or sealed (abandoned
+waves are listed only).
 A complete wave cannot be abandoned. return --outcome records the role's
 Outcome line in metrics.jsonl, so metrics summary reports reviewer yield.
 For a reviewer role, return --result <file> stores the return verbatim as
@@ -129,6 +131,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	var slug, sub, phase, wave, role, handle, reason, review, contract, packet, outcome, result string
 	var roles, sliceIDs []string
 	var positional []string
+	all := false
 	for i := 0; i < len(args); i++ {
 		value := argAt(args, i+1)
 		switch args[i] {
@@ -155,6 +158,9 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			outcome = value
 		case "--result":
 			result = value
+		case "--all":
+			all = true
+			continue
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(stderr, "dispatch: unknown flag %q\n", args[i])
@@ -178,7 +184,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	// an update and strand the wave short of complete.
 	code := 0
 	if err := state.WithFeatureLock(root, slug, func() error {
-		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, stdout, stderr)
+		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, all, stdout, stderr)
 		return nil
 	}); err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -187,7 +193,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome, result string, stdout, stderr io.Writer) int {
+func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome, result string, all bool, stdout, stderr io.Writer) int {
 	f, path, err := loadDispatch(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -358,8 +364,13 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 	case "status":
 		if wave == "" {
 			var incomplete []string
+			complete := 0
 			for _, name := range sortedKeys(f.Waves) {
 				w := f.Waves[name]
+				if w.State == "complete" && !all {
+					complete++
+					continue
+				}
 				fmt.Fprintf(stdout, "dispatch: wave %s state=%s roles=%d\n", name, w.State, len(w.Roles))
 				if w.State == "open" || w.State == "sealed" {
 					incomplete = append(incomplete, name)
@@ -367,6 +378,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			}
 			if len(f.Waves) == 0 {
 				fmt.Fprintln(stdout, "dispatch: no waves")
+			}
+			if complete > 0 {
+				fmt.Fprintf(stdout, "dispatch: %d complete wave(s) (use --all)\n", complete)
 			}
 			if len(incomplete) > 0 {
 				return fail("waves not complete: %s", strings.Join(incomplete, ","))

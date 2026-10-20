@@ -1,5 +1,7 @@
 # Checkpoint: land local WIP only after the check loop is green
 
+> Root-only: not inlined in --role bundles.
+
 The wright does not commit onto the control/primary branch. Independent review
 and fail-on-red proof run first; a red or gap finding dispatches another wright.
 Only when that loop is green does the orchestrator land the local unpushed

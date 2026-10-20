@@ -73,10 +73,10 @@ themselves. The workspace is the canonical store; the handoff is the chat-only d
    count at write time, so the next session can see edits made after the handoff.
 6. **In-flight work.** Every dispatch wave opened or sealed without a return (`devrites-engine
    dispatch <slug> status`), running writer handle, held claim id plus paths (`devrites-engine
-   claim list --all`), and consumptive action started, each `terminal: yes|unknown` (`yes` only with
+   claim list`), and consumptive action started, each `terminal: yes|unknown` (`yes` only with
    an admitted return, release, `dead` claim, or proof of stop). The live handle exists only in chat. Any
    `unknown` row makes item 1 a reconcile step (`dispatch <slug> status`, `parallel status`,
-   `claim list --all`), never a writer command: otherwise the next session dispatches a second writer.
+   `claim list`), never a writer command: otherwise the next session dispatches a second writer.
 7. **How to resume:** fixed boilerplate (see template below).
 
 ## What NOT to include

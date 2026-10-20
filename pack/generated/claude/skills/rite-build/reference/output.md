@@ -1,5 +1,7 @@
 # rite-build output
 
+> Root-only: not inlined in --role bundles.
+
 **Slices remain:**
 
 ```text

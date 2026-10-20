@@ -1,5 +1,7 @@
 # rite-build phase contract
 
+> Root-only: not inlined in --role bundles.
+
 Apply [`one-slice-cycle.md`](one-slice-cycle.md) and
 [`candidate-integrity.md`](../../devrites-lib/reference/candidate-integrity.md).
 Opt-in `--parallel N` replaces steps 2–8 with [`parallel-batch.md`](parallel-batch.md);
@@ -30,7 +32,7 @@ Spec Drift Guard still applies.
    paths; wright cannot widen scope; missing profile blocks.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Build gate enters or resumes transaction","action":"invoke canonical operation table; reconcile exact result","return":"same slice/checkpoint cursor or Plan/Vet route"} -->
 4. **Inspect.** Wait; run `devrites-engine check diff-scope <slug> --allow
-   <contract-paths>` for the mechanical returned-paths ⊆ contract check **before**
+   <contract-paths> --baseline` (after a pre-dispatch `--snapshot`) for the mechanical returned-paths ⊆ contract check **before**
    any reviewer dispatch — a violation returns through the bounded wright without
    spending review. Then compare returned paths and `git diff --name-only` with the
    contract for semantics diff-scope cannot judge (stale/partial/malformed work;
@@ -97,6 +99,10 @@ all open findings owned by that role and affected dependency/regression closure
 in one fresh dispatch. Supply new candidate, inventory, correction diff, tests
 and unchanged-coverage evidence under candidate integrity; include newly triggered
 roles. A changed contract or uncertain impact requires the full inventory.
+A bounded recheck bundle adds `--recheck <inventory-file>` (open `Finding:` rows
+plus correction-diff paths) to its `--slice` bundle: inventory and core inline, every
+other triggered standard by anchor index plus each `<file>.md § <heading>` the
+findings cite. First reviews and full-inventory rechecks keep the plain bundle.
 Collect all required rechecks before another folded correction. Canonical recovery
 owns fingerprints/budget and the
 [late-finding rule](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):

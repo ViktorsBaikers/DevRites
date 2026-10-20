@@ -1,5 +1,7 @@
 # Native execution profiles
 
+> Root-only: not inlined in --role bundles.
+
 Profiles scale **change depth**, not orchestration machinery. The host discovers
 the exact project specialist named by a workflow, dispatches it in fresh context,
 waits for the result, validates the result shape, and reconciles the evidence.

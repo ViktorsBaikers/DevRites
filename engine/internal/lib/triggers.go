@@ -24,6 +24,7 @@ type triggerFacts struct {
 	afk         bool
 	afkParallel bool
 	principles  bool
+	aiSpec      bool   // featureDir/ai-spec.md exists: the spec process marked an AI feature
 	corpus      string // lowercased text of spec/plan/tasks/design brief
 }
 
@@ -38,7 +39,22 @@ var (
 	tddSignalRe  = regexp.MustCompile(`\b(tdd|test[- ]first|test driven)\b`)
 	topoSignalRe = regexp.MustCompile(`(migrat|\bschema\b|\bsql\b|database|postgres|mysql|sqlite|mongo|\bqueue\b|kafka|rabbitmq|redis|\bcache\b|webhook|monorepo|multi[- ]root|multi[- ]service|microservice|\bgrpc\b|graphql|\brest\b|\bapi\b|message broker)`)
 	wfaSignalRe  = regexp.MustCompile(`workflow[- ]artifact`)
+	aiSignalRe   = regexp.MustCompile(`\b(llms?|prompts?|rag|embeddings?|model output|agents?|agentic|tool[- ]use|skill packages?|mcp|chatbot)\b`)
+	// aiAnnexRe drops the spec template's always-present "AI-SPEC annex" section
+	// (its boilerplate names LLM/RAG/agent) up to the next heading, kept via $1.
+	aiAnnexRe = regexp.MustCompile(`(?ms)^#{1,6}[ \t]*ai-spec annex[^\n]*\n.*?(^#|\z)`)
 )
+
+// keepModelSurface reports whether a --role bundle inlines <!-- model-surface -->
+// sections. Unlike suggestions this is decided by the engine, and it fails
+// safe: the security auditor always keeps them, and so does any role whose
+// spec/plan/tasks corpus is absent, whose feature has an ai-spec.md, or whose
+// corpus (minus the template's AI-SPEC annex) names a model, agent, RAG, or
+// tool surface.
+func keepModelSurface(role string, facts triggerFacts) bool {
+	return role == "security-auditor" || facts.aiSpec || strings.TrimSpace(facts.corpus) == "" ||
+		aiSignalRe.MatchString(aiAnnexRe.ReplaceAllString(facts.corpus, "$1"))
+}
 
 // triggerSignals maps declared trigger-name shapes to facts. nameRe is matched
 // case-insensitively against each declared (unselected) trigger name.
@@ -100,6 +116,9 @@ func gatherTriggerFacts(root, featureDir, role string) triggerFacts {
 		}
 	}
 	if featureDir != "" {
+		if info, err := os.Stat(filepath.Join(featureDir, "ai-spec.md")); err == nil && info.Mode().IsRegular() {
+			facts.aiSpec = true
+		}
 		var corpus strings.Builder
 		for _, name := range triggerEvidenceFiles {
 			path := filepath.Join(featureDir, name)

@@ -47,7 +47,8 @@ topic's owner.
 | `afk-hitl.md` | A pause, question, resume, or AFK decision is possible. |
 | `one-shot-actions.md` | A failed proof/action would spend paid or rate-limited quota, mutate external state, or delete its own failure evidence. |
 | `tooling.md` | Structural lookup, current external facts, or architecture memory is needed. |
-| `code-navigation.md` | Choosing graph, LSP, grep, or read routes before cross-file edits. |
+| `code-navigation.md` | Editing across files or claiming a blast radius: affected set, enclosing-body reads, fresh diagnostics, static-graph blind spots. |
+| `code-index.md` | Choosing graph, LSP, grep, or read routes: index preflight, route table, coverage, query budget, host access. |
 | `skill-authoring.md` | Creating, editing, routing, evaluating, or pruning a DevRites skill. |
 | `definition-of-done.md` | Prove, Seal, Ship, or Quick must decide whether work is finished. |
 | `review-checklist.md` | A compact review pass/fail sweep is enough. |

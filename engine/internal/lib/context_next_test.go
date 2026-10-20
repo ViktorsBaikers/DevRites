@@ -2,6 +2,8 @@ package lib
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -261,11 +263,11 @@ func TestContextWorkspaceByRoleScopes(t *testing.T) {
 	// Role absent from workspaceByRole keeps the flat list.
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(root, []string{"feat", "--phase", "build", "--role", "code-reviewer", "--skills-root", skills}, stdout, stderr)
+	code = RunContext(root, []string{"feat", "--phase", "build", "--role", "code-reviewer", "--slice", "SLICE-001", "--skills-root", skills}, stdout, stderr)
 	if code != 0 {
 		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
 	}
-	bundle, err = os.ReadFile(filepath.Join(featureDir, "ctx", "build-code-reviewer.bundle.md"))
+	bundle, err = os.ReadFile(filepath.Join(featureDir, "ctx", "build-code-reviewer.SLICE-001.bundle.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,11 +278,11 @@ func TestContextWorkspaceByRoleScopes(t *testing.T) {
 	// Empty role list bundles no workspace artifacts.
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(root, []string{"feat", "--phase", "build", "--role", "proof-runner", "--skills-root", skills}, stdout, stderr)
+	code = RunContext(root, []string{"feat", "--phase", "build", "--role", "proof-runner", "--slice", "SLICE-001", "--skills-root", skills}, stdout, stderr)
 	if code != 0 {
 		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
 	}
-	bundle, err = os.ReadFile(filepath.Join(featureDir, "ctx", "build-proof-runner.bundle.md"))
+	bundle, err = os.ReadFile(filepath.Join(featureDir, "ctx", "build-proof-runner.SLICE-001.bundle.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -356,7 +358,8 @@ func TestContextRoleAutoFiresAgentsTrigger(t *testing.T) {
 	// without its contract is a bug, not a soft omission.
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(root, []string{"feat", "--phase", "build", "--role", "ghost", "--skills-root", skills}, stdout, stderr)
+	writeFile(t, filepath.Join(featureDir, "tasks.md"), "## SLICE-001 x\n")
+	code = RunContext(root, []string{"feat", "--phase", "build", "--role", "ghost", "--slice", "SLICE-001", "--skills-root", skills}, stdout, stderr)
 	if code != 3 {
 		t.Fatalf("missing agent contract should exit 3, got %d\n%s%s", code, stdout, stderr)
 	}
@@ -427,6 +430,84 @@ func TestContextUnchangedDigestSkipsRewrite(t *testing.T) {
 	}
 	if strings.Contains(stdout.String(), "unchanged") {
 		t.Fatal("changed input still reported unchanged")
+	}
+}
+
+func TestContextRoleBundleStubsMarkedSections(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	skills := newSkillsRoot(t)
+	core := filepath.Join(skills, "devrites-lib", "reference", "standards", "core.md")
+	writeFile(t, core, "# core\n\n## Leaf\nleaf rule\n\n<!-- root-only -->\n## Handoff\nroot rule\n<!-- /root-only -->\n\n"+
+		"## Models\n<!-- model-surface -->\nmodel rule\n<!-- /model-surface -->\n")
+	writeFile(t, filepath.Join(skills, "..", "agents", "devrites-security-auditor.md"), "# auditor\n")
+	// Vet, not Build: Build reviewer bundles need --slice and a tasks.md,
+	// which would change the model-surface evidence this test controls.
+	writeFile(t, filepath.Join(skills, "rite-vet", "SKILL.md"), "<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\"]} -->\n# vet\n")
+	bundle := func(role string) string {
+		t.Helper()
+		args, name := []string{"feat", "--phase", "vet", "--skills-root", skills}, "vet.bundle.md"
+		if role != "" {
+			args, name = append(args, "--role", role), "vet-"+role+".bundle.md"
+		}
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		if code := RunContext(root, args, stdout, stderr); code != 0 {
+			t.Fatalf("role=%q code=%d\n%s%s", role, code, stdout, stderr)
+		}
+		data, err := os.ReadFile(filepath.Join(featureDir, "ctx", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(data)
+	}
+	expect := func(label, text string, want, reject []string) {
+		t.Helper()
+		for _, w := range want {
+			if !strings.Contains(text, w) {
+				t.Fatalf("%s: bundle missing %q:\n%s", label, w, text)
+			}
+		}
+		for _, r := range reject {
+			if strings.Contains(text, r) {
+				t.Fatalf("%s: bundle must not contain %q:\n%s", label, r, text)
+			}
+		}
+	}
+	rootStub := `[root-only section "Handoff" omitted for role code-reviewer`
+	modelStub := `[model-surface section "Models" omitted for role code-reviewer`
+
+	writeFile(t, filepath.Join(featureDir, "spec.md"), "# spec\nA billing export.\n")
+	expect("root", bundle(""), []string{"root rule", "model rule"}, []string{"omitted for role"})
+	expect("non-ai leaf", bundle("code-reviewer"),
+		[]string{"leaf rule", rootStub, "## Models", modelStub, "devrites-lib/reference/standards/core.md § Models"},
+		[]string{"root rule", "## Handoff", "model rule"})
+	expect("auditor", bundle("security-auditor"), []string{"model rule"}, []string{"root rule"})
+
+	writeFile(t, filepath.Join(featureDir, "spec.md"), "# spec\nAn LLM prompt router.\n")
+	expect("ai leaf", bundle("code-reviewer"), []string{rootStub, "model rule"}, []string{"root rule", modelStub})
+
+	// Template boilerplate (the AI-SPEC annex, the .claude/skills discovery
+	// line) is not an AI signal; an ai-spec.md file is.
+	writeFile(t, filepath.Join(featureDir, "spec.md"), "# spec\nA billing export.\n\n## AI-SPEC annex\n"+
+		"- Model/RAG/agent/eval/LLM-output scope: `ai-spec.md` from `ai-spec-template.md`.\n- Otherwise: not applicable.\n\n## Success metrics\n- Export matches ledger.\n")
+	writeFile(t, filepath.Join(featureDir, "plan.md"), "# plan\n## Technical context\n"+
+		"- Test commands: <discovered runner commands; discovery contract: .claude/skills/rite-prove/reference/test-command-discovery.md>\n")
+	expect("template annex", bundle("code-reviewer"), []string{modelStub}, []string{"model rule"})
+	writeFile(t, filepath.Join(featureDir, "ai-spec.md"), "# ai spec\n")
+	expect("ai-spec file", bundle("code-reviewer"), []string{"model rule"}, []string{modelStub})
+
+	// No spec/plan/tasks evidence: unsure, so the model-surface rules stay inline.
+	for _, name := range []string{"spec.md", "plan.md", "ai-spec.md"} {
+		if err := os.Remove(filepath.Join(featureDir, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	expect("no corpus", bundle("code-reviewer"), []string{"model rule"}, []string{"root rule"})
+
+	writeFile(t, core, "# core\n<!-- root-only -->\n## Handoff\nroot rule\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	code := RunContext(root, []string{"feat", "--phase", "vet", "--role", "code-reviewer", "--skills-root", skills}, stdout, stderr)
+	if code != 2 || !strings.Contains(stderr.String(), "unclosed <!-- root-only --> section") {
+		t.Fatalf("unbalanced marker: code=%d want 2\n%s%s", code, stdout, stderr)
 	}
 }
 
@@ -1042,7 +1123,8 @@ func TestMetricsSummaryLedgerErrorsAndLongLines(t *testing.T) {
 }
 
 // A Codex install keeps skills in .agents/skills and role agents in
-// .codex/agents/<name>.toml; the role contract must still lead the bundle.
+// .codex/agents/<name>.toml; Codex loads that file as the agent's
+// instructions, so the bundle leads with a stub naming it.
 func TestContextRoleContractFallsBackToCodexAgents(t *testing.T) {
 	project := t.TempDir()
 	root := filepath.Join(project, ".devrites")
@@ -1056,7 +1138,52 @@ func TestContextRoleContractFallsBackToCodexAgents(t *testing.T) {
 		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
 	}
 	bundle, err := os.ReadFile(filepath.Join(root, "work", "feat", "ctx", "build-slice-wright.bundle.md"))
-	if err != nil || !strings.Contains(string(bundle), "===== .codex/agents/devrites-slice-wright.toml =====") || !strings.Contains(string(bundle), "codex wright") {
-		t.Fatalf("codex role contract missing: %v\n%s", err, bundle)
+	if err != nil || !strings.Contains(string(bundle), "===== .codex/agents/devrites-slice-wright.toml (not inlined") ||
+		!strings.Contains(string(bundle), "read .codex/agents/devrites-slice-wright.toml only if") || strings.Contains(string(bundle), "codex wright") {
+		t.Fatalf("codex role contract stub missing: %v\n%s", err, bundle)
+	}
+}
+
+// A role contract the host loads as the agent's system prompt (.claude,
+// .omp) is stubbed with its size and SHA-256; an unverified layout (.pi) and
+// --inline-contract keep the body, and a missing contract still fails.
+func TestContextRoleContractStubOnNativeHosts(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "# State\n")
+	writeFile(t, filepath.Join(root, "work", "feat", "tasks.md"), "## SLICE-001 x\n")
+	body := "# reviewer body\nrule\n"
+	bundle := func(host string, extra ...string) (int, string, string) {
+		t.Helper()
+		skills := filepath.Join(project, host, "skills")
+		writeFile(t, filepath.Join(skills, "devrites-lib", "reference", "standards", "core.md"), "# core\n")
+		writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), "<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\"]} -->\n")
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		code := RunContext(root, append([]string{"feat", "--phase", "build", "--role", "code-reviewer", "--slice", "SLICE-001", "--skills-root", skills}, extra...), stdout, stderr)
+		data, _ := os.ReadFile(filepath.Join(root, "work", "feat", "ctx", "build-code-reviewer.SLICE-001.bundle.md"))
+		return code, string(data), stdout.String() + stderr.String()
+	}
+	stub := fmt.Sprintf("(not inlined: your host loads this role contract as your system prompt; %d bytes, sha256 %x;", len(body), sha256.Sum256([]byte(body)))
+	for _, host := range []string{".claude", ".omp"} {
+		agent := filepath.Join(project, host, "agents", "devrites-code-reviewer.md")
+		writeFile(t, agent, body)
+		code, text, out := bundle(host)
+		if code != 0 || !strings.Contains(text, "===== agents/devrites-code-reviewer.md "+stub) ||
+			!strings.Contains(text, "read "+host+"/agents/devrites-code-reviewer.md only if") || strings.Contains(text, "# reviewer body") {
+			t.Fatalf("%s: want contract stub, code=%d\n%s\n%s", host, code, out, text)
+		}
+		if code, text, out := bundle(host, "--inline-contract"); code != 0 || !strings.Contains(text, "===== agents/devrites-code-reviewer.md =====\n# reviewer body") {
+			t.Fatalf("%s --inline-contract: want body, code=%d\n%s\n%s", host, code, out, text)
+		}
+		if err := os.Remove(agent); err != nil {
+			t.Fatal(err)
+		}
+		if code, _, out := bundle(host); code != 3 || !strings.Contains(out, "MISSING: agents/devrites-code-reviewer.md") {
+			t.Fatalf("%s: missing contract must fail, code=%d\n%s", host, code, out)
+		}
+	}
+	writeFile(t, filepath.Join(project, ".pi", "agents", "devrites-code-reviewer.md"), body)
+	if code, text, out := bundle(".pi"); code != 0 || !strings.Contains(text, "# reviewer body") || strings.Contains(text, "not inlined") {
+		t.Fatalf(".pi: want inlined body, code=%d\n%s\n%s", code, out, text)
 	}
 }

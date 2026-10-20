@@ -28,7 +28,7 @@ Read only the paths and bounded question supplied by the orchestrator.
   the retrieval date (ISO).
 
 For structural questions, use codebase-memory-mcp per the route table and coverage
-rule in `.claude/skills/devrites-lib/reference/standards/code-navigation.md`. Use exact
+rule in `.claude/skills/devrites-lib/reference/standards/code-index.md`. Use exact
 sources, not recollection, and do not broaden the question.
 
 Report how things are today, not how the intended change should go. When the brief

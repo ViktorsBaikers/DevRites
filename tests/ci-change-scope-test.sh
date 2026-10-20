@@ -69,7 +69,8 @@ expect $'docs/engine/commands.md' run_full true
 expect $'docs/engine/commands.md' run_tests true
 expect $'docs/release.md' run_engine false
 expect $'pack/.claude/skills/rite-build/SKILL.md' run_tests true
-expect $'pack/.claude/skills/rite-build/SKILL.md' run_engine false
+expect $'pack/.claude/skills/rite-build/SKILL.md' run_engine true
+expect $'pack/.claude/agents/devrites-slice-wright.md' run_engine true
 expect $'pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md' run_engine true
 expect $'pack/.claude/skills/rite-spec/reference/spec-template.md' run_engine true
 expect $'bin/devrites.mjs' run_engine true
