@@ -179,6 +179,32 @@ func TestClaimListFoldsReleased(t *testing.T) {
 	}
 }
 
+func TestClaimWorkspaceLeaseBlocksSecondSession(t *testing.T) {
+	root := claimTestRoot(t)
+	if code, _, e := runClaim(t, root, "add", "--session", "lookahead", "--workspace", "feat-b"); code != 0 {
+		t.Fatalf("workspace lease: %d %s", code, e)
+	}
+	code, out, _ := runClaim(t, root, "check", "--session", "main", "--workspace", "feat-b")
+	if code != 3 || !strings.Contains(out, ".devrites/work/feat-b") || !strings.Contains(out, "lookahead") {
+		t.Fatalf("main check on leased workspace: %d %q", code, out)
+	}
+	if code, _, _ := runClaim(t, root, "check", "--session", "main", "--workspace", "feat-c"); code != 0 {
+		t.Fatalf("another workspace must stay free, got %d", code)
+	}
+	if code, _, _ := runClaim(t, root, "check", "--session", "lookahead", "--workspace", "feat-b"); code != 0 {
+		t.Fatalf("the holder's own check must be free, got %d", code)
+	}
+	// A positional control-tree path stays refused; only --workspace reaches it.
+	if code, _, _ := runClaim(t, root, "check", ".devrites/work/feat-b"); code != 2 {
+		t.Fatalf("positional .devrites path: want exit 2, got %d", code)
+	}
+	for _, bad := range []string{"../x", "a/b", ".."} {
+		if code, _, _ := runClaim(t, root, "add", "--session", "s", "--workspace", bad); code != 2 {
+			t.Fatalf("--workspace %q: want exit 2, got %d", bad, code)
+		}
+	}
+}
+
 func TestClaimRejectsBadInput(t *testing.T) {
 	root := claimTestRoot(t)
 	cases := [][]string{

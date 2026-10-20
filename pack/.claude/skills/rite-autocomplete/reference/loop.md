@@ -91,6 +91,13 @@ step 10 does not end the run: leave the sealed workspace unshipped with its
 (`/rite-spec <parent>-<n> "<objective>"` from the parent's `decisions.md` sequence)
 and re-enter step 1. Spend one workspace per opened continuation.
 
+When that workspace already exists because a [lookahead](lookahead.md) session
+planned it, do not specify it again. Wait while `devrites-engine claim check
+--workspace <child>` exits 3 (a live lookahead holds it), then set
+`.devrites/ACTIVE` to the child and resume from its cursor at step 1. A
+predecessor replan since its Vet blocks the child's readiness with
+`DRV-GATE-READINESS-STALE`; route that to `/rite-vet` before Build.
+
 Spend accounting is durable in `state.md` cursors, not chat. Before invoking the
 continuation, ensure the current workspace's `sequence_workspaces_remaining` is
 set — absent, write `max_workspaces - 1` and `sequence_position: 1` first — and

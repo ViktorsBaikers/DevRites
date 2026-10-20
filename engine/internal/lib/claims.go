@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 )
@@ -37,10 +38,13 @@ const (
 
 const claimUsage = `usage: devrites-engine claim <add|release|list|check> ...
 
-  claim add --session <id> [--ttl <minutes>] [--reason <s>] <path>...
+  claim add --session <id> [--ttl <minutes>] [--reason <s>] [--workspace <slug>] <path>...
   claim release --session <id> --id <claim-id>
   claim list [--session <id>] [--all]
-  claim check [--session <id>] <path>...
+  claim check [--session <id>] [--workspace <slug>] <path>...
+
+--workspace leases a whole feature workspace, so two root sessions never work
+one workspace at once (sequence lookahead).
 `
 
 type claimRecord struct {
@@ -184,6 +188,42 @@ func normalizeClaimPaths(raw []string) ([]string, error) {
 	return out, nil
 }
 
+// workspaceClaimPath is the lease path for one feature workspace. Only
+// --workspace reaches it; a positional .devrites path stays refused.
+func workspaceClaimPath(slug string) (string, error) {
+	if !devritespaths.ValidSlug(slug) {
+		return "", fmt.Errorf("--workspace expects a feature slug, got %q", slug)
+	}
+	return ".devrites/work/" + slug, nil
+}
+
+// claimTargets normalizes positional paths and adds each --workspace lease.
+func claimTargets(raw, workspaces []string) ([]string, error) {
+	if len(workspaces) == 0 {
+		return normalizeClaimPaths(raw)
+	}
+	var out []string
+	if len(raw) > 0 {
+		paths, err := normalizeClaimPaths(raw)
+		if err != nil {
+			return nil, err
+		}
+		out = paths
+	}
+	for _, slug := range workspaces {
+		p, err := workspaceClaimPath(slug)
+		if err != nil {
+			return nil, err
+		}
+		if slices.Contains(out, p) {
+			return nil, fmt.Errorf("duplicate workspace %q", slug)
+		}
+		out = append(out, p)
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
 func validSession(s string) bool {
 	if s == "" || len(s) > 128 {
 		return false
@@ -247,11 +287,14 @@ func newClaimID() string {
 func claimAdd(root string, args []string, stdout, stderr io.Writer) int {
 	session, reason := "", ""
 	ttl := claimDefaultTTL
-	var raw []string
+	var raw, workspaces []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--session":
 			session = argAt(args, i+1)
+			i++
+		case "--workspace":
+			workspaces = append(workspaces, argAt(args, i+1))
 			i++
 		case "--reason":
 			reason = argAt(args, i+1)
@@ -272,18 +315,22 @@ func claimAdd(root string, args []string, stdout, stderr io.Writer) int {
 			raw = append(raw, args[i])
 		}
 	}
-	_, code := addClaim(root, session, reason, ttl, raw, stdout, stderr)
+	_, code := addClaimTargets(root, session, reason, ttl, raw, workspaces, stdout, stderr)
 	return code
 }
 
 // addClaim records one claim and returns its id. It refuses, writing nothing,
 // while a live foreign session holds an overlapping path.
 func addClaim(root, session, reason string, ttl int, raw []string, stdout, stderr io.Writer) (string, int) {
+	return addClaimTargets(root, session, reason, ttl, raw, nil, stdout, stderr)
+}
+
+func addClaimTargets(root, session, reason string, ttl int, raw, workspaces []string, stdout, stderr io.Writer) (string, int) {
 	if !validSession(session) {
 		fmt.Fprintln(stderr, "claim: --session is required (1-128 chars: letters, digits, - _ . : /)")
 		return "", 2
 	}
-	paths, err := normalizeClaimPaths(raw)
+	paths, err := claimTargets(raw, workspaces)
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
 		return "", 2
@@ -454,11 +501,14 @@ func claimList(root string, args []string, stdout, stderr io.Writer) int {
 
 func claimCheck(root string, args []string, stdout, stderr io.Writer) int {
 	session := ""
-	var raw []string
+	var raw, workspaces []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--session":
 			session = argAt(args, i+1)
+			i++
+		case "--workspace":
+			workspaces = append(workspaces, argAt(args, i+1))
 			i++
 		default:
 			if strings.HasPrefix(args[i], "-") {
@@ -468,7 +518,7 @@ func claimCheck(root string, args []string, stdout, stderr io.Writer) int {
 			raw = append(raw, args[i])
 		}
 	}
-	paths, err := normalizeClaimPaths(raw)
+	paths, err := claimTargets(raw, workspaces)
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
 		return 2
