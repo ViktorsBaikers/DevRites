@@ -2,6 +2,16 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.1](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.0...v7.0.1) (2026-10-20)
+
+### Added
+
+* **no-release:** plan the next sequence continuation in a second session ([#150](https://github.com/ViktorsBaikers/DevRites/issues/150)) ([d4be5b0](https://github.com/ViktorsBaikers/DevRites/commit/d4be5b01d6e3a074718d4a5cd9a3ba0a5e52e9aa))
+
+### Fixed
+
+* **devrites:** a timing gate pins its protocol before Build ([#151](https://github.com/ViktorsBaikers/DevRites/issues/151)) ([2069caa](https://github.com/ViktorsBaikers/DevRites/commit/2069caa18199d9dd4664854eb3c6c8f599b8fdf2))
+
 ## [7.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.10.0...v7.0.0) (2026-10-20)
 
 ### ⚠ BREAKING CHANGES
