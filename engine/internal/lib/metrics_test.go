@@ -25,3 +25,36 @@ func TestMetricsSummaryReadsPastOversizedLine(t *testing.T) {
 		t.Fatalf("code=%d out=%q err=%q", code, stdout, stderr)
 	}
 }
+
+// A reviewer's Outcome line recorded at return feeds the per-role yield tally;
+// an abandon is a metric too, so lost waves show up in the summary.
+func TestDispatchOutcomeAndAbandonFeedSummary(t *testing.T) {
+	root, _ := newWorkspace(t, "build")
+	out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
+	run := func(want int, args ...string) {
+		t.Helper()
+		if code := RunDispatch(root, append([]string{"feat"}, args...), out, errOut); code != want {
+			t.Fatalf("dispatch %v: code=%d want %d\n%s", args, code, want, errOut)
+		}
+	}
+	run(0, "open", "--phase", "build", "--wave", "r1", "--role", "x", "--role", "y")
+	run(0, "start", "--wave", "r1", "--role", "x", "--handle", "h1")
+	run(0, "start", "--wave", "r1", "--role", "y", "--handle", "h2")
+	run(0, "seal", "--wave", "r1")
+	run(3, "return", "--wave", "r1", "--role", "x", "--outcome", "pass")
+	run(0, "return", "--wave", "r1", "--role", "x", "--outcome", "findings")
+	run(0, "return", "--wave", "r1", "--role", "y", "--outcome", "gap")
+	run(0, "open", "--phase", "build", "--wave", "r2", "--role", "x")
+	run(3, "abandon", "--wave", "r2", "--reason", "host session died")
+
+	out.Reset()
+	if code := RunMetrics(root, []string{"summary", "feat"}, out, errOut); code != 0 {
+		t.Fatalf("summary code=%d\n%s", code, errOut)
+	}
+	got := out.String()
+	for _, want := range []string{"outcomes: findings=1", "outcomes: gap=1", "abandon=1"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("summary lacks %q:\n%s", want, got)
+		}
+	}
+}

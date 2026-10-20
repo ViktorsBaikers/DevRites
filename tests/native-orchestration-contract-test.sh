@@ -282,6 +282,8 @@ expected = {
     "Bash(devrites-engine parallel lease-clear *)",
     "Bash(devrites-engine state resolve *)",
     "Bash(devrites-engine state merge-manifest *)",
+    "Bash(devrites-engine state set *)",
+    "Bash(devrites-engine state append *)",
     "Bash(devrites-engine state close *)",
     "Bash(devrites-engine gates scaffold *)",
     "Bash(devrites-engine gates status *)",

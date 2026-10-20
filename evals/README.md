@@ -26,6 +26,12 @@ Codex or Claude or claim to measure model behavior.
   trigger corpus for that set blocking too. `--advisory` still prints the full
   scoreboard with exit 0. Agent-owned files (filename prefix or
   `"agent"`) count for that agent only; they do not satisfy a skill's ledger row.
+- `benchmark/` holds human-run lifecycle benchmarks: a fixture with seeded defects,
+  a task, hidden probes, and `scripts/grade-lifecycle-benchmark.py`, which scores
+  acceptance, seeded-defect, and scope probes and reads cost from `metrics.jsonl`.
+  It is the quality guard for speed changes; see
+  [`benchmark/lifecycle-stock/README.md`](benchmark/lifecycle-stock/README.md).
+  CI proves only the grader (`tests/lifecycle-benchmark-grader-test.sh`).
 
 Use Codex or Claude's native evaluation/session facilities to measure routing or
 behavior. DevRites owns only the corpora and deterministic artifact invariants.

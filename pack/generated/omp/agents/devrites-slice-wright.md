@@ -215,7 +215,10 @@ Every key is required; use an empty array when there is nothing to report.
 **Before returning, check every requirement:** one minimal complete in-scope slice;
 project idiom/reuse; no slop; principles honored; real green output; every applicable
 topology/data/integration behavior proved (or exact vetted root proof `not-run`);
-bookkeeping returned only. Fix defects, report technical blockers, and escalate
+bookkeeping returned only. Then attack your claim as the reviewers will: code meets
+each claimed criterion's quoted acceptance text, not a later decision's looser reading
+(a conflict escalates); a repair opens no new race, stale read, or ordering gap; each
+claimed criterion has a test that fails without the change. Fix defects, report technical blockers, and escalate
 human-owned choices. Never silently ship a known gap.
 
 ## Tools / read-write mode

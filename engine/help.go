@@ -30,7 +30,7 @@ const (
   check dup [slug] [--all|--worktree|--staged|--base <ref>]
 `
 
-	stateUsage = `usage: devrites-engine state <resolve|merge-manifest|apply-bundle|close> ...
+	stateUsage = `usage: devrites-engine state <resolve|merge-manifest|apply-bundle|set|append|close> ...
 
   state resolve <qid> "<answer>"
   state resolve --drop <qid> ["<reason>"]
@@ -40,6 +40,8 @@ const (
   state resolve --human --batch <file>
   state merge-manifest <slug> [<predecessor>...]
   state apply-bundle <slug> <bundle.json>... [--dry-run]
+  state set <slug> <key>=<value>... [--unset <key>]...
+  state append <slug> <ledger.md> --heading "<text>" --body-file <path|->
   state close <slug>
 `
 
@@ -58,7 +60,7 @@ const (
   metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   metrics summary [slug] [--by-slice]
 `
-	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>]`
+	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap]`
 	claimUsageText = `usage: devrites-engine claim <add|release|list|check> ...
 
   claim add --session <id> [--ttl <minutes>] [--reason <s>] <path>...
@@ -89,6 +91,8 @@ const (
 	mergeManifestUsage  = "usage: devrites-engine state merge-manifest <slug> [<predecessor>...]"
 	applyBundleUsage    = "usage: devrites-engine state apply-bundle <slug> <bundle.json>... [--dry-run]"
 	closeUsage          = "usage: devrites-engine state close <slug>"
+	stateSetUsage       = "usage: devrites-engine state set <slug> <key>=<value>... [--unset <key>]..."
+	stateAppendUsage    = `usage: devrites-engine state append <slug> <ledger.md> --heading "<text>" --body-file <path|->`
 	observeSliceUsage   = "usage: devrites-engine observe slice <slug> <SLICE-ID>"
 	observeSummaryUsage = "usage: devrites-engine observe summary [slug]"
 	gatesFamilyUsage    = `usage: devrites-engine gates <scaffold|status|run|reverify|lint|attest|abandon> <slug> ...
@@ -291,6 +295,10 @@ func helpState(rest []string) string {
 		return mergeManifestUsage
 	case "apply-bundle":
 		return applyBundleUsage
+	case "set":
+		return stateSetUsage
+	case "append":
+		return stateAppendUsage
 	case "close":
 		return closeUsage
 	default:

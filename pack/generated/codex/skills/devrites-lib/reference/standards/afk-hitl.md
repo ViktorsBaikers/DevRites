@@ -211,6 +211,9 @@ Wherever a gap, checkpoint, or non-trivial decision surfaces (`$rite-spec`, `$ri
   sequential packets, then obtain final confirmation. Materially distinct options MUST NOT
   be silently dropped, merged, or preselected to fit the UI.
 - Recommend for project conventions, stack, scale, and domain, not a generic default.
+- **One visit per decision chain.** Ask the follow-ups an answer predictably triggers (a
+  dependency's lock lines, a rerun after a failed measurement) in the same entry or one
+  `--batch`; each link asked alone costs one human wait.
 
 **HITL** renders the set via `AskUserQuestion`; the human's pick resolves the gate **in place**.
 **AFK** auto-picks option 1 for gates it may auto-handle. Record the chosen option verbatim and
@@ -295,7 +298,8 @@ boundary owns any such request and requires explicit user approval.
 ## `state.md` `Awaiting human` block
 
 When a HITL gate fires, `$rite-build` sets cursor `status` to `awaiting_human` and
-`next_action` to `$rite-resolve <qid> "<answer>"`, then writes the `Awaiting human` table
+`next_action` to `$rite-resolve <qid> "<answer>"` via `devrites-engine state set` (under AFK
+it names questions the sentinel auto-picks: resolve those unless irreversible-risk), then writes the `Awaiting human` table
 (`question_id`, `gate`, `blocking_slices`) owned by
 [`state-workspace.md`](../../../rite-spec/reference/state-workspace.md#statemd-template) § state.md template.
 The question text, `proposed` answer, and `raised_at` live in the `questions.md` entry.

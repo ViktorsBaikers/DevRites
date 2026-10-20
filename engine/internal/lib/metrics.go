@@ -127,17 +127,21 @@ func metricsRecord(root string, args []string, stdout, stderr io.Writer) int {
 // bundle emission). It never fails the caller: a metrics write is observability,
 // not a gate.
 func recordMetric(root, slug, phase, event, role string, bytes int64) {
+	appendMetric(root, slug, metricEvent{Phase: phase, Event: event, Role: role, Bytes: bytes})
+}
+
+// recordMetricNote is recordMetric for an event that carries a note, such as a
+// return's reviewer outcome or an abandon reason.
+func recordMetricNote(root, slug, phase, event, role, note string) {
+	appendMetric(root, slug, metricEvent{Phase: phase, Event: event, Role: role, Note: note})
+}
+
+func appendMetric(root, slug string, entry metricEvent) {
 	dir, err := devritespaths.ExistingFeatureDirChecked(root, slug)
 	if err != nil {
 		return
 	}
-	entry := metricEvent{
-		TS:    time.Now().UTC().Format(time.RFC3339),
-		Phase: phase,
-		Event: event,
-		Role:  role,
-		Bytes: bytes,
-	}
+	entry.TS = time.Now().UTC().Format(time.RFC3339)
 	line, err := json.Marshal(entry)
 	if err != nil {
 		return
@@ -197,8 +201,9 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		byKind map[string]int
 	}
 	type roleAgg struct {
-		events int
-		bytes  int64
+		events   int
+		bytes    int64
+		outcomes map[string]int
 	}
 	phases := map[string]*phaseAgg{}
 	roles := map[string]*roleAgg{}
@@ -237,11 +242,14 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		if ev.Role != "" {
 			ragg, ok := roles[ev.Role]
 			if !ok {
-				ragg = &roleAgg{}
+				ragg = &roleAgg{outcomes: map[string]int{}}
 				roles[ev.Role] = ragg
 			}
 			ragg.events++
 			ragg.bytes += ev.Bytes
+			if outcome, ok := strings.CutPrefix(ev.Note, "outcome="); ok && ev.Event == "return" {
+				ragg.outcomes[outcome]++
+			}
 		}
 		totalEvents++
 		totalBytes += ev.Bytes
@@ -274,7 +282,16 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "  roles:")
 		for _, role := range orderedRoles {
 			agg := roles[role]
-			fmt.Fprintf(stdout, "    %-24s events=%d bytes=%d\n", role, agg.events, agg.bytes)
+			fmt.Fprintf(stdout, "    %-24s events=%d bytes=%d", role, agg.events, agg.bytes)
+			if len(agg.outcomes) > 0 {
+				tally := make([]string, 0, len(agg.outcomes))
+				for outcome, n := range agg.outcomes {
+					tally = append(tally, fmt.Sprintf("%s=%d", outcome, n))
+				}
+				sort.Strings(tally)
+				fmt.Fprintf(stdout, " outcomes: %s", strings.Join(tally, " "))
+			}
+			fmt.Fprintln(stdout)
 		}
 	}
 	fmt.Fprintf(stdout, "  total      events=%d bytes=%d", totalEvents, totalBytes)

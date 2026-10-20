@@ -31,7 +31,7 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"check", "dup", "--help"}, want: "check dup [slug]"},
 		{args: []string{"check", "drift", "--help"}, want: "check drift <slug>"},
 		{args: []string{"detect", "--help"}, want: "detect commands [--root <dir>]"},
-		{args: []string{"state", "--help"}, want: "state <resolve|merge-manifest|apply-bundle|close>"},
+		{args: []string{"state", "--help"}, want: "state <resolve|merge-manifest|apply-bundle|set|append|close>"},
 		{args: []string{"state", "-h"}, want: "state resolve"},
 		{args: []string{"state", "help"}, want: "state close <slug>"},
 		{args: []string{"state", "resolve", "--help"}, want: `state resolve <qid> "<answer>"`},

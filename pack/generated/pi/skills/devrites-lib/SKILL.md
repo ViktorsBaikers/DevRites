@@ -81,7 +81,8 @@ The engine is limited to:
   authoring rules in
   [`reference/standards/gates.md`](reference/standards/gates.md).
 - Atomic state: `state resolve` for answer/drop/batch, `state merge-manifest`
-  for the predecessor-chain union, transactional `state close`, and `migrate`
+  for the predecessor-chain union, `state set`/`state append` for cursor fields and
+  ledger sections, transactional `state close`, and `migrate`
   for fail-closed workspace-schema normalization.
 - `secret-scan`, `open-visual`, and `version` remain read-only helpers.
 - Offline, local `install`, `update`, and `uninstall`; their shell/npm callers
