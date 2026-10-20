@@ -154,7 +154,8 @@ Before an active caller moves backward, it copies its current phase and
 non-empty action into the two return rows. Nested Plan, Vet, Build, and proof
 work preserves that valid cursor. Once the prerequisite chain is green, the
 controlling caller restores the saved phase/action and removes both rows in one
-rewrite. A real HITL or parked-recovery stop retains the cursor for cold
+rewrite (`devrites-engine state set <slug> phase=<p> next_action=<a> --unset
+return_phase --unset return_next_action`). A real HITL or parked-recovery stop retains the cursor for cold
 resume. Never overwrite an existing valid return cursor, and preserve every
 unrelated Markdown byte. `/rite-clarify` applies its stricter native cursor protocol in `/rite-clarify`.
 

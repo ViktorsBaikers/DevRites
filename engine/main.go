@@ -67,6 +67,10 @@ Usage:
   devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
   devrites-engine state apply-bundle <slug> <bundle.json>... [--dry-run]
                                          Validate and apply plan-drafter hunk bundles atomically
+  devrites-engine state set <slug> <key>=<value>... [--unset <key>]
+                                         Write state.md cursor fields atomically (known phase, no return-cursor overwrite)
+  devrites-engine state append <slug> <ledger.md> --heading "<text>" --body-file <path|->
+                                         Append one ## section to an append-only ledger; refuses a duplicate heading
   devrites-engine state close <slug>       Archive a shipped feature and clear ACTIVE
   devrites-engine migrate <slug> [--dry-run] [--answer id=choice]  Normalize an older-schema workspace to the current schema
   devrites-engine secret-scan [--staged] [--stdin] [slug]  Scan exact staged blobs, stdin, or touched files; HIGH blocks
@@ -162,7 +166,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "overhaul":
 		return overhaul.Run(args[1:], stdout, stderr)
 	case "state":
-		return cmdState(root, args[1:], stdout, stderr)
+		return cmdState(root, args[1:], stdin, stdout, stderr)
 	case "migrate":
 		return lib.Migrate(root, args[1:], stdout, stderr)
 	case "secret-scan":
@@ -242,7 +246,7 @@ func cmdCandidate(root string, args []string, stdout, stderr io.Writer) int {
 	return exitOK
 }
 
-func cmdState(root string, args []string, stdout, stderr io.Writer) int {
+func cmdState(root string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		fmt.Fprint(stderr, stateUsage)
 		return exitUsage
@@ -254,6 +258,10 @@ func cmdState(root string, args []string, stdout, stderr io.Writer) int {
 		return lib.RunMergeManifest(root, args[1:], stdout, stderr)
 	case "apply-bundle":
 		return lib.RunApplyBundle(root, args[1:], stdout, stderr)
+	case "set":
+		return lib.RunStateSet(root, args[1:], stdout, stderr)
+	case "append":
+		return lib.RunStateAppend(root, args[1:], stdin, stdout, stderr)
 	case "close":
 		return lib.CloseOut(root, args[1:], stdout, stderr)
 	default:

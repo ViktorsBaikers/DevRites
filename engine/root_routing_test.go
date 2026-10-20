@@ -171,7 +171,7 @@ func TestNestedCommandFamilyUsageListsOnlyRetainedCommands(t *testing.T) {
 		removed []string
 	}{
 		{args: []string{"check"}, want: "check <candidate|readiness|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup>"},
-		{args: []string{"state"}, want: "state <resolve|merge-manifest|apply-bundle|close>", removed: []string{"clarify", "tick-afk", "recovery"}},
+		{args: []string{"state"}, want: "state <resolve|merge-manifest|apply-bundle|set|append|close>", removed: []string{"clarify", "tick-afk", "recovery"}},
 	} {
 		t.Run(test.args[0], func(t *testing.T) {
 			var stdout, stderr bytes.Buffer

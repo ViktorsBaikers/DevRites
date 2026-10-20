@@ -272,6 +272,7 @@ expected = {
     "Bash(devrites-engine migrate *)",
     "Bash(devrites-engine parallel status *)",
     "Bash(devrites-engine parallel select *)",
+    "Bash(devrites-engine parallel add *)",
     "Bash(devrites-engine parallel create *)",
     "Bash(devrites-engine parallel record-green *)",
     "Bash(devrites-engine parallel integrate *)",
@@ -282,6 +283,9 @@ expected = {
     "Bash(devrites-engine parallel lease-clear *)",
     "Bash(devrites-engine state resolve *)",
     "Bash(devrites-engine state merge-manifest *)",
+    "Bash(devrites-engine state apply-bundle *)",
+    "Bash(devrites-engine state set *)",
+    "Bash(devrites-engine state append *)",
     "Bash(devrites-engine state close *)",
     "Bash(devrites-engine gates scaffold *)",
     "Bash(devrites-engine gates status *)",
@@ -304,6 +308,13 @@ expected = {
     "Bash(devrites-engine secret-scan *)",
     "Bash(devrites-engine open-visual *)",
     "Bash(devrites-engine version)",
+    "Bash(devrites-engine --help)",
+    "Bash(devrites-engine help)",
+    "Bash(devrites-engine help *)",
+    "Bash(devrites-engine check --help)",
+    "Bash(devrites-engine state --help)",
+    "Bash(devrites-engine parallel --help)",
+    "Bash(devrites-engine gates --help)",
 }
 if allowed != expected:
     raise SystemExit(f"engine allowlist drift: missing={expected-allowed}, extra={allowed-expected}")

@@ -58,7 +58,7 @@ If the candidate diff has no matching surfaces, record
    (`dispatch ... start --wave <w> --role <r> --handle <id>`), then `seal` —
    seal fails until every declared role has a distinct handle, which makes a
    serial launch-then-wait pattern impossible to record. Record each completion
-   with `dispatch ... return`; `return` refuses before seal. `dispatch status`
+   with `dispatch ... return` (reviewers add `--outcome <findings|no-findings|gap>`); `return` refuses before seal. `dispatch status`
    exits nonzero while the wave is open, sealed, or abandoned. `start`/`return`
    auto-record the dispatch/return metrics events — no separate ledger call. If
    an opened wave cannot obtain every handle or reach `seal`, run

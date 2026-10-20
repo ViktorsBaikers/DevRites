@@ -1,0 +1,16 @@
+{
+  "name": "lifecycle-stock",
+  "probe_package": "stock",
+  "probe_file": "probe_test.go",
+  "probes": [
+    {"id": "A1", "kind": "acceptance", "test": "TestProbeA1ReleaseReturnsStock"},
+    {"id": "A2", "kind": "acceptance", "test": "TestProbeA2OverReleaseRefused"},
+    {"id": "D1", "kind": "seeded", "test": "TestProbeD1ReserveExactRemainder"},
+    {"id": "D2", "kind": "seeded", "test": "TestProbeD2NonPositiveQuantityRefused"},
+    {"id": "D3", "kind": "seeded", "test": "TestProbeD3ConcurrentCallersStayConsistent", "race": true}
+  ],
+  "unchanged_files": [
+    {"id": "S1", "path": "stock/loader.go"},
+    {"id": "S2", "path": "go.mod"}
+  ]
+}

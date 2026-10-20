@@ -156,6 +156,9 @@ Before any `rite-*` skill stops:
   [`state-workspace.md`](../../../rite-spec/reference/state-workspace.md#statemd-template) § state.md template;
   resume via `$rite-resolve <qid> "<answer>"`. See [`afk-hitl.md`](afk-hitl.md) for the
   full AFK / HITL contract.
+- Bookkeeping write? → cursor fields via `devrites-engine state set <slug> key=value…
+  [--unset key]`; a new ledger section via `state append <slug> <ledger> --heading "<id>"
+  --body-file <path|->`. Never splice workspace Markdown with an ad-hoc script or regex.
 
 A skill that stops without doing this leaves the workspace incomplete.
 

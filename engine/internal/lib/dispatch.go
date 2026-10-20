@@ -21,15 +21,16 @@ import (
 // fan-out cannot silently degrade to serial (open -> every role started ->
 // seal -> returns -> complete). start/return also auto-record metrics events.
 //
-//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>]
+//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap]
 
-const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>]
+const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
 role has a distinct handle; return fails before seal. status --wave exits
 nonzero until that wave is complete; bare status lists every wave and exits
 nonzero while any wave is open or sealed (abandoned waves are listed only).
-A complete wave cannot be abandoned.
+A complete wave cannot be abandoned. return --outcome records the role's
+Outcome line in metrics.jsonl, so metrics summary reports reviewer yield.
 
 A build wave with a wright role must name its slice(s) with --slice; a vet
 wave may (slice-bound recheck). Every 5 rounds of one kind on one slice, the
@@ -117,7 +118,7 @@ func nowStamp() string { return time.Now().UTC().Format(time.RFC3339) }
 
 // RunDispatch implements the dispatch wave state machine.
 func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
-	var slug, sub, phase, wave, role, handle, reason, review, contract, packet string
+	var slug, sub, phase, wave, role, handle, reason, review, contract, packet, outcome string
 	var roles, sliceIDs []string
 	var positional []string
 	for i := 0; i < len(args); i++ {
@@ -142,6 +143,8 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			contract = value
 		case "--packet":
 			packet = value
+		case "--outcome":
+			outcome = value
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(stderr, "dispatch: unknown flag %q\n", args[i])
@@ -165,7 +168,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	// an update and strand the wave short of complete.
 	code := 0
 	if err := state.WithFeatureLock(root, slug, func() error {
-		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, stdout, stderr)
+		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, stdout, stderr)
 		return nil
 	}); err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -174,7 +177,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet string, stdout, stderr io.Writer) int {
+func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome string, stdout, stderr io.Writer) int {
 	f, path, err := loadDispatch(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -304,6 +307,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if r.Returned {
 			return fail("role %q already returned", role)
 		}
+		if outcome != "" && !slices.Contains([]string{"findings", "no-findings", "gap"}, outcome) {
+			return fail("--outcome %q is not findings, no-findings, or gap", outcome)
+		}
 		r.Returned, r.ReturnedAt = true, nowStamp()
 		all := true
 		for _, o := range w.Roles {
@@ -317,7 +323,11 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if err := saveDispatch(path, f); err != nil {
 			return fail("%v", err)
 		}
-		recordMetric(root, slug, w.Phase, "return", role, 0)
+		note := ""
+		if outcome != "" {
+			note = "outcome=" + outcome
+		}
+		recordMetricNote(root, slug, w.Phase, "return", role, note)
 		fmt.Fprintf(stdout, "dispatch: %s returned (wave %s %s)\n", role, wave, w.State)
 		return 0
 
@@ -374,10 +384,14 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if strings.TrimSpace(reason) == "" {
 			return fail("--reason is required (non-empty, recorded in dispatch.json)")
 		}
+		already := w.State == "abandoned"
 		w.State = "abandoned"
 		w.Reason = reason
 		if err := saveDispatch(path, f); err != nil {
 			return fail("%v", err)
+		}
+		if !already {
+			recordMetricNote(root, slug, w.Phase, "abandon", "", reason)
 		}
 		fmt.Fprintf(stdout, "dispatch: wave %s abandoned: %s\n", wave, reason)
 		return fail("wave %q is abandoned — HANDOFF REQUIRED: %s", wave, reason)
