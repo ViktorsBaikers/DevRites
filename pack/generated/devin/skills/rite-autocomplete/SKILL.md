@@ -1,10 +1,10 @@
 ---
 name: rite-autocomplete
 description: Run the full DevRites lifecycle unattended; --ship continues to the final Git approval boundary. Use for one-shot autonomous work; not for a single phase.
-argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] [--cross-model]"
+argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] [--cross-model] [--lookahead]"
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"],"rootOnly":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/workflow-artifacts.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"lookahead":["rite-autocomplete/reference/lookahead.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"],"rootOnly":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/workflow-artifacts.md","rite-autocomplete/reference/lookahead.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --phase autocomplete` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -68,7 +68,7 @@ executable controller/harness/bundle bytes or a missing writer, read
   not a stop either: follow it in your next tool call, never in a text-only
   acknowledgement.
 - Parse flags only from this invocation. `--ship`, `--yolo`, `--max-slices`,
-  `--parallel`, `--full`, and `--cross-model` activate only as exact standalone
+  `--parallel`, `--full`, `--cross-model`, and `--lookahead` activate only as exact standalone
   tokens in `$ARGUMENTS`; examples or earlier messages can never arm them.
   `--max-slices` must occur once and be followed by a positive base-10 integer;
   `--parallel` must occur once and be followed by a base-10 integer in `1`–`10`.
@@ -80,6 +80,10 @@ executable controller/harness/bundle bytes or a missing writer, read
 - Vet every plan. Cross-model is off unless the current invocation arms it.
 
 ## Workflow
+
+With `--lookahead` (trigger `lookahead`), follow
+[`lookahead.md`](reference/lookahead.md) instead of the steps below: plan the
+next sequence continuation through Vet in a second session, then stop.
 
 1. **Orient and parse.** Resolve the explicit or active slug; when a workspace exists,
    require its `state.md` and read its cursor; a fresh idea starts empty at step 2.

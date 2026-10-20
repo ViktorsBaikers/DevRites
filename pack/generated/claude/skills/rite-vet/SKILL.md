@@ -211,7 +211,9 @@ plan declares a root-authored executable workflow file, read
    `marker sweep:` line is recorded in `eng-review.md`; a kept hit blocks READY. Write phase/next step and emit one
    `Readiness inputs SHA-256` with
    `devrites-engine check readiness --emit-binding <slug>`; normal readiness check
-   must pass. Record the per-input drift baseline alongside it:
+   must pass. A `sequence_lookahead: yes` workspace also records one
+   `Predecessor readiness: <predecessor> <digest>` line from the predecessor's
+   `--emit-binding` hex; readiness re-checks it. Record the per-input drift baseline alongside it:
    `devrites-engine check drift <slug> --record` — a later stale binding then
    names the exact artifact that moved instead of "something changed". An `ADVISORY
    proportion:` line names a slice whose proof outgrew its ACs: move its rows without a
