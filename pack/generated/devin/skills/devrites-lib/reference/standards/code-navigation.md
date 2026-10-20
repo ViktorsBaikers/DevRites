@@ -128,18 +128,20 @@ authoritative.
 ## Tool availability
 
 - **MCP:** Claude hosts expose `mcp__codebase-memory-mcp__<tool>` (allowlisted
-  in `.claude/settings.json` and agent `tools:` lines); generated omp agents
-  list the read-only tools as `mcp__codebase_memory_mcp_<tool>`. Generated Pi
-  agents list none: pi-subagents fails a child whose `tools:` names a tool it
-  cannot load. A missing server offers no tools — use the fallback column.
+  in `.claude/settings.json` and agent `tools:` lines). omp subagents and
+  Codex children inherit every MCP server of the parent session (omp names
+  the tools `mcp__codebase_memory_mcp_<tool>`; a Codex agent file cannot add
+  servers). Generated Pi agents list none: pi-subagents fails a child whose
+  `tools:` names a tool it cannot load. A missing server offers no tools — use
+  the fallback column.
 - **CLI** when the host exposes no MCP tools (e.g. Devin agents via `exec`,
   Pi agents via `bash`):
   `codebase-memory-mcp cli <tool> --project <repo root> --format json` with
   kebab-case flags (`--function-name X --direction inbound --include-tests`);
   repeat a flag for array values. Exit 1 means the tool returned an error.
-- **Read-only sandbox** (Codex read-only children) or no tool route at all: the
-  CLI cannot run in a read-only sandbox (it writes daemon locks outside the
-  workspace). Use **parent handoff**: the root runs the queries and puts the
+- **Read-only sandbox** or no tool route at all: the CLI cannot run in a
+  read-only sandbox (it writes daemon locks outside the workspace). Use
+  **parent handoff**: the root runs the queries and puts the
   project, each query, its raw rows, cited paths, and coverage status in the
   dispatch packet. Raw query output is input, like a diff; never add the root's
   interpretation ([`agents.md`](agents.md) seeding rule). A child whose packet

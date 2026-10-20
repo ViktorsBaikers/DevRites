@@ -1,7 +1,7 @@
 ---
 name: fast-builder
 description: "Write-capable builder for /rite-fast. Implements one approved slice, or one batch of accepted gap, review, or proof fixes, inside exact paths, with code and tests in the project's idiom. Runs no test suite and writes no workspace files."
-tools: read, edit, write, bash, find, grep, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_edit, ctx_patch, ctx_shell
+tools: read, edit, write, bash, find, grep
 inheritProjectContext: true
 ---
 

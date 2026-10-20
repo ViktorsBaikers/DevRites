@@ -142,12 +142,10 @@ _omp_map_tools() {
 }
 
 # omp treats frontmatter tools: as a hard allowlist for extension/MCP tools,
-# so ambient lean-ctx / lens tools are dropped unless named. Append those
+# so ambient lens tools are dropped unless named. Append those read-only
 # names after the mapped builtins (preserve base order). Unknown names are
-# dropped non-fatally. Read-only agents stay read-only: ctx_edit / ctx_patch
-# only when the base already has edit or write; ctx_shell only when the
-# base already has bash.
-_OMP_EXTENSION_NAV_TOOLS="ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics"
+# dropped non-fatally.
+_OMP_EXTENSION_NAV_TOOLS="symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics"
 
 _omp_csv_has() {
   case ", ${1}, " in
@@ -182,30 +180,6 @@ _omp_append_extension_tools() {
     [ -z "$_tok" ] && continue
     _out="$(_omp_csv_append "$_out" "$_tok")"
   done < <(printf '%s\n' "$_OMP_EXTENSION_NAV_TOOLS" | tr ',' '\n')
-  if _omp_csv_has "$_base" "edit" || _omp_csv_has "$_base" "write"; then
-    _out="$(_omp_csv_append "$_out" "ctx_edit")"
-    _out="$(_omp_csv_append "$_out" "ctx_patch")"
-  fi
-  if _omp_csv_has "$_base" "bash"; then
-    _out="$(_omp_csv_append "$_out" "ctx_shell")"
-  fi
-  printf '%s' "$_out"
-}
-
-# Agents granted the codebase-memory-mcp server (or no tools line at all) get its
-# read-only tools in omp's MCP naming. Unknown names are dropped non-fatally, so
-# hosts without the server are unaffected; the write tools are never listed.
-_OMP_CODE_INDEX_TOOLS="search_graph trace_path get_code_snippet get_file_outline query_graph get_architecture search_code get_graph_schema list_projects index_status detect_changes check_index_coverage"
-
-_omp_append_code_index_tools() {
-  local _base="$1" _raw="$2" _out="$1" _tool
-  if [ -n "$_raw" ] && ! _omp_csv_has "$(printf '%s' "$_raw" | sed 's/, */, /g')" "mcp__codebase-memory-mcp__*"; then
-    printf '%s' "$_base"
-    return
-  fi
-  for _tool in $_OMP_CODE_INDEX_TOOLS; do
-    _out="$(_omp_csv_append "$_out" "mcp__codebase_memory_mcp_${_tool}")"
-  done
   printf '%s' "$_out"
 }
 
@@ -224,7 +198,7 @@ gen_omp_agent() {
   _skills="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^skills:/{sk=1; sub(/^skills:[[:space:]]*/, ""); if ($0 != "") print; next} sk && /^[[:space:]]*-[[:space:]]*/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print; next} {sk=0}' "$_src" | paste -sd, - | sed 's/,/, /g')"
   [ -n "$_name" ] || _name="$(basename "$_src" .md)"
   [ -n "$_desc" ] || _desc="DevRites custom agent."
-  _tools="$(_omp_append_code_index_tools "$(_omp_append_extension_tools "$(_omp_map_tools "$_tools_raw" "$_name")")" "$_tools_raw")"
+  _tools="$(_omp_append_extension_tools "$(_omp_map_tools "$_tools_raw" "$_name")")"
   _desc_tmp="$TMP_GEN_DIR/omp-agent-desc-$(basename "$_src").txt"
   _desc_omp="$TMP_GEN_DIR/omp-agent-desc-$(basename "$_src").omp.txt"
   printf '%s' "$_desc" > "$_desc_tmp"

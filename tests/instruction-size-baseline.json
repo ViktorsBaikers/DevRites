@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1519173,
+  "total_bytes": 1519242,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -76,7 +76,7 @@
     "pack/.claude/skills/devrites-lib/reference/standards/audit-coverage.md": 5604,
     "pack/.claude/skills/devrites-lib/reference/standards/browser-proof-checklist.md": 2500,
     "pack/.claude/skills/devrites-lib/reference/standards/ci-cd.md": 3941,
-    "pack/.claude/skills/devrites-lib/reference/standards/code-navigation.md": 9375,
+    "pack/.claude/skills/devrites-lib/reference/standards/code-navigation.md": 9444,
     "pack/.claude/skills/devrites-lib/reference/standards/code-review.md": 12084,
     "pack/.claude/skills/devrites-lib/reference/standards/coding-style.md": 3068,
     "pack/.claude/skills/devrites-lib/reference/standards/context-hygiene.md": 7504,

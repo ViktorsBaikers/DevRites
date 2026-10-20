@@ -442,7 +442,10 @@ prints the setting to add. Once you edit one the installer created, it is
 yours: update, uninstall, and `--force` leave it in place. On Devin CLI, dispatch goes through
 `run_subagent` with the exact `devrites-<role>` profile, and a missing profile
 stops for HITL instead of substituting `subagent_general`. Profiles load when a
-session starts, so reopen the project after installing.
+session starts, so reopen the project after installing. pi-subagents refuses a
+child whose `tools:` names a tool it cannot load, so pi agents list only Pi's
+built-in tools; grant extension tools on one machine with
+`subagents.agentOverrides.<agent>.tools` in Pi settings.
 
 DevRites is installed through npm or the Bash bootstrap. It is not distributed
 through Claude Code or Codex plugin stores.

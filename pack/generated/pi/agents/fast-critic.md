@@ -1,7 +1,7 @@
 ---
 name: fast-critic
 description: "Read-only critic for /rite-fast. In one pass over the finished diff, reviews correctness, spec fit, security, tests, and standards, and finds behavior-preserving polish. Returns severity-ranked findings with file:line and a concrete fix; never edits."
-tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
+tools: read, grep, find, bash
 inheritProjectContext: true
 ---
 

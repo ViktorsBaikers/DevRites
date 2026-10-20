@@ -1,7 +1,7 @@
 ---
 name: devrites-frontend-reviewer
 description: "Reviews one DevRites UI feature for /rite-seal from a fresh context. Checks UX flow, accessibility, responsive behavior, design-system alignment, and AI slop independently and adversarially."
-tools: read, grep, glob, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell, mcp__codebase_memory_mcp_search_graph, mcp__codebase_memory_mcp_trace_path, mcp__codebase_memory_mcp_get_code_snippet, mcp__codebase_memory_mcp_get_file_outline, mcp__codebase_memory_mcp_query_graph, mcp__codebase_memory_mcp_get_architecture, mcp__codebase_memory_mcp_search_code, mcp__codebase_memory_mcp_get_graph_schema, mcp__codebase_memory_mcp_list_projects, mcp__codebase_memory_mcp_index_status, mcp__codebase_memory_mcp_detect_changes, mcp__codebase_memory_mcp_check_index_coverage
+tools: read, grep, glob, bash, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics
 autoloadSkills: devrites-frontend-craft
 ---
 
