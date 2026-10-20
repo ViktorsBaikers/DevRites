@@ -58,3 +58,31 @@ func TestDispatchOutcomeAndAbandonFeedSummary(t *testing.T) {
 		}
 	}
 }
+
+// Stored-return notes feed the per-role resolution tally: a key raised again
+// on the same slice is re-raised, one a later same-slice return drops is
+// resolved, and one with no later same-slice return is still open.
+func TestMetricsSummaryFindingResolution(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	ret := func(role, note string) string {
+		return `{"ts":"2026-01-01T00:00:00Z","phase":"vet","event":"return","role":"` + role + `","note":"` + note + `"}` + "\n"
+	}
+	a, b := "finding=code-reviewer|SLICE-001|a.go|AC-001|important", "finding=code-reviewer|SLICE-001|b.go|AC-002|critical"
+	ledger := ret("code-reviewer", "outcome=findings counts=critical=1,important=1 slice=SLICE-001 late=1 "+a+" "+b) +
+		ret("code-reviewer", "outcome=findings counts=important=1 slice=SLICE-001 late=0 "+a) +
+		ret("code-reviewer", "outcome=findings counts=nit=1 slice=SLICE-002 late=0 finding=code-reviewer|SLICE-002|c.go|-|nit") +
+		ret("test-analyst", "outcome=no-findings")
+	if err := os.WriteFile(filepath.Join(featureDir, MetricsFile), []byte(ledger), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d err=%q", code, stderr)
+	}
+	got := stdout.String()
+	for _, want := range []string{"outcomes: findings=3 resolution: resolved=1 re-raised=1 open=2 late=1", "outcomes: no-findings=1\n"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("summary lacks %q:\n%s", want, got)
+		}
+	}
+}

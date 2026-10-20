@@ -87,9 +87,8 @@ hotspot → `no-findings` naming the files measured.
 Return the report in this shape:
 
 ```
-Simplification review (<slug>) — independent
 Outcome: <findings | no-findings | gap>
-Counts: <n> Suggestion · <n> Nit · <n> FYI
+Counts: suggestion=<n> nit=<n> fyi=<n> gap=<n>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Fences (do not remove — reason unclear): file:line — what it seems to guard
 Hotspots (most complex; addressed or left + why): file:line — note

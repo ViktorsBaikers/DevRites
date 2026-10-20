@@ -53,6 +53,7 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"dispatch", "help"}, want: "devrites-engine dispatch <slug>"},
 		{args: []string{"dispatch", "x", "open", "--help"}, want: "devrites-engine dispatch <slug>"},
 		{args: []string{"dispatch", "--help"}, want: "[--slice SLICE-###] [--reslice-review <DRIFT-ID>]"},
+		{args: []string{"dispatch", "return", "--help"}, want: "[--outcome findings|no-findings|gap] [--result <file>]"},
 		{args: []string{"context", "--help"}, want: "[--role <r>] [--slice <SLICE-###>]"},
 		{args: []string{"metrics", "--help"}, want: "metrics summary [slug] [--by-slice]"},
 		{args: []string{"check", "--help"}, want: "check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]"},

@@ -83,23 +83,137 @@ variant go-mod "$BENCH/reference/fixed/stock.go"
 printf '\n// tidied\n' >>"$T/go-mod/go.mod"
 expect go-mod S1=pass S2=fail
 
-# Cost is read from the run's metrics ledger and question log.
-mkdir -p "$T/fixed/.devrites/work/feat"
-cat >"$T/fixed/.devrites/work/feat/metrics.jsonl" <<'EOF'
+# Cost is read from the run's metrics ledger, dispatch.json, and question log.
+# Wall 09:40-10:19 (39 min); blocking waits 09:45-09:55 and 10:10-10:14 (14 min,
+# the advisory one does not count); dispatches 10:00-10:12, 10:13-10:18 and an
+# overlapping 10:14-10:17 (20 agent minutes, 17 covered). The 10:10-10:14 wait
+# overlaps dispatches and is subtracted once: root-only = 39 - 28 = 11 of 25 active.
+W="$T/fixed/.devrites/work/feat"
+mkdir -p "$W"
+cat >"$W/metrics.jsonl" <<'EOF'
+{"ts":"2026-10-20T09:40:00Z","phase":"spec","event":"context","role":"devrites-spec-writer","bytes":1000}
 {"ts":"2026-10-20T10:00:00Z","phase":"build","event":"dispatch","role":"devrites-slice-wright"}
 {"ts":"2026-10-20T10:12:00Z","phase":"build","event":"return","role":"devrites-slice-wright"}
+{"ts":"2026-10-20T10:13:00Z","phase":"build","event":"context","role":"devrites-code-reviewer","bytes":500}
 {"ts":"2026-10-20T10:13:00Z","phase":"build","event":"dispatch","role":"devrites-code-reviewer"}
 {"ts":"2026-10-20T10:18:00Z","phase":"build","event":"return","role":"devrites-code-reviewer","note":"outcome=findings"}
 {"ts":"2026-10-20T10:19:00Z","phase":"build","event":"abandon","note":"host session died"}
 EOF
-printf '# Questions\n\n## q-2026-10-20-001\nstatus: answered\n' >"$T/fixed/.devrites/work/feat/questions.md"
+cat >"$W/dispatch.json" <<'EOF'
+{"waves": {
+  "build-1": {"phase": "build", "state": "complete", "roles": {
+    "devrites-slice-wright": {"handle": "Wright1", "started": "2026-10-20T10:00:00Z", "returned": true, "returned_at": "2026-10-20T10:12:00Z"}}},
+  "review-1": {"phase": "build", "state": "complete", "roles": {
+    "devrites-code-reviewer": {"handle": "Reviewer1", "started": "2026-10-20T10:13:00Z", "returned": true, "returned_at": "2026-10-20T10:18:00Z"},
+    "devrites-security-reviewer": {"handle": "Security1", "started": "2026-10-20T10:14:00Z", "returned": true, "returned_at": "2026-10-20T10:17:00Z"}}},
+  "build-2": {"phase": "build", "state": "abandoned", "roles": {
+    "devrites-slice-wright": {"handle": "Wright2", "started": "2026-10-20T10:18:30Z"}}}
+}}
+EOF
+cat >"$W/questions.md" <<'EOF'
+# Questions
+
+## q-2026-10-20-001
+status: answered
+gate: blocking
+raised_at: 2026-10-20T09:45:00Z
+answered_at: 2026-10-20T09:55:00Z
+
+## q-2026-10-20-002
+status: answered
+gate: validating
+raised_at: 2026-10-20T10:01:00Z
+answered_at: 2026-10-20T10:05:00Z
+
+## q-2026-10-20-003
+status: answered
+gate: blocking
+raised_at: 2026-10-20T10:10:00Z
+answered_at: 2026-10-20T10:14:00Z
+EOF
 python3 -I "$GRADER" --benchmark "$BENCH" --run "$T/fixed" | python3 -I -c '
 import json, sys
 cost = json.load(sys.stdin)["cost"]
-want = {"agent_minutes": 17.0, "dispatches": 2, "wright_dispatches": 1, "questions": 1, "wall_hours": 0.32,
+want = {"agent_minutes": 20.0, "active_minutes": 25.0, "root_only_minutes": 11.0, "root_only_fraction": 0.44,
+        "context_bytes": 1500, "dispatches": 2, "wright_dispatches": 1, "questions": 3, "wall_hours": 0.65,
         "return_outcomes": {"findings": 1}, "abandoned_waves": 1}
 if cost != want:
     sys.exit(f"FAIL: cost = {cost}, want {want}")
 '
+
+# --transcripts adds the transcript-usage report as cost.tokens.
+mkdir -p "$T/omp/s1"
+printf '%s\n' '{"type":"session","timestamp":"2026-10-20T09:59:58Z"}' \
+  '{"type":"message","timestamp":"2026-10-20T10:01:00Z","message":{"role":"assistant","model":"m1","usage":{"input":3,"output":7,"cacheRead":0,"cacheWrite":0}}}' \
+  >"$T/omp/s1/Wright1.jsonl"
+python3 -I "$GRADER" --benchmark "$BENCH" --run "$T/fixed" --transcripts "$T/omp" --host omp | python3 -I -c '
+import json, sys
+tokens = json.load(sys.stdin)["cost"]["tokens"]
+wright = tokens["roles"]["devrites-slice-wright"]
+if tokens["usage"] != "available" or (wright["turns"], wright["output"]) != (1, 7):
+    sys.exit(f"FAIL: tokens = {tokens}")
+'
+
+# refuses <args...> asserts the grader exits 2 before grading anything.
+refuses() {
+  local code=0
+  python3 -I "$GRADER" --benchmark "$BENCH" "$@" >/dev/null 2>"$T/refuse.err" || code=$?
+  if [ "$code" -ne 2 ]; then
+    echo "FAIL: grader accepted $* (exit $code)"
+    exit 1
+  fi
+}
+
+refuses --run "$T/fixed" --transcripts "$T/omp"
+if ! grep -q -- "--transcripts and --host go together" "$T/refuse.err"; then
+  echo "FAIL: --transcripts without --host refused for another reason: $(cat "$T/refuse.err")"
+  exit 1
+fi
+refuses --baseline "$T/fixed" "$T/naive" --candidate "$T/fixed" "$T/naive" "$T/drive-by"
+refuses --baseline "$T/fixed" "$T/naive" "$T/fixed" --candidate "$T/drive-by" "$T/go-mod" "$T/boundary"
+refuses --baseline "$T/fixed" "$T/naive" "$T/drive-by" --candidate "$T/go-mod" "$T/boundary" "$T/validation" \
+  --baseline-label omp/model-a --candidate-label omp/model-b
+refuses --baseline "$T/fixed" "$T/naive" "$T/drive-by" --candidate "$T/go-mod" "$T/boundary" "$T/validation" \
+  --baseline-label omp/model-a
+
+# ledger <variant> <minutes> gives a correct run one wright dispatch of that length.
+ledger() {
+  variant "$1" "$BENCH/reference/fixed/stock.go"
+  mkdir -p "$T/$1/.devrites/work/feat"
+  printf '%s\n' '{"ts":"2026-10-20T10:00:00Z","phase":"build","event":"dispatch","role":"devrites-slice-wright"}' \
+    "{\"ts\":\"2026-10-20T10:$2:00Z\",\"phase\":\"build\",\"event\":\"return\",\"role\":\"devrites-slice-wright\"}" \
+    >"$T/$1/.devrites/work/feat/metrics.jsonl"
+  printf '{"waves":{"build-1":{"phase":"build","state":"complete","roles":{"devrites-slice-wright":{"handle":"W","started":"2026-10-20T10:00:00Z","returned":true,"returned_at":"2026-10-20T10:%s:00Z"}}}}}\n' "$2" \
+    >"$T/$1/.devrites/work/feat/dispatch.json"
+}
+for i in 1 2 3; do
+  ledger "base$i" 30
+  ledger "cand$i" 10
+done
+
+# verdict <want> <args...> asserts the compare verdict and its evidence.
+verdict() {
+  local want="$1"
+  shift
+  python3 -I "$GRADER" --benchmark "$BENCH" "$@" --baseline-label omp/m --candidate-label omp/m >"$T/compare.json"
+  python3 -I - "$T/compare.json" "$want" <<'PY'
+import json, sys
+report = json.load(open(sys.argv[1]))
+want = sys.argv[2]
+if report["verdict"] != want or (want == "reject") != bool(report["reasons"]):
+    sys.exit(f"FAIL: verdict {report['verdict']} reasons {report['reasons']}, want {want}")
+if want == "accept":
+    agent = report["cost"]["agent_minutes"]
+    if report["cost_drops"] != ["agent_minutes"] or agent["baseline"]["median"] != 30 or agent["candidate"]["median"] != 10:
+        sys.exit(f"FAIL: cost {report['cost']} drops {report['cost_drops']}")
+elif not any(r.startswith("D1 passed in 2 of 3") for r in report["reasons"]):
+    sys.exit(f"FAIL: reasons {report['reasons']} miss the naive candidate's D1")
+elif "candidate run 3 has no metrics ledger" not in report["reasons"]:
+    sys.exit(f"FAIL: reasons {report['reasons']} miss the naive candidate's missing ledger")
+PY
+}
+
+verdict accept --baseline "$T/base1" "$T/base2" "$T/base3" --candidate "$T/cand1" "$T/cand2" "$T/cand3"
+verdict reject --baseline "$T/base1" "$T/base2" "$T/base3" --candidate "$T/cand1" "$T/cand2" "$T/naive"
 
 echo "lifecycle-benchmark-grader: ok"

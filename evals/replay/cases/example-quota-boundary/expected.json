@@ -1,0 +1,7 @@
+{
+  "role": "devrites-code-reviewer",
+  "cluster": "example-quota/SLICE-001",
+  "findings": [
+    {"file": "internal/quota/quota.go", "line": 8, "id": "AC-001", "severity": "Important"}
+  ]
+}

@@ -1,0 +1,14 @@
+diff --git a/internal/quota/quota.go b/internal/quota/quota.go
+new file mode 100644
+--- /dev/null
++++ b/internal/quota/quota.go
+@@ -0,0 +1,9 @@
++package quota
++
++// Allow reports whether one more request fits after used requests under limit.
++func Allow(used, limit int) bool {
++	if limit <= 0 {
++		return false
++	}
++	return used <= limit
++}

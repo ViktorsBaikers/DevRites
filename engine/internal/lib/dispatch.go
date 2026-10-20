@@ -2,8 +2,10 @@ package lib
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -21,9 +23,9 @@ import (
 // fan-out cannot silently degrade to serial (open -> every role started ->
 // seal -> returns -> complete). start/return also auto-record metrics events.
 //
-//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap]
+//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>]
 
-const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap]
+const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
 role has a distinct handle; return fails before seal. status --wave exits
@@ -31,9 +33,15 @@ nonzero until that wave is complete; bare status lists every wave and exits
 nonzero while any wave is open or sealed (abandoned waves are listed only).
 A complete wave cannot be abandoned. return --outcome records the role's
 Outcome line in metrics.jsonl, so metrics summary reports reviewer yield.
+For a reviewer role, return --result <file> stores the return verbatim as
+packets/<wave>-<role>.return.md (never overwritten), derives the outcome
+from its Outcome/Counts head (malformed records gap), refuses an --outcome
+that disagrees, and records its Finding: keys for metrics summary.
 
 A build wave with a wright role must name its slice(s) with --slice; a vet
-wave may (slice-bound recheck). Every 5 rounds of one kind on one slice, the
+wave may (slice-bound recheck), and so may a reviewer-only wave (uncapped),
+which keys its --result findings on that slice. A --result file may already
+be the packets/ path; it is then kept as the stored return. Every 5 rounds of one kind on one slice, the
 next open is blocked until --reslice-review names a drift.md
 "## <DRIFT-ID>" heading for that slice.
 `
@@ -118,7 +126,7 @@ func nowStamp() string { return time.Now().UTC().Format(time.RFC3339) }
 
 // RunDispatch implements the dispatch wave state machine.
 func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
-	var slug, sub, phase, wave, role, handle, reason, review, contract, packet, outcome string
+	var slug, sub, phase, wave, role, handle, reason, review, contract, packet, outcome, result string
 	var roles, sliceIDs []string
 	var positional []string
 	for i := 0; i < len(args); i++ {
@@ -145,6 +153,8 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			packet = value
 		case "--outcome":
 			outcome = value
+		case "--result":
+			result = value
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(stderr, "dispatch: unknown flag %q\n", args[i])
@@ -168,7 +178,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	// an update and strand the wave short of complete.
 	code := 0
 	if err := state.WithFeatureLock(root, slug, func() error {
-		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, stdout, stderr)
+		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, stdout, stderr)
 		return nil
 	}); err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -177,7 +187,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome string, stdout, stderr io.Writer) int {
+func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome, result string, stdout, stderr io.Writer) int {
 	f, path, err := loadDispatch(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -310,6 +320,17 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if outcome != "" && !slices.Contains([]string{"findings", "no-findings", "gap"}, outcome) {
 			return fail("--outcome %q is not findings, no-findings, or gap", outcome)
 		}
+		note := ""
+		if outcome != "" {
+			note = "outcome=" + outcome
+		}
+		stored, created := "", false
+		if result != "" {
+			var err error
+			if note, stored, created, err = storeReturnResult(root, slug, wave, role, w.Slices, result, outcome, stderr); err != nil {
+				return fail("%v", err)
+			}
+		}
 		r.Returned, r.ReturnedAt = true, nowStamp()
 		all := true
 		for _, o := range w.Roles {
@@ -321,14 +342,17 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			w.State = "complete"
 		}
 		if err := saveDispatch(path, f); err != nil {
+			if created {
+				_ = os.Remove(stored) // the return is unrecorded, so a retry may store it again
+			}
 			return fail("%v", err)
-		}
-		note := ""
-		if outcome != "" {
-			note = "outcome=" + outcome
 		}
 		recordMetricNote(root, slug, w.Phase, "return", role, note)
 		fmt.Fprintf(stdout, "dispatch: %s returned (wave %s %s)\n", role, wave, w.State)
+		if stored != "" {
+			head, _, _ := strings.Cut(note, " slice=")
+			fmt.Fprintf(stdout, "dispatch: stored %s (%s)\n", "packets/"+filepath.Base(stored), head)
+		}
 		return 0
 
 	case "status":
@@ -400,6 +424,94 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 	return 2
 }
 
+// maxReturnBytes bounds one stored reviewer return.
+const maxReturnBytes = 1 << 20
+
+// storeReturnResult copies a reviewer's return verbatim to
+// packets/<wave>-<role>.return.md, refusing to overwrite one, and builds the
+// return's metrics note: outcome, counts or head=malformed, slice, Late: line
+// count, and one finding= key per Finding: row. A malformed head records
+// outcome=gap, never no-findings. An explicit --outcome that disagrees with
+// the head is refused before anything is written. created is false when
+// result already is the stored file, so a failed save must not remove it.
+func storeReturnResult(root, slug, wave, role string, sliceIDs []string, result, typed string, stderr io.Writer) (note, stored string, created bool, err error) {
+	if !isReviewerRole(role) {
+		return "", "", false, fmt.Errorf("--result applies to reviewer, auditor, and test-analyst roles, not %q", role)
+	}
+	if !devritespaths.ValidSlug(wave) || !devritespaths.ValidSlug(role) {
+		return "", "", false, fmt.Errorf("--result needs a wave and role that are single path elements (wave %q, role %q)", wave, role)
+	}
+	raw, err := readBoundedRegularFile(result, maxReturnBytes)
+	if err != nil {
+		return "", "", false, fmt.Errorf("--result %s: %w", result, err)
+	}
+	outcome, counts, headErr := parseReturnHead(role, string(raw))
+	if headErr != nil {
+		outcome = "gap"
+	}
+	if typed != "" && typed != outcome {
+		reason := "its head says " + outcome
+		if headErr != nil {
+			reason = "its head is malformed (" + headErr.Error() + "), which records gap"
+		}
+		return "", "", false, fmt.Errorf("--outcome %s disagrees with the return in %s: %s; fix the account or drop --outcome", typed, result, reason)
+	}
+	dir, err := devritespaths.ExistingFeatureDirChecked(root, slug)
+	if err != nil {
+		return "", "", false, err
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "packets"), 0o755); err != nil {
+		return "", "", false, err
+	}
+	stored = filepath.Join(dir, "packets", wave+"-"+role+".return.md")
+	if !sameFile(stored, result) {
+		out, err := os.OpenFile(stored, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- validated workspace dir and single-element names
+		if errors.Is(err, fs.ErrExist) {
+			return "", "", false, fmt.Errorf("%s already exists; a stored return is never overwritten", "packets/"+filepath.Base(stored))
+		}
+		if err != nil {
+			return "", "", false, err
+		}
+		_, werr := out.Write(raw)
+		if cerr := out.Close(); werr == nil {
+			werr = cerr
+		}
+		if werr != nil {
+			_ = os.Remove(stored)
+			return "", "", false, werr
+		}
+		created = true
+	}
+	parts := []string{"outcome=" + outcome}
+	if headErr != nil {
+		parts = append(parts, "head=malformed")
+		fmt.Fprintf(stderr, "dispatch: WARNING: %s return head is malformed (%v); recorded outcome=gap, never no-findings — follow the gap path in agents.md § Result admission\n", role, headErr)
+	} else {
+		parts = append(parts, "counts="+counts)
+	}
+	slice := "-"
+	if len(sliceIDs) > 0 {
+		slice = strings.Join(sliceIDs, "+")
+	}
+	keys, late := findingKeys(role, slice, string(raw))
+	parts = append(parts, "slice="+slice, fmt.Sprintf("late=%d", late))
+	for _, key := range keys {
+		parts = append(parts, "finding="+key)
+	}
+	return strings.Join(parts, " "), stored, created, nil
+}
+
+// sameFile reports whether stored already is the result file (the root wrote
+// the account straight to packets/), so storing it again is a no-op.
+func sameFile(stored, result string) bool {
+	a, err := os.Lstat(stored)
+	if err != nil || !a.Mode().IsRegular() {
+		return false
+	}
+	b, err := os.Stat(result)
+	return err == nil && os.SameFile(a, b)
+}
+
 // roundKind names the capped loop a wave belongs to: build wright rounds or
 // slice-bound Vet rechecks. Other waves are uncapped.
 func roundKind(w *dispatchWave) string {
@@ -432,9 +544,16 @@ func isBuildWrightWave(w *dispatchWave) bool {
 func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, review string, stderr io.Writer) ([]string, int) {
 	kind := roundKind(w)
 	if kind == "" {
-		if review != "" || (len(w.Slices) > 0 && !strings.EqualFold(w.Phase, "vet")) {
-			fmt.Fprintln(stderr, "dispatch: --slice/--reslice-review apply only to build wright waves and slice-bound vet waves")
+		if review != "" || (len(w.Slices) > 0 && !strings.EqualFold(w.Phase, "vet") && !reviewerOnlyWave(w)) {
+			fmt.Fprintln(stderr, "dispatch: --reslice-review applies only to build wright waves and slice-bound vet waves; --slice also to reviewer-only waves")
 			return nil, 2
+		}
+		// A reviewer-only wave names its slice for resolution metrics, uncapped.
+		for _, id := range w.Slices {
+			if !state.ValidSliceID(id) {
+				fmt.Fprintf(stderr, "dispatch: %q is not a SLICE-### id\n", id)
+				return nil, 2
+			}
 		}
 		return nil, 0
 	}
@@ -512,6 +631,16 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 	}
 	w.ResliceReview, w.ResliceReviewed = review, overCap
 	return lines, 0
+}
+
+// reviewerOnlyWave reports whether every role in w is a reviewer role.
+func reviewerOnlyWave(w *dispatchWave) bool {
+	for r := range w.Roles {
+		if !isReviewerRole(r) {
+			return false
+		}
+	}
+	return len(w.Roles) > 0
 }
 
 // containsSlice reports whether ids names the same slice as id, ignoring

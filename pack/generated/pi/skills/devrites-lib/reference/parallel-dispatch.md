@@ -50,7 +50,8 @@ If the candidate diff has no matching surfaces, record
    (`devrites-engine dispatch <slug> open --phase <p> --wave <w> --role <r>...`;
    a reviewer, auditor, or test-analyst wave adds `--packet <file>`, the exact packet
    those agents receive, and `open` refuses one that seeds a gate result, outcome,
-   count, or "already passed" claim; at Review and Seal it also needs the packet to
+   count, or "already passed" claim; a Build reviewer wave adds `--slice <SLICE-ID>`
+   so its findings key on that slice; at Review and Seal it also needs the packet to
    name the frozen candidate diff and the manifest to cover every checkpointed path), launch every native agent nonblocking through the host's own agent
    tool (never a shell-launched host CLI such as `omp -p` or `claude -p`: that is a
    dispatch bridge, its PID handle dies with the session, and its return is a `gap`),
@@ -58,7 +59,7 @@ If the candidate diff has no matching surfaces, record
    (`dispatch ... start --wave <w> --role <r> --handle <id>`), then `seal` —
    seal fails until every declared role has a distinct handle, which makes a
    serial launch-then-wait pattern impossible to record. Record each completion
-   with `dispatch ... return` (reviewers add `--outcome <findings|no-findings|gap>`); `return` refuses before seal. `dispatch status`
+   with `dispatch ... return`; a reviewer adds `--result <file>` holding its return verbatim (the engine stores it as `packets/<wave>-<role>.return.md`, derives the outcome from its head, and records its `Finding:` keys; a file already at that path is kept), or `--outcome <findings|no-findings|gap>` when the host cannot hand the return over as a file; `return` refuses before seal. `dispatch status`
    exits nonzero while the wave is open, sealed, or abandoned. `start`/`return`
    auto-record the dispatch/return metrics events — no separate ledger call. If
    an opened wave cannot obtain every handle or reach `seal`, run

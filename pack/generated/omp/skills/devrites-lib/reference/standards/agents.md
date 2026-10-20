@@ -102,7 +102,7 @@ Each required reviewer/analyst/auditor starts with exactly one:
 
 ```text
 Outcome: <findings | no-findings | gap>
-Counts: <n per severity or kind used in the rows below>
+Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
 Finding: <severity> conf <n> | <file:line or artifact section> | <observed quote/result> | when <input/state/sequence> → <effect> | breaks <ID or standard §> "<quoted line>" | <minimum fix>
 Basis: <files read · commands run to reach this finding>
 ```
@@ -167,6 +167,15 @@ return is the bundle the root writes) and the wright's change evidence.
 
 - Lead with the result line (`Outcome:` for reviewers, the role's own status line
   otherwise), then `Counts:` with the number of rows per severity or kind.
+- A reviewer, auditor or test-analyst head is strict: line 1 is
+  `Outcome: findings|no-findings|gap` (no title line above it), line 2 is
+  `Counts: key=N ...` with keys from the role's closed vocabulary:
+  `critical important suggestion nit fyi gap`, plus `contract mechanism` for
+  `devrites-plan-reviewer`, only `suggestion nit fyi gap` for
+  `devrites-simplifier-reviewer`. `findings` needs a non-`gap` count above 0;
+  `no-findings` needs every count at 0. `dispatch return --result <file>` stores
+  the return and records a malformed or inconsistent head as `gap`, never
+  `no-findings`.
 - No restated task, preamble, approach narrative or closing summary. An optional
   `Notes:` block carries at most five lines that no row can hold.
 - Point, don't paste: cite `file:line` with at most one quoted line (160
