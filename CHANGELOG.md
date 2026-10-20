@@ -2,6 +2,25 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.10.0...v7.0.0) (2026-10-20)
+
+### ⚠ BREAKING CHANGES
+
+* **devrites:** a timed-out gate keeps the output it printed
+
+### Added
+
+* **no-release:** make codebase-memory-mcp the one code index ([#142](https://github.com/ViktorsBaikers/DevRites/issues/142)) ([d269904](https://github.com/ViktorsBaikers/DevRites/commit/d269904f8107bb5e669264bf53865ce070e4fa0a))
+* **no-release:** measure cost and reviewer yield before speed changes ([#145](https://github.com/ViktorsBaikers/DevRites/issues/145)) ([14742aa](https://github.com/ViktorsBaikers/DevRites/commit/14742aa68a0885a27902f06ea88c2316d7f55c65))
+* **no-release:** move root bookkeeping into the engine, check at Vet ([#147](https://github.com/ViktorsBaikers/DevRites/issues/147)) ([99bdbc8](https://github.com/ViktorsBaikers/DevRites/commit/99bdbc8d820491cef2e580b184d26173c558753d))
+* **no-release:** state writers, fewer AFK stops, lifecycle benchmark ([#143](https://github.com/ViktorsBaikers/DevRites/issues/143)) ([c6d4f29](https://github.com/ViktorsBaikers/DevRites/commit/c6d4f29aa340bce2b72577cc36f6f19296afe5df))
+* **no-release:** trim leaf context bundles without dropping rules ([#146](https://github.com/ViktorsBaikers/DevRites/issues/146)) ([61fab54](https://github.com/ViktorsBaikers/DevRites/commit/61fab546701f9387dcab5a58171303c8e71aba90))
+
+### Fixed
+
+* **devrites:** a timed-out gate keeps the output it printed ([903c276](https://github.com/ViktorsBaikers/DevRites/commit/903c2762e31d6d97c32564ff028016919935e022))
+* **no-release:** a plan item is never a Proportionality anchor ([#144](https://github.com/ViktorsBaikers/DevRites/issues/144)) ([722ace6](https://github.com/ViktorsBaikers/DevRites/commit/722ace6ee42bc82c2d2d7bb76ca955445655a9be))
+
 ## [6.10.0](https://github.com/ViktorsBaikers/DevRites/compare/v6.9.6...v6.10.0) (2026-10-19)
 
 ### Added
