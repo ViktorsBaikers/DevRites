@@ -12,6 +12,10 @@ phases. Never silently code against a known-wrong plan.
 - the design system / existing UX pattern contradicts the planned UI;
 - a missing user decision that affects product behavior surfaces.
 
+A timing gate that fails with no code cause is a protocol or environment defect
+([performance.md § Performance gate protocol](skill://devrites-lib/reference/standards/performance.md#performance-gate-protocol)),
+never another wright round.
+
 ## Workflow
 ```
 1. STOP coding.
