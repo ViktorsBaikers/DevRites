@@ -11,7 +11,7 @@ and never substitutes for review.
 ## When to measure
 
 Compute a score only when a code index covers the repo (see
-[`code-navigation.md`](code-navigation.md) § Index freshness). With no index,
+[`code-navigation.md`](code-navigation.md) § Preflight). With no index,
 report `unmeasured` — a placeholder number presented as a measurement is a
 false pass. **Failing case:** an audit reports "health: 100/100" on a repo the
 instrument could not parse.

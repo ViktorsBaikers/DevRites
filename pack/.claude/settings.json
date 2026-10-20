@@ -1,5 +1,5 @@
 {
-  "$comment": "DevRites keeps the root orchestration context source-read-only by instruction; no permission mode enforces it. These allow rules cover the engine, read-only git, code-graph tools and .devrites/ workspace edits. Native subagents own specialist execution; only devrites-slice-wright may edit source in the lifecycle (fast-builder writes for /rite-fast; overhaul-* agents keep every tool). Its task lists exact project-relative paths, and the root rejects any returned diff outside that contract.",
+  "$comment": "DevRites keeps the root orchestration context source-read-only by instruction; no permission mode enforces it. These allow rules cover the engine, read-only git, the codebase-memory-mcp code index and .devrites/ workspace edits. Native subagents own specialist execution; only devrites-slice-wright may edit source in the lifecycle (fast-builder writes for /rite-fast; overhaul-* agents keep every tool). Its task lists exact project-relative paths, and the root rejects any returned diff outside that contract.",
   "permissions": {
     "allow": [
       "Bash(devrites-engine check candidate *)",
@@ -48,13 +48,8 @@
       "Bash(devrites-engine gates attest *)",
       "Bash(devrites-engine gates abandon *)",
       "Bash(devrites-engine overhaul *)",
-      "mcp__codegraph__*",
       "mcp__codebase-memory-mcp__*",
-      "mcp__codebase-memory__*",
-      "mcp__code-review-graph__*",
-      "mcp__graphify__*",
-      "Bash(codegraph *)",
-      "Bash(graphify *)",
+      "Bash(codebase-memory-mcp cli *)",
       "Bash(git status *)",
       "Bash(git diff *)",
       "Bash(git log *)",

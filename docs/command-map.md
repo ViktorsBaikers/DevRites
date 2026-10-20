@@ -111,7 +111,7 @@ See [`cli.md`](cli.md).
 | [`/rite-adopt`](../pack/.claude/skills/rite-adopt/SKILL.md) | onboard | `[path or area to adopt] [+ what you want to build next]` | Reverse-derive the existing baseline and next objective; propose any durable project guidance in the nearest native instruction file. | codebase + project instructions | workspace spec/state artifacts + optional guidance proposal |
 | [`/rite-status`](../pack/.claude/skills/rite-status/SKILL.md) | status | `[slug]` | Active feature: phase, run mode, status, persisted next action, evidence, questions, drift, risks, and handoff readiness. | direct workspace ledger/artifacts | none |
 | [`/rite-resolve`](../pack/.claude/skills/rite-resolve/SKILL.md) | resume | `<qid> "<answer>" \| --drop <qid> ["<reason>"] \| --batch <plain-text-file>` | Answer / drop / batch-resolve open `questions.md` entries; clears `state.md` `Awaiting human` and sets `Status: running`. Canonical writer for `status: open → answered`. | `questions.md` + `state.md` | `questions.md`, `state.md` |
-| [`/rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | utility | `[symbol \| file \| area to map]` | One-pass structural map of an unfamiliar area (modules, in-callers, out-calls, decisions) in project vocabulary. Prefers codegraph/graphify. | codebase + ADRs/CONTEXT.md | none |
+| [`/rite-zoom-out`](../pack/.claude/skills/rite-zoom-out/SKILL.md) | utility | `[symbol \| file \| area to map]` | One-pass structural map of an unfamiliar area (modules, in-callers, out-calls, decisions) in project vocabulary. Prefers codebase-memory-mcp. | codebase + ADRs/CONTEXT.md | none |
 | [`/rite-prototype`](../pack/.claude/skills/rite-prototype/SKILL.md) | utility | `[question]` | Throwaway code answering ONE design question. Logic harness OR 2 to 4 UI variations on one route. Captures verdict to `decisions.md`. | spec / surrounding code | prototype scratch + `decisions.md` |
 | [`/rite-handoff`](../pack/.claude/skills/rite-handoff/SKILL.md) | utility | `[next-session-focus]` | Compacts the chat into a handoff doc. Syncs chat-only context into workspace canonical files. References existing artifacts by path. | chat + workspace | `handoff.md` + sync into canonical files |
 | [`/rite-learn`](../pack/.claude/skills/rite-learn/SKILL.md) | utility | `["<lesson>"]` | Review native memory plus verified archive/ADR evidence; propose one durable instruction or ADR update for human approval. | native memory + reviewed Markdown | approved existing instruction/ADR only |
@@ -210,22 +210,24 @@ index is in
 | Performance requirement or suspected regression | `devrites-audit perf` (+ `devrites-performance-reviewer`) |
 | Failing tests / build / runtime / browser checks | `devrites-debug-recovery` |
 | Slice crosses a boundary or defines a public interface | `devrites-api-interface` |
-| Explicit `/rite-zoom-out` / `$rite-zoom-out` | read-only structural map (uses codegraph/graphify) |
+| Explicit `/rite-zoom-out` / `$rite-zoom-out` | read-only structural map (uses codebase-memory-mcp) |
 | Every defined plan before build; "engineering review", "review the architecture", "lock in the plan", "test coverage check" | `/rite-vet` (+ `devrites-plan-reviewer`; depth scales to stakes, never skipped; always in `/rite-autocomplete`) |
 
-## Code-graph integration
+## Code-index integration
 
-These skills prefer a code-intelligence index (`codegraph_*` or
-`graphify-out/`) when available and fall back to file reads:
+The one supported code index is
+[codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp). The
+routes, preflight, coverage rule, and host access live in
+[`code-navigation.md`](../pack/.claude/skills/devrites-lib/reference/standards/code-navigation.md);
+without the index, skills fall back to LSP and file reads:
 
-- `/rite-spec`, `/rite-clarify`, `/rite-define`, `/rite-plan`: placement / impact / callers during investigation and decision coverage
-- `/rite-vet`: reuse-vs-rebuild, blast-radius, and placement-realism checks during the scope challenge + architecture axis
-- `/rite-build`: `touched-files.md` + impact when loading slice context
-- `/rite-review`: blast-radius checks on the diff
-- `/rite-seal`: final blast-radius check
-- `devrites-doubt`: "where does this claim reach" via `codegraph_impact` / `codegraph_callers`
-- `/rite-zoom-out`: `codegraph_context` + `codegraph_explore`
-- `devrites-frontend-craft`: component / token lookups
+- `/rite-spec`, `/rite-clarify`, `/rite-define`, `/rite-plan`: `get_architecture`, `search_graph` (reuse), `trace_path` (callers, impact)
+- `/rite-vet`, `/rite-temper`: reuse-vs-rebuild, blast-radius, and placement-realism checks
+- `/rite-build`: affected set via `trace_path` before edits; `detect_changes` against the slice path list after
+- `/rite-review`, `/rite-seal`: `detect_changes` blast radius on the diff
+- `devrites-doubt`: "where does this claim reach" via `trace_path`
+- `/rite-zoom-out`: `get_architecture` + `trace_path`
+- `devrites-frontend-craft`: component lookups via `search_graph`
 
 ## Interactions (typical flow)
 

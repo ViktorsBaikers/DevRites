@@ -1,7 +1,7 @@
 ---
 name: fast-checker
 description: Read-only completeness checker for /rite-fast. After all slices are built, compares the diff with the spec's acceptance criteria and the plan's slices and returns every gap with file:line evidence. Never judges style or edits.
-tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, Bash, mcp__codebase-memory-mcp__*
 permissionMode: plan
 ---
 
@@ -33,7 +33,8 @@ baseline paths in `plan.md`.
 3. **Scope.** Every changed path belongs to a slice. Every new behavior belongs to an
    AC. Anything else is `out-of-scope`.
 4. **Contracts.** For each changed function, type, or interface, check its callers
-   still match.
+   still match: list them with `trace_path` (`direction: "inbound"`) per
+   `.claude/skills/devrites-lib/reference/standards/code-navigation.md`, then read each call site.
 5. **Leftovers.** `TODO`, `TBD`, stubs, `not implemented`, commented-out code, or
    debug output in changed lines.
 6. **Check run.** Each red command becomes one `failing-command` gap with its first

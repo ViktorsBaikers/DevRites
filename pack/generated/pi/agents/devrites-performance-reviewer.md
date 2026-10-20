@@ -1,7 +1,7 @@
 ---
 name: devrites-performance-reviewer
 description: "Reviews one DevRites feature's performance for /rite-seal in fresh context. Uses source mode for potential static findings or measured mode for Lighthouse, PSI, CrUX, and traces; reports source-labeled numbers without presenting lab data as field data."
-tools: read, grep, find, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics
+tools: read, grep, find
 inheritProjectContext: true
 ---
 
@@ -32,6 +32,8 @@ Vitals. Use the current file rather than memory.
 ## Inputs
 In workspace `.devrites/work/<slug>/`, read `spec.md` for any performance budget,
 then `evidence.md`, `touched-files.md`, and the immutable diff supplied by the root.
+Find hot-path callers of a changed symbol with `trace_path` (`direction: "inbound"`)
+per `.pi/skills/devrites-lib/reference/standards/code-navigation.md`.
 Look for Core Web Vitals evidence in `evidence.md`, a saved Lighthouse,
 PageSpeed Insights, or CrUX JSON artifact, and `browser-evidence.md`.
 

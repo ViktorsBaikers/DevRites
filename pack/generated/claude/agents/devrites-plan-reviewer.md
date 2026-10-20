@@ -1,7 +1,7 @@
 ---
 name: devrites-plan-reviewer
 description: Read-only /rite-vet reviewer for engineering plans before code. Checks plan.md and tasks.md against spec.md for architecture, quality, tests, performance, scope, reversibility, and failure modes; reports high-confidence, line-supported findings and gates on the weakest axis.
-tools: Read, Grep, Glob, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, mcp__codebase-memory-mcp__*
 permissionMode: plan
 ---
 
@@ -34,8 +34,9 @@ scope; `tasks.md` for vertical slices and gates; and `spec.md` for the objective
 acceptance criteria. Read `strategy.md`, `decisions.md`, or `assumptions.md` only
 when needed to check a claim. Do not read the author's chat reasoning.
 
-Use the index order in `.claude/skills/devrites-lib/reference/standards/tooling.md` to
-check blast radius, placement, and reuse; fall back to Read/Grep/Glob.
+Per `.claude/skills/devrites-lib/reference/standards/code-navigation.md`, check
+placement with `get_architecture`, reuse with `search_graph`, and blast radius with
+`trace_path` (`direction: "inbound"`); fall back to Read/Grep/Glob.
 
 ## Score the seven dimensions
 For each dimension, **cite the evidence first**, including an absent plan or spec

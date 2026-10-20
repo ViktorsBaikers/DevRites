@@ -9,9 +9,9 @@ This applies to UI **and** non-UI code: utilities, helpers, types, validators, s
 formatters, hooks, query helpers: anything that might already exist.
 
 ## The decision (in order)
-1. **Search first.** Apply `skill://devrites-lib/reference/standards/tooling.md`: use the
-   primary available code index to find similar definitions, cross-check only a named
-   unresolved predicate, then fall back to grep/glob over `components/`, design tokens, hooks/,
+1. **Search first.** Apply `skill://devrites-lib/reference/standards/code-navigation.md`: find
+   similar definitions with codebase-memory `search_graph` (`semantic_query` plus
+   `name_pattern` variants), then fall back to grep/glob over `components/`, design tokens, hooks/,
    utils/, lib/. Look for things doing the *same job*, not just the same name.
 2. **Exact fit → REUSE.** Compose / import the existing thing. No copy, no fork.
 3. **Close fit → EXTEND.** Add a variant/prop/option that the existing component or util

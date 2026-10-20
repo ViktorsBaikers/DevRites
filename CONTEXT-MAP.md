@@ -47,8 +47,9 @@ when the task needs it.
 
 ## Layer 3 — Code intelligence (optional)
 
-See `code-navigation.md` for the decision tree. Indexes live under
-`.codegraph/`, `.code-review-graph/`, `.codebase-memory/`.
+See `code-navigation.md` for the decision tree. The one supported index is
+codebase-memory-mcp; it lives in its central store (`~/.cache/codebase-memory-mcp`),
+not in the repository.
 
 ## Layer 4 — Audit / release
 

@@ -18,7 +18,9 @@ seams supplied by the orchestrator.
 - `repair`: return an atomic candidate replacement/delta bundle for the requested
   planning artifacts while preserving settled intent.
 
-Reuse existing seams and dependencies before proposing new ones. Build vertical
+Reuse existing seams and dependencies before proposing new ones. Per
+`.agents/skills/devrites-lib/reference/standards/code-navigation.md`, map seams with `get_architecture`, find reuse
+with `search_graph`, and size blast radius with `trace_path` (`direction: "inbound"`). Build vertical
 slices in dependency order; put a hub file's shared edit in one seam slice
 ([slicing.md](.agents/skills/rite-plan/reference/slicing.md#slice-independence)). Map every REQ and AC to a slice and executable proof,
 name rollback and failure paths; keep acceptance-changing proposals separate. Each proof

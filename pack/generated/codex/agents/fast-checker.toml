@@ -31,7 +31,8 @@ baseline paths in `plan.md`.
 3. **Scope.** Every changed path belongs to a slice. Every new behavior belongs to an
    AC. Anything else is `out-of-scope`.
 4. **Contracts.** For each changed function, type, or interface, check its callers
-   still match.
+   still match: list them with `trace_path` (`direction: "inbound"`) per
+   `.agents/skills/devrites-lib/reference/standards/code-navigation.md`, then read each call site.
 5. **Leftovers.** `TODO`, `TBD`, stubs, `not implemented`, commented-out code, or
    debug output in changed lines.
 6. **Check run.** Each red command becomes one `failing-command` gap with its first

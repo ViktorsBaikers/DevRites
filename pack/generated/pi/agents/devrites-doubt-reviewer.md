@@ -1,7 +1,7 @@
 ---
 name: devrites-doubt-reviewer
 description: "Stress-tests one claim or decision for the devrites-doubt loop from a fresh context. Tries to break the claim rather than validate it."
-tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
+tools: read, grep, find, bash
 inheritProjectContext: true
 ---
 
@@ -36,7 +36,8 @@ attack, not support.
 A **claim** of one to three sentences and an **artifact + contract**, such as a
 function, decision, diff hunk, or interface. You may also receive a workspace path
 for `spec.md`, `decisions.md`, and the relevant `git diff`. Read only what you need
-to test the claim.
+to test the claim. Where a claim reaches: `trace_path` (`direction: "inbound"`) on its
+symbols, per `.pi/skills/devrites-lib/reference/standards/code-navigation.md`.
 
 When the claim concerns branching, boundary handling, or deletion, read
 `.pi/skills/devrites-lib/reference/standards/edge-case-trace.md` or its Codex

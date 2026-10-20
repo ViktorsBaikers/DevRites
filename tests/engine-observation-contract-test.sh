@@ -60,7 +60,7 @@ if summary["next_action"] != "archived":
     raise SystemExit(f"next_action={summary['next_action']!r}")
 PY
 
-mkdir -p "$PROJECT/.claude" "$PROJECT/.codegraph"
+mkdir -p "$PROJECT/.claude" "$PROJECT/.codebase-memory"
 printf 'devrites\n' >"$PROJECT/.claude/devrites.manifest"
 indexes="$(
   DEVRITES_ROOT="$PROJECT" "$ENGINE" check indexes --root "$PROJECT" 2>/dev/null
@@ -78,11 +78,11 @@ if not manifest.get("present"):
     raise SystemExit("manifest not present")
 indexes = report.get("indexes") or []
 paths = [row.get("path") for row in indexes]
-want = [".codegraph", ".code-review-graph", ".codebase-memory", "graph.json"]
+want = [".codebase-memory"]
 if paths != want:
     raise SystemExit(f"indexes paths={paths!r}, want {want!r}")
 if not indexes[0].get("present"):
-    raise SystemExit(".codegraph should be present")
+    raise SystemExit(".codebase-memory should be present")
 PY
 
 echo "engine-observation-contract: PASS"

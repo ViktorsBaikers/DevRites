@@ -63,9 +63,9 @@ Pull these via `Read` when the diff demands them:
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`,
    `touched-files.md`, `.devrites/principles.md` (if present: the binding invariants to score
    the diff against), and the `git diff`. For "what would this change break"
-   questions, apply `.devin/skills/devrites-lib/reference/standards/tooling.md`: use
-   the primary available index and cross-check only one named unresolved predicate before
-   falling back to LSP/file search. When a finding hinges on an external library's
+   questions, apply `.devin/skills/devrites-lib/reference/standards/code-navigation.md`:
+   `detect_changes` (explicit `base_branch`, `scope: "impact"`), then `trace_path` on the
+   symbols that matter, before falling back to LSP/file search. When a finding hinges on an external library's
    current API, context7 if available can confirm the signature. Run
    `devrites-engine check candidate <slug>` and require its digest to match the
    single `evidence.md` binding and the `browser-evidence.md` binding when that

@@ -1,7 +1,7 @@
 ---
 name: devrites-simplifier-reviewer
 description: Read-only simplification reviewer for /rite-polish Phase 1. From a fresh context, finds measured, behavior-preserving ways to reduce complexity in one DevRites feature diff, using guard clauses, Extract Method, simpler conditionals, and Chesterton's Fence. Returns findings only for the caller to apply in feature scope.
-tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, Bash, mcp__codebase-memory-mcp__*
 permissionMode: plan
 ---
 
@@ -37,7 +37,9 @@ comprehension test, deletion test, and "reduce not relocate" rule as written.
 
 In workspace `.devrites/work/<slug>/`, read `spec.md` for acceptance criteria,
 then `tasks.md` and `touched-files.md`. Run `git diff` and inspect the touched
-files. No diff, or an unreadable input → `Outcome: gap` naming it; a diff with no
+files. Per `.claude/skills/devrites-lib/reference/standards/code-navigation.md`, find near-duplicates of new code with `search_graph`
+(`semantic_query`); a new symbol with no `trace_path` inbound callers is a dead-code
+candidate, subject to the static-graph blind spots. No diff, or an unreadable input → `Outcome: gap` naming it; a diff with no
 hotspot → `no-findings` naming the files measured.
 
 ## Discipline

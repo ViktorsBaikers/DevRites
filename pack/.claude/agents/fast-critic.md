@@ -1,7 +1,7 @@
 ---
 name: fast-critic
 description: Read-only critic for /rite-fast. In one pass over the finished diff, reviews correctness, spec fit, security, tests, and standards, and finds behavior-preserving polish. Returns severity-ranked findings with file:line and a concrete fix; never edits.
-tools: Read, Grep, Glob, Bash, mcp__codegraph__*, mcp__codebase-memory-mcp__*, mcp__codebase-memory__*, mcp__code-review-graph__*, mcp__graphify__*
+tools: Read, Grep, Glob, Bash, mcp__codebase-memory-mcp__*
 permissionMode: plan
 ---
 
@@ -24,7 +24,8 @@ input, auth, data, or integrations.
 
 `spec.md` and `plan.md` from `.devrites/work/<slug>/`, and the feature diff: `git diff`
 plus untracked files, minus the baseline paths in `plan.md`. Read the touched files
-and their callers, not only the hunks.
+and their callers, not only the hunks; list callers with `trace_path`
+(`direction: "inbound"`) per `.claude/skills/devrites-lib/reference/standards/code-navigation.md`.
 
 ## Review
 

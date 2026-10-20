@@ -142,12 +142,10 @@ _omp_map_tools() {
 }
 
 # omp treats frontmatter tools: as a hard allowlist for extension/MCP tools,
-# so ambient lean-ctx / lens tools are dropped unless named. Append those
+# so ambient lens tools are dropped unless named. Append those read-only
 # names after the mapped builtins (preserve base order). Unknown names are
-# dropped non-fatally. Read-only agents stay read-only: ctx_edit / ctx_patch
-# only when the base already has edit or write; ctx_shell only when the
-# base already has bash.
-_OMP_EXTENSION_NAV_TOOLS="ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics"
+# dropped non-fatally.
+_OMP_EXTENSION_NAV_TOOLS="symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics"
 
 _omp_csv_has() {
   case ", ${1}, " in
@@ -182,13 +180,6 @@ _omp_append_extension_tools() {
     [ -z "$_tok" ] && continue
     _out="$(_omp_csv_append "$_out" "$_tok")"
   done < <(printf '%s\n' "$_OMP_EXTENSION_NAV_TOOLS" | tr ',' '\n')
-  if _omp_csv_has "$_base" "edit" || _omp_csv_has "$_base" "write"; then
-    _out="$(_omp_csv_append "$_out" "ctx_edit")"
-    _out="$(_omp_csv_append "$_out" "ctx_patch")"
-  fi
-  if _omp_csv_has "$_base" "bash"; then
-    _out="$(_omp_csv_append "$_out" "ctx_shell")"
-  fi
   printf '%s' "$_out"
 }
 

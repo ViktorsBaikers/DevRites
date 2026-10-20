@@ -14,7 +14,7 @@ The orchestrator (`/rite-build`) gates and records; the **wright** writes. See
 SELECT    → orchestrator: restate slice goal + acceptance + scope boundary; HITL gate (pause pre-code)
 (SHAPE)   → orchestrator: missing UI design-brief.md → shape it, then /rite-vet before dispatch
 DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). Inside the wright:
-   ORIENT    → load only the files this slice touches; learn the project's idiom; reuse-first
+   ORIENT    → load only the files this slice touches; learn the project's idiom; reuse-first; affected set via `trace_path` (`../../devrites-lib/reference/standards/code-navigation.md`)
    (RED)     → if behavior change: write the failing test first
    IMPLEMENT → smallest complete version; match conventions; devrites-frontend-craft for UI
    VERIFY    → writer-safe tests/types/lint; return code + tests (no control-branch commit)

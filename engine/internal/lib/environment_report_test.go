@@ -20,7 +20,7 @@ func TestEnvironmentReportForDetectsManifestAndIndexes(t *testing.T) {
 	if err := os.WriteFile(manifestPath, []byte("devrites\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(project, ".codegraph"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(project, ".codebase-memory"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -34,11 +34,11 @@ func TestEnvironmentReportForDetectsManifestAndIndexes(t *testing.T) {
 	if !report.Manifest.Present {
 		t.Fatal("expected manifest present")
 	}
-	if len(report.Indexes) != 4 {
-		t.Fatalf("indexes = %d, want 4", len(report.Indexes))
+	if len(report.Indexes) != 1 {
+		t.Fatalf("indexes = %d, want 1", len(report.Indexes))
 	}
 	if !report.Indexes[0].Present {
-		t.Fatalf("expected .codegraph present, got %+v", report.Indexes)
+		t.Fatalf("expected .codebase-memory present, got %+v", report.Indexes)
 	}
 }
 

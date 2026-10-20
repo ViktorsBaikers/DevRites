@@ -11,7 +11,7 @@ For the pack-canonical decision tree (graph vs LSP vs grep vs read), load
 
 | Question type | Preferred route | Fallback | Output cost / failure mode |
 | --- | --- | --- | --- |
-| Relationship/impact (callers, blast radius) | Code-intelligence index below | LSP references + Grep | Bounded paths are compact; reading every hit inflates context |
+| Relationship/impact (callers, blast radius) | codebase-memory-mcp per [`code-navigation.md`](code-navigation.md) | LSP references + Grep | Bounded paths are compact; reading every hit inflates context |
 | Exact string/literal (error, config) | Grep | — | Matching lines are small; whole-file scans waste context |
 | Structural/AST shape | Installed AST search; else index + filter | Grep punctuation patterns | Exact nodes avoid regex false positives and false negatives; a regex-fallback absence claim stays `uncertain` unless every hit and a known-positive control were checked |
 | Value/taint flow source→sink across files | Manual hop-by-hop read of each edge; an analyzer counts only at its declared depth | `cannot_verify` | A call path or single-function scan read as flow proof |
@@ -44,7 +44,7 @@ is target execution ([`audit-coverage.md`](audit-coverage.md#target-execution-is
 **Failing case:** a single-function scan is cited as proof of no cross-module injection,
 or an analyzer whose terms bar private code without a license reports "clean".
 
-Context-waste anti-patterns: re-running one query across indexes for reassurance, reading a whole file for a one-line answer, graph queries where a known-path read suffices, re-searching an answered question.
+Context-waste anti-patterns: re-running one query for reassurance, reading a whole file for a one-line answer, graph queries where a known-path read suffices, re-searching an answered question.
 
 **Host-recursive search is a first-fire finding.** When Grep/Glob/`rg` exist,
 `find` and `grep -r` are the expensive fallback, not the default. One such walk
@@ -77,15 +77,15 @@ orient incomplete; stop and run primary route or record `cannot_verify`.
 
 ## Code intelligence
 
-For "where is X / what calls X / what breaks" questions prefer an installed index, skipping any absent:
+For "where is X / what calls X / what breaks" questions use codebase-memory-mcp, the one supported index:
 
-1. **codebase-memory-mcp primary:** `search_graph`, `trace_path`, `get_architecture`, `get_code_snippet`, `query_graph`.
-2. **Verify consequential claims in live code; never re-query for reassurance.** For blast-radius/every-caller claims inspect exact definitions/references; add at most one second index (`codegraph`/`graphify`) only when the primary is incomplete/stale/conflicting — resolve disagreement in live code.
+1. **Route, preflight, and coverage:** follow [`code-navigation.md`](code-navigation.md) (`search_graph`, `trace_path`, `detect_changes`, `get_architecture`, `get_code_snippet`, `check_index_coverage`).
+2. **Verify consequential claims in live code; never re-query for reassurance.** For blast-radius/every-caller claims inspect exact definitions/references; when the index disagrees with live code, live code wins.
 3. **Fallback:** LSP go-to-definition/references/diagnostics plus `Read`/`Grep`/`Glob`, reading comprehensively (core rule 1). Missing tools never block or justify speculative installs.
 
 ### Keeping indexes fresh
 
-Let connected watchers settle after edits; if still stale, use the provider's refresh or live search — trust fresh live code on disagreement.
+Auto-sync covers only the active MCP session's project; after edits, check the cited paths with `check_index_coverage` and trust fresh live code on disagreement. Only the root re-runs `index_repository`.
 
 ## Library docs: context7
 
@@ -97,7 +97,7 @@ When an external library's current API/version behavior matters, use context7 if
 
 ## Architecture & decision memory
 
-With codebase-memory-mcp: `get_architecture` during `/rite-spec|clarify|define|zoom-out`. They complement `decisions.md`; workspace files stay canonical.
+With codebase-memory-mcp: `get_architecture` (`aspects: ["overview"]`, scoped by `path`) during `/rite-spec|clarify|define|zoom-out`. They complement `decisions.md`; workspace files stay canonical.
 
 ## Output hygiene
 

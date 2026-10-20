@@ -34,6 +34,8 @@ Vitals. Use the current file rather than memory.
 ## Inputs
 In workspace `.devrites/work/<slug>/`, read `spec.md` for any performance budget,
 then `evidence.md`, `touched-files.md`, and the immutable diff supplied by the root.
+Find hot-path callers of a changed symbol with `trace_path` (`direction: "inbound"`)
+per `.devin/skills/devrites-lib/reference/standards/code-navigation.md`.
 Look for Core Web Vitals evidence in `evidence.md`, a saved Lighthouse,
 PageSpeed Insights, or CrUX JSON artifact, and `browser-evidence.md`.
 

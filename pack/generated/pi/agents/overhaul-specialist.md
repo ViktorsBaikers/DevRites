@@ -1,7 +1,7 @@
 ---
 name: overhaul-specialist
 description: "Reviews one language, runtime or risk area for /overhaul, such as security, database, performance or infrastructure. Dispatched only by the /overhaul skill; returns an evidence-backed receipt."
-tools: read, edit, write, bash, grep, find, ls, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_edit, ctx_patch, ctx_shell
+tools: read, edit, write, bash, grep, find, ls
 inheritProjectContext: true
 ---
 

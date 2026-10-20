@@ -33,7 +33,8 @@ supply-chain risk. Use the current file rather than memory.
 
 In workspace `.devrites/work/<slug>/`, read `spec.md` for the data model, API, and
 affected areas, then `decisions.md` and `touched-files.md`. Run `git diff` and
-inspect the touched files.
+inspect the touched files. For source-to-sink candidates use `trace_path`
+(`mode: "data_flow"`) per `.agents/skills/devrites-lib/reference/standards/code-navigation.md`, then confirm each hop by reading it.
 
 ## Audit (feature scope, OWASP-oriented)
 

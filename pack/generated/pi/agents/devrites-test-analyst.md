@@ -1,7 +1,7 @@
 ---
 name: devrites-test-analyst
 description: "Reviews test quality for /rite-seal from a fresh context. Independently checks whether a DevRites feature's tests prove its acceptance criteria and flags missing, assertion-free, or tautological tests."
-tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
+tools: read, grep, find, bash
 inheritProjectContext: true
 ---
 
@@ -39,7 +39,11 @@ In workspace `.devrites/work/<slug>/`, read `spec.md` for the acceptance criteri
 `evidence.md`, `tasks.md`, and `touched-files.md` by the schema's bounded rule: when
 `devrites-engine orient <slug>` reports one over budget, index it (`grep -n`) and load only
 entries naming this candidate's AC/slice IDs. Run `git diff` limited to `touched-files.md`
-paths to inspect the code and tests, then read the test files.
+paths to inspect the code and tests, then read the test files. To find the tests that
+reach each changed symbol, use `trace_path` (`direction: "inbound"`, `include_tests:
+true`) and `TESTS` edges via `query_graph`, per
+`.pi/skills/devrites-lib/reference/standards/code-navigation.md`; a changed
+symbol no test reaches is a finding.
 
 ## Assess
 - **Coverage of acceptance criteria:** map each criterion to the tests that prove it.

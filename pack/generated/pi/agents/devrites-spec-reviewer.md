@@ -1,7 +1,7 @@
 ---
 name: devrites-spec-reviewer
 description: "Independently checks one feature candidate against its spec for /rite-review and /rite-seal. Finds missing or wrong acceptance coverage, preservation regressions, scope creep, placement drift, and design-reference mismatches. Never edits."
-tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
+tools: read, grep, find, bash
 inheritProjectContext: true
 ---
 
@@ -39,7 +39,8 @@ Read `.pi/skills/devrites-lib/reference/standards/spec-grammar.md` first
 
 From `.devrites/work/<slug>/`, read `spec.md`, `tasks.md`, `decisions.md`,
 `assumptions.md`, and `drift.md`; inspect the active feature's `git diff` limited to
-the `touched-files.md` manifest paths.
+the `touched-files.md` manifest paths. For Placement, compare `detect_changes`
+(explicit `base_branch`, `scope: "files"`) with the spec, per `.pi/skills/devrites-lib/reference/standards/code-navigation.md`.
 
 ## Assess
 

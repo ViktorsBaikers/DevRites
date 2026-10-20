@@ -16,41 +16,21 @@ echo "== omp-generator-test =="
 
 expect_tools \
   "$(_omp_append_extension_tools "read, grep, glob, bash")" \
-  "read, grep, glob, bash, ${NAV}, ctx_shell" \
-  "bash base keeps order and appends nav plus ctx_shell"
-
-expect_tools \
-  "$(_omp_append_extension_tools "read, grep, glob")" \
-  "read, grep, glob, ${NAV}" \
-  "read-only base appends nav only"
+  "read, grep, glob, bash, ${NAV}" \
+  "base keeps order and appends lens nav tools"
 
 expect_tools \
   "$(_omp_append_extension_tools "read, edit, write, bash, glob, grep")" \
-  "read, edit, write, bash, glob, grep, ${NAV}, ctx_edit, ctx_patch, ctx_shell" \
-  "wright base appends nav plus ctx_edit/ctx_patch/ctx_shell"
+  "read, edit, write, bash, glob, grep, ${NAV}" \
+  "write base gains no extra edit or shell tools"
 
-expect_tools \
-  "$(_omp_append_extension_tools "read, write")" \
-  "read, write, ${NAV}, ctx_edit, ctx_patch" \
-  "write without bash gets ctx_edit/ctx_patch not ctx_shell"
-
-expect_tools \
-  "$(_omp_append_extension_tools "read, edit")" \
-  "read, edit, ${NAV}, ctx_edit, ctx_patch" \
-  "edit without write still gets ctx_edit/ctx_patch"
-
-dup="$(_omp_append_extension_tools "read, ctx_read, bash")"
-case ", ${dup}, " in
-*", ctx_read, "*) ok "keeps existing ctx_read" ;;
-*) no "keeps existing ctx_read" ;;
-esac
-printf '%s' "$dup" | grep -q 'ctx_read, ctx_read' && no "duplicates ctx_read" || ok "does not duplicate ctx_read"
-printf '%s' "$dup" | grep -q 'ctx_shell' && ok "still appends ctx_shell after existing ctx_read" || no "dropped ctx_shell"
+dup="$(_omp_append_extension_tools "read, symbol_search, bash")"
+printf '%s' "$dup" | grep -q 'symbol_search.*symbol_search' && no "duplicates symbol_search" || ok "does not duplicate symbol_search"
 
 # Mapped Claude tools, then extension extras. Skill/Web* stay dropped.
 expect_tools \
   "$(_omp_append_extension_tools "$(_omp_map_tools "Read, Grep, Glob, Bash, Skill, WebFetch" "devrites-code-reviewer")")" \
-  "read, grep, glob, bash, ${NAV}, ctx_shell" \
+  "read, grep, glob, bash, ${NAV}" \
   "maps Claude tools then appends extras"
 
 expect_tools \
@@ -95,12 +75,12 @@ gen_omp_agent "$proof_src" "$TMP_GEN_DIR/out-proof.md"
 grep -qF '[testing](skill://devrites-lib/reference/standards/testing.md)' "$TMP_GEN_DIR/out-reviewer.md" &&
   ok "agent skill links become skill:// URLs" || no "agent skill links become skill:// URLs"
 
-grep -qxF "tools: read, edit, write, bash, glob, grep, ${NAV}, ctx_edit, ctx_patch, ctx_shell" \
+grep -qxF "tools: read, edit, write, bash, glob, grep, ${NAV}" \
   "$TMP_GEN_DIR/out-wright.md" &&
   ok "gen_omp_agent wright tools line" ||
   no "gen_omp_agent wright tools line"
 
-grep -qxF "tools: read, grep, glob, bash, ${NAV}, ctx_shell" \
+grep -qxF "tools: read, grep, glob, bash, ${NAV}" \
   "$TMP_GEN_DIR/out-reviewer.md" &&
   ok "gen_omp_agent reviewer tools line" ||
   no "gen_omp_agent reviewer tools line"
@@ -113,7 +93,7 @@ grep -qxF "tools: read, grep, glob, ${NAV}" \
 readonly_ok=1
 for f in "$TMP_GEN_DIR/out-reviewer.md" "$TMP_GEN_DIR/out-proof.md"; do
   line="$(grep '^tools:' "$f")"
-  for bad in edit write ctx_edit ctx_patch; do
+  for bad in edit write; do
     case ", ${line#tools: }, " in
     *", ${bad}, "*)
       no "$(basename "$f") gained $bad"

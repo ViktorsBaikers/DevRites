@@ -14,48 +14,16 @@ trap 'rm -rf "$TMP_GEN_DIR"' EXIT
 
 echo "== pi-generator-test =="
 
+# Mapped Claude tools only: Skill/Web* and MCP grants are dropped, and no
+# extension tools are added (pi-subagents fails a child missing a listed tool).
 expect_tools \
-  "$(_pi_append_extension_tools "read, grep, find, bash")" \
-  "read, grep, find, bash, ${NAV}, ctx_shell" \
-  "bash base keeps order and appends nav plus ctx_shell"
+  "$(_pi_map_tools "Read, Grep, Glob, Bash, Skill, WebFetch, mcp__codebase-memory-mcp__*" "devrites-code-reviewer")" \
+  "read, grep, find, bash" \
+  "maps Claude tools without extension or MCP names"
 
 expect_tools \
-  "$(_pi_append_extension_tools "read, grep, find")" \
-  "read, grep, find, ${NAV}" \
-  "read-only base appends nav only"
-
-expect_tools \
-  "$(_pi_append_extension_tools "read, edit, write, bash, find, grep")" \
-  "read, edit, write, bash, find, grep, ${NAV}, ctx_edit, ctx_patch, ctx_shell" \
-  "wright base appends nav plus ctx_edit/ctx_patch/ctx_shell"
-
-expect_tools \
-  "$(_pi_append_extension_tools "read, write")" \
-  "read, write, ${NAV}, ctx_edit, ctx_patch" \
-  "write without bash gets ctx_edit/ctx_patch not ctx_shell"
-
-expect_tools \
-  "$(_pi_append_extension_tools "read, edit")" \
-  "read, edit, ${NAV}, ctx_edit, ctx_patch" \
-  "edit without write still gets ctx_edit/ctx_patch"
-
-dup="$(_pi_append_extension_tools "read, ctx_read, bash")"
-case ", ${dup}, " in
-*", ctx_read, "*) ok "keeps existing ctx_read" ;;
-*) no "keeps existing ctx_read" ;;
-esac
-printf '%s' "$dup" | grep -q 'ctx_read, ctx_read' && no "duplicates ctx_read" || ok "does not duplicate ctx_read"
-printf '%s' "$dup" | grep -q 'ctx_shell' && ok "still appends ctx_shell after existing ctx_read" || no "dropped ctx_shell"
-
-# Mapped Claude tools, then extension extras. Skill/Web* stay dropped.
-expect_tools \
-  "$(_pi_append_extension_tools "$(_pi_map_tools "Read, Grep, Glob, Bash, Skill, WebFetch" "devrites-code-reviewer")")" \
-  "read, grep, find, bash, ${NAV}, ctx_shell" \
-  "maps Claude tools then appends extras"
-
-expect_tools \
-  "$(_pi_append_extension_tools "$(_pi_map_tools "Read, Grep, Glob" "devrites-proof-runner")")" \
-  "read, grep, find, ${NAV}" \
+  "$(_pi_map_tools "Read, Grep, Glob" "devrites-proof-runner")" \
+  "read, grep, find" \
   "proof-runner map stays read-only"
 
 wright_src="$TMP_GEN_DIR/devrites-slice-wright.md"
@@ -93,17 +61,17 @@ gen_pi_agent "$wright_src" "$TMP_GEN_DIR/out-wright.md"
 gen_pi_agent "$reviewer_src" "$TMP_GEN_DIR/out-reviewer.md"
 gen_pi_agent "$proof_src" "$TMP_GEN_DIR/out-proof.md"
 
-grep -qxF "tools: read, edit, write, bash, find, grep, ${NAV}, ctx_edit, ctx_patch, ctx_shell" \
+grep -qxF "tools: read, edit, write, bash, find, grep" \
   "$TMP_GEN_DIR/out-wright.md" &&
   ok "gen_pi_agent wright tools line" ||
   no "gen_pi_agent wright tools line"
 
-grep -qxF "tools: read, grep, find, bash, ${NAV}, ctx_shell" \
+grep -qxF "tools: read, grep, find, bash" \
   "$TMP_GEN_DIR/out-reviewer.md" &&
   ok "gen_pi_agent reviewer tools line" ||
   no "gen_pi_agent reviewer tools line"
 
-grep -qxF "tools: read, grep, find, ${NAV}" \
+grep -qxF "tools: read, grep, find" \
   "$TMP_GEN_DIR/out-proof.md" &&
   ok "gen_pi_agent proof-runner tools line" ||
   no "gen_pi_agent proof-runner tools line"
@@ -111,7 +79,7 @@ grep -qxF "tools: read, grep, find, ${NAV}" \
 readonly_ok=1
 for f in "$TMP_GEN_DIR/out-reviewer.md" "$TMP_GEN_DIR/out-proof.md"; do
   line="$(grep '^tools:' "$f")"
-  for bad in edit write ctx_edit ctx_patch; do
+  for bad in edit write; do
     case ", ${line#tools: }, " in
     *", ${bad}, "*)
       no "$(basename "$f") gained $bad"

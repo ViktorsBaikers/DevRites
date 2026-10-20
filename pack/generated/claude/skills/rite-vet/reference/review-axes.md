@@ -17,8 +17,8 @@ Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preservin
 
 Before implementation review, check for work beyond the settled spec.
 
-1. **What exists?** Find reusable code/flows via
-   [`tooling.md`](../../devrites-lib/reference/standards/tooling.md). Reuse → extend →
+1. **What exists?** Find reusable code/flows with `search_graph` (`semantic_query`) per
+   [`code-navigation.md`](../../devrites-lib/reference/standards/code-navigation.md). Reuse → extend →
    build new; list missed reuse instead of planning parallel work.
 2. **Minimum diff.** Find the smallest contract-complete change. Flag non-blocking work;
    use the marked action for topology cuts.
