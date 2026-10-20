@@ -351,7 +351,7 @@ var (
 )
 
 // clearAwaiting resumes the workflow after a question is resolved: when state.md's
-// "Awaiting human" block references qid, it drops that block, flips Status back to
+// "Awaiting human" block or cursor question_id references qid, it drops that block, flips Status back to
 // running, clears the Next step, and appends a Log entry. It is a no-op when the
 // workspace is not waiting on this question.
 func clearAwaiting(sfile, qid string) error {
@@ -386,8 +386,14 @@ func clearAwaiting(sfile, qid string) error {
 		}
 	}
 	waitingOn, _ := state.CursorField(awaitingLines, state.CursorQuestionID)
+	cursorWaits := false
 	if waitingOn != qid {
-		return nil
+		// `state set question_id=<qid>` records the wait in the cursor table
+		// instead of an Awaiting human block.
+		if cursorQID, _ := state.CursorField(lines, state.CursorQuestionID); cursorQID != qid {
+			return nil
+		}
+		cursorWaits = true
 	}
 
 	// Rewrite: drop the awaiting block, reset Status/Next step, log the resolution.
@@ -423,6 +429,9 @@ func clearAwaiting(sfile, qid string) error {
 	}
 	if inLog && !logAppended {
 		out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePolicy.Target, qid))
+	}
+	if cursorWaits {
+		out = state.DeleteCursorField(out, state.CursorQuestionID)
 	}
 	out, _ = state.SetCursorField(out, state.CursorStatus, "running")
 	out, _ = state.SetCursorField(out, state.CursorNextAction, "(resume: `"+resumeCommand.Both()+"` to continue the workflow)")
