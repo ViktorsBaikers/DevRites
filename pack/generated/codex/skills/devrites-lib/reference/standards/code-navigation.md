@@ -129,10 +129,11 @@ authoritative.
 
 - **MCP:** Claude hosts expose `mcp__codebase-memory-mcp__<tool>` (allowlisted
   in `.claude/settings.json` and agent `tools:` lines); generated omp agents
-  list the read-only tools as `mcp__codebase_memory_mcp_<tool>`, and Pi agents
-  under the bare names its extension registers. A missing server offers no
-  tools — use the fallback column.
-- **CLI** when the host exposes no MCP tools (e.g. Devin agents via `exec`):
+  list the read-only tools as `mcp__codebase_memory_mcp_<tool>`. Generated Pi
+  agents list none: pi-subagents fails a child whose `tools:` names a tool it
+  cannot load. A missing server offers no tools — use the fallback column.
+- **CLI** when the host exposes no MCP tools (e.g. Devin agents via `exec`,
+  Pi agents via `bash`):
   `codebase-memory-mcp cli <tool> --project <repo root> --format json` with
   kebab-case flags (`--function-name X --direction inbound --include-tests`);
   repeat a flag for array values. Exit 1 means the tool returned an error.

@@ -1,7 +1,7 @@
 ---
 name: fast-planner
 description: "Read-only planner for /rite-fast. From a fresh context, reads the repository, drafts acceptance criteria and up to ten vertical slices, ranks the decisions the user must make with recommended answers, and flags risk. Never asks the user or writes files."
-tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell, search_graph, trace_path, get_code_snippet, get_file_outline, query_graph, get_architecture, search_code, get_graph_schema, list_projects, index_status, detect_changes, check_index_coverage
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
 inheritProjectContext: true
 ---
 

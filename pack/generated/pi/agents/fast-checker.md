@@ -1,7 +1,7 @@
 ---
 name: fast-checker
 description: "Read-only completeness checker for /rite-fast. After all slices are built, compares the diff with the spec's acceptance criteria and the plan's slices and returns every gap with file:line evidence. Never judges style or edits."
-tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell, search_graph, trace_path, get_code_snippet, get_file_outline, query_graph, get_architecture, search_code, get_graph_schema, list_projects, index_status, detect_changes, check_index_coverage
+tools: read, grep, find, bash, ctx_read, ctx_ls, ctx_find, ctx_grep, ctx_glob, ctx_search, ctx_compose, ctx_callgraph, ctx_tree, symbol_search, project_report, module_report, read_symbol, read_enclosing, lens_diagnostics, ctx_shell
 inheritProjectContext: true
 ---
 

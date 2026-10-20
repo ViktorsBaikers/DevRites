@@ -171,24 +171,6 @@ _pi_append_extension_tools() {
   printf '%s' "$_out"
 }
 
-# Agents granted the codebase-memory-mcp server (or no tools line at all) get its
-# read-only tools under the bare names its Pi extension registers. Unknown names
-# are pruned non-fatally, so hosts without it are unaffected; the write tools
-# are never listed.
-_PI_CODE_INDEX_TOOLS="search_graph trace_path get_code_snippet get_file_outline query_graph get_architecture search_code get_graph_schema list_projects index_status detect_changes check_index_coverage"
-
-_pi_append_code_index_tools() {
-  local _base="$1" _raw="$2" _out="$1" _tool
-  if [ -n "$_raw" ] && ! _pi_csv_has "$(printf '%s' "$_raw" | sed 's/, */, /g')" "mcp__codebase-memory-mcp__*"; then
-    printf '%s' "$_base"
-    return
-  fi
-  for _tool in $_PI_CODE_INDEX_TOOLS; do
-    _out="$(_pi_csv_append "$_out" "$_tool")"
-  done
-  printf '%s' "$_out"
-}
-
 # Generate a pi-subagents Markdown agent from a Claude Code markdown agent.
 # pi-subagents loads project agents from .pi/agents/**/*.md (YAML frontmatter +
 # body). The tools allowlist carries the Claude permission boundary: only
@@ -205,7 +187,7 @@ gen_pi_agent() {
   _skills="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm && /^skills:[[:space:]]*$/{list=1; next} list && /^[[:space:]]*-[[:space:]]*/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print; next} list{exit}' "$_src" | tr '\n' ' ' | sed 's/ $//; s/ /, /g')"
   [ -n "$_name" ] || _name="$(basename "$_src" .md)"
   [ -n "$_desc" ] || _desc="DevRites custom agent."
-  _tools="$(_pi_append_code_index_tools "$(_pi_append_extension_tools "$(_pi_map_tools "$_tools_raw" "$_name")")" "$_tools_raw")"
+  _tools="$(_pi_append_extension_tools "$(_pi_map_tools "$_tools_raw" "$_name")")"
   _desc_tmp="$TMP_GEN_DIR/pi-agent-desc-$(basename "$_src").txt"
   _desc_pi="$TMP_GEN_DIR/pi-agent-desc-$(basename "$_src").pi.txt"
   printf '%s' "$_desc" >"$_desc_tmp"
