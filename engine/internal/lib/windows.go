@@ -407,7 +407,7 @@ func worktreeTree(dir string) (string, error) {
 			live = filepath.Join(dir, live)
 		}
 		if raw, err := os.ReadFile(live); err == nil { // #nosec G304 -- git's own index path
-			if err := os.WriteFile(index, raw, 0o600); err != nil {
+			if err := os.WriteFile(index, raw, 0o600); err != nil { // #nosec G703 -- index is a fixed name in our own MkdirTemp dir
 				return "", err
 			}
 		}
