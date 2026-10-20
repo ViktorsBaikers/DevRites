@@ -1065,8 +1065,9 @@ func TestContextRootBundleAnchorsOverBudgetArtifacts(t *testing.T) {
 	if text := string(rootBundle); !strings.Contains(text, "workspace/decisions.md (by reference)") || strings.Contains(text, "filler decision row") || !strings.Contains(text, "small spec body") {
 		t.Fatalf("root bundle must anchor only the over-budget artifact:\n%s", text)
 	}
-	run("--role", "code-reviewer")
-	roleBundle, _ := os.ReadFile(filepath.Join(featureDir, "ctx", "build-code-reviewer.bundle.md"))
+	// Build reviewer bundles need --slice; the wright role still takes an unscoped bundle.
+	run("--role", "slice-wright")
+	roleBundle, _ := os.ReadFile(filepath.Join(featureDir, "ctx", "build-slice-wright.bundle.md"))
 	if !strings.Contains(string(roleBundle), "filler decision row") {
 		t.Fatalf("a role bundle without --slice must stay whole:\n%s", roleBundle)
 	}
