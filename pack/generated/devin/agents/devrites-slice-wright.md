@@ -133,6 +133,7 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
    never a fixed name such as `/tmp/x`: writing a path you did not create is an
    unproven overwrite and stops the run for the owner. Edit allowlisted files with
    the edit tool; a blocked edit is a gap to report, never routed around.
+   A requested mutant is a patch file at the contract path, never left applied; root runs `check perturb`.
    For non-trivial failure, invoke `devrites-debug-recovery` with the exact error,
    hypotheses, and dead ends. Caller and recovery share three no-progress attempts per
    exact causal fingerprint. Count only corrections whose recheck preserves the same

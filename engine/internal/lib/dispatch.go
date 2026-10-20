@@ -27,9 +27,9 @@ import (
 // fan-out cannot silently degrade to serial (open -> every role started ->
 // seal -> returns -> complete). start/return also auto-record metrics events.
 //
-//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release]
+//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]
 
-const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release]
+const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
 role has a distinct handle; return fails before seal. The start that gives
@@ -60,6 +60,20 @@ next open is blocked until --reslice-review names a drift.md
 a first-round build wright wave narrower than the parallel select --from-plan
 batch is blocked until evidence.md records "serial: <skipped ids> — <reason>";
 repair rounds and lease siblings are never blocked.
+
+Root-edit tripwire (ADR-0038): the first open records tree-baseline.json
+(dirty product paths outside .devrites/ and .scratch/, accepted as user work);
+the return that completes a wright wave (any phase) takes in its slice write
+sets and claim paths. open is BLOCKED while a dirty product path changed since
+that baseline with no live claim or in-flight wright wave (any phase) covering
+it, unless the new wright wave (any phase) takes the path on (--claim or a
+slice write set). attribute --reason <evidence> --path <path>... records owner
+work, gate output, a standalone wright, or a sanctioned root write for flagged
+paths. The engine never reverts a file.
+
+A build wright wave open in a git project records the work tree as a tree
+object (tree in dispatch.json); check windows --since-dispatch <wave> diffs
+against it to catch tests that lost assertions between same-tree rounds.
 `
 
 // wrightRoundsPerReview is how many build wright rounds (or slice-bound Vet
@@ -82,6 +96,7 @@ type dispatchWave struct {
 	ResliceReviewed []string                 `json:"reslice_reviewed,omitempty"`
 	Claim           string                   `json:"claim,omitempty"`
 	ClaimSession    string                   `json:"claim_session,omitempty"`
+	Tree            string                   `json:"tree,omitempty"` // work tree at a build wright open, for check windows --since-dispatch
 }
 
 // dispatchClaim carries the wave-claim flags; ttl 0 means unset.
@@ -157,6 +172,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	var positional []string
 	all := false
 	var claim dispatchClaim
+	var attributed []string
 	for i := 0; i < len(args); i++ {
 		value := argAt(args, i+1)
 		switch args[i] {
@@ -187,6 +203,8 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			claim.session = value
 		case "--claim":
 			claim.paths = append(claim.paths, value)
+		case "--path":
+			attributed = append(attributed, value)
 		case "--claim-ttl":
 			n, err := strconv.Atoi(value)
 			if err != nil {
@@ -223,9 +241,16 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "dispatch: --release applies to abandon only")
 		return 2
 	}
+	if sub != "attribute" && len(attributed) > 0 {
+		fmt.Fprintln(stderr, "dispatch: --path applies to attribute only")
+		return 2
+	}
 	if _, err := devritespaths.ExistingFeatureDirChecked(root, slug); err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
 		return 2
+	}
+	if sub == "attribute" {
+		return attributeEdits(root, slug, reason, attributed, stdout, stderr)
 	}
 	// Serialize load-modify-save so concurrent start/return calls never lose
 	// an update and strand the wave short of complete.
@@ -276,6 +301,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			}
 			w.Roles[r] = &dispatchRole{}
 		}
+		if err := lintKnownRoles(root, phase, roles); err != nil {
+			return fail("BLOCKED: %v", err)
+		}
 		rounds, code := admitWrightRounds(root, slug, f, w, review, stderr)
 		if code != 0 {
 			return code
@@ -287,7 +315,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		}
 		for _, r := range roles {
 			if isReviewerRole(r) {
-				if err := lintReviewerPacket(packet); err != nil {
+				if err := lintReviewerWavePacket(packet, roles); err != nil {
 					return fail("BLOCKED: %v", err)
 				}
 				if strings.EqualFold(phase, "review") || strings.EqualFold(phase, "seal") {
@@ -297,6 +325,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 				}
 				break
 			}
+		}
+		if err := openTripwire(root, slug, w, claim.paths); err != nil {
+			return fail("BLOCKED: %v", err)
 		}
 		if claim.session != "" || len(claim.paths) > 0 || claim.ttl != 0 {
 			if claim.session == "" || len(claim.paths) == 0 {
@@ -313,6 +344,15 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			// Inherit the abandoned wave's kept claim so the completing return releases it.
 			w.Claim, w.ClaimSession = prev.Claim, prev.ClaimSession
 		}
+		if project, _, ok := treeProject(root); ok && isBuildWrightWave(w) {
+			// Uncommitted rounds look like additions against HEAD; this snapshot
+			// is the round's own base. A failed snapshot never blocks the open.
+			if tree, err := worktreeTree(project); err != nil {
+				fmt.Fprintf(stderr, "dispatch: WARNING: wave %s tree snapshot not recorded: %v\n", wave, err)
+			} else {
+				w.Tree = tree
+			}
+		}
 		superseded := prev != nil && prev.Claim != "" && prev.Claim != w.Claim
 		f.Waves[wave] = w
 		if err := saveDispatch(path, f); err != nil {
@@ -322,6 +362,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			return fail("%v", err)
 		}
 		fmt.Fprintf(stdout, "dispatch: wave %s open, %d roles declared\n", wave, len(roles))
+		if err := ensureTreeBaseline(root, slug, stdout); err != nil {
+			fmt.Fprintf(stderr, "dispatch: WARNING: %s not recorded: %v\n", treeBaselineFile, err)
+		}
 		if superseded {
 			releaseWaveClaim(root, wave, prev, stdout, stderr)
 		}
@@ -442,6 +485,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		}
 		recordMetricNote(root, slug, w.Phase, "return", role, note)
 		fmt.Fprintf(stdout, "dispatch: %s returned (wave %s %s)\n", role, wave, w.State)
+		if all {
+			absorbWave(root, slug, w, stderr)
+		}
 		if all && w.Claim != "" {
 			releaseWaveClaim(root, wave, w, stdout, stderr)
 		}
@@ -651,9 +697,11 @@ func roundKind(w *dispatchWave) string {
 }
 
 func isBuildWrightWave(w *dispatchWave) bool {
-	if !strings.EqualFold(w.Phase, "build") {
-		return false
-	}
+	return strings.EqualFold(w.Phase, "build") && isWrightWave(w)
+}
+
+// isWrightWave reports whether any role of the wave, in any phase, is a wright.
+func isWrightWave(w *dispatchWave) bool {
 	for r := range w.Roles {
 		if strings.Contains(r, "wright") {
 			return true

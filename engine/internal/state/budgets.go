@@ -2,6 +2,10 @@ package state
 
 import (
 	"bytes"
+	"fmt"
+	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/devrites/devrites/internal/markdowntext"
@@ -14,9 +18,12 @@ const (
 	BudgetBytesPerLine = 400
 	// BudgetBlockFactor is the material-overshoot threshold. At or above this
 	// multiple of a line or byte budget a gate blocks unless the artifact
-	// records a structural `Budget override:` line; smaller overshoots are
-	// reported by `orient` and stay advisory.
+	// records a structural `Budget override: <=N lines; <reason>` line that
+	// covers it; smaller overshoots are reported by `orient` and stay advisory.
 	BudgetBlockFactor = 1.5
+	// BudgetOverrideFactor caps an override's N at this multiple of the line
+	// budget; past it only lossless relocation to history/ or a split is legal.
+	BudgetOverrideFactor = 2
 	// MaxArtifactBytes is the per-artifact read cap. A larger artifact cannot be
 	// observed and blocks as file_too_large, so callers that explain a size
 	// problem quote the same number the observer enforced.
@@ -80,7 +87,7 @@ func ArtifactLineBudget(name string) (int, bool) {
 // line budget: conditional artifacts (`references.md`, `investigation-map.md`,
 // `dogfood.md`, `devex.md`) and engine-owned machine files (the parallel lease,
 // the metrics ledger, the regression baseline, the dispatch ledger, the drift
-// baseline, the diff-scope snapshot). Anything else in the root is unsanctioned placement — `packets/`
+// baseline, the diff-scope snapshot, the tree baseline). Anything else in the root is unsanctioned placement — `packets/`
 // and `history/` own by-reference packets and relocated narrative
 // (workspace-artifact-schema.md "Required by phase").
 var sanctionedRootFiles = map[string]bool{
@@ -94,6 +101,7 @@ var sanctionedRootFiles = map[string]bool{
 	"dispatch.json":            true,
 	"readiness-inputs.json":    true,
 	"diff-scope-baseline.json": true,
+	"tree-baseline.json":       true,
 }
 
 // SanctionedRootFile reports whether name is a legitimate workspace-root file:
@@ -112,6 +120,19 @@ func ArtifactBudgetGateApplies(name string) bool {
 	return ok && !advisoryOnlyArtifacts[name]
 }
 
+// BudgetGatedArtifacts lists, sorted, every artifact the material-overshoot
+// gate covers, so a gate checks each one present, not only the phase-required.
+func BudgetGatedArtifacts() []ArtifactPath {
+	var names []ArtifactPath
+	for name := range artifactLineBudgets {
+		if ArtifactBudgetGateApplies(name) {
+			names = append(names, ArtifactPath(name))
+		}
+	}
+	sort.Slice(names, func(i, j int) bool { return names[i] < names[j] })
+	return names
+}
+
 // ArtifactBudgetStatus is one canonical artifact measured against its budget.
 type ArtifactBudgetStatus struct {
 	File       string
@@ -121,7 +142,11 @@ type ArtifactBudgetStatus struct {
 	ByteBudget int64
 	Over       bool
 	Material   bool
-	Override   bool
+	// OverrideLines is the N of a well-formed override within the cap, else 0.
+	OverrideLines int
+	// Override is true when that override covers the artifact: at most N lines
+	// and N*BudgetBytesPerLine bytes.
+	Override bool
 }
 
 // ArtifactBudget measures raw against the named artifact's budget. ok is false
@@ -141,7 +166,10 @@ func ArtifactBudget(name string, raw []byte) (ArtifactBudgetStatus, bool) {
 	status.Over = status.Lines > lineBudget || status.Bytes > status.ByteBudget
 	status.Material = float64(status.Lines) >= float64(lineBudget)*BudgetBlockFactor ||
 		float64(status.Bytes) >= float64(status.ByteBudget)*BudgetBlockFactor
-	status.Override = HasBudgetOverride(raw)
+	if n := BudgetOverrideLines(raw); n > 0 && n <= lineBudget*BudgetOverrideFactor {
+		status.OverrideLines = n
+		status.Override = status.Lines <= n && status.Bytes <= int64(n)*BudgetBytesPerLine
+	}
 	return status, true
 }
 
@@ -157,18 +185,36 @@ func CountLines(raw []byte) int {
 	return lines
 }
 
-// HasBudgetOverride reports a structural `Budget override:` line with a reason
-// outside fenced code blocks; a fenced example never counts. Malformed Markdown carries no
-// structural override.
-func HasBudgetOverride(raw []byte) bool {
+// budgetOverrideValue matches the text after `Budget override:`: `<=N` (optionally
+// `lines`), `;`, then a non-empty reason.
+var budgetOverrideValue = regexp.MustCompile(`^\s*<=\s*([0-9]{1,6})(?:\s*lines?)?\s*;\s*\S`)
+
+// BudgetOverrideLines returns N from the first structural
+// `Budget override: <=N lines; <reason>` line outside fenced code blocks, or 0
+// when there is none. A free-text override without N, a fenced example, and
+// malformed Markdown carry no override.
+func BudgetOverrideLines(raw []byte) int {
 	structural, err := markdowntext.Structural(raw)
 	if err != nil {
-		return false
+		return 0
 	}
 	for _, line := range strings.Split(string(structural), "\n") {
-		if reason, ok := strings.CutPrefix(strings.TrimSpace(line), "Budget override:"); ok && strings.TrimSpace(reason) != "" {
-			return true
+		value, ok := strings.CutPrefix(strings.TrimSpace(line), "Budget override:")
+		if !ok {
+			continue
+		}
+		if m := budgetOverrideValue.FindStringSubmatch(value); m != nil {
+			if n, err := strconv.Atoi(m[1]); err == nil && n > 0 {
+				return n
+			}
 		}
 	}
-	return false
+	return 0
+}
+
+// BudgetRemedy names the legal ways out of a material overshoot for a
+// lineBudget-line artifact.
+func BudgetRemedy(lineBudget int) string {
+	return fmt.Sprintf("relocate closed sections losslessly to history/<file>-<YYYYMMDD>.md, split the feature via /rite-plan revise|course-correct, or record a structural `Budget override: <=N lines; <reason>` line with N <= %d (%dx the budget; never for slice or acceptance count)",
+		lineBudget*BudgetOverrideFactor, BudgetOverrideFactor)
 }

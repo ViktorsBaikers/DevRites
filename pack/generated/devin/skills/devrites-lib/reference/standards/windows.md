@@ -36,7 +36,7 @@ Optional until a marker is introduced: a feature with no new markers needs no
 ## Command
 
 ```text
-devrites-engine check windows <slug> [--worktree|--staged|--base <ref>]
+devrites-engine check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>]
 ```
 
 Exit `0` when no marker is introduced or every hit is waived; `3` when any
@@ -47,7 +47,8 @@ wholly new in `--worktree`, and ignores binary files, non-test deletions, and
 Removals are file-level hits: a deleted test file is `deleted-test`, and a test
 file that remains but loses assertion lines on net is `removed-assertion`
 (moving an assertion within the file is not a loss; a git-detected rename is
-not a deletion). Loosened thresholds have no deterministic signal and stay a
+not a deletion). `--since-dispatch <wave>` reports only these removals, against
+the work tree recorded when that build wright wave opened. Loosened thresholds have no deterministic signal and stay a
 review judgment ([`code-review.md`](code-review.md) § Bar integrity).
 
 ## Reviewer posture

@@ -47,6 +47,9 @@ ABANDON: AC-003 <why the outcome can never be met>
   An abandoned gate blocks completion and demands a handoff — it can never
   read as a pass.
 - An empty ledger (no gates) is malformed.
+- A `scripts/` test driver (whole `test`/`tests` word) in a Writer allowlist
+  or a `present` touched-files.md row blocks readiness/seal unless a CHECK
+  runs it or `Driver waiver: <path> — DEC-### <reason>` cites a decisions.md heading.
 
 ## Runnable gates and the approval boundary
 

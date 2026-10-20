@@ -120,7 +120,8 @@ For required mutation or critical-link probes, use a faithful isolated copy of t
 current candidate, including its staged/unstaged content, never the shared proof/reviewer
 tree or HEAD alone. Bind its starting content to the candidate; retain the original
 candidate check before/after per [`candidate-integrity.md`](../candidate-integrity.md).
-Only an exact path-bounded wright may hand-edit source; an existing mutation runner
+Only an exact path-bounded wright may hand-edit source; its mutant patch runs via
+`devrites-engine check perturb`, recorded under `evidence/perturb/`. An existing mutation runner
 runs under normal approved command authority. Isolation grants no live-service or
 destructive authority. Input fault injection must likewise leave candidate sources intact.
 Critical/regression mutation must break the relevant implementation; an input-only
@@ -143,6 +144,7 @@ finding. The same rule runs in reverse for a red test in code the diff did not t
 whether the assertion is stale, and fix the assertion as a recorded, reviewable change —
 never bend working product code just to satisfy it. The root's diff review and dedicated test analysis compare the
 candidate with its base and reject deleted, skipped, focused, or weakened tests.
+A same-tree repair round also runs `check windows <slug> --since-dispatch <wave>`, which flags tests deleted or net assertions lost since that wave opened; tests stay editable.
 
 ## The verification gap: green, but the test doesn't prove the change
 Diff review catches reaching green by *weakening* a test. This catches the quieter failure: a

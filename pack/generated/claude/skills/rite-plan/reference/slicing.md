@@ -65,8 +65,9 @@ whole surface, each round finds new material, and the loop never converges.
   beyond the ceiling move; built slices stay.
 - The ceiling bounds one **workspace**, never the product: the sequence delivers every
   slice, in order, each with its own Vet/Build/Review loop. A human may still accept a
-  single larger workspace by recording the decision in `decisions.md` and a structural
-  `Budget override:` in the affected artifacts; the extra review rounds on the whole
+  single larger workspace by recording the decision in `decisions.md` and a bounded
+  `Budget override: <=N lines; <reason>` (N at most 2x the budget; past that only
+  relocation to history/ or a split) in the affected artifacts; the extra review rounds on the whole
   surface are then the accepted, named cost. The deterministic gate
   (`check readiness`/`check seal`) blocks only a material overshoot without such an
   override, so the choice stays explicit rather than accidental.

@@ -91,7 +91,8 @@ user flow, assumption tests cannot prove); other stood decisions are recorded in
 `decisions.md` without dispatch. Bundles take `--slice <SLICE-ID>`. Dispatch fresh,
 read-only under [`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md).
 Wait for every required account to become terminal; missing/gap needs a valid result.
-Fold supported in-scope Critical/Important findings by cause into one inventory.
+Fold supported in-scope Critical/Important findings by cause into one inventory; a
+row `check anchors` leaves Unverified or Deferred never enters it.
 Dispatch one repair-all wright instructed to fix every finding, then attack its own
 correction for fix-introduced defects before returning; durable contract defects use Spec
 Drift Guard.

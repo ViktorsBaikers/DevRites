@@ -393,7 +393,7 @@ func observationInventory() []ArtifactPath {
 			inventory = append(inventory, artifact)
 		}
 	}
-	for _, artifact := range []ArtifactPath{"strategy.md", "design-brief.md", "ai-spec.md", ".devrites/principles.md"} {
+	for _, artifact := range append(append([]ArtifactPath{"strategy.md", "design-brief.md", "ai-spec.md"}, BudgetGatedArtifacts()...), ".devrites/principles.md") {
 		if !seen[artifact] {
 			seen[artifact] = true
 			inventory = append(inventory, artifact)

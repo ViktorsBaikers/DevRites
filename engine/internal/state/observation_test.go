@@ -34,6 +34,14 @@ func TestWorkspaceObservationInventoryCanonicalArtifactsOnce(t *testing.T) {
 		"strategy.md",
 		"design-brief.md",
 		"ai-spec.md",
+		"README.md",
+		"drift.md",
+		"flows.md",
+		"handoff.md",
+		"notes.md",
+		"polish-report.md",
+		"ship.md",
+		"windows.md",
 		".devrites/principles.md",
 	}
 	for _, path := range wantPaths {

@@ -26,11 +26,13 @@ devrites-engine check preconditions <slug> [--slice SLICE-###] [--timeout N]
 devrites-engine check seal <slug>
 devrites-engine check slice <slug> <SLICE-ID>
 devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path> [--worktree|--staged|--base <ref>] [--snapshot|--baseline] [--verbose]
+devrites-engine check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N]
 devrites-engine check task-graph <slug>
 devrites-engine check regression <slug> [--update]
 devrites-engine check drift <slug> [--record]
-devrites-engine check windows <slug> [--worktree|--staged|--base <ref>]
+devrites-engine check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>]
 devrites-engine check dup [slug] [--all|--worktree|--staged|--base <ref>]
+devrites-engine check anchors <slug> <return-file> [--skills-root <dir>]
 devrites-engine check skill-trust <path>
 devrites-engine check path-disjoint [<json-file>|-]
 devrites-engine check indexes [--root <dir>]
@@ -45,7 +47,7 @@ devrites-engine recall --paths <p1,p2,...> [--limit n]
 devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>] [--whole]
 devrites-engine metrics record <slug> --phase <p> --event <e>
 devrites-engine metrics summary [slug]
-devrites-engine dispatch <slug> <open|start|seal|return|status|abandon>
+devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute>
 devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID>|--paths <path>...) [--base <ref>]
 devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID>] [--recheck] [--checks <G-ID,...>] [--focus <file>]
 devrites-engine parallel <subcommand>
@@ -156,6 +158,9 @@ self-contained updater.
   Read-only: nothing is installed or executed. Skills use it to cite real
   commands in `gates.md` `CHECK` lines and proof steps instead of invented
   ones; unresolved slots print `unresolved` rather than guessing.
+- `check anchors <slug> <return-file>` anchors each Critical/Important row's
+  quote at its cited `file:line` and its `breaks` quote; Unverified or Deferred
+  rows exit `3` and never drive a repair round.
 - `check dup [slug] [--all|--worktree|--staged|--base <ref>]` reports advisory
   near-duplicate code clusters that survive comment stripping, literal
   collapsing, and identifier renaming. Diff modes mark units overlapping

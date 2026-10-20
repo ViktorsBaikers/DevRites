@@ -22,6 +22,8 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "check candidate", command: "check", args: []string{"candidate"}, want: rootStrictUsage},
 		{name: "check readiness", command: "check", args: []string{"readiness"}, want: rootStrictUsage},
 		{name: "check preconditions", command: "check", args: []string{"preconditions"}, want: rootStrictUsage},
+		{name: "check anchors", command: "check", args: []string{"anchors"}, want: rootStrictUsage},
+		{name: "check perturb", command: "check", args: []string{"perturb"}, want: rootStrictUsage},
 		{name: "candidate freeze", command: "candidate", args: []string{"freeze"}, want: rootStrictUsage},
 		{name: "candidate without freeze", command: "candidate", args: []string{"other"}, want: rootUnused},
 		{name: "packet", command: "packet", want: rootStrictUsage},

@@ -257,6 +257,8 @@ expected = {
     "Bash(devrites-engine check regression *)",
     "Bash(devrites-engine check windows *)",
     "Bash(devrites-engine check dup *)",
+    "Bash(devrites-engine check anchors *)",
+    "Bash(devrites-engine check perturb *)",
     "Bash(devrites-engine check drift *)",
     "Bash(devrites-engine check preconditions *)",
     "Bash(devrites-engine orient *)",

@@ -524,3 +524,118 @@ func TestCheckWindowsRecordsCursorPhase(t *testing.T) {
 		t.Fatalf("metrics=%q err=%v", raw, err)
 	}
 }
+
+// worktreeTree must leave the real index, refs, and work tree as they were
+// while still capturing staged, unstaged, and untracked content.
+func TestWorktreeTreeLeavesRepoUntouched(t *testing.T) {
+	project := t.TempDir()
+	initWindowsRepo(t, project)
+	testutil.WriteFile(t, filepath.Join(project, "a.go"), "package a\n")
+	runSecretScanGit(t, project, "add", "--", "a.go")
+	runSecretScanGit(t, project, "commit", "-qm", "baseline")
+	testutil.WriteFile(t, filepath.Join(project, "a.go"), "package a // edited\n")
+	testutil.WriteFile(t, filepath.Join(project, "b.go"), "package a // staged\n")
+	runSecretScanGit(t, project, "add", "--", "b.go")
+	testutil.WriteFile(t, filepath.Join(project, "c_test.go"), "package a // untracked\n")
+
+	status := runSecretScanGit(t, project, "status", "--porcelain", "-uall")
+	refs := runSecretScanGit(t, project, "for-each-ref")
+	index, err := os.ReadFile(filepath.Join(project, ".git", "index"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := worktreeTree(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(filepath.Join(project, ".git", "index"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(index, after) {
+		t.Fatal("snapshot rewrote the real index")
+	}
+	if got := runSecretScanGit(t, project, "for-each-ref"); got != refs {
+		t.Fatalf("refs changed: %q -> %q", refs, got)
+	}
+	if got := runSecretScanGit(t, project, "status", "--porcelain", "-uall"); got != status {
+		t.Fatalf("status changed: %q -> %q", status, got)
+	}
+	for file, want := range map[string]string{"a.go": "package a // edited\n", "b.go": "package a // staged\n", "c_test.go": "package a // untracked\n"} {
+		if got := runSecretScanGit(t, project, "cat-file", "-p", tree+":"+file); got != want {
+			t.Fatalf("%s in snapshot = %q want %q", file, got, want)
+		}
+	}
+}
+
+// A same-tree repair round is uncommitted, so against HEAD a test the first
+// round added is all additions; --since-dispatch diffs against the snapshot
+// the round's wright wave recorded and sees its removals.
+func TestCheckWindowsSinceDispatch(t *testing.T) {
+	round1 := "package a\n\nfunc TestA(t *testing.T) {\n\tif A() != 1 {\n\t\tt.Fatal(\"a\")\n\t}\n\tif B() != 2 {\n\t\tt.Fatalf(\"b\")\n\t}\n}\n"
+	cases := []struct {
+		name   string
+		round2 string // "" deletes the file
+		code   int
+		want   string
+	}{
+		{"assertion dropped", "package a\n\nfunc TestA(t *testing.T) {\n\tif A() != 1 {\n\t\tt.Fatal(\"a\")\n\t}\n}\n", 3, "unwaived: a_test.go removed-assertion — net -1"},
+		{"assertion moved", "package a\n\nfunc TestA(t *testing.T) {\n\tif B() != 2 {\n\t\tt.Fatalf(\"b\")\n\t}\n\tif A() != 1 {\n\t\tt.Fatal(\"a\")\n\t}\n}\n", 0, "windows: ok"},
+		{"assertion added", strings.TrimSuffix(round1, "}\n") + "\tif C() != 3 {\n\t\tt.Errorf(\"c\")\n\t}\n}\n", 0, "windows: ok"},
+		{"test deleted", "", 3, "unwaived: a_test.go deleted-test"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			project := t.TempDir()
+			initWindowsRepo(t, project)
+			root := windowsWorkspace(t, project, "feat")
+			testutil.WriteFile(t, filepath.Join(project, "a.go"), "package a\n")
+			runSecretScanGit(t, project, "add", "--", "a.go")
+			runSecretScanGit(t, project, "commit", "-qm", "baseline")
+			testutil.WriteFile(t, filepath.Join(project, "a_test.go"), round1) // round 1, untracked
+			if code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "w2", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)); code != 0 {
+				t.Fatalf("open: code=%d\n%s", code, out)
+			}
+			if tc.round2 == "" {
+				if err := os.Remove(filepath.Join(project, "a_test.go")); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				testutil.WriteFile(t, filepath.Join(project, "a_test.go"), tc.round2)
+			}
+
+			var out, errBuf bytes.Buffer
+			if code := RunCheckWindows(root, []string{"feat", "--since-dispatch", "w2"}, &out, &errBuf); code != tc.code || !strings.Contains(out.String(), tc.want) {
+				t.Fatalf("since-dispatch: code=%d want %d, out=%q err=%q", code, tc.code, out.String(), errBuf.String())
+			}
+			if metrics, _ := os.ReadFile(filepath.Join(root, "work", "feat", MetricsFile)); !strings.Contains(string(metrics), `"event":"windows-since"`) {
+				t.Fatalf("since-dispatch runs must be tagged in metrics.jsonl:\n%s", metrics)
+			}
+			out.Reset()
+			if code := RunCheckWindows(root, []string{"feat"}, &out, &errBuf); code != 0 {
+				t.Fatalf("HEAD-based run sees no removal in an untracked file: code=%d out=%q", code, out.String())
+			}
+		})
+	}
+}
+
+func TestCheckWindowsSinceDispatchNeedsSnapshot(t *testing.T) {
+	project := t.TempDir()
+	initWindowsRepo(t, project)
+	root := windowsWorkspace(t, project, "feat")
+	if code, out := runDispatchT(t, root, "open", "--phase", "vet", "--wave", "v1", "--role", "a"); code != 0 {
+		t.Fatalf("open: code=%d\n%s", code, out)
+	}
+	for name, args := range map[string][]string{
+		"no wave name": {"feat", "--since-dispatch"},
+		"flag as wave": {"feat", "--since-dispatch", "--staged"},
+		"unknown wave": {"feat", "--since-dispatch", "nope"},
+		"no snapshot":  {"feat", "--since-dispatch", "v1"},
+		"with cwd":     {"feat", "--since-dispatch", "v1", "--cwd", project},
+	} {
+		var out, errBuf bytes.Buffer
+		if code := RunCheckWindows(root, args, &out, &errBuf); code != 2 {
+			t.Fatalf("%s: code=%d out=%q err=%q", name, code, out.String(), errBuf.String())
+		}
+	}
+}

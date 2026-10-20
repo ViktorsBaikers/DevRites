@@ -704,13 +704,58 @@ func TestCheckBlocksMaterialBudgetOvershootWithoutOverride(t *testing.T) {
 		t.Fatalf("StateProblems=%q", joined)
 	}
 
+	// A free-text override carries no bound, so it no longer clears the block.
 	testutil.AppendFile(t, filepath.Join(workspace, "tasks.md"), "\nBudget override: vendored requirement matrix, relocation pending\n")
 	res, err = Check(Readiness, root, "oversized")
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !strings.Contains(strings.Join(res.StateProblems, "\n"), "budget: tasks.md is") {
+		t.Fatalf("a reason-only override must not clear the budget problem: %v", res.StateProblems)
+	}
+
+	testutil.AppendFile(t, filepath.Join(workspace, "tasks.md"), "\nBudget override: <=520 lines; vendored requirement matrix\n")
+	res, err = Check(Readiness, root, "oversized")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if strings.Contains(strings.Join(res.StateProblems, "\n"), "budget: tasks.md") {
-		t.Fatalf("override did not clear the budget problem: %v", res.StateProblems)
+		t.Fatalf("a bounded override did not clear the budget problem: %v", res.StateProblems)
+	}
+}
+
+// Every present budget-gated artifact is checked, not only the phase-required
+// ones: an unrequired drift.md once grew to 7x its budget unchecked.
+func TestCheckBlocksUnrequiredArtifactOvershoot(t *testing.T) {
+	root := t.TempDir()
+	writeCompleteGateFeature(t, root, "side-ledgers", state.PhaseBuild, state.PhaseBuild, "none\n")
+	workspace := filepath.Join(root, "work", "side-ledgers")
+	// strategy.md (180-line budget) is a readiness-binding input, so it is written first.
+	testutil.WriteFile(t, filepath.Join(workspace, "strategy.md"), "# Strategy\n\n"+strings.Repeat("strategy note\n", 300))
+	binding := mustReadinessBinding(t, root, "side-ledgers")
+	testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+	// drift.md (160-line budget): an override above 2x (320 lines) never counts.
+	testutil.WriteFile(t, filepath.Join(workspace, "drift.md"), "# Drift\n\nBudget override: <=400 lines; round log\n\n"+strings.Repeat("round note\n", 300))
+
+	res, err := Check(Readiness, root, "side-ledgers")
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(res.StateProblems, "\n")
+	if !res.Blocked || !strings.Contains(joined, "budget: strategy.md is") || !strings.Contains(joined, "budget: drift.md is") {
+		t.Fatalf("blocked=%v StateProblems=%q", res.Blocked, joined)
+	}
+	if !strings.Contains(joined, "history/") || !strings.Contains(joined, "N <= 320") {
+		t.Fatalf("remedies and the 2x cap must be named: %q", joined)
+	}
+
+	testutil.WriteFile(t, filepath.Join(workspace, "drift.md"), "# Drift\n\nBudget override: <=310 lines; reslice reviews\n\n"+strings.Repeat("round note\n", 300))
+	res, err = Check(Readiness, root, "side-ledgers")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if joined := strings.Join(res.StateProblems, "\n"); strings.Contains(joined, "budget: drift.md") || !strings.Contains(joined, "budget: strategy.md is") {
+		t.Fatalf("a bounded override within 2x must clear only drift.md: %q", joined)
 	}
 }
 

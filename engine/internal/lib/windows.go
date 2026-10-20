@@ -1,16 +1,21 @@
 package lib
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/gitenv"
 )
 
 // windows.go — the broken-windows check. Review prose flags a new TODO, stub,
@@ -20,7 +25,7 @@ import (
 // recorded waiver row in the workspace's windows.md, or the check fails. A
 // silent deferral or lowered bar is the bug.
 //
-//	devrites-engine check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]
+//	devrites-engine check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>] [--cwd <dir>]
 //
 //	0  no unwaived markers    2  usage error    3  unwaived markers or blocked
 //
@@ -30,6 +35,10 @@ import (
 // that remains (`removed-assertion`). Each windows.md row waives exactly one hit —
 // one blanket row cannot cover a file's five new TODOs.
 //
+// --since-dispatch <wave> reports only those removals, against the work-tree
+// snapshot that wave's build wright open recorded: same-tree repair rounds stay
+// uncommitted, so a test an earlier round added is plain additions against HEAD.
+//
 // windows.md row grammar (one waiver per line):
 //
 //	- <project-relative path> | <marker token> | <reason>
@@ -37,7 +46,7 @@ import (
 // A row waives one hit at that path carrying that marker; empty reasons do not
 // waive. Rows never suppress coverage — they explain it.
 
-const windowsUsage = `usage: devrites-engine check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]
+const windowsUsage = `usage: devrites-engine check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>] [--cwd <dir>]
 
 Reports deferral and bar-lowering markers introduced by the change (added lines:
 TODO/stub/skip/focus idioms, checker suppressions, empty-catch; removals:
@@ -45,6 +54,8 @@ deleted-test, removed-assertion) and requires each to be waived by a row in
 .devrites/work/<slug>/windows.md:
   - <path> | <marker> | <reason>
 Each row waives one hit at that path with that marker token.
+--since-dispatch <wave> reports only removals since that build wright wave
+opened (its recorded work-tree snapshot), untracked files included.
 Exit 0 clean or fully waived, 3 unwaived markers or blocked.`
 
 // deferralTokenRe catches uppercase comment markers: TODO, FIXME, XXX, HACK.
@@ -312,12 +323,22 @@ func windowsHits(opts diffScopeOpts) ([]windowHit, error) {
 		diffArgs = append(diffArgs, "--cached", "-M", "-U0", "--")
 	case "base":
 		diffArgs = append(diffArgs, opts.base, "-M", "-U0", "--")
+	case "since":
+		after, err := worktreeTree(dir)
+		if err != nil {
+			return nil, err
+		}
+		diffArgs = append(diffArgs, opts.base, after, "-M", "-U0", "--")
 	default:
 		diffArgs = append(diffArgs, "HEAD", "-M", "-U0", "--")
 	}
 	diff, err := runGitCommand(dir, nil, diffArgs...)
 	var diffPaths map[string]bool
 	switch {
+	case err == nil && opts.mode == "since":
+		// Added markers are the HEAD-based run's job; round over round only
+		// removals are new.
+		hits = removedTestHits(string(diff))
 	case err == nil:
 		hits, diffPaths = addedLinesFromDiff(string(diff))
 		hits = append(hits, removedTestHits(string(diff))...)
@@ -368,6 +389,55 @@ func windowsHits(opts diffScopeOpts) ([]windowHit, error) {
 	return kept, nil
 }
 
+// worktreeTree snapshots the work tree (tracked, staged, and untracked files
+// git does not ignore) as a tree object and returns its id. It stages into a
+// private copy of the index, so the real index, refs, and files stay untouched;
+// the only trace is unreferenced objects git gc prunes.
+func worktreeTree(dir string) (string, error) {
+	tmp, err := os.MkdirTemp("", "devrites-tree-")
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = os.RemoveAll(tmp) }()
+	index := filepath.Join(tmp, "index")
+	// Seeding from the real index reuses its stat cache: only changed files rehash.
+	if out, err := runGitCommand(dir, nil, "rev-parse", "--git-path", "index"); err == nil {
+		live := strings.TrimSpace(string(out))
+		if !filepath.IsAbs(live) {
+			live = filepath.Join(dir, live)
+		}
+		if raw, err := os.ReadFile(live); err == nil { // #nosec G304 -- git's own index path
+			if err := os.WriteFile(index, raw, 0o600); err != nil {
+				return "", err
+			}
+		}
+	}
+	if _, err := gitWithIndex(dir, index, "add", "-A"); err != nil {
+		return "", err
+	}
+	tree, err := gitWithIndex(dir, index, "write-tree")
+	return strings.TrimSpace(tree), err
+}
+
+// gitWithIndex runs git on a private index. runGitCommand strips
+// GIT_INDEX_FILE with the other repository-targeting variables, so it is set
+// here after sanitizing.
+func gitWithIndex(dir, index string, args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), gitCommandTimeout)
+	defer cancel()
+	// #nosec G204 -- git -C <project dir>; fixed binary, sanitized env plus a private index
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
+	cmd.Env = append(gitenv.Sanitize(os.Environ()), "GIT_INDEX_FILE="+index, "GIT_TERMINAL_PROMPT=0", "LC_ALL=C")
+	cmd.WaitDelay = 2 * time.Second
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(stderr.String()))
+	}
+	return string(out), nil
+}
+
 func isUnbornHEAD(dir string) bool {
 	_, err := runGitCommand(dir, nil, "rev-parse", "--verify", "HEAD")
 	return err != nil
@@ -410,6 +480,7 @@ func parseWindowsWaivers(raw string) (map[windowWaiver]int, []string) {
 func parseWindowsArgs(root string, args []string, stderr io.Writer) (diffScopeOpts, int) {
 	opts := diffScopeOpts{mode: "worktree", root: root}
 	var positional []string
+	var wave string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--phase":
@@ -424,6 +495,14 @@ func parseWindowsArgs(root string, args []string, stderr io.Writer) (diffScopeOp
 			opts.base = argAt(args, i+1)
 			if strings.HasPrefix(opts.base, "-") {
 				fmt.Fprintln(stderr, "windows: --base requires a ref (not a flag)")
+				return opts, 2
+			}
+			i++
+		case "--since-dispatch":
+			opts.mode = "since"
+			wave = argAt(args, i+1)
+			if wave == "" || strings.HasPrefix(wave, "-") {
+				fmt.Fprintln(stderr, "windows: --since-dispatch requires a wave name (not a flag)")
 				return opts, 2
 			}
 			i++
@@ -443,6 +522,28 @@ func parseWindowsArgs(root string, args []string, stderr io.Writer) (diffScopeOp
 		return opts, 2
 	}
 	opts.slug = positional[0]
+	if opts.mode == "since" {
+		if opts.cwd != "" {
+			fmt.Fprintln(stderr, "windows: --since-dispatch compares the project checkout; it takes no --cwd")
+			return opts, 2
+		}
+		// opts.base carries the wave's recorded tree: the diff's old side.
+		if _, err := devritespaths.ExistingFeatureDirChecked(root, opts.slug); err != nil {
+			fmt.Fprintf(stderr, "windows: workspace unavailable: %v\n", err)
+			return opts, 2
+		}
+		f, _, err := loadDispatch(root, opts.slug)
+		if err != nil {
+			fmt.Fprintf(stderr, "windows: %v\n", err)
+			return opts, 2
+		}
+		w := f.Waves[wave]
+		if w == nil || w.Tree == "" {
+			fmt.Fprintf(stderr, "windows: wave %q has no recorded tree snapshot (only a build wright wave opened in a git project records one)\n", wave)
+			return opts, 2
+		}
+		opts.base = w.Tree
+	}
 	if opts.phase == "" {
 		opts.phase = cursorPhase(root, opts.slug)
 	}
@@ -477,6 +578,10 @@ func RunCheckWindows(root string, args []string, stdout, stderr io.Writer) int {
 	for _, w := range warnings {
 		fmt.Fprintf(stdout, "windows: %s\n", w)
 	}
+	event := "windows"
+	if opts.mode == "since" {
+		event = "windows-since" // per-round removals stay apart from HEAD-based runs
+	}
 	var unwaived, waived int
 	for _, h := range hits {
 		w := windowWaiver{Path: h.Path, Marker: h.Marker}
@@ -492,15 +597,15 @@ func RunCheckWindows(root string, args []string, stdout, stderr io.Writer) int {
 	switch {
 	case len(hits) == 0:
 		fmt.Fprintln(stdout, "windows: ok (no deferral markers introduced)")
-		recordMetric(root, opts.slug, opts.phase, "windows", "", 0)
+		recordMetric(root, opts.slug, opts.phase, event, "", 0)
 		return 0
 	case unwaived == 0:
 		fmt.Fprintf(stdout, "windows: ok (%d marker(s), all waived in windows.md)\n", len(hits))
-		recordMetric(root, opts.slug, opts.phase, "windows", "", int64(len(hits)))
+		recordMetric(root, opts.slug, opts.phase, event, "", int64(len(hits)))
 		return 0
 	default:
 		fmt.Fprintf(stdout, "windows: BLOCKED: %d unwaived deferral marker(s) introduced — remove them or record waivers in windows.md\n", unwaived)
-		recordMetric(root, opts.slug, opts.phase, "windows", "", int64(unwaived))
+		recordMetric(root, opts.slug, opts.phase, event, "", int64(unwaived))
 		return 3
 	}
 }

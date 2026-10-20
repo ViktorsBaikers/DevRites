@@ -19,7 +19,8 @@ import (
 // RunNext prints the minimal remaining lifecycle path: the first phase whose
 // required artifacts are not all present, plus advisory skips for phases whose
 // remaining work is vacuous (e.g. clarify with zero open questions). Advisory
-// only — the rite still owns the decision to advance.
+// only — the rite still owns the decision to advance — except the root-edit
+// tripwire, which exits 3 while an unattributed product edit is in the tree.
 func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 	slug, code, err := ActiveSlug(root, args)
 	if err != nil {
@@ -61,13 +62,24 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "current-status: incomplete")
 	}
 	fmt.Fprintf(stdout, "open-questions: %d\n", openQuestions)
+	// The root-edit tripwire (ADR-0038) leads the output and exits 3; the rest
+	// still prints so the root sees where it resumes once the edit is routed.
+	exit := 0
+	if flagged, err := unattributedEdits(root, slug); err != nil {
+		fmt.Fprintf(stdout, "blocked: tree baseline: %v\n", err)
+		exit = 3
+	} else if len(flagged) > 0 {
+		recordUnattributed(root, slug, string(report.Phase), flagged)
+		fmt.Fprintf(stdout, "blocked: %s\n", unattributedMessage(slug, flagged))
+		exit = 3
+	}
 	if report.Phase == state.PhaseBuild {
 		printPlanBatch(stdout, root, slug)
 	}
 
 	if report.Phase == state.PhaseDone {
 		fmt.Fprintln(stdout, "next-phase: done")
-		return 0
+		return exit
 	}
 
 	// Walk from the current phase to the first incomplete one. Vacuous phases
@@ -78,7 +90,7 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 		if policy.Target == state.PhaseDone {
 			fmt.Fprintln(stdout, "next-phase: done")
 			printSkips(stdout, skips)
-			return 0
+			return exit
 		}
 		var missing []string
 		if i == currentIdx {
@@ -110,11 +122,11 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "missing: %s\n", strings.Join(missing, ","))
 		}
 		printSkips(stdout, skips)
-		return 0
+		return exit
 	}
 	fmt.Fprintln(stdout, "next-phase: done")
 	printSkips(stdout, skips)
-	return 0
+	return exit
 }
 
 // printPlanBatch prints the slices runnable now and the batch `parallel select

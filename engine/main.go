@@ -42,10 +42,14 @@ Usage:
                                          Compare workspace progress against the recorded baseline; --update ratchets it
   devrites-engine check drift <slug> [--record]
                                          Attribute readiness-input changes to the exact artifact since the Vet baseline
-  devrites-engine check windows <slug> [--worktree|--staged|--base <ref>]
+  devrites-engine check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>]
                                          Fail on deferral markers the change adds without a windows.md waiver
   devrites-engine check dup [slug] [--all|--worktree|--staged|--base <ref>]
                                          Report near-duplicate code clusters that survive renaming (advisory)
+  devrites-engine check anchors <slug> <return-file> [--skills-root <dir>]
+                                         Anchor each Critical/Important row's quotes; Unverified or Deferred rows exit 3
+  devrites-engine check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N]
+                                         Run one mutant patch against a candidate copy; RED must name --expect
   devrites-engine observe summary <slug>   Emit sanitized JSON workspace summary
   devrites-engine orient <slug>            Alias for observe summary
   devrites-engine next [slug]              Print the minimal remaining lifecycle path with advisory skips
@@ -60,7 +64,7 @@ Usage:
                                          Freeze a review candidate to packets/<w>.diff + packets/<w>.sha256
   devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID>] [--recheck] [--checks <G-ID,...>] [--focus <file>]
                                          Render and lint one role's by-reference dispatch packet
-  devrites-engine dispatch <slug> <sub>    Launch-wave barrier for parallel dispatch: open/start/seal/return/status/abandon (build wright waves: --slice, round cap)
+  devrites-engine dispatch <slug> <sub>    Launch-wave barrier for parallel dispatch: open/start/seal/return/status/abandon/attribute (build wright waves: --slice, round cap)
   devrites-engine claim <add|release|list|check>   Advisory session-scoped file claims for same-tree concurrent sessions (.devrites/claims.jsonl)
   devrites-engine note <subcommand> <slug>         Anchored workspace notes bound to verbatim code quotes; drift regrades them (notes.md)
   devrites-engine observe slice <slug> <SLICE-ID>  Print one SLICE-### section of tasks.md
@@ -238,6 +242,10 @@ func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 		return lib.RunCheckDup(root, rest, stdout, stderr)
 	case "drift":
 		return lib.RunCheckDrift(root, rest, stdout, stderr)
+	case "anchors":
+		return lib.RunCheckAnchors(root, rest, stdout, stderr)
+	case "perturb":
+		return lib.RunCheckPerturb(root, rest, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "devrites: unknown check %q\n", sub)
 		return exitUsage
@@ -259,6 +267,10 @@ func cmdCandidate(root string, args []string, stdout, stderr io.Writer) int {
 		return exitBlocked
 	}
 	if err := lib.CheckCandidateCoverage(root, args[0]); err != nil {
+		fmt.Fprintf(stderr, "candidate: BLOCKED: %v\n", err)
+		return exitBlocked
+	}
+	if err := lib.CheckTreeBaseline(root, args[0]); err != nil {
 		fmt.Fprintf(stderr, "candidate: BLOCKED: %v\n", err)
 		return exitBlocked
 	}
@@ -322,21 +334,28 @@ func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Write
 		return exitBlocked
 	}
 	if kind == gate.Seal {
-		if err := lib.VerifyReleaseUnion(root, args[0]); err != nil {
-			fmt.Fprintf(stdout, "release-union: BLOCKED: %v\nreason: %s\n", err, gate.ResultReasonID(kind, true))
+		// A later seal check can block after the gate passed; keep its notes
+		// (waived test drivers) visible on that NO-GO too.
+		sealBlocked := func() int {
+			for _, note := range result.Notes {
+				fmt.Fprintf(stdout, "note: %s\n", note)
+			}
+			fmt.Fprintf(stdout, "reason: %s\n", gate.ResultReasonID(kind, true))
 			return exitBlocked
+		}
+		if err := lib.VerifyReleaseUnion(root, args[0]); err != nil {
+			fmt.Fprintf(stdout, "release-union: BLOCKED: %v\n", err)
+			return sealBlocked()
 		}
 		code := lib.EvidenceFresh(root, []string{args[0]}, stdout, stderr)
 		if code == exitUsage {
 			return exitUsage
 		}
 		if code != exitOK {
-			fmt.Fprintf(stdout, "reason: %s\n", gate.ResultReasonID(kind, true))
-			return exitBlocked
+			return sealBlocked()
 		}
 		if !notes.SealCheck(root, args[0], stdout) {
-			fmt.Fprintf(stdout, "reason: %s\n", gate.ResultReasonID(kind, true))
-			return exitBlocked
+			return sealBlocked()
 		}
 	}
 	fmt.Fprint(stdout, result.Render())

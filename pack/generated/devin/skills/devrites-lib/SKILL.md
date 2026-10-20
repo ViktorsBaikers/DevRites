@@ -52,7 +52,8 @@ The engine is limited to:
   `check path-disjoint`, `check skill-trust`, `check indexes`, `check
   regression` (progress high-water mark), `check drift` (readiness-input
   attribution), `check windows` (deferral-marker waivers), `check dup`
-  (advisory near-duplicates), `detect commands` (repository test/lint wiring).
+  (advisory near-duplicates), `check anchors` (Critical/Important quote
+  anchoring), `check perturb` (safe-perturbation probe), `detect commands` (repository test/lint wiring).
 - Observation: `observe summary` (`orient` alias), `observe slice`, `next`
   (minimal remaining lifecycle path), `handoff` (deterministic resume record).
 - Coordination: `context` emits one deduplicated read-set bundle from each
