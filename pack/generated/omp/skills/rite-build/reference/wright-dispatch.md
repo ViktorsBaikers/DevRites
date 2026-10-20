@@ -139,7 +139,7 @@ with `devrites-engine claim release --session <id> --id <claim-id>` on every ter
 successful return, rejected result, stop, or a launch the host refused with no handle. A
 timeout or unknown outcome keeps the claim ([`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)).
 TTL is crash recovery, not normal cleanup.
-An `unattributed root edit` exit 3 (ADR-0038) routes the path through a wright wave naming it in
+An `unattributed root edit` exit 3 (root-edit tripwire) routes the path through a wright wave naming it in
 `--claim`, or, given evidence (owner work, gate output, a standalone wright, Polish ADR/`DESIGN.md`),
 `dispatch <slug> attribute --reason <evidence> --path <path>`.
 

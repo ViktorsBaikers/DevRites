@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/acceptance"
-	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -61,10 +60,6 @@ func dependencyDryRunProblems(kind Kind, root string, observation *state.Workspa
 		return nil
 	}
 	slug := observation.Slug()
-	work, err := devritespaths.ExistingFeatureDirChecked(root, slug)
-	if err != nil {
-		return []string{fmt.Sprintf("dependency dry-run transcripts cannot be read: %v", err)}
-	}
 	var problems []string
 	for _, slice := range state.ParseTaskGraph(tasks.Bytes()).Slices {
 		block, _ := state.ExtractTaskSlice(tasks.Bytes(), slice.ID)
@@ -78,7 +73,14 @@ func dependencyDryRunProblems(kind Kind, root string, observation *state.Workspa
 			problems = append(problems, fmt.Sprintf(
 				"%s touches %s but test-plan.md has no `dependency-dry-run %s` Build-entry preflight row with Run at `vet`; add one that applies the planned change in an isolated copy, runs the tidy/lock step, then the project's admission checks",
 				slice.ID, manifest, slice.ID))
-		case !allPassed(work, matching):
+		default:
+			passed, err := acceptance.PreflightRowsPassed(root, slug, matching)
+			if err != nil {
+				return []string{fmt.Sprintf("dependency dry-run transcripts cannot be read: %v", err)}
+			}
+			if passed {
+				continue
+			}
 			problems = append(problems, fmt.Sprintf(
 				"%s dependency dry run has a row without a passing transcript; run `devrites-engine check preconditions %s` and route a failure to Plan repair",
 				slice.ID, slug))
@@ -107,15 +109,6 @@ func dryRunRows(rows []acceptance.PreflightRow, sliceID string) []acceptance.Pre
 		}
 	}
 	return matching
-}
-
-func allPassed(work string, rows []acceptance.PreflightRow) bool {
-	for _, row := range rows {
-		if !acceptance.PreflightPassed(work, row) {
-			return false
-		}
-	}
-	return true
 }
 
 func containsToken(text, token string) bool {
