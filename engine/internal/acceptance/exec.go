@@ -104,18 +104,20 @@ func Execute(ctx context.Context, check, cwd string, timeout time.Duration) RunO
 		return RunOutcome{Err: fmt.Errorf("check could not start: %v", startErr)}
 	}
 	waitErr := cmd.Wait()
-	if ctx.Err() == context.DeadlineExceeded {
-		return RunOutcome{Err: fmt.Errorf("check timed out after %s", timeout), TimedOut: true}
-	}
-	if stdout.overflow || stderr.overflow {
-		return RunOutcome{Err: fmt.Errorf("check output exceeded %d bytes", MaxOutputBytes)}
-	}
 	out, errText := stdout.buf.String(), stderr.buf.String()
 	canonical := out
 	if out != "" && errText != "" {
 		canonical += "\n"
 	}
 	canonical += errText
+	if ctx.Err() == context.DeadlineExceeded {
+		// Keep what the check printed before the deadline so its transcript shows
+		// how far it got; Err still fails the gate.
+		return RunOutcome{Err: fmt.Errorf("check timed out after %s", timeout), TimedOut: true, Output: canonical, OutputBytes: len(canonical)}
+	}
+	if stdout.overflow || stderr.overflow {
+		return RunOutcome{Err: fmt.Errorf("check output exceeded %d bytes", MaxOutputBytes)}
+	}
 	if len(canonical) > MaxOutputBytes {
 		return RunOutcome{Err: fmt.Errorf("check output exceeded %d bytes after decoding", MaxOutputBytes)}
 	}

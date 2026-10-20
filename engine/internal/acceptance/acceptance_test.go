@@ -977,12 +977,15 @@ func TestExecuteTimeoutKillsForkedChildren(t *testing.T) {
 		t.Skip("process-group kill is unix-only")
 	}
 	start := time.Now()
-	out := Execute(context.Background(), "sleep 10; echo done", t.TempDir(), time.Second)
+	out := Execute(context.Background(), "echo partial; sleep 10; echo done", t.TempDir(), time.Second)
 	if elapsed := time.Since(start); elapsed > 5*time.Second {
 		t.Fatalf("Execute returned after %v; a child holding stdout outlived the timeout", elapsed)
 	}
-	if !out.TimedOut {
-		t.Fatalf("outcome = %+v, want TimedOut", out)
+	if !out.TimedOut || out.Err == nil {
+		t.Fatalf("outcome = %+v, want TimedOut with an error", out)
+	}
+	if out.Output != "partial\n" {
+		t.Fatalf("output = %q, want the output printed before the deadline", out.Output)
 	}
 }
 
