@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1540476,
+  "total_bytes": 1541616,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -102,7 +102,7 @@
     "pack/.claude/skills/devrites-lib/reference/standards/observability.md": 5475,
     "pack/.claude/skills/devrites-lib/reference/standards/one-shot-actions.md": 6334,
     "pack/.claude/skills/devrites-lib/reference/standards/patterns.md": 4191,
-    "pack/.claude/skills/devrites-lib/reference/standards/performance.md": 4402,
+    "pack/.claude/skills/devrites-lib/reference/standards/performance.md": 5303,
     "pack/.claude/skills/devrites-lib/reference/standards/principles.md": 1942,
     "pack/.claude/skills/devrites-lib/reference/standards/prose-style.md": 8326,
     "pack/.claude/skills/devrites-lib/reference/standards/README.md": 5872,
@@ -174,7 +174,7 @@
     "pack/.claude/skills/rite-build/reference/output.md": 1304,
     "pack/.claude/skills/rite-build/reference/parallel-batch.md": 15392,
     "pack/.claude/skills/rite-build/reference/phase-contract.md": 8258,
-    "pack/.claude/skills/rite-build/reference/spec-drift-guard.md": 4629,
+    "pack/.claude/skills/rite-build/reference/spec-drift-guard.md": 4868,
     "pack/.claude/skills/rite-build/reference/tdd.md": 1357,
     "pack/.claude/skills/rite-build/reference/wright-dispatch.md": 13780,
     "pack/.claude/skills/rite-build/SKILL.md": 10426,

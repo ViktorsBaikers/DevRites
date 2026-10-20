@@ -28,6 +28,20 @@ Measure first. An optimization without a measurement is a guess that adds comple
   flaking wall-clock test is a flaky test, [`testing.md`](testing.md)). Budget regression:
   re-measure; fix to budget or record the accepted regression with reason and owner.
 
+## Performance gate protocol
+- A gate that judges a timing budget or a regression percentage pins its protocol
+  before Build: the environment (isolated cores, swap state, build flags such as
+  `CGO_ENABLED`), the repetitions and the aggregate (a median of at least five runs,
+  never one sample), and a noise floor measured as an A/A spread on that same
+  environment. Vet blocks READY on a timing gate without one. A threshold at or
+  below the noise floor is a plan defect for the owner, never a Build repair.
+- A timing gate that fails while no code changed (an A/A run, a rerun) is noise or
+  host state, not a code defect. Stop wright rounds on it and fix the protocol or the
+  environment first.
+- **Failing case:** a 10% p99 regression gate runs one sample per run on a shared host;
+  26 wright rounds repair code against noise until the owner reserves cores and asks
+  for a median of five.
+
 ## Frontend: Core Web Vitals
 For UI work, measure-first means LCP / INP / CLS judged against real numbers, each labeled
 by source (`Field (CrUX)`, `Lab (Lighthouse)`, `Trace (DevTools)`): field and lab are not
