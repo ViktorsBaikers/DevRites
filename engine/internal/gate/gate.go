@@ -62,6 +62,13 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 			result.ReasonID = ResultReasonID(kind, true)
 		}
 	}
+	if kind == Readiness {
+		for _, problem := range predecessorProblems(root, observation) {
+			result.StateProblems = append(result.StateProblems, "predecessor: "+problem)
+			result.Blocked = true
+			result.ReasonID = reason.GateReadinessStale
+		}
+	}
 	for _, problem := range unsanctionedRootFiles(observation) {
 		result.StateProblems = append(result.StateProblems, "placement: "+problem)
 		// Keep a more specific reason (readiness-stale) when the observation

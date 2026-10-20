@@ -155,7 +155,7 @@ for text, required in (
         "fail-closed regression check for value flags",
     )),
     ((canonical / "skills/rite-autocomplete/SKILL.md").read_text(), (
-        'argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] [--cross-model]"',
+        'argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] [--cross-model] [--lookahead]"',
         "must occur once and be followed by a positive base-10 integer",
         "can never arm them",
         "profile: standard|full",

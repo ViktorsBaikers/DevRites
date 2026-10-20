@@ -124,7 +124,8 @@ load a routed standard to discover required behavior, not to prescribe implement
    owned prerequisites. Keep a build checkpoint only for unavailable pre-code evidence or a
    mandatory action-time approval. **Completion:** no foreseeable human choice is deferred.
 5. **Create or update the workspace** + set `.devrites/ACTIVE` from
-   [state-workspace](reference/state-workspace.md). If the slug already exists,
+   [state-workspace](reference/state-workspace.md); a `--lookahead` run
+   leaves `.devrites/ACTIVE` unchanged. If the slug already exists,
    update the existing workspace rather than overwrite it; preserve history and
    unrelated settled content. Write every required artifact and conditional
    annex exactly from [spec-template](reference/spec-template.md)
