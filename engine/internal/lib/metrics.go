@@ -204,6 +204,7 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		events   int
 		bytes    int64
 		outcomes map[string]int
+		returns  []storedReturn
 	}
 	phases := map[string]*phaseAgg{}
 	roles := map[string]*roleAgg{}
@@ -247,8 +248,16 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 			}
 			ragg.events++
 			ragg.bytes += ev.Bytes
-			if outcome, ok := strings.CutPrefix(ev.Note, "outcome="); ok && ev.Event == "return" {
-				ragg.outcomes[outcome]++
+			if ev.Event == "return" {
+				fields := strings.Fields(ev.Note)
+				if len(fields) > 0 {
+					if outcome, ok := strings.CutPrefix(fields[0], "outcome="); ok {
+						ragg.outcomes[outcome]++
+					}
+				}
+				if rec, ok := parseStoredReturn(fields); ok {
+					ragg.returns = append(ragg.returns, rec)
+				}
 			}
 		}
 		totalEvents++
@@ -291,6 +300,10 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 				sort.Strings(tally)
 				fmt.Fprintf(stdout, " outcomes: %s", strings.Join(tally, " "))
 			}
+			if len(agg.returns) > 0 {
+				resolved, reraised, open, late := findingResolution(agg.returns)
+				fmt.Fprintf(stdout, " resolution: resolved=%d re-raised=%d open=%d late=%d", resolved, reraised, open, late)
+			}
 			fmt.Fprintln(stdout)
 		}
 	}
@@ -300,6 +313,63 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintln(stdout)
 	return 0
+}
+
+// storedReturn is one return recorded with dispatch return --result: its
+// slice, Finding: keys, and Late: line count.
+type storedReturn struct {
+	slice string
+	keys  []string
+	late  int
+}
+
+// parseStoredReturn reads the slice=, late= and finding= tokens of a return
+// note; a note without slice= was not recorded with --result.
+func parseStoredReturn(fields []string) (storedReturn, bool) {
+	var rec storedReturn
+	found := false
+	for _, field := range fields {
+		if v, ok := strings.CutPrefix(field, "slice="); ok {
+			rec.slice, found = v, true
+		} else if v, ok := strings.CutPrefix(field, "late="); ok {
+			rec.late, _ = strconv.Atoi(v)
+		} else if v, ok := strings.CutPrefix(field, "finding="); ok {
+			rec.keys = append(rec.keys, v)
+		}
+	}
+	return rec, found
+}
+
+// findingResolution classifies each raised finding key of one role, in ledger
+// order: re-raised when a later return on the same slice raises it again,
+// resolved when a later return on that slice does not, open when no later
+// return on that slice exists yet.
+func findingResolution(returns []storedReturn) (resolved, reraised, open, late int) {
+	for i, rec := range returns {
+		late += rec.late
+		for _, key := range rec.keys {
+			rechecked, again := false, false
+			for _, next := range returns[i+1:] {
+				if next.slice != rec.slice {
+					continue
+				}
+				rechecked = true
+				if slices.Contains(next.keys, key) {
+					again = true
+					break
+				}
+			}
+			switch {
+			case again:
+				reraised++
+			case rechecked:
+				resolved++
+			default:
+				open++
+			}
+		}
+	}
+	return resolved, reraised, open, late
 }
 
 // sliceCostSummary reports, per slice named on dispatch waves, the build wright

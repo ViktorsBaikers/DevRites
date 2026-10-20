@@ -71,9 +71,8 @@ the `touched-files.md` manifest paths. For Placement, compare `detect_changes`
 ## Output
 
 ```text
-Spec review (<slug>) — independent
 Outcome: <findings | no-findings | gap>
-Counts: <n per severity or kind used in the rows below>
+Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
 Account: <admitted findings | No-findings | Gap per Result admission>
 
 Coverage:

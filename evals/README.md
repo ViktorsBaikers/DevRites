@@ -28,10 +28,20 @@ Codex or Claude or claim to measure model behavior.
   `"agent"`) count for that agent only; they do not satisfy a skill's ledger row.
 - `benchmark/` holds human-run lifecycle benchmarks: a fixture with seeded defects,
   a task, hidden probes, and `scripts/grade-lifecycle-benchmark.py`, which scores
-  acceptance, seeded-defect, and scope probes and reads cost from `metrics.jsonl`.
+  acceptance, seeded-defect, and scope probes and reads cost from `metrics.jsonl`
+  and `dispatch.json`. Compare mode (`--baseline`/`--candidate`, at least 3 runs per
+  side) accepts a change only when every probe passes in every candidate run.
+  `scripts/transcript-usage.py` adds per-role tokens from host transcripts.
   It is the quality guard for speed changes; see
   [`benchmark/lifecycle-stock/README.md`](benchmark/lifecycle-stock/README.md).
-  CI proves only the grader (`tests/lifecycle-benchmark-grader-test.sh`).
+  CI proves only the grader (`tests/lifecycle-benchmark-grader-test.sh`,
+  `tests/transcript-usage-test.sh`).
+- `replay/` holds the human-run reviewer replay: frozen pre-repair slice diffs with
+  their later-fixed findings, `scripts/run-reviewer-replay.py` to replay one role per
+  case under a named arm, and `scripts/grade-reviewer-replay.py`, which scores
+  per-role recall and an A/A-calibrated paired difference. See
+  [`replay/README.md`](replay/README.md). CI proves only the grader
+  (`tests/reviewer-replay-grader-test.sh`).
 
 Use Codex or Claude's native evaluation/session facilities to measure routing or
 behavior. DevRites owns only the corpora and deterministic artifact invariants.

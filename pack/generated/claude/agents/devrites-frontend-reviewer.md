@@ -115,9 +115,8 @@ draws a revision finding for variety 2.
 
 Return the report in this shape:
 ```
-Frontend review (<slug>) — independent
 Outcome: <findings | no-findings | gap>
-Counts: <n per severity or kind used in the rows below>
+Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Critique: <philosophy n · hierarchy n · execution n · specificity n · restraint n · variety n | n/a>
 System alignment: <drift by root cause>

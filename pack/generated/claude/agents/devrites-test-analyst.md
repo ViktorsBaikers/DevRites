@@ -92,9 +92,8 @@ symbol no test reaches is a finding.
 
 Return the report in this shape:
 ```
-Test analysis (<slug>) — independent
 Outcome: <findings | no-findings | gap>
-Counts: <n per severity or kind used in the rows below>
+Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Claim map: <claim> | <exact_test> | <consumer_path> | <testing.md category> | <evidence gap> | <discriminating proof>
 Verdict: verified | behavior_unverified

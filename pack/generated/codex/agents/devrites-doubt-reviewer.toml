@@ -76,9 +76,8 @@ mirror.
 Return the report in this shape:
 
 ```
-Doubt review
 Outcome: <findings | no-findings | gap>
-Counts: <n per severity or kind used in the rows below>
+Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Claim: <restated>
 Attempts to break it: <what you tried>

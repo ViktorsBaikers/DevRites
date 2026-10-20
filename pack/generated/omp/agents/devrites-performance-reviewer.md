@@ -105,9 +105,8 @@ Return the report in this shape:
 
 **Measured mode**: lead with a compact scorecard, then the line findings:
 ```
-Performance review (<slug>) — independent
 Outcome: <findings | no-findings | gap>
-Counts: <n per severity or kind used in the rows below>
+Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Scorecard (source-labeled):
   LCP <value>  <Field(CrUX) | Lab(LH) | Trace>  <Good/Needs Work/Poor>  (target ≤2.5s)
@@ -121,9 +120,8 @@ Verdict: <blockers? none/list>
 
 **Source mode**: no artifacts; one scorecard line, findings tagged `potential`:
 ```
-Performance review (<slug>) — independent
 Outcome: <findings | no-findings | gap>
-Counts: <n per severity or kind used in the rows below>
+Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Scorecard: not measured (Source mode)
 Budget: <breached | unverified — missing <measurement> | none stated>

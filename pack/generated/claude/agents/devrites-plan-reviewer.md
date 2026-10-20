@@ -139,9 +139,8 @@ criterion, slice, or proof.
 
 Return the report in this shape:
 ```
-Plan review (<slug>) — independent, pre-build
 Outcome: <findings | no-findings | gap>
-Counts: <n per severity or kind used in the rows below>
+Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n> contract=<n> mechanism=<n>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Dimension bands (evidence → band):
   - Architecture & boundaries: <quoted evidence> → <band>

@@ -112,9 +112,9 @@ consistently:
 Return the report in this shape:
 
 ```
-DevEx review (<slug>) — independent · mode: predict | measure
 Outcome: <findings | no-findings | gap>
-Counts: <n per severity or kind used in the rows below>
+Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
+Mode: <predict | measure>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Scorecard:
   discoverability   <band/score + one-line basis>
