@@ -63,3 +63,23 @@ func TestClearAwaitingSupportsCanonicalCursor(t *testing.T) {
 		t.Fatalf("canonical awaiting state resumed the wrong phase:\n%s", text)
 	}
 }
+
+func TestClearAwaitingSupportsCursorQuestionID(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.md")
+	state := strings.Replace(canonicalCursor, "| status | running |", "| status | awaiting_human |\n| question_id | Q-001 |", 1)
+	if err := os.WriteFile(path, []byte(state), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := clearAwaiting(path, "Q-001"); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	if !strings.Contains(text, "| status | running |") || strings.Contains(text, "question_id") {
+		t.Fatalf("cursor question_id wait was not cleared:\n%s", text)
+	}
+}
