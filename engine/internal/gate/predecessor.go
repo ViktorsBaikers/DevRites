@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/state"
 )
@@ -15,7 +14,9 @@ import (
 // readiness binding digest at the time.
 const predecessorLabel = "Predecessor readiness: "
 
-var predecessorLineRE = regexp.MustCompile(`^Predecessor readiness: (\S+) ([0-9a-f]{64})$`)
+// The slug pattern keeps the predecessor a single workspace name; the gate
+// package resolves no workspace path itself.
+var predecessorLineRE = regexp.MustCompile(`^Predecessor readiness: ([A-Za-z0-9][A-Za-z0-9._-]*) ([0-9a-f]{64})$`)
 
 // predecessorProblems blocks readiness when the predecessor a lookahead plan
 // was written against has since changed its planning inputs, so this plan must
@@ -50,7 +51,7 @@ func predecessorProblems(root string, observation *state.WorkspaceObservation) [
 		return []string{"eng-review.md holds more than one Predecessor readiness line; rerun /rite-vet and record exactly one"}
 	}
 	match := predecessorLineRE.FindStringSubmatch(lines[0])
-	if match == nil || !devritespaths.ValidSlug(match[1]) {
+	if match == nil {
 		return []string{fmt.Sprintf("malformed %q; rerun /rite-vet and record `%s<slug> <64-hex digest>`", lines[0], predecessorLabel)}
 	}
 	slug, recorded := match[1], match[2]
