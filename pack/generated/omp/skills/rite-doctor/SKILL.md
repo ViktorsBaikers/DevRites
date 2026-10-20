@@ -49,8 +49,8 @@ Read-only: never repair files, advance a feature, or diagnose the application.
    block whose host is not the one running doctor, name the `--no-<host>` flag
    to add to the manifest's recorded install flags when re-running
    `devrites-engine install`, if that host is unused. (c) On omp, `INFO` the count and total `SKILL.md` bytes of
-   non-DevRites skills under `~/.omp/agent/skills` and the servers in
-   `~/.omp/agent/mcp.json`, which every subagent inherits; the user may prune
+   non-DevRites skills in omp's user-global agent skills directory and the
+   servers in its user-global agent `mcp.json`, which every subagent inherits; the user may prune
    them. Never edit or hide them.
 4. **Inspect workspace topology.** Read `.devrites/ACTIVE` if present. An empty
    cursor is `OK` (no active feature). Otherwise require one safe slug, a

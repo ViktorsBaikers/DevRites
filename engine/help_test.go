@@ -64,7 +64,7 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"context", "--help"}, want: "[--inline-contract] [--whole]"},
 		{args: []string{"metrics", "--help"}, want: "metrics summary [slug] [--by-slice]"},
 		{args: []string{"check", "--help"}, want: "check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]"},
-		{args: []string{"check", "--help"}, want: "[--worktree|--staged|--base <ref>] [--allow-empty] [--cwd <dir>]"},
+		{args: []string{"check", "--help"}, want: "[--worktree|--staged|--base <ref>] [--allow-empty] [--baseline] [--verbose] [--cwd <dir>]"},
 		{args: []string{"secret-scan", "help"}, want: "secret-scan [--staged] [--stdin]"},
 		{args: []string{"open-visual", "help"}, want: "open-visual <path-or-name>"},
 		{args: []string{"claim", "--help"}, want: "claim <add|release|list|check>"},
