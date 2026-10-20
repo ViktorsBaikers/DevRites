@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -26,6 +27,21 @@ var preDispatchRunAtRE = regexp.MustCompile(`(?i)^pre-dispatch SLICE-\d+$`)
 func PreflightGateID(row PreflightRow) string {
 	sum := sha256.Sum256([]byte(row.Command + "\x00" + row.Cwd))
 	return "preflight-" + valueOr(row.Gate, "row") + "-" + hex.EncodeToString(sum[:4])
+}
+
+// PreflightRowsPassed reports whether every row has a passing transcript in
+// the feature workspace (see PreflightPassed).
+func PreflightRowsPassed(root, slug string, rows []PreflightRow) (bool, error) {
+	work, err := devritespaths.ExistingFeatureDirChecked(root, slug)
+	if err != nil {
+		return false, err
+	}
+	for _, row := range rows {
+		if !PreflightPassed(work, row) {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 // PreflightPassed reports whether the row's newest transcript under
