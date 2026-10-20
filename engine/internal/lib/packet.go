@@ -74,8 +74,7 @@ func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
 		i++
 	}
 	wright := strings.Contains(role, "wright")
-	base, _, _ := strings.Cut(role, ".")
-	doubt := base == "doubt-reviewer"
+	doubt := roleBase(role) == "doubt-reviewer"
 	if len(positional) != 1 || !packetNameRE.MatchString(wave) || !packetNameRE.MatchString(phase) || !packetNameRE.MatchString(role) ||
 		(slice != "" && !packetNameRE.MatchString(slice)) || (!wright && !isReviewerRole(role)) || (wright && slice == "") || (!wright && checks != "") ||
 		(recheck != "" && (phase != "build" || slice == "")) || (doubt && focus == "") {
@@ -194,7 +193,7 @@ func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
 	if err := state.AtomicWrite(draft, []byte(b.String()), 0o600); err != nil {
 		return fail(err)
 	}
-	if err := lintRenderedPacket(root, slug, draft, wright, finalPhase); err != nil {
+	if err := lintRenderedPacket(root, slug, draft, role, wright, finalPhase); err != nil {
 		_ = os.Remove(draft)
 		return fail(fmt.Errorf("BLOCKED: %w", err))
 	}
@@ -208,11 +207,11 @@ func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
 
 // lintRenderedPacket runs the lints dispatch open runs for the role; a wright
 // contract also gets the gates.md `RUN: writer` precheck lint.
-func lintRenderedPacket(root, slug, path string, wright, finalPhase bool) error {
+func lintRenderedPacket(root, slug, path, role string, wright, finalPhase bool) error {
 	if wright {
 		return lintWrightContractFor(root, slug, path)
 	}
-	if err := lintReviewerPacket(path); err != nil {
+	if err := lintReviewerWavePacket(path, []string{role}); err != nil {
 		return err
 	}
 	if finalPhase {

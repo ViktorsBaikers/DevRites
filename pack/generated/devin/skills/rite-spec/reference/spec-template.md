@@ -6,7 +6,7 @@ topology in `architecture.md`/`flows.md`, coverage in `traceability.md`.
 Use `[NEEDS CLARIFICATION: <question>]` (blocking stops `/rite-clarify`); before readiness
 every surviving marker converts to a gated `q-YYYY-MM-DD-NNN` open question (released `Q-###` kept) ([`spec-grammar.md`](../../devrites-lib/reference/standards/spec-grammar.md) §
 Unresolved-question markers — fail closed). Stable `REQ-001`/`AC-001` IDs; link, never
-duplicate, source artifacts; over-budget requires `Budget override: <reason>`. `spec.md`
+duplicate, source artifacts; over-budget requires `Budget override: <=N lines; <reason>` (N at most 2x the budget). `spec.md`
 is the product contract only: the phase verdict goes in the `state.md` `spec_gate` row,
 never in this file (every reviewer read-set includes `spec.md`).
 

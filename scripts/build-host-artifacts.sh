@@ -64,11 +64,12 @@ copy_tree() {
   cp -R "$_src" "$_dest"
 }
 
-# devrites-engine context defaults to .claude/skills; each host's bundles must
-# come from its own installed tree, so every call (even one wrapped across
-# lines) in that host's Markdown names it. $1 rendered tree, $2 skills root.
+# devrites-engine context and check anchors default to .claude/skills; each
+# host's bundles and standards must come from its own installed tree, so every
+# call (even one wrapped across lines) in that host's Markdown names it. $1
+# rendered tree, $2 skills root.
 pin_context_skills_root() {
-  find "$1" -type f -name '*.md' -exec perl -0pi -e 's#devrites-engine(\s+)context(?!\s+--skills-root)(?=\s+[<\[-])#devrites-engine${1}context --skills-root '"$2"'#g' {} +
+  find "$1" -type f -name '*.md' -exec perl -0pi -e 's#devrites-engine(\s+)context(?!\s+--skills-root)(?=\s+[<\[-])#devrites-engine${1}context --skills-root '"$2"'#g; s#devrites-engine(\s+)check(\s+)anchors(?!\s+--skills-root)(?=\s+[<\[-])#devrites-engine${1}check${2}anchors --skills-root '"$2"'#g' {} +
 }
 
 render_codex_skill_tree() {

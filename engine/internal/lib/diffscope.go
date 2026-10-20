@@ -363,11 +363,12 @@ func (o diffScopeOpts) changedPaths() ([]string, error) {
 }
 
 // engineMachineFiles are the feature-root files the engine itself writes:
-// the dispatch ledger, metrics ledger, drift, regression, and diff-scope
+// the dispatch ledger, metrics ledger, drift, regression, diff-scope, and tree
 // baselines, the parallel lease, the feature lock, and the gate-execution lock.
 var engineMachineFiles = map[string]bool{
 	"dispatch.json":        true,
 	diffScopeBaselineFile:  true,
+	treeBaselineFile:       true,
 	MetricsFile:            true,
 	driftBaselineFile:      true,
 	regressionBaselineFile: true,

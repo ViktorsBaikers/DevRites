@@ -87,7 +87,7 @@ Follow [`reference/phase-contract.md`](reference/phase-contract.md)
    this digest for the proof runner. It likewise refuses a malformed `notes.md` or any anchor
    graded other than `exact`: `devrites-engine note check <slug> --repair`
    re-anchors `moved` notes; `stale`/`ambiguous`/`lost` ones are corrected or
-   removed before GO.
+   removed before GO. Repeat each `note: unexecuted driver` line `check seal` prints in the GO/NO-GO reply.
 
 Corrections return through affected Prove/Review before restarting Seal under
 [evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).

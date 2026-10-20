@@ -193,8 +193,9 @@ question: <one crisp sentence>
 options:
   1. <recommended> (Recommended) - <trade-off>
   2. <alternative> - <trade-off>
-proposed: <best current answer>
-raised_at: <iso>
+  3. Something else - describe it
+proposed: <option 1 restated; omit with no (Recommended)>
+raised_at: <RFC 3339, e.g. 2026-10-19T08:17:08Z>
 answered_at:
 answer:
 answered_by:        # human, only when resolved with `state resolve --human`
@@ -236,4 +237,4 @@ Why: <one line — the significance signals that picked the profile>
 
 High-traffic files should stay within the budgets in
 [`workspace-artifact-schema.md`](../../devrites-lib/reference/workspace-artifact-schema.md). If a file truly must exceed its budget, add
-`Budget override: <reason>` near the top.
+`Budget override: <=N lines; <reason>` (N at most 2x the budget) near the top.

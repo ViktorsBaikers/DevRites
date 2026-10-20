@@ -264,12 +264,7 @@ func TestAnchorBadInput(t *testing.T) {
 	}
 }
 
-func TestSplitlines(t *testing.T) {
-	got := splitlines("a\r\nb\rc\n\nd\u2028e")
-	want := []string{"a", "b", "c", "", "d", "e"}
-	if strings.Join(got, "|") != strings.Join(want, "|") {
-		t.Fatalf("splitlines = %q", got)
-	}
+func TestPyJSON(t *testing.T) {
 	if pyJSON("é\"<\x01") != `"\u00e9\"<\u0001"` {
 		t.Fatalf("pyJSON = %s", pyJSON("é\"<\x01"))
 	}

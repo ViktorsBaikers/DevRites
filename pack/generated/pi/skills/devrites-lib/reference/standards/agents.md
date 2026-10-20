@@ -111,15 +111,16 @@ Each required reviewer/analyst/auditor starts with exactly one:
 ```text
 Outcome: <findings | no-findings | gap>
 Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
-Finding: <severity> conf <n> | <file:line or artifact section> | <observed quote/result> | when <input/state/sequence> → <effect> | breaks <ID or standard §> "<quoted line>" | <minimum fix>
+Finding: <severity> conf <n> | <file:line or artifact section> | `<quoted cited line>` <observed result> | when <input/state/sequence> → <effect> | breaks <ID or standard §> "<quoted line>" | <minimum fix>
 Basis: <files read · commands run to reach this finding>
 ```
 
 - **`findings`:** each row uses the shape above; confidence 1–10 on Critical/Important.
   Critical/Important requires 7+, exact evidence, concrete impact, and a non-empty
   `Basis` — a correct verdict reached by an unrecorded inspection path is unproven.
-  A Critical/Important row carries `conf <n>` in its severity cell and writes impact
-  as `when <input/state/sequence> → <effect>`; missing either, root admits it as
+  A Critical/Important row carries `conf <n>` in its severity cell, opens its observed
+  cell with the cited line's quote in backticks, and writes impact
+  as `when <input/state/sequence> → <effect>`; missing conf or trigger, root admits it as
   `Unverified: <claim> — missing trigger` (stays `gap`).
 - **Proportionality:** a Critical/Important row's `breaks` quotes the line it violates:
   a spec ID (`AC`/`REQ`/`INV`/`PROH`/`DEC`/`EDGE`) or a shipped standard rule
@@ -157,10 +158,12 @@ Basis: <files read · commands run to reach this finding>
   and `/rite-doctor`. Never design capture or retention machinery around it.
 
 Root treats results as claims; verifies proposed Critical/Important blockers
-against candidate, first anchoring each row's quote at its cited `file:line` on the
-frozen digest: exact → admit; found at exactly one other location → relocate,
+against candidate, first running `devrites-engine check anchors --skills-root .pi/skills <slug> <return-file>`,
+which anchors each row's quote at its cited `file:line` on the live candidate and its
+`breaks` quote, and prints the digest root confirms equals the reviewed packet's: exact → admit; found at exactly one other location → relocate,
 keeping both locations; not found or found at several → `Unverified: <claim> —
-anchor lost|ambiguous`, a gap that is never a finding or a dismissal. A leaf result
+anchor lost|ambiguous`, a gap that is never a finding, a dismissal or a repair-round
+input (exit 3). A leaf result
 produced by spawning a nested agent is `gap`, and each hidden child counts toward
 the concurrent pool and `max_agents`. Missing fields become
 `Unverified: <claim> — missing <proof>` and stay `gap` until verified/rejected

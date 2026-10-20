@@ -3,10 +3,14 @@ package lib
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/devrites/devrites/internal/devritespaths"
 )
 
 // seedingRE matches packet text that hands a reviewer a conclusion instead of
@@ -15,31 +19,117 @@ import (
 var seedingRE = regexp.MustCompile(`\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+-PASS\b` +
 	`|(?i:\bno-findings\b)` +
 	`|(?i:^\s*(?:outcome|counts|verdict)\s*:\s*[^<\s])` +
-	`|(?i:\b(?:already|previously)\s+(?:passed|passes|green|printed|verified|approved|clean)\b)` +
-	`|(?i:\b(?:critical|important)\s*[:=]?\s*0\b)`)
+	`|(?i:\b(?:already|previously)\s+(?:passed|passes|green|printed|verified|approved|clean|fixed|closed|resolved)\b)` +
+	`|(?i:\b(?:critical|important)\s*[:=]?\s*0\b)` +
+	// Phrasings observed in voided reviews: a parent/sibling report, a passed
+	// check, a returned severity or finding, a green outcome, a return file.
+	`|(?i:\b(?:parent|root|sibling|drafter|wright|implementer)(?:\s+self-attack)?\s+(?:observed|reports?|reported|concluded|confirmed|exposes|exposed)\b)` +
+	`|(?i:\b(?:check|gate|scope|tests?)\s+passed\b)` +
+	`|(?i:\breturned\s+(?:critical|important|minor|findings|no-findings)\b)` +
+	`|(?i:\b(?:critical|important|minor)\s+F\d+\b)` +
+	`|(?i:\bclosed\s+by\b)` +
+	`|(?i:\b(?:makes|made|turned|went)\s+[\w/-]*\s*green\b)` +
+	`|packets/\S+\.return\.md`)
+
+// roleTagRE matches a role-tagged finding fingerprint ("Plan F1", "DevEx S2").
+// The tag is a reviewer role's leading word: Perf for performance-reviewer.
+var roleTagRE = regexp.MustCompile(`\b(Plan|Doubt|Code|DevEx|Test|Security|Spec|Strategy|Perf|Frontend|Simplifier)\s+[FS]\d+\b`)
 
 // countsTemplateRE matches a Counts line whose every value is a placeholder
 // (the return template), which names keys but no conclusion.
 var countsTemplateRE = regexp.MustCompile(`(?i)^\s*counts\s*:(?:\s+[a-z]+=<[^<>]*>)+\s*$`)
 
+// roleBase is the canonical role a --role names: an optional "devrites-"
+// agent-name prefix and ".lane" suffix dropped.
+func roleBase(role string) string {
+	base, _, _ := strings.Cut(strings.TrimPrefix(role, "devrites-"), ".")
+	return base
+}
+
 // isReviewerRole reports whether role is an independent read-only reviewer:
-// a *-reviewer, *-auditor, or test-analyst, with an optional ".lane" suffix.
+// a *-reviewer, *-auditor, or test-analyst.
 func isReviewerRole(role string) bool {
-	base, _, _ := strings.Cut(role, ".")
+	base := roleBase(role)
 	return strings.HasSuffix(base, "-reviewer") || strings.HasSuffix(base, "-auditor") || base == "test-analyst"
+}
+
+// lintKnownRoles refuses a --role that names no pack agent, so a free-form
+// label ("test-analyst-022-r5") cannot skip the reviewer lints. The agent path
+// resolves as context --role does: the phase skill's loads manifest, else the
+// devrites-<role> convention, in any project-level host install; a Codex
+// install keeps role agents at .codex/agents/<name>.toml.
+// shortcut: only project-level installs are checked (a global-only install or
+// none skips the check); check the user install too if free-form roles recur there.
+func lintKnownRoles(root, phase string, roles []string) error {
+	project := filepath.Dir(root)
+	var skillsRoots []string
+	if dir, err := resolveSkillsRoot(root, ""); err == nil {
+		if rel, err := filepath.Rel(project, dir); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			skillsRoots = append(skillsRoots, dir)
+		}
+	}
+	for _, rel := range []string{".omp/skills", ".agents/skills", ".pi/skills", ".devin/skills"} {
+		dir := filepath.Join(project, filepath.FromSlash(rel))
+		if info, err := os.Stat(filepath.Join(dir, "devrites-lib")); err == nil && info.IsDir() {
+			skillsRoots = append(skillsRoots, dir)
+		}
+	}
+	manifests := make([]loadsManifest, len(skillsRoots))
+	for i, dir := range skillsRoots {
+		if raw, err := os.ReadFile(filepath.Join(dir, "rite-"+strings.ToLower(phase), "SKILL.md")); err == nil { // #nosec G304 -- resolved under a project skills root
+			manifests[i], _, _ = parseLoadsManifest(string(raw))
+		}
+	}
+	isRegular := func(path string) bool {
+		info, err := os.Stat(path)
+		return err == nil && info.Mode().IsRegular()
+	}
+	for _, role := range roles {
+		base := roleBase(role)
+		known := len(skillsRoots) == 0
+		for i, dir := range skillsRoots {
+			if !devritespaths.ValidSlug(base) {
+				break
+			}
+			rel := filepath.FromSlash(roleAgentPath(manifests[i], base))
+			if isRegular(filepath.Join(dir, "..", "agents", rel)) ||
+				isRegular(filepath.Join(project, ".codex", "agents", strings.TrimSuffix(filepath.Base(rel), ".md")+".toml")) {
+				known = true
+				break
+			}
+		}
+		if !known {
+			return fmt.Errorf("role %q names no pack agent; use a canonical role, optionally with a .<lane> suffix", role)
+		}
+	}
+	return nil
 }
 
 // lintReviewerPacket refuses a reviewer packet that seeds a conclusion or
 // tells the reviewer to read its installed role contract, so a voided review
 // is rejected before launch rather than discovered after it.
 // Placeholder text inside <...> (an output template) is not a conclusion.
+// With no wave roles, every role-tagged fingerprint is refused.
 func lintReviewerPacket(path string) error {
+	return lintReviewerWavePacket(path, nil)
+}
+
+// lintReviewerWavePacket is lintReviewerPacket for a wave: a role-tagged
+// fingerprint passes only when roles hold exactly one reviewer role and the
+// tag names it.
+func lintReviewerWavePacket(path string, roles []string) error {
 	if path == "" {
 		return fmt.Errorf("a reviewer wave needs --packet <file> holding the exact packet the reviewers receive")
 	}
 	raw, err := readBoundedRegularFile(path, maxContractBytes)
 	if err != nil {
 		return fmt.Errorf("reviewer packet %s: %w", path, err)
+	}
+	var reviewers []string
+	for _, role := range roles {
+		if base := roleBase(role); isReviewerRole(base) && !slices.Contains(reviewers, base) {
+			reviewers = append(reviewers, base)
+		}
 	}
 	for i, line := range strings.Split(string(raw), "\n") {
 		if countsTemplateRE.MatchString(line) {
@@ -49,8 +139,16 @@ func lintReviewerPacket(path string) error {
 			if insidePlaceholder(line, loc[0], loc[1]) {
 				continue
 			}
-			return fmt.Errorf("reviewer packet %s:%d seeds a conclusion (%q); a packet carries scope, paths, diff and rubric only — never a gate result, a reviewer outcome or count, or a claim that something already passed. Weigh root proof at reconciliation instead",
+			return fmt.Errorf("reviewer packet %s:%d seeds a conclusion (%q); a packet carries scope, paths, diff and rubric only — never a gate result, a reviewer outcome or count, or a claim that something already passed (agents.md § Independence). Weigh root proof at reconciliation instead",
 				path, i+1, strings.TrimSpace(line[loc[0]:loc[1]]))
+		}
+		for _, m := range roleTagRE.FindAllStringSubmatchIndex(line, -1) {
+			tag := strings.ToLower(line[m[2]:m[3]])
+			if insidePlaceholder(line, m[0], m[1]) || (len(reviewers) == 1 && strings.HasPrefix(reviewers[0], tag)) {
+				continue
+			}
+			return fmt.Errorf("reviewer packet %s:%d carries fingerprint %q from another role; a recheck packet lists only fingerprints that same role raised, so send it to that role's recheck alone (agents.md § Independence)",
+				path, i+1, line[m[0]:m[1]])
 		}
 	}
 	return lintContractRead("reviewer packet", path, raw)
@@ -74,8 +172,7 @@ var returnCountKeys = map[string][]string{
 }
 
 func countKeys(role string) []string {
-	base, _, _ := strings.Cut(role, ".")
-	if keys, ok := returnCountKeys[base]; ok {
+	if keys, ok := returnCountKeys[roleBase(role)]; ok {
 		return keys
 	}
 	return severityCountKeys

@@ -614,3 +614,34 @@ func TestDispatchNeverRefusesLeaseSibling(t *testing.T) {
 		t.Fatalf("lease sibling must never be refused: code=%d\n%s", code, out)
 	}
 }
+
+// A build wright open records the work tree for check windows
+// --since-dispatch; other waves and projects outside git record none.
+func TestDispatchBuildWrightOpenRecordsTree(t *testing.T) {
+	root, project := treeWorkspace(t)
+	if code, out := runDispatchT(t, root, "open", "--phase", "vet", "--wave", "v1", "--role", "a"); code != 0 {
+		t.Fatalf("vet open: code=%d\n%s", code, out)
+	}
+	if code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "b1", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)); code != 0 || strings.Contains(out, "snapshot not recorded") {
+		t.Fatalf("wright open: code=%d\n%s", code, out)
+	}
+	f, _, err := loadDispatch(root, "feat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.Waves["v1"].Tree != "" {
+		t.Fatalf("vet wave recorded a tree: %q", f.Waves["v1"].Tree)
+	}
+	tree := f.Waves["b1"].Tree
+	if got, err := runGitCommand(project, nil, "cat-file", "-t", tree); err != nil || strings.TrimSpace(string(got)) != "tree" {
+		t.Fatalf("b1 tree %q: %s %v", tree, got, err)
+	}
+
+	plain, _ := newWorkspace(t, "build")
+	if code, out := runDispatchT(t, plain, "open", "--phase", "build", "--wave", "b1", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)); code != 0 || strings.Contains(out, "snapshot") {
+		t.Fatalf("non-git wright open: code=%d\n%s", code, out)
+	}
+	if f, _, err := loadDispatch(plain, "feat"); err != nil || f.Waves["b1"].Tree != "" {
+		t.Fatalf("non-git wave tree: %v %+v", err, f)
+	}
+}

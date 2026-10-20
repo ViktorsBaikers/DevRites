@@ -361,7 +361,8 @@ func applyHunks(base string, hunks []candidateHunk) (string, []string) {
 // checkBundleResult rejects an outcome the root would otherwise discover only
 // at Vet: a tracked ID that vanished from every touched file without being
 // listed in retired_ids, a new tasks.md graph problem, or a budgeted artifact
-// that grew into material overshoot without a `Budget override:` line.
+// that grew into material overshoot without a covering
+// `Budget override: <=N lines; <reason>` line.
 func checkBundleResult(targets []*bundleTarget, retired map[string]bool) []string {
 	var problems []string
 	beforeIDs, afterIDs := map[string]bool{}, map[string]bool{}

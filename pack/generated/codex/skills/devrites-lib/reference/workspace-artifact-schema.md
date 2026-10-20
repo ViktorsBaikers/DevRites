@@ -29,7 +29,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | vet/build/converge | plan artifacts plus `eng-review.md`, `test-plan.md`, `gates.md`; Build creates and maintains `touched-files.md` after its first green slice |
 | prove/polish/review | vetted plan artifacts plus `evidence.md`, `touched-files.md` |
 | seal/ship/done | proof artifacts plus `review.md`, `seal.md`; Ship writes `ship.md` |
-| conditional | `checklists/<domain>.md` per spec-covered domain (Spec writes; Define gates on it); `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `devex.md` when a developer-facing surface is in scope; `drift.md` for drift; `polish-report.md` for polish; `handoff.md` only when requested; `references.md` + `references/` when references exist; `investigation-map.md` for pressure-test; `dogfood.md` for dogfood; `windows.md` when the diff introduces deferral markers (waiver ledger for `check windows`); `packets/` for by-reference dispatch packets and admitted accounts (≤ 64 KiB each; older closed rounds may be deleted; never transcripts); `history/` for verbatim relocated checkpoint narrative (append-only, never a read-next); `readiness-inputs.json` as the advisory per-input drift baseline written by `check drift --record` after Vet's binding (never a gate input; regenerated, not hand-edited); `diff-scope-baseline.json` as the pre-dispatch dirty-path fingerprint snapshot written by `check diff-scope --snapshot` and read by `--baseline` (engine-written, never hand-edited); `notes.md` for anchored notes bound to verbatim code quotes (engine-regraded; non-exact anchors block seal) |
+| conditional | `checklists/<domain>.md` per spec-covered domain (Spec writes; Define gates on it); `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `devex.md` when a developer-facing surface is in scope; `drift.md` for drift; `polish-report.md` for polish; `handoff.md` only when requested; `references.md` + `references/` when references exist; `investigation-map.md` for pressure-test; `dogfood.md` for dogfood; `windows.md` when the diff introduces deferral markers (waiver ledger for `check windows`); `packets/` for by-reference dispatch packets and admitted accounts (≤ 64 KiB each; older closed rounds may be deleted; never transcripts); `history/` for verbatim relocated checkpoint narrative (append-only, never a read-next); `readiness-inputs.json` as the advisory per-input drift baseline written by `check drift --record` after Vet's binding (never a gate input; regenerated, not hand-edited); `diff-scope-baseline.json` as the pre-dispatch dirty-path fingerprint snapshot written by `check diff-scope --snapshot` and read by `--baseline` (engine-written, never hand-edited); `tree-baseline.json` as the root-edit tripwire baseline `dispatch` writes and `dispatch open`/`next`/`check candidate` read (engine-written, never hand-edited); `notes.md` for anchored notes bound to verbatim code quotes (engine-regraded; non-exact anchors block seal) |
 
 ## What each file owns
 
@@ -128,18 +128,19 @@ The worktree digest is deterministic but is not an atomic filesystem snapshot
 against a malicious concurrent same-size rewrite. Ship's exact Git-index scope,
 byte, binding, and secret checks own the final freeze immediately before commit.
 
-Only a structural `Budget override: <reason>` line (not a fenced example)
-permits excess. Each line budget also bounds bytes at 400 bytes per budgeted line
-(`state.md` 120 lines → 48 KiB); long lines do not evade it.
-`devrites-engine orient <slug>` reports `artifact_budgets` (lines/bytes/over/override)
-and `bulk_files` (non-canonical files over 64 KiB) so a phase can decide what to read
-before loading. Phase writers check these limits before returning; there is no
-repository-local script assumption in the installed workflow.
+Only a structural `Budget override: <=N lines; <reason>` line (not a fenced example)
+permits excess, up to N lines and N×400 bytes with N at most 2× the line budget; a
+reason-only override counts as none. Each line budget also bounds bytes at 400 bytes
+per budgeted line (`state.md` 120 lines → 48 KiB); long lines do not evade it. `orient`
+reports `artifact_budgets` (lines/bytes/over/override) and `bulk_files` (non-canonical
+files over 64 KiB) so a phase can decide what to read before loading; phase writers
+check these limits before returning, with no repository-local script assumption.
 
-`check readiness` and `check seal` enforce the material band deterministically: a
-required artifact at or above 1.5× its line or byte budget with no structural override
-line blocks with the exact measurement and the three legal remedies (relocate history
-via `$rite-plan revise`, split via `$rite-plan course-correct`, or record the override).
+`check readiness`, `check seal` and `state append` enforce the material band: any present
+budgeted artifact (required or not, `drift.md` included) at or above 1.5× its line or
+byte budget with no covering override blocks with the exact measurement and three legal
+remedies (relocate history losslessly via `$rite-plan revise`, split via `$rite-plan
+course-correct`, or record the bounded override). Past 2× only relocation or split remain.
 Overshoot below that band stays advisory and is reported by `orient`. Proof ledgers
 (`evidence.md`, `browser-evidence.md`, `touched-files.md`) are always advisory: they
 scale with proof volume, and `touched-files.md` keeps its own manifest limits.
@@ -156,9 +157,8 @@ Two reasons are not durable fixes: slice or acceptance-criteria count (an over-b
 [feature-sequence split](../../rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)),
 and history in `state.md` (checkpoint narrative moves verbatim to
 `history/<file>-<YYYYMMDD>.md`, append-only, never a phase read-next, with a one-line
-pointer left behind). A legacy workspace may carry a temporary `Budget override:` line
-as a bridge; `$rite-upgrade` routes it to relocation or the split, and new writers never
-create one for those two reasons.
+pointer left behind). A legacy reason-only `Budget override:` line no longer clears a
+gate; `$rite-upgrade` routes it to relocation or the split, and new writers never create one for those two reasons.
 Apply [[`context-hygiene.md`](standards/context-hygiene.md) dispatch packets](standards/context-hygiene.md#dispatch-packets)
 for byte-size checks and lossless retrieval; budget overrides neither rewrite protected
 history nor require loading it all.

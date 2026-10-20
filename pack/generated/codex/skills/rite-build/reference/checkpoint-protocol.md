@@ -50,8 +50,9 @@ rewrite; do not claim cross-file atomicity):
    options: |                        # the ranked set, recommended first (matches the render)
      1. <recommended> (Recommended) — logic: … · infra: … · business: … · architecture: …
      2. <alternative> — <rationale>
+     3. Something else — describe it
    proposed: <the recommended option restated; matches option 1>
-   raised_at: <iso>
+   raised_at: <full RFC 3339 timestamp, e.g. 2026-10-19T08:17:08Z>
    ```
 
 2. **`state.md` updates:** cursor `status` = `awaiting_human`, `active_slice` =

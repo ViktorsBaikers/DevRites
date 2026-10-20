@@ -201,6 +201,16 @@ func worktreeAdd(repo, path, branch, startPoint string) error {
 	return err
 }
 
+// AddDetachedWorktree checks rev out at path on no branch, for a throwaway
+// copy that must leave no ref behind; RemoveWorktree undoes it.
+func AddDetachedWorktree(repo, path, rev string) error {
+	_, err := git(repo, "worktree", "add", "--detach", path, rev)
+	return err
+}
+
+// RemoveWorktree force-removes a worktree, falling back to delete plus prune.
+func RemoveWorktree(repo, path string) error { return worktreeRemove(repo, path) }
+
 func worktreeRemove(repo, path string) error {
 	_, err := git(repo, "worktree", "remove", "--force", path)
 	if err != nil {

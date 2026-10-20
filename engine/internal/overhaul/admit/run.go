@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf16"
-	"unicode/utf8"
 
+	"github.com/devrites/devrites/internal/anchor"
 	"github.com/devrites/devrites/internal/overhaul/ovio"
 	"github.com/devrites/devrites/internal/overhaul/packet"
 	"github.com/devrites/devrites/internal/overhaul/records"
@@ -56,7 +56,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	case len(args) == 3 && args[0] == "packet":
 		code, err = packetAdmit(args[1], args[2], stdout)
 	case len(args) == 3 && args[0] == "anchor":
-		code, err = anchor(args[1], args[2], stdout, stderr)
+		code, err = anchorFindings(args[1], args[2], stdout, stderr)
 	default:
 		fmt.Fprint(stderr, usage)
 		return 2
@@ -332,28 +332,6 @@ func result(stdout io.Writer, why []string, ok string) int {
 	return 0
 }
 
-// splitlines is Python's str.splitlines().
-func splitlines(s string) []string {
-	var out []string
-	start := 0
-	for i := 0; i < len(s); {
-		r, size := utf8.DecodeRuneInString(s[i:])
-		i += size
-		switch r {
-		case '\n', '\r', '\v', '\f', 0x1c, 0x1d, 0x1e, 0x85, 0x2028, 0x2029:
-			out = append(out, s[start:i-size])
-			if r == '\r' && i < len(s) && s[i] == '\n' {
-				i++
-			}
-			start = i
-		}
-	}
-	if start < len(s) {
-		out = append(out, s[start:])
-	}
-	return out
-}
-
 // pyInt is Python's int() on a decoded JSON value.
 func pyInt(v any) (int, error) {
 	switch x := v.(type) {
@@ -381,7 +359,7 @@ func pyInt(v any) (int, error) {
 	return 0, fmt.Errorf("int() argument must be a string or a number, not %s", records.Repr(v))
 }
 
-func anchor(root, path string, stdout, stderr io.Writer) (int, error) {
+func anchorFindings(root, path string, stdout, stderr io.Writer) (int, error) {
 	doc, err := ovio.LoadJSON(path)
 	if err != nil {
 		return 0, err
@@ -411,7 +389,7 @@ func anchor(root, path string, stdout, stderr io.Writer) (int, error) {
 			if err != nil {
 				return 0, err
 			}
-			lines := splitlines(strings.ToValidUTF8(string(b), "�"))
+			lines := anchor.Lines(b)
 			start, ok := loc["start"]
 			if !ok {
 				start = json.Number("0")
@@ -432,11 +410,10 @@ func anchor(root, path string, stdout, stderr io.Writer) (int, error) {
 				why = append(why, fmt.Sprintf("%s: %s lines %d-%d outside file (%d lines)", id, rel, s, e, len(lines)))
 				continue
 			}
-			q := strings.Join(strings.Fields(quote), " ")
-			w := strings.Join(strings.Fields(strings.Join(lines[s-1:e], " ")), " ")
-			if q == "" || !strings.Contains(w, q) {
+			switch anchor.At(lines, s, e, quote) {
+			case anchor.NotFound:
 				why = append(why, fmt.Sprintf("%s: quote not found at %s:%d-%d", id, rel, s, e))
-			} else if utf8.RuneCountInString(strings.ReplaceAll(q, " ", "")) < 8 && q != w {
+			case anchor.TooShort:
 				why = append(why, fmt.Sprintf("%s: quote at %s:%d is too short to anchor; quote the whole line", id, rel, s))
 			}
 		}

@@ -164,7 +164,7 @@ Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>
 Lane: <frontend | backend | single: <domain>>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Coverage: <files read fully | hunk-level | skipped: name — reason>
-Finding: <severity> conf <n> | <file:line> | <observed> | when <input/state/sequence> → <effect> | breaks <ID or standard §> "<quoted line>" | <minimum fix>
+Finding: <severity> conf <n> | <file:line> | `<quoted cited line>` <observed result> | when <input/state/sequence> → <effect> | breaks <ID or standard §> "<quoted line>" | <minimum fix>
 Basis: <files read · commands run to reach this finding>
 Contract: <applicable | not-applicable> — <basis: both sides read · crossing test>
 Tests: <adequate? gaps>

@@ -1,13 +1,13 @@
 {
   "devrites-api-interface": {
-    "root": 72110,
+    "root": 72344,
     "floor": 12855
   },
   "devrites-audit": {
-    "root": 60937,
+    "root": 61218,
     "role": "performance-reviewer",
-    "roleFloor": 28300,
-    "roleCeiling": 37602
+    "roleFloor": 28581,
+    "roleCeiling": 37883
   },
   "devrites-browser-proof": {
     "root": 57454,
@@ -18,17 +18,17 @@
     "floor": 23467
   },
   "devrites-doubt": {
-    "root": 104161,
+    "root": 104676,
     "role": "doubt-reviewer",
-    "roleFloor": 23957,
-    "roleCeiling": 52567
+    "roleFloor": 24238,
+    "roleCeiling": 52848
   },
   "devrites-frontend-craft": {
-    "root": 77979,
+    "root": 78251,
     "floor": 54329
   },
   "devrites-interview": {
-    "root": 44347,
+    "root": 44581,
     "floor": 15289
   },
   "devrites-prose-craft": {
@@ -36,13 +36,13 @@
     "floor": 8728
   },
   "devrites-source-driven": {
-    "root": 40278,
+    "root": 40559,
     "role": "evidence-scout",
-    "roleFloor": 35708,
-    "roleCeiling": 35708
+    "roleFloor": 35989,
+    "roleCeiling": 35989
   },
   "devrites-ux-shape": {
-    "root": 69212,
+    "root": 69446,
     "floor": 40154
   },
   "rite": {
@@ -54,43 +54,43 @@
     "floor": 17870
   },
   "rite-autocomplete": {
-    "root": 107650,
-    "floor": 75769
+    "root": 107884,
+    "floor": 76003
   },
   "rite-build": {
-    "root": 251258,
+    "root": 252533,
     "role": "code-reviewer",
-    "roleFloor": 38023,
-    "roleCeiling": 124323
+    "roleFloor": 38304,
+    "roleCeiling": 124876
   },
   "rite-clarify": {
-    "root": 71737,
+    "root": 72252,
     "role": "evidence-scout",
-    "roleFloor": 31851,
-    "roleCeiling": 31851
+    "roleFloor": 32132,
+    "roleCeiling": 32132
   },
   "rite-converge": {
-    "root": 140602,
+    "root": 141469,
     "role": "evidence-scout",
-    "roleFloor": 73836,
-    "roleCeiling": 118025
+    "roleFloor": 74389,
+    "roleCeiling": 118894
   },
   "rite-customize": {
     "root": 37062,
     "floor": 12768
   },
   "rite-define": {
-    "root": 188269,
+    "root": 189322,
     "role": "plan-drafter",
-    "roleFloor": 84577,
-    "roleCeiling": 148358
+    "roleFloor": 85082,
+    "roleCeiling": 149177
   },
   "rite-doctor": {
     "root": 12855,
     "floor": 12855
   },
   "rite-dogfood": {
-    "root": 101321,
+    "root": 101827,
     "floor": 39706
   },
   "rite-explain": {
@@ -98,11 +98,11 @@
     "floor": 6576
   },
   "rite-fast": {
-    "root": 116368,
+    "root": 116874,
     "floor": 42219
   },
   "rite-frame": {
-    "root": 48789,
+    "root": 49061,
     "floor": 18424
   },
   "rite-handoff": {
@@ -110,33 +110,33 @@
     "floor": 20832
   },
   "rite-harness": {
-    "root": 53916,
+    "root": 54188,
     "floor": 21366
   },
   "rite-learn": {
-    "root": 43667,
+    "root": 43948,
     "role": "retrospector",
-    "roleFloor": 39073,
-    "roleCeiling": 39073
+    "roleFloor": 39354,
+    "roleCeiling": 39354
   },
   "rite-plan": {
-    "root": 151938,
+    "root": 152314,
     "role": "evidence-scout",
-    "roleFloor": 66533,
-    "roleCeiling": 97548
+    "roleFloor": 66909,
+    "roleCeiling": 97924
   },
   "rite-polish": {
-    "root": 106236,
+    "root": 106517,
     "role": "slice-wright",
-    "roleFloor": 60707,
-    "roleCeiling": 97858
+    "roleFloor": 60988,
+    "roleCeiling": 98139
   },
   "rite-pov": {
     "root": 24601,
     "floor": 24601
   },
   "rite-pr-feedback": {
-    "root": 60666,
+    "root": 60938,
     "floor": 15574
   },
   "rite-pressure-test": {
@@ -148,62 +148,62 @@
     "floor": 12768
   },
   "rite-prove": {
-    "root": 189033,
+    "root": 189826,
     "role": "proof-runner",
-    "roleFloor": 94990,
-    "roleCeiling": 148843
+    "roleFloor": 95783,
+    "roleCeiling": 149636
   },
   "rite-quick": {
-    "root": 100503,
+    "root": 101009,
     "floor": 18372
   },
   "rite-resolve": {
-    "root": 49905,
+    "root": 50139,
     "floor": 17452
   },
   "rite-review": {
-    "root": 214841,
+    "root": 215708,
     "role": "code-reviewer",
-    "roleFloor": 39072,
-    "roleCeiling": 176747
+    "roleFloor": 39353,
+    "roleCeiling": 177614
   },
   "rite-seal": {
-    "root": 157782,
+    "root": 158335,
     "role": "code-reviewer",
-    "roleFloor": 54406,
-    "roleCeiling": 131392
+    "roleFloor": 54687,
+    "roleCeiling": 131945
   },
   "rite-ship": {
-    "root": 70472,
+    "root": 70706,
     "floor": 41412
   },
   "rite-spec": {
-    "root": 165017,
+    "root": 165698,
     "role": "evidence-scout",
-    "roleFloor": 74682,
-    "roleCeiling": 125130
+    "roleFloor": 75129,
+    "roleCeiling": 125577
   },
   "rite-status": {
     "root": 12855,
     "floor": 12855
   },
   "rite-temper": {
-    "root": 131103,
+    "root": 131618,
     "role": "strategy-reviewer",
-    "roleFloor": 49241,
-    "roleCeiling": 88310
+    "roleFloor": 49522,
+    "roleCeiling": 88591
   },
   "rite-upgrade": {
-    "root": 40273,
+    "root": 40649,
     "role": "upgrade-planner",
-    "roleFloor": 23969,
-    "roleCeiling": 35715
+    "roleFloor": 24250,
+    "roleCeiling": 36091
   },
   "rite-vet": {
-    "root": 252771,
+    "root": 253517,
     "role": "devex-reviewer",
-    "roleFloor": 62053,
-    "roleCeiling": 160079
+    "roleFloor": 62293,
+    "roleCeiling": 160593
   },
   "rite-watch-pr": {
     "root": 44438,

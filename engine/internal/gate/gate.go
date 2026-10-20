@@ -7,6 +7,7 @@ package gate
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/devrites/devrites/internal/markdowntext"
@@ -38,6 +39,7 @@ type Result struct {
 	Diagnostics     []state.ArtifactDiagnostic
 	AddContentFiles []string
 	StateProblems   []string
+	Notes           []string // non-blocking lines printed pass or blocked, e.g. waived test drivers
 	Blocked         bool
 	ReasonID        reason.ID
 }
@@ -157,6 +159,15 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 			blocked = true
 		}
 	}
+	var notes []string
+	if len(missingFiles) == 0 {
+		driverProblems, waived := testDriverProblems(observation, policy)
+		for _, problem := range driverProblems {
+			stateProblems = append(stateProblems, "gates: "+problem)
+			blocked = true
+		}
+		notes = waived
+	}
 	if len(missingFiles) == 0 {
 		for _, problem := range artifactBudgetProblems(observation, policy) {
 			stateProblems = append(stateProblems, "budget: "+problem)
@@ -172,10 +183,7 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 			continue
 		}
 		if diagnostic, has := fact.Diagnostic(); has && diagnostic.Code == state.DiagnosticFileTooLarge {
-			stateProblems = append(stateProblems, fmt.Sprintf(
-				"budget: %s exceeds the %d-byte artifact cap; relocate history (history/<file>-<YYYYMMDD>.md) or split the feature via /rite-plan revise|course-correct",
-				artifact, state.MaxArtifactBytes,
-			))
+			stateProblems = append(stateProblems, "budget: "+readCapProblem(artifact))
 			blocked = true
 		}
 	}
@@ -203,6 +211,7 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 		Diagnostics:     diagnostics,
 		AddContentFiles: addContentFiles,
 		StateProblems:   stateProblems,
+		Notes:           notes,
 		Blocked:         blocked,
 	}
 	result.ReasonID = ResultReasonID(kind, blocked)
@@ -212,18 +221,25 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 	return result, nil
 }
 
-// artifactBudgetProblems blocks a required artifact only on a material overshoot
-// (>= state.BudgetBlockFactor of a line or byte budget) with no structural
-// `Budget override:` line. Smaller overshoots stay advisory and are reported by
-// `orient`.
+// artifactBudgetProblems blocks every present budget-gated artifact, required
+// by the phase or not (an unrequired drift.md once grew to 7x its budget), on a
+// material overshoot (>= state.BudgetBlockFactor of a line or byte budget) that
+// no bounded `Budget override: <=N lines; <reason>` line covers. Smaller
+// overshoots stay advisory and are reported by `orient`.
 func artifactBudgetProblems(observation *state.WorkspaceObservation, policy state.PhasePolicy) []string {
 	var problems []string
-	for _, artifact := range policy.RequiredArtifacts {
+	for _, artifact := range state.BudgetGatedArtifacts() {
 		fact, ok := observation.Fact(artifact)
-		if !ok || fact.State() != state.ArtifactPresent {
+		if !ok {
 			continue
 		}
-		if !state.ArtifactBudgetGateApplies(string(artifact)) {
+		// A required artifact over the read cap is already reported with the
+		// missing files; an unrequired one is caught only here.
+		if diagnostic, has := fact.Diagnostic(); has && diagnostic.Code == state.DiagnosticFileTooLarge && !slices.Contains(policy.RequiredArtifacts, artifact) {
+			problems = append(problems, readCapProblem(artifact))
+			continue
+		}
+		if fact.State() != state.ArtifactPresent {
 			continue
 		}
 		status, ok := state.ArtifactBudget(string(artifact), fact.Bytes())
@@ -231,12 +247,19 @@ func artifactBudgetProblems(observation *state.WorkspaceObservation, policy stat
 			continue
 		}
 		problems = append(problems, fmt.Sprintf(
-			"%s is %d lines/%d bytes, at or above %gx its %d-line/%d-byte budget; relocate history (history/<file>-<YYYYMMDD>.md) or split the feature via /rite-plan revise|course-correct, or record a structural `Budget override: <reason>` line",
+			"%s is %d lines/%d bytes, at or above %gx its %d-line/%d-byte budget; %s",
 			status.File, status.Lines, status.Bytes, state.BudgetBlockFactor,
-			status.LineBudget, status.ByteBudget,
+			status.LineBudget, status.ByteBudget, state.BudgetRemedy(status.LineBudget),
 		))
 	}
 	return problems
+}
+
+func readCapProblem(artifact state.ArtifactPath) string {
+	return fmt.Sprintf(
+		"%s exceeds the %d-byte artifact cap; relocate history (history/<file>-<YYYYMMDD>.md) or split the feature via /rite-plan revise|course-correct",
+		artifact, state.MaxArtifactBytes,
+	)
 }
 
 func acceptanceMapProblems(observation *state.WorkspaceObservation, policy state.PhasePolicy) []string {
@@ -357,6 +380,9 @@ func (r *Result) Render() string {
 	if !r.Blocked {
 		b.WriteString("result: pass\n")
 		fmt.Fprintf(&b, "reason: %s\n", r.ReasonID)
+		for _, note := range r.Notes {
+			fmt.Fprintf(&b, "note: %s\n", note)
+		}
 		return b.String()
 	}
 	missing := r.MissingFiles
@@ -383,6 +409,9 @@ func (r *Result) Render() string {
 	}
 	for _, problem := range r.StateProblems {
 		fmt.Fprintf(&b, "invariant: %s\n", problem)
+	}
+	for _, note := range r.Notes {
+		fmt.Fprintf(&b, "note: %s\n", note)
 	}
 	fmt.Fprintf(&b, "retry: devrites-engine check %s %s\n", r.Kind, r.Slug)
 	return b.String()

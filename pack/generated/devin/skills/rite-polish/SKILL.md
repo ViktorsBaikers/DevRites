@@ -82,7 +82,8 @@ Incomplete comparison is **not** agreement. Record axis deltas in `polish-report
    ones): build its read-set with
    `devrites-engine context --skills-root .devin/skills <slug> --phase polish --role slice-wright`, run the
    single-agent wave through `devrites-engine dispatch <slug> open|start|seal|return`
-   (auto-records dispatch/return metrics), and gate returned paths
+   (auto-records dispatch/return metrics; `open` passes `--claim-session <id>` and one
+   `--claim <path>` per contract path, so the root-edit tripwire attributes its edits), and gate returned paths
    with `devrites-engine check diff-scope <slug> --allow <contract-paths>` before
    proof.
 4. **If UI scope detected** read [`reference/ui.md`](reference/ui.md), and read
@@ -101,7 +102,9 @@ Incomplete comparison is **not** agreement. Record axis deltas in `polish-report
    [`ledger`](reference/ledger.md) when requirements changed, the optional UI
    [`design memory`](reference/design-memory.md), and durable
    [`ADR promotion`](reference/adr-promotion.md). Add every changed project path
-   to the candidate manifest; none of these writes waits for Ship.
+   to the candidate manifest and record each root-written ADR or `DESIGN.md` path the
+   tripwire flags (`check candidate` names it) with `devrites-engine dispatch <slug> attribute --reason "polish rollup" --path <path>`;
+   none of these writes waits for Ship.
 6. **Re-prove and close.** After all accepted code/UI corrections and rollups,
    run `devrites-engine check candidate <slug>` and `devrites-engine check
    windows <slug>` — an unwaived deferral marker surfaces here, not at Seal.

@@ -139,6 +139,9 @@ with `devrites-engine claim release --session <id> --id <claim-id>` on every ter
 successful return, rejected result, stop, or a launch the host refused with no handle. A
 timeout or unknown outcome keeps the claim ([`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)).
 TTL is crash recovery, not normal cleanup.
+An `unattributed root edit` exit 3 (root-edit tripwire) routes the path through a wright wave naming it in
+`--claim`, or, given evidence (owner work, gate output, a standalone wright, Polish ADR/`DESIGN.md`),
+`dispatch <slug> attribute --reason <evidence> --path <path>`.
 
 ## Inspect and prove
 
@@ -155,8 +158,8 @@ TTL is crash recovery, not normal cleanup.
    whether empty or filled — or adds a path. Root never widens scope or edits
    source.
 2. Run `devrites-engine check windows <slug>` on the wright's diff (`--worktree`
-   in the same tree; `--base <B> --cwd <worktree>` for a parallel transfer
-   commit). Each unwaived hit is repaired through the bounded wright or gets a
+   in the same tree, plus `--since-dispatch <wave>` naming a repair round's wave;
+   `--base <B> --cwd <worktree>` for a parallel transfer commit). Each unwaived hit is repaired through the bounded wright or gets a
    reasoned `windows.md` row before review; never waive to reach green. Then
    inspect the test diff for deletion, skipping, focus markers, or loosened
    assertions. Dedicated test analysis treats weakening as Critical.

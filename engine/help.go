@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	checkUsage = `usage: devrites-engine check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup> ...
+	checkUsage = `usage: devrites-engine check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup|anchors|perturb> ...
 
   check candidate <slug>
   check readiness <slug>
@@ -24,12 +24,14 @@ const (
   check slice <slug> <SLICE-ID>
   check diff-scope <slug> --allow <csv> | --allow-file <path> [--worktree|--staged|--base <ref>] [--allow-empty] [--baseline] [--verbose] [--cwd <dir>]
   check diff-scope <slug> --snapshot [--worktree|--staged|--base <ref>] [--cwd <dir>]
+  check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N]
   check skill-trust <path>
   check indexes [--root <dir>]
   check regression <slug> [--update]
   check drift <slug> [--record]
-  check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]
+  check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>] [--cwd <dir>]
   check dup [slug] [--all|--worktree|--staged|--base <ref>]
+  check anchors <slug> <return-file> [--skills-root <dir>]
 `
 
 	stateUsage = `usage: devrites-engine state <resolve|merge-manifest|apply-bundle|set|append|close> ...
@@ -62,7 +64,7 @@ const (
   metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   metrics summary [slug] [--by-slice]
 `
-	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release]`
+	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]`
 	claimUsageText = `usage: devrites-engine claim <add|release|list|check> ...
 
   claim add --session <id> [--ttl <minutes>] [--reason <s>] <path>...
@@ -89,7 +91,7 @@ const (
 	regressionUsageLine = "usage: devrites-engine check regression <slug> [--update]"
 	driftUsageLine      = "usage: devrites-engine check drift <slug> [--record]"
 	detectUsageLine     = "usage: devrites-engine detect commands [--root <dir>] [--json]"
-	windowsUsageLine    = "usage: devrites-engine check windows <slug> [--worktree|--staged|--base <ref>] [--cwd <dir>]"
+	windowsUsageLine    = "usage: devrites-engine check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>] [--cwd <dir>]"
 	dupUsageLine        = "usage: devrites-engine check dup [slug] [--all|--worktree|--staged|--base <ref>] [--min-lines n] [--threshold f] [--ignore-file <path>] [--limit n] [--exclude <csv>] [--phase p] [--cwd <dir>]"
 	resolveUsage        = `usage: devrites-engine state resolve <qid> "<answer>"  |  state resolve --drop <qid> ["<reason>"]  |  state resolve --batch <file>  |  state resolve --human <qid> "<answer>"  |  state resolve --human --drop <qid> ["<reason>"]  |  state resolve --human --batch <file>`
 	mergeManifestUsage  = "usage: devrites-engine state merge-manifest <slug> [<predecessor>...]"
@@ -143,7 +145,7 @@ func takesSubcommand(command string) bool {
 // anywhere except as the value of one of these flags.
 var valueFlags = map[string]map[string]bool{
 	"claim":     {"--session": true, "--reason": true, "--ttl": true, "--id": true},
-	"dispatch":  {"--phase": true, "--wave": true, "--role": true, "--handle": true, "--reason": true, "--claim-session": true, "--claim": true, "--claim-ttl": true},
+	"dispatch":  {"--phase": true, "--wave": true, "--role": true, "--handle": true, "--reason": true, "--claim-session": true, "--claim": true, "--claim-ttl": true, "--path": true},
 	"packet":    {"--wave": true, "--phase": true, "--role": true, "--slice": true, "--checks": true, "--focus": true},
 	"candidate": {"--wave": true, "--slice": true, "--base": true},
 	"recall":    {"--paths": true, "--limit": true},
@@ -295,6 +297,10 @@ func helpCheck(rest []string) string {
 		return windowsUsageLine
 	case "dup":
 		return dupUsageLine
+	case "anchors":
+		return lib.AnchorsUsage
+	case "perturb":
+		return lib.PerturbUsage
 	default:
 		return checkUsage
 	}

@@ -276,8 +276,8 @@ options: |                                    # ranked option set; recommended F
   1. <recommended> (Recommended) — logic: … · infra: … · business: … · architecture: …
   2. <alternative> — <dimension-tagged rationale + trade-off>
   3. Something else — describe it
-proposed: <the recommended option restated — the HITL default + the AFK auto-pick>
-raised_at: <iso>
+proposed: <the recommended option restated — the HITL default + the AFK auto-pick; omit with no (Recommended)>
+raised_at: <full RFC 3339 timestamp, e.g. 2026-10-19T08:17:08Z>
 answered_at: <iso, when status flips off "open">
 answer: <chosen option (or human's verbatim reply / drop reason)>
 answered_by: human                            # only when a human resolved it (`state resolve --human`)
@@ -285,6 +285,8 @@ answered_by: human                            # only when a human resolved it (`
 
 Rules:
 - `NNN` is sequential per date: the next-available 3-digit integer.
+- `state append` refuses a new open entry that breaks this schema (2-4 options plus the escape
+  hatch, `(Recommended)` only on option 1); length is advisory.
 - `status: open` is the only state `/rite-resolve` can mutate; `answered` and `dropped`
   are terminal.
 - `answered_by: human` is written only by `state resolve --human`. HITL live picks and `/rite-resolve`

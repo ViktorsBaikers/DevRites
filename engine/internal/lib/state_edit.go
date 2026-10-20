@@ -239,6 +239,14 @@ func RunStateAppend(root string, args []string, stdin io.Reader, stdout, stderr 
 			return fail(stderr, fmt.Sprintf("state append: BLOCKED: body line %q would open another section; use ### for sub-headings", line), 3)
 		}
 	}
+	// Only the new entry is linted; existing questions.md history stays as written.
+	var advisories []string
+	if ledger == "questions.md" && strings.HasPrefix(heading, "q-") {
+		var problems []string
+		if problems, advisories = lintQuestionEntry(heading, bodyLines, len(body)); len(problems) > 0 {
+			return fail(stderr, fmt.Sprintf("state append: BLOCKED: questions.md entry %s: %s; see afk-hitl.md questions.md schema; nothing written", heading, strings.Join(problems, "; ")), 3)
+		}
+	}
 	path, code := stateEditWorkspace(root, slug, ledger, stderr)
 	if code != 0 {
 		return code
@@ -280,6 +288,14 @@ func RunStateAppend(root string, args []string, stdin io.Reader, stdout, stderr 
 			code = 3
 			return nil
 		}
+		// Same material band the gate blocks, so a ledger cannot grow past it
+		// between gates; proof ledgers stay advisory.
+		if status, ok := state.ArtifactBudget(ledger, out.Bytes()); ok && state.ArtifactBudgetGateApplies(ledger) && status.Material && !status.Override {
+			fmt.Fprintf(stderr, "state append: BLOCKED: %s would be %d lines/%d bytes, at or above %gx its %d-line/%d-byte budget; %s; nothing written\n",
+				ledger, status.Lines, status.Bytes, state.BudgetBlockFactor, status.LineBudget, status.ByteBudget, state.BudgetRemedy(status.LineBudget))
+			code = 3
+			return nil
+		}
 		lines = state.CountLines(out.Bytes())
 		return fsutil.WriteFileAtomic(path, out.Bytes(), 0o644)
 	}); err != nil {
@@ -291,6 +307,9 @@ func RunStateAppend(root string, args []string, stdin io.Reader, stdout, stderr 
 	fmt.Fprintf(stdout, "state append: %s: added \"## %s\" (%d lines)\n", ledger, heading, lines)
 	if budget, ok := state.ArtifactLineBudget(ledger); ok && lines > budget {
 		fmt.Fprintf(stdout, "state append: advisory: %s is %d lines, over its %d-line budget\n", ledger, lines, budget)
+	}
+	for _, a := range advisories {
+		fmt.Fprintf(stdout, "state append: advisory: %s: %s\n", heading, a)
 	}
 	return 0
 }
