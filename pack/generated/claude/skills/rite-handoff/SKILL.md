@@ -21,7 +21,7 @@ exactly what this skill executes. The other rule files load on demand.
 Then read the explicit or active workspace's `state.md` directly, and run
 `devrites-engine handoff [slug]` — its resume record (cursor, `awaiting_human`,
 blocking question gates, the `gates.md` reduction, `decisions.md` dead ends,
-read-next order) is the deterministic spine of the handoff doc's **Resume**,
+in-flight waves, read-next order) is the deterministic spine of the handoff doc's **Resume**,
 **Read next**, and **Next action** sections. The chat adds what the workspace
 cannot hold; the engine supplies what the workspace already knows.
 

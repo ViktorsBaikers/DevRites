@@ -96,10 +96,15 @@ writes tests from it; `$rite-prove` walks it against `evidence.md`. Specify
 From $rite-vet on <iso>. Runner + conventions: <detected framework + command>.
 
 ## Build-entry preflight
-| Gate | Command | Cwd | Expected | Prerequisites | Provenance to recapture |
-|---|---|---|---|---|---|
-| <test/browser/package> | <exact command> | <path> | <exit/output> | <service/browser/credential owner> | <tool version + full SHA-256s> |
+| Gate | Command | Cwd | Expected | Prerequisites | Provenance to recapture | Run at |
+|---|---|---|---|---|---|---|
+| <test/browser/package> | <exact command> | <path> | <exit/output> | <service/browser/credential owner> | <tool version + full SHA-256s> | vet / pre-dispatch SLICE-### / action |
 
+`check preconditions` runs `vet` rows (`--slice` runs `pre-dispatch` rows; `action` rows
+never run there) and passes on exit 0. A slice editing a manifest or lockfile needs a
+`dependency-dry-run SLICE-###` row at `vet`: apply the planned pin in an isolated copy, run
+the tidy/lock step, then the project's admission checks. Resource rows only read
+eligibility (swap, cpuset, env var present); they never measure or change the host.
 Link any disposable parser fixture. Preflight values are planning evidence, not post-build proof;
 Prove recaptures the observed command, candidate identity, and result.
 
@@ -184,6 +189,8 @@ enforces them, so author to the contract, not around it:
   tautological commands and weak expectations before build.
 - Manual gates (`EVIDENCE` only) are for judgment-bound outcomes; Prove
   attests them, Seal still requires them checked.
+- Carry a `Tests/proof` row marked `RUN: writer` at define into its gate as
+  `RUN: writer`; never on a CHECK that needs an empty `git diff` or a driver.
 
 ## Parallelization table (in `eng-review.md` §5 when there's an opportunity)
 

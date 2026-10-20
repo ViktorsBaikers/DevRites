@@ -883,6 +883,66 @@ func TestContextSliceScopesWorkspaceAndRole(t *testing.T) {
 	}
 }
 
+// The root's build/autocomplete bundle follows state.md active_slice; --whole,
+// a role, an unset ("none") or stale cursor keep the whole feature view.
+func TestContextRootBundleDefaultsToActiveSlice(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	skills := newSkillsRoot(t)
+	manifest := "<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\"],\"workspace\":[\"tasks.md\",\"spec.md\"]} -->\n"
+	writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), manifest+"# build\n")
+	writeFile(t, filepath.Join(skills, "rite-autocomplete", "SKILL.md"), manifest+"# autocomplete\n")
+	writeFile(t, filepath.Join(featureDir, "tasks.md"), "# Tasks\n\n## SLICE-001 First\nGoal: first body\n\n## SLICE-002 Second\nGoal: second body\n")
+	writeFile(t, filepath.Join(featureDir, "spec.md"), "# spec\n")
+	setCursor := func(phase, id string) {
+		writeFile(t, filepath.Join(featureDir, "state.md"), "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | "+phase+" |\n| status | running |\n| active_slice | "+id+" |\n")
+	}
+	setActive := func(id string) { setCursor("build", id) }
+	run := func(want int, args ...string) string {
+		t.Helper()
+		stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+		if code := RunContext(root, append([]string{"feat", "--skills-root", skills}, args...), stdout, stderr); code != want {
+			t.Fatalf("context %v: code=%d want %d\n%s%s", args, code, want, stdout, stderr)
+		}
+		return stdout.String()
+	}
+	read := func(name string) string {
+		t.Helper()
+		raw, err := os.ReadFile(filepath.Join(featureDir, "ctx", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(raw)
+	}
+
+	setActive("SLICE-002")
+	for _, phase := range []string{"build", "autocomplete"} {
+		if out := run(0, "--phase", phase); !strings.Contains(out, "scope: slice SLICE-002 (auto from state.md) (") {
+			t.Fatalf("%s: auto scope line missing:\n%s", phase, out)
+		}
+		if text := read(phase + ".SLICE-002.bundle.md"); !strings.Contains(text, "Goal: second body") || strings.Contains(text, "Goal: first body") {
+			t.Fatalf("%s: bundle not scoped to SLICE-002:\n%s", phase, text)
+		}
+	}
+	if out := run(0, "--phase", "build", "--whole"); strings.Contains(out, "scope: slice") || !strings.Contains(read("build.bundle.md"), "Goal: first body") {
+		t.Fatalf("--whole must keep the whole bundle:\n%s", out)
+	}
+	run(2, "--phase", "build", "--whole", "--slice", "SLICE-001")
+	if out := run(0, "--phase", "build", "--role", "slice-wright"); strings.Contains(out, "scope: slice") {
+		t.Fatalf("role bundle must not auto-scope:\n%s", out)
+	}
+	for _, id := range []string{"none", "SLICE-009"} {
+		setActive(id)
+		if out := run(0, "--phase", "build"); strings.Contains(out, "scope: slice") {
+			t.Fatalf("active_slice %s must keep the whole bundle:\n%s", id, out)
+		}
+	}
+	// A stale active_slice after Build never scopes the root's autocomplete bundle.
+	setCursor("review", "SLICE-002")
+	if out := run(0, "--phase", "autocomplete"); strings.Contains(out, "scope: slice") || !strings.Contains(read("autocomplete.bundle.md"), "Goal: first body") {
+		t.Fatalf("cursor phase review must keep the whole bundle:\n%s", out)
+	}
+}
+
 func TestContextSliceTakesLargeUnderBudgetArtifactsByReference(t *testing.T) {
 	root, featureDir := newWorkspace(t, "build")
 	skills := newSkillsRoot(t)

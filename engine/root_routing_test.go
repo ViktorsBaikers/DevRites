@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/acceptance"
+	"github.com/devrites/devrites/internal/parallel"
 )
 
 func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
@@ -18,6 +21,10 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "unrelated command", command: "unknown", want: rootUnused},
 		{name: "check candidate", command: "check", args: []string{"candidate"}, want: rootStrictUsage},
 		{name: "check readiness", command: "check", args: []string{"readiness"}, want: rootStrictUsage},
+		{name: "check preconditions", command: "check", args: []string{"preconditions"}, want: rootStrictUsage},
+		{name: "candidate freeze", command: "candidate", args: []string{"freeze"}, want: rootStrictUsage},
+		{name: "candidate without freeze", command: "candidate", args: []string{"other"}, want: rootUnused},
+		{name: "packet", command: "packet", want: rootStrictUsage},
 		{name: "check seal", command: "check", args: []string{"seal"}, want: rootStrictUsage},
 		{name: "check task-graph", command: "check", args: []string{"task-graph"}, want: rootStrictUsage},
 		{name: "check path-disjoint", command: "check", args: []string{"path-disjoint"}, want: rootUnused},
@@ -135,6 +142,9 @@ func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
 		{"check", "seal"},
 		{"check", "indexes"},
 		{"check", "drift"},
+		{"check", "preconditions", "feature"},
+		{"candidate", "freeze", "feature"},
+		{"packet", "feature"},
 		{"detect", "commands"},
 		{"orient", "feature"},
 		{"handoff", "feature"},
@@ -152,7 +162,7 @@ func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
 			}
 		})
 	}
-	for _, want := range []string{"devrites-engine orient", "devrites-engine check indexes", "devrites-engine overhaul"} {
+	for _, want := range []string{"devrites-engine orient", "devrites-engine check indexes", "devrites-engine overhaul", "devrites-engine check preconditions", "devrites-engine candidate freeze", "devrites-engine packet"} {
 		if !strings.Contains(usage, want) {
 			t.Fatalf("usage does not advertise %q", want)
 		}
@@ -164,13 +174,24 @@ func TestNestedCommandFamiliesAreRoutedAndAdvertised(t *testing.T) {
 	}
 }
 
+// TestCrossPackageHooksAreWired guards the init() hooks that packages which
+// cannot import lib depend on; an unwired hook fails closed at runtime.
+func TestCrossPackageHooksAreWired(t *testing.T) {
+	if parallel.PlanReady == nil {
+		t.Fatal("parallel.PlanReady is not wired in init; `parallel select --from-plan` would exit 3")
+	}
+	if acceptance.WindowsCheck == nil {
+		t.Fatal("acceptance.WindowsCheck is not wired in init; every `gates precheck` would FAIL windows")
+	}
+}
+
 func TestNestedCommandFamilyUsageListsOnlyRetainedCommands(t *testing.T) {
 	for _, test := range []struct {
 		args    []string
 		want    string
 		removed []string
 	}{
-		{args: []string{"check"}, want: "check <candidate|readiness|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup>"},
+		{args: []string{"check"}, want: "check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup>"},
 		{args: []string{"state"}, want: "state <resolve|merge-manifest|apply-bundle|set|append|close>", removed: []string{"clarify", "tick-afk", "recovery"}},
 	} {
 		t.Run(test.args[0], func(t *testing.T) {

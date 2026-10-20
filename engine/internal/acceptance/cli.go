@@ -33,6 +33,10 @@ Subcommands:
                              (--transcripts writes one redacted, candidate-bound
                              file per gate under references/gates/<gate-id>/)
   lint <slug> [--strict]     Audit oracle quality without executing
+  precheck <slug> --worktree <path>
+                             Run every RUN: writer gate, then check windows, in
+                             <path>; writes no ledger, EVIDENCE line or
+                             transcript (check windows still logs its metric)
   attest <slug> <id> <note>  Record human evidence on a manual gate
   abandon <slug> <id> <why>  Record a terminal ABANDON handoff on a gate
 
@@ -60,6 +64,8 @@ func Run(root string, args []string, stdout, stderr io.Writer) int {
 		return cmdRun(root, rest, true, stdout, stderr)
 	case "lint":
 		return cmdLint(root, rest, stdout, stderr)
+	case "precheck":
+		return cmdPrecheck(root, rest, stdout, stderr)
 	case "attest":
 		return cmdAttest(root, rest, stdout, stderr)
 	case "abandon":
@@ -360,6 +366,102 @@ func cmdLint(root string, args []string, stdout, stderr io.Writer) int {
 		return ExitBlocked
 	}
 	fmt.Fprintln(stdout, "LINT OK")
+	return ExitOK
+}
+
+// WindowsCheck runs `check windows` with the given arguments. main wires it to
+// lib.RunCheckWindows because acceptance cannot import lib (lib imports it).
+var WindowsCheck func(root string, args []string, stdout, stderr io.Writer) int
+
+// cmdPrecheck is the wright's pre-return run of the `RUN: writer` gates and
+// `check windows` against its worktree. It reads gates.md but writes no
+// ledger, EVIDENCE line or transcript: nothing it prints is evidence, and the
+// root still runs every gate canonically.
+func cmdPrecheck(root string, args []string, stdout, stderr io.Writer) int {
+	const usage = "usage: devrites-engine gates precheck <slug> --worktree <path>"
+	var slug, worktree string
+	for i := 0; i < len(args); i++ {
+		switch {
+		case args[i] == "--worktree" && i+1 < len(args) && worktree == "":
+			worktree = args[i+1]
+			i++
+		case strings.HasPrefix(args[i], "-") || slug != "":
+			fmt.Fprintln(stderr, usage)
+			return ExitUsage
+		default:
+			slug = args[i]
+		}
+	}
+	if slug == "" || worktree == "" {
+		fmt.Fprintln(stderr, usage)
+		return ExitUsage
+	}
+	worktree, err := filepath.Abs(worktree)
+	if err == nil {
+		var info os.FileInfo
+		if info, err = os.Stat(worktree); err == nil && !info.IsDir() {
+			err = fmt.Errorf("%s is not a directory", worktree)
+		}
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "gates precheck: worktree: %v\n", err)
+		return ExitBlocked
+	}
+	_, ledgerPath, testPlanPath, _, err := featurePaths(root, slug)
+	if err != nil {
+		fmt.Fprintf(stderr, "gates precheck: %v\n", err)
+		return ExitBlocked
+	}
+	text, err := ReadLedgerFile(ledgerPath)
+	if err != nil {
+		fmt.Fprintf(stderr, "gates precheck: %v\n", err)
+		return ExitBlocked
+	}
+	doc := ParseLedger(text)
+	for _, parseErr := range doc.Errors {
+		fmt.Fprintf(stdout, "error: %s\n", parseErr)
+	}
+	// Like cmdRun: a malformed ledger (e.g. a CWD escaping the worktree) runs nothing.
+	if len(doc.Errors) > 0 {
+		fmt.Fprintln(stdout, "precheck: fail (not evidence; fix before returning)")
+		return ExitBlocked
+	}
+	failed := false
+	approved := loadTestPlan(testPlanPath)
+	for _, gate := range doc.WriterGates() {
+		expectation, expectErr := CompileExpect(gate.Expect)
+		switch {
+		case gate.Check == "":
+			fmt.Fprintf(stdout, "FAIL %s (RUN: writer row has no CHECK)\n", gate.ID)
+		case !Approved(gate.Check, gate.Cwd, approved):
+			fmt.Fprintf(stdout, "FAIL %s (CHECK/CWD is not an approved test-plan.md preflight row; not executed)\n", gate.ID)
+		case expectErr != nil:
+			fmt.Fprintf(stdout, "FAIL %s (%v)\n", gate.ID, expectErr)
+		default:
+			outcome := Execute(context.Background(), gate.Check, filepath.Join(worktree, filepath.FromSlash(gate.Cwd)), DefaultTimeout)
+			if outcome.Err == nil && outcome.ExitCode == 0 && expectation.Matches(outcome.Output) {
+				fmt.Fprintf(stdout, "PASS %s\n", gate.ID)
+				continue
+			}
+			fmt.Fprintf(stdout, "FAIL %s (%s)\n", gate.ID, failDetail(outcome, expectation))
+		}
+		failed = true
+	}
+	switch {
+	case WindowsCheck == nil:
+		fmt.Fprintln(stdout, "FAIL windows (check windows is not wired into this engine)")
+		failed = true
+	case WindowsCheck(root, []string{slug, "--worktree", "--cwd", worktree}, stdout, stderr) != ExitOK:
+		fmt.Fprintln(stdout, "FAIL windows")
+		failed = true
+	default:
+		fmt.Fprintln(stdout, "PASS windows")
+	}
+	if failed {
+		fmt.Fprintln(stdout, "precheck: fail (not evidence; fix before returning)")
+		return ExitBlocked
+	}
+	fmt.Fprintln(stdout, "precheck: pass (not evidence; the root still runs every gate)")
 	return ExitOK
 }
 

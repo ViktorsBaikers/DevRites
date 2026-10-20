@@ -28,6 +28,8 @@ Usage:
   devrites-engine check candidate <slug>   Validate and hash the closed project candidate
   devrites-engine check readiness <slug>   Check required files, tasks.md graph, and Build-input binding
   devrites-engine check readiness --emit-binding <slug>  Emit the stable Build-input binding for Vet
+  devrites-engine check preconditions <slug> [--slice SLICE-###] [--timeout N]
+                                         Run test-plan.md preflight rows whose Run at is vet (or pre-dispatch <slice>)
   devrites-engine check seal <slug>        Recheck files, tasks.md graph, Build-input binding, and evidence freshness
   devrites-engine check path-disjoint [--root <dir>] [<json-file>|-]
                                          Verify slice path sets are pairwise disjoint
@@ -47,13 +49,17 @@ Usage:
   devrites-engine observe summary <slug>   Emit sanitized JSON workspace summary
   devrites-engine orient <slug>            Alias for observe summary
   devrites-engine next [slug]              Print the minimal remaining lifecycle path with advisory skips
-  devrites-engine handoff [slug]           Emit the deterministic resume record (cursor, blocking gates, ledger, dead ends)
+  devrites-engine handoff [slug] [--resume]  Emit the deterministic resume record (cursor, blocking gates, ledger, dead ends, in-flight waves); --resume records a resume metric
   devrites-engine recall --paths <csv> [--limit n]
                                          Point at archived features that touched these paths: decisions, constraints, findings (read-only)
-  devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <id>] [--recheck <inventory>] [--trigger a,b] [--inline-contract]
+  devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <id>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--whole]
                                          Emit one deduplicated read-set bundle for a phase, skill, or dispatch role
   devrites-engine metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   devrites-engine metrics summary [slug] [--by-slice]  Summarize the metrics ledger, or per-slice rounds and agent-minutes
+  devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID> | --paths <path>...) [--base <ref>]
+                                         Freeze a review candidate to packets/<w>.diff + packets/<w>.sha256
+  devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID>] [--recheck] [--checks <G-ID,...>] [--focus <file>]
+                                         Render and lint one role's by-reference dispatch packet
   devrites-engine dispatch <slug> <sub>    Launch-wave barrier for parallel dispatch: open/start/seal/return/status/abandon (build wright waves: --slice, round cap)
   devrites-engine claim <add|release|list|check>   Advisory session-scoped file claims for same-tree concurrent sessions (.devrites/claims.jsonl)
   devrites-engine note <subcommand> <slug>         Anchored workspace notes bound to verbatim code quotes; drift regrades them (notes.md)
@@ -62,7 +68,7 @@ Usage:
   devrites-engine detect commands [--root <dir>] [--json]
                                          Resolve test/lint/vet/build commands from the repository's own wiring
   devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/cleanup
-  devrites-engine gates <subcommand> <slug>  Machine-checked gates.md ledger: scaffold/status/run/reverify/lint/attest/abandon
+  devrites-engine gates <subcommand> <slug>  Machine-checked gates.md ledger: scaffold/status/run/reverify/lint/precheck/attest/abandon
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
   devrites-engine state apply-bundle <slug> <bundle.json>... [--dry-run]
@@ -110,6 +116,10 @@ func init() {
 		digest, _, err := lib.CandidateIdentity(root, slug)
 		return digest, err
 	}
+	// parallel cannot import lib (lib imports it), so `parallel select --from-plan` gets the plan-derived ready set through this hook.
+	parallel.PlanReady = lib.PlanReady
+	// `gates precheck` runs `check windows` through this hook for the same reason.
+	acceptance.WindowsCheck = lib.RunCheckWindows
 }
 
 // run is the testable entry point. It returns the process exit code.
@@ -155,6 +165,14 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return lib.RunRecall(root, args[1:], stdout, stderr)
 	case "context":
 		return lib.RunContext(root, args[1:], stdout, stderr)
+	case "candidate":
+		if len(args) > 1 && args[1] == "freeze" {
+			return lib.RunCandidateFreeze(root, args[2:], stdout, stderr)
+		}
+		fmt.Fprint(stderr, lib.CandidateFreezeUsage)
+		return exitUsage
+	case "packet":
+		return lib.RunPacket(root, args[1:], stdout, stderr)
 	case "metrics":
 		return lib.RunMetrics(root, args[1:], stdout, stderr)
 	case "dispatch":
@@ -198,6 +216,8 @@ func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 		return cmdCandidate(root, rest, stdout, stderr)
 	case "readiness", "seal":
 		return cmdGate(root, gate.Kind(sub), rest, stdout, stderr)
+	case "preconditions":
+		return acceptance.RunPreconditions(root, rest, stdout, stderr)
 	case "path-disjoint":
 		return parallel.Run("path-disjoint", rest, stdin, stdout, stderr)
 	case "task-graph":

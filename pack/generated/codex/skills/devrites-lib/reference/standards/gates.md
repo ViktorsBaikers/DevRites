@@ -20,6 +20,7 @@ every later phase requires its presence; proof phases require every gate met.
   EXPECT: <substring | /regex/flags>
   CWD: <repository-relative path; omit for repo root>
   INPUTS: <optional project-relative paths, directories or globs>
+  RUN: <optional writer; default root>
   EVIDENCE: pending
 
 - [x] AC-002: <human-judged outcome>
@@ -38,6 +39,10 @@ ABANDON: AC-003 <why the outcome can never be met>
   tests, fixtures, build and lock files, and the gate's own scripts. Each pattern
   must match a file. A gate whose verdict depends on state that no file
   captures (network, wall clock, live host load) takes no `INPUTS`.
+- `RUN: writer` (optional) lets the wright pre-run a runnable gate with `gates
+  precheck` before returning; that is never evidence and the root still runs the
+  gate. `gates lint` refuses it on a manual gate or with a value other than
+  writer/root.
 - `ABANDON:` starts at column 1, names a known gate, and requires a reason.
   An abandoned gate blocks completion and demands a handoff — it can never
   read as a pass.
@@ -51,7 +56,8 @@ columns). Approval is exact-text equality after whitespace/cwd normalization —
 a differently spelled command or different directory is a different oracle and
 needs its own vetted row. This is the DevRites approval boundary: the vetted
 test plan is the sole list of commands the engine may run, so gates can never
-execute unreviewed code.
+execute unreviewed code. `check preconditions` runs those same rows, selected by
+their optional `Run at` cell, writing the same transcripts.
 
 Execution contract: the command runs through the platform shell in the named
 directory with a bounded timeout; pass requires exit 0 **and** output matching

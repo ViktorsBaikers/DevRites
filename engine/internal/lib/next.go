@@ -11,6 +11,7 @@ import (
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/markdowntext"
+	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/workflow"
 )
@@ -60,6 +61,9 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "current-status: incomplete")
 	}
 	fmt.Fprintf(stdout, "open-questions: %d\n", openQuestions)
+	if report.Phase == state.PhaseBuild {
+		printPlanBatch(stdout, root, slug)
+	}
 
 	if report.Phase == state.PhaseDone {
 		fmt.Fprintln(stdout, "next-phase: done")
@@ -111,6 +115,30 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 	fmt.Fprintln(stdout, "next-phase: done")
 	printSkips(stdout, skips)
 	return 0
+}
+
+// printPlanBatch prints the slices runnable now and the batch `parallel select
+// --from-plan` picks at the AFK max_parallel cap (else the maximum), with the
+// command itself. Advisory: an unreadable plan prints why, never an exit code.
+func printPlanBatch(stdout io.Writer, root, slug string) {
+	capN := afkMaxParallel(root)
+	if capN < 1 || capN > parallel.MaxParallelSlices {
+		capN = parallel.MaxParallelSlices
+	}
+	eligible, batch, err := planBatch(root, slug, capN)
+	if err != nil {
+		fmt.Fprintf(stdout, "batch: unavailable (%v)\n", err)
+		return
+	}
+	list := func(ids []string) string {
+		if len(ids) == 0 {
+			return "none"
+		}
+		return strings.Join(ids, ",")
+	}
+	fmt.Fprintf(stdout, "eligible_now: %s\n", list(eligible))
+	fmt.Fprintf(stdout, "batch: %s\n", list(batch))
+	fmt.Fprintf(stdout, "select-command: %s\n", planSelectCommand(filepath.Dir(root), slug, capN))
 }
 
 func renderNextCommand(policy state.PhasePolicy) string {

@@ -28,7 +28,8 @@ Execute [`reference/phase-contract.md`](reference/phase-contract.md)
 [`reference/wright-dispatch.md`](reference/wright-dispatch.md).
 Every wright contract names the writer-safe checks the wright runs (syntax/type/lint,
 unit and self-check suites, a narrow local smoke) and never forbids them; only
-artifact-producing, consumptive, or full canonical gates stay root-owned;
+artifact-producing, consumptive, or full canonical gates stay root-owned, and a
+`RUN: writer` gate adds `gates precheck` to them;
 `dispatch open --contract` refuses a contract that breaks this. Prior contracts in `evidence.md` are not a template for this. **Failing case:** the
 contract says "skip tests mid-flight; root runs them after return", and the wright
 returns three unit failures that a 20 s `go test` would have caught in-round.
@@ -79,7 +80,7 @@ Wright applies anti-slop; root verifies returns and never patches source. Refuse
 ## `--parallel N` (opt-in)
 
 Omitted/`1` ≡ serial; `2`–`10` is a **cap** — the root runs the largest eligible
-path-disjoint set it can start now (`N_eff`), takes fewer when the cap cannot be
+path-disjoint set it can start now (`N_eff`, from `parallel select --from-plan`), takes fewer when the cap cannot be
 filled, and refills a slot per landing (serial slice or one sibling) until
 no pending slice remains
 ([`parallel-batch.md` § Dynamic selection](reference/parallel-batch.md#dynamic-selection-and-re-batching)).

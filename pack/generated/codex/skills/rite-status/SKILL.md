@@ -48,7 +48,7 @@ status, and evidence for its claims. If chat contains missing durable context,
 recommend `$rite-handoff` before the lifecycle command.
 `devrites-engine handoff [slug]` emits the deterministic resume record (cursor,
 `awaiting_human`, blocking question gates, ledger reduction, dead ends,
-read-next order) — cite it for items 3–6 and the handoff-readiness verdict
+in-flight waves, read-next order) — cite it for items 3–6 and the handoff-readiness verdict
 rather than re-deriving them. If that command is not found or exits nonzero,
 report items 3–6 and `Handoff:` as `unavailable: <command> <not found | exit N>` —
 never re-derive them from other files, never leave them blank — and set `Next:`

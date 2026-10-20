@@ -108,3 +108,48 @@ func TestLintsRefuseRoleContractRead(t *testing.T) {
 		})
 	}
 }
+
+// A gates.md `RUN: writer` row makes `gates precheck` a required writer-safe
+// check; without such a row, or without gates.md, the contract lint is unchanged.
+func TestLintWrightContractForWriterGates(t *testing.T) {
+	const runnable = "- [ ] G1: names stay out\n  CHECK: ./names.sh\n  EXPECT: clean\n"
+	cases := []struct {
+		name, ledger, contract, want string
+	}{
+		{"no gates.md", "", "Writer-safe checks: go vet ./...\n", ""},
+		{"no writer row", runnable, "Writer-safe checks: go vet ./...\n", ""},
+		{"writer row, precheck missing", runnable + "  RUN: writer\n", "Writer-safe checks: go vet ./...\n", "must include `devrites-engine gates precheck feat"},
+		{"writer row, precheck inline", runnable + "  RUN: writer\n", "Writer-safe checks: go vet ./...; devrites-engine gates precheck feat --worktree .\n", ""},
+		{"writer row, precheck listed", runnable + "  RUN: writer\n", "Writer-safe checks:\n- go vet ./...\n- devrites-engine gates precheck feat --worktree .\n", ""},
+		{"writer row, precheck outside block", runnable + "  RUN: writer\n", "Writer-safe checks: go vet ./...\n\nNotes: gates precheck is for later.\n", "must include"},
+		{"abandoned writer row", runnable + "  RUN: writer\nABANDON: G1 vendor gone\n", "Writer-safe checks: go vet ./...\n", ""},
+		{"root row", runnable + "  RUN: root\n", "Writer-safe checks: go vet ./...\n", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root, featureDir := newWorkspace(t, "build")
+			if tc.ledger != "" {
+				writeFile(t, filepath.Join(featureDir, "gates.md"), tc.ledger)
+			}
+			path := filepath.Join(t.TempDir(), "c.md")
+			if err := os.WriteFile(path, []byte(tc.contract), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			err := lintWrightContractFor(root, "feat", path)
+			if tc.want == "" {
+				if err != nil {
+					t.Fatalf("want pass, got %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("want %q, got %v", tc.want, err)
+			}
+		})
+	}
+	// The base contract lint still runs first.
+	root, _ := newWorkspace(t, "build")
+	if err := lintWrightContractFor(root, "feat", ""); err == nil || !strings.Contains(err.Error(), "needs --contract") {
+		t.Fatalf("missing contract: %v", err)
+	}
+}

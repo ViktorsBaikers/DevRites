@@ -78,6 +78,7 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	jsonPath := "-"
 	capN := 0
 	sawCap := false
+	fromPlan := false
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--root", "--slug":
@@ -104,6 +105,8 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 			}
 			capN = n
 			sawCap = true
+		case "--from-plan":
+			fromPlan = true
 		case "-h", "-help", "--help":
 			fmt.Fprintln(stdout, usageSelect)
 			return ExitOK
@@ -119,43 +122,34 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, usageSelect)
 		return ExitUsage
 	}
-	data, err := readJSONInput(jsonPath, stdin)
-	if err != nil {
-		fmt.Fprintf(stderr, "parallel select: %v\n", err)
-		return ExitBlocked
-	}
-	slices, err := ParseSlicesJSON(data)
-	if err != nil {
-		fmt.Fprintf(stderr, "parallel select: %v\n", err)
-		return ExitBlocked
-	}
-	var seed []SlicePaths
-	running := -1
-	if slug != "" {
-		lease, err := runningLease(root, slug)
+	var slices []SlicePaths
+	if fromPlan {
+		if slug == "" || jsonPath != "-" {
+			fmt.Fprintln(stderr, "parallel select: --from-plan needs --slug and takes no JSON input")
+			return ExitUsage
+		}
+		if PlanReady == nil {
+			fmt.Fprintln(stderr, "parallel select: --from-plan is unavailable in this build")
+			return ExitBlocked
+		}
+		ready, err := PlanReady(root, slug)
 		if err != nil {
 			fmt.Fprintf(stderr, "parallel select: %v\n", err)
 			return ExitBlocked
 		}
-		if lease != nil {
-			// The lease's active slices keep their slots and paths; nothing it
-			// already names (active or landed) is picked again.
-			seed = activeSlices(lease)
-			running = len(seed)
-			named := make(map[string]bool, len(lease.Slices))
-			for _, sl := range lease.Slices {
-				named[sl.ID] = true
-			}
-			var fresh []SlicePaths
-			for _, s := range slices {
-				if !named[s.ID] {
-					fresh = append(fresh, s)
-				}
-			}
-			slices = fresh
+		slices = ready
+	} else {
+		data, err := readJSONInput(jsonPath, stdin)
+		if err != nil {
+			fmt.Fprintf(stderr, "parallel select: %v\n", err)
+			return ExitBlocked
+		}
+		if slices, err = ParseSlicesJSON(data); err != nil {
+			fmt.Fprintf(stderr, "parallel select: %v\n", err)
+			return ExitBlocked
 		}
 	}
-	selected, err := SelectGreedySeeded(capN, seed, slices, root)
+	_, selected, running, err := SelectForSlug(root, slug, capN, slices)
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel select: %v\n", err)
 		if strings.Contains(err.Error(), "cap must be") {
@@ -237,7 +231,7 @@ const (
 	usageLeaseRead    = "usage: parallel lease-read --root --slug [--field name]"
 	usageLeaseClear   = "usage: parallel lease-clear --root --slug"
 	usagePathDisjoint = "usage: check path-disjoint [--root <dir>] [<json-file>|-]"
-	usageSelect       = "usage: parallel select --cap <1-10> [--root <dir>] [--slug <slug>] [<json-file>|-]"
+	usageSelect       = "usage: parallel select --cap <1-10> [--root <dir>] [--slug <slug>] [--from-plan | <json-file>|-]"
 )
 
 func parallelUsage() string {
@@ -254,7 +248,7 @@ Subcommands:
   lease-write     --root --slug --json
   lease-read      --root --slug [--field name]
   lease-clear     --root --slug
-  select          --cap <1-10> [--root] [--slug] [<json-file>|-]
+  select          --cap <1-10> [--root] [--slug] [--from-plan | <json-file>|-]
 
 Exit codes: 0 ok, 2 usage, 3 blocked`)
 }

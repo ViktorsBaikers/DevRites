@@ -47,6 +47,44 @@ func TestHandoffEmitsResumeRecord(t *testing.T) {
 	}
 }
 
+// The resume record lists open and sealed-unreturned waves; plain handoff
+// writes nothing, and --resume appends one root resume metric.
+func TestHandoffInflightWavesAndResumeMetric(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	writeFile(t, filepath.Join(featureDir, "dispatch.json"), `{"waves":{
+ "r1":{"phase":"build","state":"sealed","roles":{"code-reviewer":{"handle":"h1","returned":true},"test-analyst":{"handle":"h2"}},"slices":["SLICE-002"]},
+ "r2":{"phase":"build","state":"open","roles":{"slice-wright":{}}},
+ "r0":{"phase":"vet","state":"complete","roles":{"x":{"returned":true}}}}}`)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunHandoff(root, []string{"feat"}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d err=%s", code, stderr.String())
+	}
+	out := stdout.String()
+	for _, want := range []string{
+		"inflight_waves: 2\n",
+		"inflight_wave: r1 phase=build state=sealed pending=test-analyst slices=SLICE-002\n",
+		"inflight_wave: r2 phase=build state=open pending=slice-wright slices=-\n",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "inflight_wave: r0") {
+		t.Fatalf("complete wave listed:\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(featureDir, MetricsFile)); !os.IsNotExist(err) {
+		t.Fatalf("plain handoff must write nothing: %v", err)
+	}
+
+	if code := RunHandoff(root, []string{"feat", "--resume"}, stdout, stderr); code != 0 {
+		t.Fatalf("--resume code=%d err=%s", code, stderr.String())
+	}
+	data, err := os.ReadFile(filepath.Join(featureDir, MetricsFile))
+	if err != nil || strings.Count(string(data), "\n") != 1 || !strings.Contains(string(data), `"phase":"build","event":"resume","role":"root"`) {
+		t.Fatalf("resume metric: err=%v\n%s", err, data)
+	}
+}
+
 func TestHandoffMissingLedgerAndNoQuestions(t *testing.T) {
 	root, _ := newWorkspace(t, "spec")
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
@@ -60,6 +98,7 @@ func TestHandoffMissingLedgerAndNoQuestions(t *testing.T) {
 		"open_questions: 0",
 		"blocking_question_gates: none",
 		"dead_ends: none",
+		"inflight_waves: none",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q in:\n%s", want, out)

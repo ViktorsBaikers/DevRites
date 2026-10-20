@@ -16,6 +16,17 @@ type ApprovedCommand struct {
 	Cwd     string // normalized; "" means the repository root
 }
 
+// PreflightRow is one row of test-plan.md's Build-entry preflight table: the
+// approved (command, cwd) pair plus the cells check preconditions reads.
+type PreflightRow struct {
+	ApprovedCommand
+	Gate     string
+	Expected string
+	// RunAt is the optional `Run at` cell (`vet`, `pre-dispatch SLICE-###`,
+	// `action`), whitespace-collapsed; "" when the row or table has none.
+	RunAt string
+}
+
 // ApprovedCommands extracts the approved command surface of test-plan.md: the
 // Command and Cwd cells of every row under `## Build-entry preflight`. No
 // other section approves execution — fenced examples, prose mentions, and
@@ -28,17 +39,29 @@ type ApprovedCommand struct {
 // as "no approval is applicable".
 func ApprovedCommands(testPlan []byte) []ApprovedCommand {
 	approved := []ApprovedCommand{}
+	rows, _ := PreflightRows(testPlan)
+	for _, row := range rows {
+		approved = append(approved, row.ApprovedCommand)
+	}
+	return approved
+}
+
+// PreflightRows parses every command row under `## Build-entry preflight`, the
+// one parser behind the approved surface. hasRunAt reports whether a table in
+// the section declares the optional `Run at` column; plans without it keep
+// the pre-column behavior everywhere.
+func PreflightRows(testPlan []byte) (rows []PreflightRow, hasRunAt bool) {
 	structural, err := markdowntext.Structural(testPlan)
 	if err != nil {
-		return approved
+		return nil, false
 	}
 	inSection := false
-	commandCol, cwdCol := -1, -1
+	commandCol, cwdCol, gateCol, expectedCol, runAtCol := -1, -1, -1, -1, -1
 	for _, line := range strings.Split(string(structural), "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "##") {
 			inSection = strings.EqualFold(trimmed, "## Build-entry preflight")
-			commandCol, cwdCol = -1, -1
+			commandCol = -1
 			continue
 		}
 		if !inSection {
@@ -51,6 +74,10 @@ func ApprovedCommands(testPlan []byte) []ApprovedCommand {
 		if commandCol < 0 {
 			commandCol = columnIndex(cells, "command")
 			cwdCol = columnIndex(cells, "cwd")
+			gateCol = columnIndex(cells, "gate")
+			expectedCol = columnIndex(cells, "expected")
+			runAtCol = columnIndex(cells, "run at")
+			hasRunAt = hasRunAt || (commandCol >= 0 && runAtCol >= 0)
 			continue
 		}
 		if isDividerRow(cells) || commandCol >= len(cells) {
@@ -60,13 +87,25 @@ func ApprovedCommands(testPlan []byte) []ApprovedCommand {
 		if command == "" {
 			continue
 		}
-		cwd := ""
+		row := PreflightRow{ApprovedCommand: ApprovedCommand{Command: command}}
 		if cwdCol >= 0 && cwdCol < len(cells) {
-			cwd = normalizeApprovedCwd(cells[cwdCol])
+			row.Cwd = normalizeApprovedCwd(cells[cwdCol])
 		}
-		approved = append(approved, ApprovedCommand{Command: command, Cwd: cwd})
+		row.Gate = cellText(cells, gateCol)
+		row.Expected = cellText(cells, expectedCol)
+		row.RunAt = strings.Join(strings.Fields(cellText(cells, runAtCol)), " ")
+		rows = append(rows, row)
 	}
-	return approved
+	return rows, hasRunAt
+}
+
+// cellText returns a cell's trimmed text without code backticks, "" when the
+// column is absent or the row is short.
+func cellText(cells []string, col int) string {
+	if col < 0 || col >= len(cells) {
+		return ""
+	}
+	return strings.TrimSpace(strings.Trim(strings.TrimSpace(cells[col]), "`"))
 }
 
 // Approved reports whether (check, cwd) is a vetted pair. Approval is

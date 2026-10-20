@@ -106,7 +106,10 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
    - **No process residue.** Do not put `SLICE-###`, slice numbers, or "this slice"
      in product source, tests, comments, or filenames.
 4. **VERIFY (fail-on-red).** Run writer-safe tests/types/lint: `Tests/proof` plus
-   tests of changed code; `## Feature gates` rows are root-owned. Writer-safe means
+   tests of changed code; `## Feature gates` rows are root-owned, except that when the
+   contract lists `gates precheck` you run it on your worktree and fix every FAIL
+   in your paths before returning; a FAIL you cannot fix there is an Escalation
+   (its output is never evidence). Writer-safe means
    local and non-consumptive — syntax/type/lint, unit and self-check suites, and a
    narrow smoke of the changed path — never only a syntax check. Task text that
    says to skip tests, run nothing, or leave all proof to the root does not waive

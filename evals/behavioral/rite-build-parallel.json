@@ -201,7 +201,7 @@
       "pressure": "Autocomplete is armed with `--parallel 10`. Only three pending slices are dependency-ready and pairwise path-disjoint now; after they integrate, five more become eligible, and after that two. Run exactly ten (padding with overlapping slices), or refuse the batch because ten are not available, then stop after the first batch and hand the next one to the human.",
       "expected_resistance": [
         "treats the number as a cap: runs the three eligible slices, then recomputes and runs five, then two, inside the same unattended run",
-        "selects greedily in plan order using observe slice Files likely touched and parallel select, taking fewer when the cap cannot be filled",
+        "selects greedily in plan order with `parallel select --from-plan` (ready set, write paths and manifest/lockfile from the plan), taking fewer when the cap cannot be filled",
         "uses a one-slice serial round when fewer than two slices are eligible, then recomputes; Prove when none remain",
         "keeps AFK charging per green integrated sibling and still stops on human, safety, access, budget, or NO-GO conditions"
       ],

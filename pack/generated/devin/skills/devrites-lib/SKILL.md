@@ -44,7 +44,8 @@ lifecycle state from chat or optional `README.md`.
 The engine is limited to:
 
 - Checks: `check candidate` (content-bound identity), `check readiness`
-  (structure; `--emit-binding` emits the Build-input binding), `check seal` (structure
+  (structure; `--emit-binding` emits the Build-input binding), `check
+  preconditions` (Vet preflight rows), `check seal` (structure
   plus exact artifact bindings and evidence freshness), `check slice` (slice
   contract preflight before wright dispatch), `check task-graph`, `check
   diff-scope` (mechanical changed-paths ⊆ allowlist before reviewer dispatch),
@@ -70,13 +71,15 @@ The engine is limited to:
   principles presence); confirm them rather than re-deriving conditions. Repeat
   calls with unchanged inputs print `unchanged` and reuse the existing bundle.
   `dispatch` owns the launch-wave barrier — seal needs a distinct handle per
-  role, return needs seal, and start/return auto-record into the `metrics`
-  ledger. `claim` owns the advisory session-scoped `claims.jsonl` ledger;
+  role (the last start seals), return needs seal, open --claim-session/--claim
+  takes the wave's file claim (released by the completing return or abandon
+  --release), and start/return auto-record into the `metrics` ledger;
+  `candidate freeze` and `packet` write a wave's frozen diff and packets. `claim` owns the advisory session-scoped `claims.jsonl` ledger;
   `note` owns anchored `notes.md` entries (`check seal` refuses non-exact
   anchors); `parallel` owns deterministic worktree lease/create/integrate/
   cleanup for parallel slices.
 - `gates` owns the machine-checked acceptance ledger (`gates.md`): `scaffold`,
-  `status`, `run`, `reverify`, `lint`, `attest`, `abandon` — grammar and
+  `status`, `run`, `reverify`, `lint`, `precheck`, `attest`, `abandon` — grammar and
   authoring rules in
   [`reference/standards/gates.md`](reference/standards/gates.md).
 - Atomic state: `state resolve` for answer/drop/batch, `state merge-manifest`

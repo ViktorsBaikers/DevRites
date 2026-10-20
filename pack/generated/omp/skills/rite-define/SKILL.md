@@ -136,8 +136,13 @@ Pull these via `Read` when shaping the plan:
    ([artifacts.md](skill://rite-vet/reference/artifacts.md)). Lift covered/backstop `Edge Coverage` rows and resolved `Prohibitions (must-NOT)`
    rows into `traceability.md` and `test-plan.md`; unresolved rows get a gate/owner. Each
    `Existing behavior to preserve` row becomes a regression row whose current evidence is
-   observed green on the unchanged baseline as a prerequisite of the first slice touching that
-   seam, and green again at Prove; a red baseline is recorded pre-existing, never relabelled.
+   observed green on the unchanged baseline at Vet (preflight `Run at` `vet`), again before the
+   first slice touching that seam edits it, and green at Prove; a red baseline is recorded
+   pre-existing, never relabelled. A slice whose `Files likely touched` names a manifest or
+   lockfile also plans a `dependency-dry-run SLICE-###` preflight row ([artifacts.md](skill://rite-vet/reference/artifacts.md)).
+   Mark a proof row `RUN: writer` only when it is local, needs no network, container or browser,
+   and passes in an uncommitted worktree (an empty-`git diff` check stays root); its `gates.md`
+   gate carries the attribute, the wright pre-runs it via `gates precheck`, and root still runs it.
    Evidence that cannot run takes `characterize-before-modify` or blocks. Each
    cross-slice boundary names producer, consumer, invariant, integration step, and proof.
    Map each applicable topology/data/integration risk to a slice, failure/recovery path,

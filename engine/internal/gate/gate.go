@@ -53,6 +53,13 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gate %s: %w", kind, err)
 	}
+	for _, problem := range dependencyDryRunProblems(kind, root, observation) {
+		result.StateProblems = append(result.StateProblems, "preconditions: "+problem)
+		if !result.Blocked {
+			result.Blocked = true
+			result.ReasonID = ResultReasonID(kind, true)
+		}
+	}
 	for _, problem := range unsanctionedRootFiles(observation) {
 		result.StateProblems = append(result.StateProblems, "placement: "+problem)
 		// Keep a more specific reason (readiness-stale) when the observation

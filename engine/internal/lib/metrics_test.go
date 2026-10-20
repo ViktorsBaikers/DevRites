@@ -86,3 +86,32 @@ func TestMetricsSummaryFindingResolution(t *testing.T) {
 		}
 	}
 }
+
+// Each resume is timed to the next dispatch in ledger order; a resume followed
+// by another resume reads "none", a trailing one "open". A ledger without
+// resume events keeps the old summary.
+func TestMetricsSummaryResumeToDispatch(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	ev := func(ts, e string) string {
+		return `{"ts":"2026-01-01T` + ts + `Z","phase":"build","event":"` + e + `","role":"root"}` + "\n"
+	}
+	path := filepath.Join(featureDir, MetricsFile)
+	if err := os.WriteFile(path, []byte(ev("00:00:00", "dispatch")+ev("01:00:00", "resume")+ev("01:12:00", "dispatch")+ev("01:13:00", "dispatch")+ev("02:00:00", "resume")+ev("03:00:00", "resume")), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr); code != 0 {
+		t.Fatalf("code=%d err=%q", code, stderr)
+	}
+	if want := "  resumes    count=3 minutes_to_dispatch=12,none,open\n"; !strings.Contains(stdout.String(), want) {
+		t.Fatalf("summary lacks %q:\n%s", want, stdout)
+	}
+
+	if err := os.WriteFile(path, []byte(ev("00:00:00", "dispatch")), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	stdout.Reset()
+	if code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr); code != 0 || strings.Contains(stdout.String(), "resumes") {
+		t.Fatalf("no-resume summary changed: code=%d\n%s", code, stdout)
+	}
+}
