@@ -80,7 +80,7 @@ func ArtifactLineBudget(name string) (int, bool) {
 // line budget: conditional artifacts (`references.md`, `investigation-map.md`,
 // `dogfood.md`, `devex.md`) and engine-owned machine files (the parallel lease,
 // the metrics ledger, the regression baseline, the dispatch ledger, the drift
-// baseline). Anything else in the root is unsanctioned placement — `packets/`
+// baseline, the diff-scope snapshot). Anything else in the root is unsanctioned placement — `packets/`
 // and `history/` own by-reference packets and relocated narrative
 // (workspace-artifact-schema.md "Required by phase").
 var sanctionedRootFiles = map[string]bool{
@@ -93,6 +93,7 @@ var sanctionedRootFiles = map[string]bool{
 	"regression-baseline.json": true,
 	"dispatch.json":            true,
 	"readiness-inputs.json":    true,
+	"diff-scope-baseline.json": true,
 }
 
 // SanctionedRootFile reports whether name is a legitimate workspace-root file:

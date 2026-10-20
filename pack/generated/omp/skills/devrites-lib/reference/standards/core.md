@@ -23,7 +23,7 @@ Repository conventions follow [Precedence](#precedence).
 1. **Right step, right time:** use the smallest workflow and load only relevant
    files. Batch independent reads and cover the relevant code, not just the first
    match. Prefer an available code index for structure; see
-   [`tooling.md`](tooling.md) and [`code-navigation.md`](code-navigation.md).
+   [`tooling.md`](tooling.md) and [`code-index.md`](code-index.md).
 2. **No silent assumptions:** surface material assumptions; ask when the answer
    changes scope, architecture, data model, UX, security, migration risk, or
    acceptance.
@@ -59,7 +59,9 @@ Repository conventions follow [Precedence](#precedence).
 
 ## Lifecycle rest points
 
+<!-- root-only -->
 Before advancing a phase, run `devrites-engine check readiness <slug>` for structure, including artifact budgets (semantics belong to exact agents/checklists). Standalone rites persist and stop on block; under a controlling caller, agent-owned technical blocks return backward as a nested phase boundary, not a user-facing handoff. `/rite-seal` runs `devrites-engine check seal <slug>` for structure/freshness, not prose. HITL/blocked stops follow [Persistence before stopping](#persistence-before-stopping-handoff-discipline).
+<!-- /root-only -->
 
 ### Gate contract
 
@@ -85,6 +87,7 @@ Verdict discipline — no vacuous verdicts:
   (the FAIL/NOT-RUN is recorded with its marker and the run proceeds). Both are legal;
   silent is not.
 
+<!-- root-only -->
 ## Caller-owned technical backtracking
 
 When a rite invokes an earlier rite inline to repair an agent-owned technical gap, the original rite stays the controlling caller: a nested `STOP` is a phase boundary, not user-facing. The caller re-reads `state.md`, follows the return cursor/`next_action`, and resumes unless a human-owned, safety, access, budget, or parked-recovery stop is active ([Persistence before stopping](#persistence-before-stopping-handoff-discipline)). Derive `parked-recovery` from the fingerprint's recorded no-progress attempts and escalations, not from a stale `state.md` label; one consumed authorization doesn't exhaust offline recovery from retained new evidence.
@@ -93,12 +96,15 @@ An intermediate `Next step` is cold-resume metadata. Do not ask the human to
 copy routine `/rite-plan repair`, `/rite-vet`, `/rite-build`, or proof-rerun
 commands during the active recovery chain. Only the controlling caller emits
 the final response; standalone phase invocations still stop normally.
+<!-- /root-only -->
 
+<!-- root-only -->
 ## Final response
 
 Immediately before its final response, each rite loads
 [`reply-contract.md`](skill://devrites-lib/reference/reply-contract.md) then uses the compact form: evidenced
 claims plus one next action.
+<!-- /root-only -->
 
 ## Rationalization guard
 
@@ -140,6 +146,7 @@ These universal musts link to their full rules; load depth only when needed.
 - **Atomic commits, Conventional Commits.** One logical change per commit;
   it builds + passes tests on its own. → [`git-workflow.md`](git-workflow.md)
 
+<!-- root-only -->
 ## Persistence before stopping (handoff discipline)
 
 Before any `rite-*` skill stops:
@@ -161,6 +168,7 @@ Before any `rite-*` skill stops:
   --body-file <path|->`. Never splice workspace Markdown with an ad-hoc script or regex.
 
 A skill that stops without doing this leaves the workspace incomplete.
+<!-- /root-only -->
 
 ## Context hygiene (end of every phase)
 
@@ -169,9 +177,11 @@ Long contexts degrade reasoning quality. Act on context at **50-70% used, not 95
 Read the engine `context` bundle once per phase instead of re-reading the files it
 contains; after compaction re-read the bundle, not its sources.
 
+<!-- root-only -->
 Every rite names the single resume command on its action line; a `↻ Hygiene:` footer
 advises `/clear`, `/compact`, or `/rite-handoff` and never a competing command. Full phase-by-phase guidance:
 [`context-hygiene.md`](context-hygiene.md).
+<!-- /root-only -->
 
 ## Precedence
 

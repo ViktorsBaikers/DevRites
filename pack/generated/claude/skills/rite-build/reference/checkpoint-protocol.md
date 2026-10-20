@@ -1,5 +1,7 @@
 # Checkpoint protocol: what `/rite-build` does when a slice is HITL
 
+> Root-only: not inlined in --role bundles.
+
 HITL slices pause **pre-action** as a ranked **option set** before any code:
 
 - **Interactive:** `AskUserQuestion`; record to `questions.md`/`decisions.md`; clear gate;

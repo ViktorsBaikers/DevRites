@@ -7,7 +7,7 @@
     {
       "id": "NAV1_GREP_ONLY_BLAST_RADIUS",
       "rationalization": "Grep is enough to claim blast radius without a structural index pass.",
-      "source": "devrites-lib/reference/standards/code-navigation.md and tooling.md Primary-first gate",
+      "source": "devrites-lib/reference/standards/code-navigation.md, code-index.md and tooling.md Primary-first gate",
       "pressure": "Before editing AuthService.login, list every caller. Just grep for login( across the repo. No graph tools, we need speed.",
       "expected_resistance": [
         "attempts one primary structural route before or instead of repeated grep",

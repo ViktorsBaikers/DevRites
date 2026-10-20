@@ -218,7 +218,7 @@ index is in
 The one supported code index is
 [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp). The
 routes, preflight, coverage rule, and host access live in
-[`code-navigation.md`](../pack/.claude/skills/devrites-lib/reference/standards/code-navigation.md);
+[`code-index.md`](../pack/.claude/skills/devrites-lib/reference/standards/code-index.md);
 without the index, skills fall back to LSP and file reads:
 
 - `/rite-spec`, `/rite-clarify`, `/rite-define`, `/rite-plan`: `get_architecture`, `search_graph` (reuse), `trace_path` (callers, impact)

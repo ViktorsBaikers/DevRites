@@ -22,7 +22,7 @@ In flight: <none | wave <id> role <r> handle <h> | wright SLICE-### handle <h> |
 ## Next action
 <one command or action, no option set; any `terminal: unknown` row makes it reconcile:
 `devrites-engine dispatch <slug> status`, `devrites-engine parallel status --root <repo> --slug <slug>`,
-`devrites-engine claim list --all` — never a writer command>
+`devrites-engine claim list` — never a writer command>
 
 ## What changed this turn
 - <short event; link to source artifact instead of copying full content>

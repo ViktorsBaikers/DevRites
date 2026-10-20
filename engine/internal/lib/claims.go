@@ -401,16 +401,16 @@ func claimList(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	now := time.Now().UTC()
 	probe := newHolderProbe()
-	rows := liveClaims(latest, order, now)
-	if all {
-		rows = rows[:0]
-		for _, id := range order {
-			rows = append(rows, latest[id])
-		}
-	}
-	printed := 0
-	for _, rec := range rows {
+	// Bare list keeps every unreleased claim (expired and dead rows decide
+	// who may take a path) and folds the released history into one count.
+	printed, released := 0, 0
+	for _, id := range order {
+		rec := latest[id]
 		if rec == nil || (session != "" && rec.Session != session) {
+			continue
+		}
+		if rec.Released && !all {
+			released++
 			continue
 		}
 		state := "live"
@@ -430,6 +430,9 @@ func claimList(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	if printed == 0 {
 		fmt.Fprintln(stdout, "claim: no claims")
+	}
+	if released > 0 {
+		fmt.Fprintf(stdout, "claim: %d released (use --all)\n", released)
 	}
 	if bad > 0 {
 		fmt.Fprintf(stdout, "claim: %d unparsed ledger line(s)\n", bad)

@@ -39,27 +39,46 @@ type loadsManifest struct {
 
 const loadsMarker = "<!-- loads:"
 
-const contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
+const contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--skills-root <dir>] [--out <path>]
 
 Emits one deduplicated context bundle for a phase or standalone skill
 (+ optional dispatch role) into .devrites/work/<slug>/ctx/ so an agent
-reads a single file. With --skill, slug may be omitted; then --out is
+reads a single file. The bundle opens with a table of contents giving
+each section's line range. A --role bundle leads with the role contract; when it
+resolves under .claude/agents, .omp/agents, or .codex/agents (the host
+loads it as the agent's system prompt) a one-line stub names its path,
+size, and SHA-256 instead, unless --inline-contract is given.
+With --skill, slug may be omitted; then --out is
 required and no workspace section is included. --slice scopes the
 workspace section to one slice: tasks.md contributes that slice's block,
 and an artifact over its line/byte budget or over 16 KiB (spec.md excepted)
 becomes a by-reference index (path, SHA-256, headings, and line hits for
 every ID the block cites).
-Repeat --slice for a recheck that spans several slices.
+Repeat --slice for a recheck that spans several slices. In phase build a
+--role bundle other than slice-wright requires --slice (exit 3).
+--recheck <inventory> (phase build, with --role and --slice) builds a
+bounded recheck bundle: the inventory file (relative to the workspace)
+and core.md are inlined; every other pack file becomes a by-reference
+index plus the sections the inventory cites as "<file>.md § <heading>".
 `
+
+// coreStandard is the universal floor every bundle inlines whole.
+const coreStandard = "devrites-lib/reference/standards/core.md"
 
 // RunContext emits one deduplicated context bundle for a phase (+ optional
 // dispatch role) so an agent reads a single file instead of selecting files.
 //
-//	context <slug> --phase <p> [--role <r>] [--slice <SLICE-###>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
+//	context <slug> --phase <p> [--role <r>] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
 func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	opts, code := parseContextArgs(args, stderr)
 	if code != 0 {
 		return code
+	}
+	// A Build reviewer judges one slice; an unscoped bundle inlines whole
+	// plan/tasks/architecture into every dispatch.
+	if opts.phase == "build" && opts.role != "" && opts.role != "slice-wright" && opts.slice == "" {
+		fmt.Fprintf(stderr, "context: BLOCKED: unscoped build reviewer bundle: --role %s in phase build needs --slice <SLICE-ID>\n", opts.role)
+		return 3
 	}
 	var featureDir string
 	if opts.slug != "" {
@@ -74,6 +93,21 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		fmt.Fprintf(stderr, "context: %v\n", err)
 		return 2
+	}
+	var inventory []byte
+	recheckPath := opts.recheck
+	if recheckPath != "" {
+		if !filepath.IsAbs(recheckPath) {
+			recheckPath = filepath.Join(featureDir, filepath.FromSlash(recheckPath))
+		}
+		inventory, err = os.ReadFile(recheckPath) // #nosec G304 -- the root names its own recheck inventory file
+		if err == nil && len(bytes.TrimSpace(inventory)) == 0 {
+			err = fmt.Errorf("%s is empty", opts.recheck)
+		}
+		if err != nil {
+			fmt.Fprintf(stderr, "context: --recheck: %v\n", err)
+			return 2
+		}
 	}
 	skillDir := "rite-" + opts.phase
 	if opts.skill != "" {
@@ -109,7 +143,9 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 			blocks = append(blocks, block)
 		}
 		sliceBlock = strings.Join(blocks, "\n")
-		sliceIDs = citedIDs(sliceBlock)
+		// A recheck inventory may cite IDs outside the slice block (dependency or
+		// regression closure); index them too.
+		sliceIDs = citedIDs(sliceBlock + "\n" + string(inventory))
 	}
 
 	var files []string
@@ -139,7 +175,7 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	} else {
 		// No manifest: bundle the universal floor only. Agents still get a
 		// correct (if incomplete) packet and a loud marker.
-		files = []string{filepath.Join("devrites-lib", "reference", "standards", "core.md")}
+		files = []string{filepath.FromSlash(coreStandard)}
 		fmt.Fprintf(stderr, "context: WARNING: %s declares no loads: manifest; bundle is core-only\n", skillDir)
 	}
 	if !hasManifest {
@@ -159,16 +195,26 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	if opts.role != "" {
 		rel := roleAgentPath(manifest, opts.role)
 		abs, label := filepath.Join(skillsRoot, "..", "agents", filepath.FromSlash(rel)), "agents/"+rel
+		// Claude Code, omp, and Codex load a named agent's body as its system
+		// prompt, so those layouts get a stub, not a second copy. Other
+		// layouts (pi, devin, unknown) are unverified and keep the body.
+		native := slices.Contains([]string{".claude", ".omp"}, filepath.Base(filepath.Dir(filepath.Clean(skillsRoot))))
 		// A Codex install has skills in .agents/skills but role agents at
 		// <project>/.codex/agents/<name>.toml, with no Markdown sibling.
 		if _, err := os.Stat(abs); err != nil {
 			codex := strings.TrimSuffix(filepath.Base(filepath.FromSlash(rel)), ".md") + ".toml"
 			candidate := filepath.Join(filepath.Dir(root), ".codex", "agents", codex)
 			if info, err := os.Stat(candidate); err == nil && info.Mode().IsRegular() {
-				abs, label = candidate, ".codex/agents/"+codex
+				abs, label, native = candidate, ".codex/agents/"+codex, true
 			}
 		}
-		if writeContextEntry(&bundle, abs, label, seen, true) {
+		var wrote bool
+		if native && !opts.inlineContract {
+			wrote = writeContractStub(&bundle, filepath.Dir(root), abs, label, seen)
+		} else {
+			wrote = writeContextEntry(&bundle, abs, label, seen, true)
+		}
+		if wrote {
 			loaded++
 		} else {
 			// The agent contract is a pack file, not a workspace artifact: a
@@ -177,7 +223,14 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 			missingRequired = append(missingRequired, "agents/"+rel)
 		}
 	}
+	// The open findings lead a recheck bundle, before any reference text.
+	if inventory != nil {
+		writeContextEntry(&bundle, recheckPath, "recheck inventory: "+opts.recheck, seen, false)
+		loaded++
+	}
 	var rootOnly []string
+	citedSections, packByReference := 0, 0
+	keepModel := opts.role == "" || keepModelSurface(opts.role, gatherTriggerFacts(root, featureDir, opts.role))
 	for _, rel := range files {
 		abs := filepath.Join(skillsRoot, filepath.FromSlash(rel))
 		if seen[abs] {
@@ -189,14 +242,31 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 			continue
 		}
 		data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated skills root
-		fmt.Fprintf(&bundle, "===== %s =====\n", rel)
 		if err != nil {
-			fmt.Fprintf(&bundle, "MISSING: %s\n\n", rel)
+			fmt.Fprintf(&bundle, "===== %s =====\nMISSING: %s\n\n", rel, rel)
 			missingRequired = append(missingRequired, rel)
 			continue
 		}
-		bundle.Write(expandIncludes(abs, data))
-		if len(data) > 0 && data[len(data)-1] != '\n' {
+		body := expandIncludes(abs, data)
+		if opts.role != "" {
+			if body, err = stripSections(body, rel, opts.role, keepModel); err != nil {
+				fmt.Fprintf(stderr, "context: %v\n", err)
+				return 2
+			}
+		}
+		// A recheck keeps every other triggered pack file one anchored Read
+		// away (fix-introduced defects may break rules no finding cites) and
+		// inlines only the sections the open findings cite.
+		if inventory != nil && rel != coreStandard {
+			writeAnchorIndex(&bundle, filepath.Dir(root), abs, rel, data, nil)
+			citedSections += writeCitedSections(&bundle, rel, body, inventory)
+			packByReference++
+			loaded++
+			continue
+		}
+		fmt.Fprintf(&bundle, "===== %s =====\n", rel)
+		bundle.Write(body)
+		if len(body) > 0 && body[len(body)-1] != '\n' {
 			bundle.WriteByte('\n')
 		}
 		bundle.WriteByte('\n')
@@ -236,6 +306,9 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	} else if hasManifest && len(workspaceList) > 0 {
 		bundle.WriteString("===== workspace =====\nskipped: no feature workspace (slug omitted)\n\n")
 	}
+	withTOC := insertSectionTOC(bundle.String())
+	bundle.Reset()
+	bundle.WriteString(withTOC)
 	out := opts.out
 	if out == "" {
 		out = filepath.Join(featureDir, "ctx", bundleName(opts))
@@ -285,6 +358,9 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	} else if byReference > 0 {
 		fmt.Fprintf(stdout, "scope: root (%d whole, %d by-reference over budget)\n", whole, byReference)
 	}
+	if inventory != nil {
+		fmt.Fprintf(stdout, "recheck: %s (%d cited sections inlined, %d pack files by reference)\n", opts.recheck, citedSections, packByReference)
+	}
 	if workspaceScoped {
 		fmt.Fprintf(stdout, "workspace: role-scoped for %s (%d of %d declared artifacts)\n",
 			opts.role, len(workspaceList), len(manifest.Workspace))
@@ -312,6 +388,43 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 		return 3
 	}
 	return 0
+}
+
+// sectionHeaderRE matches a bundle section header line.
+var sectionHeaderRE = regexp.MustCompile(`^===== (.+) =====$`)
+
+// insertSectionTOC lists each ===== section's line range right after the
+// bundle's header comments, so an agent reads a section by range instead of
+// grepping for headers. Section order and content are unchanged.
+// shortcut: an inlined artifact line shaped like a section header is listed too; record header offsets at write time if that shows up.
+func insertSectionTOC(bundle string) string {
+	cut := strings.Index(bundle, "\n\n") + 2
+	head, body := bundle[:cut], bundle[cut:]
+	lines := strings.Split(strings.TrimSuffix(body, "\n"), "\n")
+	var labels []string
+	var starts []int
+	for i, line := range lines {
+		if m := sectionHeaderRE.FindStringSubmatch(line); m != nil {
+			labels, starts = append(labels, m[1]), append(starts, i)
+		}
+	}
+	if len(starts) == 0 {
+		return bundle
+	}
+	// Body line i lands after the header, the TOC comment, one line per
+	// section, and the TOC's blank line.
+	offset := strings.Count(head, "\n") + 1 + len(starts) + 1
+	var toc strings.Builder
+	toc.WriteString("<!-- sections: line ranges in this file; read a section by its range instead of searching for headers -->\n")
+	for i, start := range starts {
+		end := len(lines)
+		if i+1 < len(starts) {
+			end = starts[i+1]
+		}
+		fmt.Fprintf(&toc, "L%d-%d %s\n", offset+start+1, offset+end, clipRunes(labels[i], 120))
+	}
+	toc.WriteByte('\n')
+	return head + toc.String() + body
 }
 
 // workspaceReadSet returns the workspace artifact list for this call. A role
@@ -347,6 +460,71 @@ func expandIncludes(abs string, data []byte) []byte {
 		}
 		return bytes.TrimRight(inc, "\n")
 	})
+}
+
+// sectionMarkerRe matches a whole-line section marker in canonical source:
+// <!-- root-only --> ... <!-- /root-only --> wraps rules only the controlling
+// root executes; <!-- model-surface --> ... <!-- /model-surface --> wraps rules
+// that apply only to a model, agent, RAG, or tool surface.
+var sectionMarkerRe = regexp.MustCompile(`^<!--\s*(/?)(root-only|model-surface)\s*-->\s*$`)
+
+// stripSections replaces each marked block a --role bundle omits with a
+// one-line stub naming the omitted heading: root-only blocks always,
+// model-surface blocks unless keepModel. Headings never move in the source, so
+// anchors stay valid. A nested, unbalanced, or headingless block is an error
+// so a pack bug never silently drops or leaks rules.
+func stripSections(data []byte, rel, role string, keepModel bool) ([]byte, error) {
+	if !bytes.Contains(data, []byte("<!--")) {
+		return data, nil
+	}
+	lines := strings.SplitAfter(string(data), "\n")
+	structural := lines
+	if masked, err := markdowntext.Structural(data); err == nil {
+		structural = strings.SplitAfter(string(masked), "\n")
+	}
+	var out, block strings.Builder
+	kind, heading, stubHeading, ownHeading := "", "", "", false
+	for i, line := range lines {
+		text := strings.TrimRight(structural[i], "\r\n")
+		m := sectionMarkerRe.FindStringSubmatch(text)
+		switch {
+		case m == nil:
+			if anchorHeadingRE.MatchString(text) {
+				heading = strings.TrimSpace(strings.TrimLeft(text, "#"))
+				if kind != "" && !ownHeading {
+					stubHeading, ownHeading = heading, true
+				}
+			}
+			if kind == "" {
+				out.WriteString(line)
+			} else {
+				block.WriteString(line)
+			}
+		case m[1] == "" && kind == "":
+			kind, stubHeading, ownHeading = m[2], heading, false
+			block.Reset()
+			block.WriteString(line)
+		case m[1] == "/" && m[2] == kind:
+			block.WriteString(line)
+			switch {
+			case stubHeading == "":
+				return nil, fmt.Errorf("%s:%d: <!-- %s --> section has no heading to name in its stub", rel, i+1, kind)
+			case kind == "model-surface" && keepModel:
+				out.WriteString(block.String())
+			case kind == "model-surface":
+				fmt.Fprintf(&out, "[model-surface section %q omitted for role %s: spec/plan/tasks name no model, agent, RAG, or tool surface; if the change touches one, read %s § %s]\n", stubHeading, role, rel, stubHeading)
+			default:
+				fmt.Fprintf(&out, "[root-only section %q omitted for role %s; the controlling root executes it]\n", stubHeading, role)
+			}
+			kind = ""
+		default:
+			return nil, fmt.Errorf("%s:%d: unbalanced section marker %q", rel, i+1, text)
+		}
+	}
+	if kind != "" {
+		return nil, fmt.Errorf("%s: unclosed <!-- %s --> section", rel, kind)
+	}
+	return []byte(out.String()), nil
 }
 
 // sliceInlineMaxBytes caps a workspace artifact inlined whole into a --slice
@@ -456,6 +634,70 @@ func writeAnchorIndex(bundle *strings.Builder, project, abs, label string, data 
 	bundle.WriteByte('\n')
 }
 
+// standardCiteRE matches a "<file>.md § <heading>" citation, as a finding's
+// "breaks <standard §>" field writes it; the heading text ends at a quote,
+// pipe, semicolon, closing link bracket, or line end.
+var standardCiteRE = regexp.MustCompile(`([\w.-]+\.md)\S*\s*§\s*([^"|;\n\]]+)`)
+
+// writeCitedSections inlines each H1-H3 section of body (heading through the
+// next heading of the same or higher level) that the inventory cites by
+// "<file>.md § <heading>"; a citation may abbreviate the heading or name only
+// its title before the colon. It returns the number of sections written.
+// shortcut: a citation naming a heading by other words is missed and stays reachable through the anchor index; match the quoted line if reviewers cite that way.
+func writeCitedSections(bundle *strings.Builder, rel string, body, inventory []byte) int {
+	var cites []string
+	for _, m := range standardCiteRE.FindAllStringSubmatch(string(inventory), -1) {
+		if m[1] == filepath.Base(rel) {
+			if c := strings.ToLower(strings.Trim(m[2], " \t.,:()`*")); c != "" {
+				cites = append(cites, c)
+			}
+		}
+	}
+	if len(cites) == 0 {
+		return 0
+	}
+	lines := strings.SplitAfter(string(body), "\n")
+	structural := lines
+	if masked, err := markdowntext.Structural(body); err == nil {
+		structural = strings.SplitAfter(string(masked), "\n")
+	}
+	level := func(i int) int {
+		text := strings.TrimRight(structural[i], "\r\n")
+		if !anchorHeadingRE.MatchString(text) {
+			return 0
+		}
+		return len(text) - len(strings.TrimLeft(text, "#"))
+	}
+	written, coveredTo := 0, 0
+	for i := range lines {
+		lvl := level(i)
+		if lvl == 0 || i < coveredTo {
+			continue
+		}
+		heading := strings.TrimSpace(strings.TrimLeft(strings.TrimRight(lines[i], "\r\n"), "#"))
+		lower := strings.ToLower(heading)
+		title, _, _ := strings.Cut(lower, ":")
+		title = strings.TrimSpace(title)
+		if !slices.ContainsFunc(cites, func(c string) bool {
+			// The title rule skips the H1: a one-word file title would match every citation.
+			return strings.HasPrefix(lower, c) || (lvl > 1 && title != "" && (c == title || strings.HasPrefix(c, title+" ")))
+		}) {
+			continue
+		}
+		end := len(lines)
+		for j := i + 1; j < len(lines); j++ {
+			if l := level(j); l > 0 && l <= lvl {
+				end = j
+				break
+			}
+		}
+		fmt.Fprintf(bundle, "===== %s § %s (cited by the recheck inventory) =====\n", rel, clipRunes(heading, 120))
+		bundle.WriteString(strings.TrimRight(strings.Join(lines[i:end], ""), "\r\n") + "\n\n")
+		written, coveredTo = written+1, end
+	}
+	return written
+}
+
 func clipRunes(s string, n int) string {
 	if r := []rune(s); len(r) > n {
 		return string(r[:n]) + "…"
@@ -486,16 +728,37 @@ func writeContextEntry(bundle *strings.Builder, abs, label string, seen map[stri
 	return true
 }
 
+// writeContractStub names a role contract the host already loads as the
+// agent's system prompt instead of inlining a second copy. A missing file
+// still fails, as in writeContextEntry.
+func writeContractStub(bundle *strings.Builder, project, abs, label string, seen map[string]bool) bool {
+	seen[abs] = true
+	data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated skills root or project
+	if err != nil {
+		fmt.Fprintf(bundle, "===== %s =====\nMISSING: %s\n\n", label, label)
+		return false
+	}
+	path := label
+	if r, err := filepath.Rel(project, abs); err == nil && !strings.HasPrefix(r, "..") {
+		path = filepath.ToSlash(r)
+	}
+	fmt.Fprintf(bundle, "===== %s (not inlined: your host loads this role contract as your system prompt; %d bytes, sha256 %x; read %s only if your system prompt lacks it) =====\n\n",
+		label, len(data), sha256.Sum256(data), path)
+	return true
+}
+
 type contextOpts struct {
-	slug       string
-	phase      string
-	skill      string
-	role       string
-	slice      string // display label: slices joined with "+"
-	slices     []string
-	triggers   []string
-	skillsRoot string
-	out        string
+	slug           string
+	phase          string
+	skill          string
+	role           string
+	slice          string // display label: slices joined with "+"
+	slices         []string
+	triggers       []string
+	skillsRoot     string
+	out            string
+	recheck        string
+	inlineContract bool
 }
 
 func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
@@ -522,6 +785,11 @@ func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
 			opts.skillsRoot = value
 		case "--out":
 			opts.out = value
+		case "--recheck":
+			opts.recheck = value
+		case "--inline-contract":
+			opts.inlineContract = true
+			continue
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(stderr, "context: unknown flag %q\n", args[i])
@@ -547,6 +815,10 @@ func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
 		}
 	}
 	opts.slice = strings.Join(opts.slices, "+")
+	if opts.recheck != "" && (opts.phase != "build" || opts.role == "" || opts.slice == "") {
+		fmt.Fprintf(stderr, "context: --recheck needs --phase build, --role, and --slice\n")
+		return opts, 2
+	}
 	if len(positional) == 1 {
 		opts.slug = positional[0]
 	} else if opts.out == "" {
@@ -633,6 +905,9 @@ func bundleName(opts contextOpts) string {
 	}
 	if opts.slice != "" {
 		name += "." + opts.slice
+	}
+	if opts.recheck != "" {
+		name += ".recheck"
 	}
 	return name + ".bundle.md"
 }

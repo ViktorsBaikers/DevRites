@@ -38,6 +38,19 @@ Read-only: never repair files, advance a feature, or diagnose the application.
    missing required profile is `FAIL`. A project or local Claude
    `permissions.defaultMode: plan` blocks the root's `.devrites` writes:
    `FAIL`, remediation: remove it.
+   Host-overhead advisories are report-only, never `FAIL`; read files, spawn
+   nothing. (a) If user, project, or local Claude `permissions.deny` names `Grep`
+   or `Glob` (possibly deliberate), `WARN` and list the installed roles whose
+   `tools:` lacks Bash, which leaves the denied tool as their only search route.
+   Remediation: remove `Grep`/`Glob` from the `permissions.deny` of the settings
+   file that names it, if the deny is not deliberate, or accept whole-file reads.
+   (b) `INFO` each DevRites marker block in `AGENTS.md` with its byte size; for a
+   block whose host is not the one running doctor, name the `--no-<host>` flag
+   to add to the manifest's recorded install flags when re-running
+   `devrites-engine install`, if that host is unused. (c) On omp, `INFO` the count and total `SKILL.md` bytes of
+   non-DevRites skills in omp's user-global agent skills directory and the
+   servers in its user-global agent `mcp.json`, which every subagent inherits; the user may prune
+   them. Never edit or hide them.
 4. **Inspect workspace topology.** Read `.devrites/ACTIVE` if present. An empty
    cursor is `OK` (no active feature). Otherwise require one safe slug, a
    contained regular `.devrites/work/<slug>/state.md`, and no symlink in the
@@ -60,7 +73,8 @@ Read-only: never repair files, advance a feature, or diagnose the application.
    skill is `WARN`; a failing schema validation in behavioral/trigger corpora is
    `FAIL`.
 7. **Report, do not repair.** Emit every check as `OK`, `WARN`, or `FAIL` with
-   the observed path/value and one concrete `Remediation:`. A check that is
+   the observed path/value and one concrete `Remediation:`; step 3 advisories
+   may emit `INFO`. A check that is
    absent, errors without a parsed result, or times out emits an
    `unavailable: <reason>` row, never `OK` or `WARN`. Never install,
    update, delete, chmod, rewrite config, create a workspace, or trust a command
@@ -76,10 +90,11 @@ DevRites doctor: <OK | WARN | FAIL>
 OK: <check — observed evidence>
 WARN: <check — observed evidence>
 FAIL: <check — observed evidence>
+INFO: <advisory — observed evidence>
 unavailable: <check — reason>
 Remediation: <one action for each WARN/FAIL | none>
 ```
 
 Overall status is the worst emitted severity; any `unavailable` row keeps it
-from `OK` (`WARN` when nothing is worse). Omit empty severity rows; never
+from `OK` (`WARN` when nothing is worse); `INFO` never raises it. Omit empty severity rows; never
 label a skipped or unavailable check `OK`.

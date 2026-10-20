@@ -54,9 +54,10 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then
         pack/*|evals/*|scripts/validate.sh|scripts/run-evals.sh|scripts/run-outcome-evals.sh|scripts/run-behavioral-evals.sh|scripts/check-*)
           pack=true ;;
       esac
-      # Engine tests and the npm launcher read these pack docs and launcher.
+      # Engine tests and the npm launcher read the launcher and pack docs; the
+      # composed-bundle size ratchet reads every skill manifest and agent contract.
       case "$path" in
-        bin/devrites.mjs|pack/.claude/skills/devrites-lib/reference/*|pack/.claude/skills/rite-spec/reference/*)
+        bin/devrites.mjs|pack/.claude/skills/*|pack/.claude/agents/*)
           engine=true ;;
       esac
       case "$path" in

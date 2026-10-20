@@ -6,11 +6,14 @@ Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
 
 ## Authority
 
+<!-- root-only -->
 - Root owns scope, questions/decisions/results, `.devrites/**`, phase transitions — not product source/tests; vetted executable workflow artifacts follow [`workflow-artifacts.md`](workflow-artifacts.md).
-- Only bounded wright writes product source/tests; others inspect an immutable candidate.
 - Every named role runs; unavailable → HITL, never skip/substitute.
+<!-- /root-only -->
+- Only bounded wright writes product source/tests; others inspect an immutable candidate.
 - Leaves never invoke agents, ask humans, change phase, push, install/deploy, migrate live data, or act irreversibly; they return evidence/proposals for root acceptance. Sole exception: one local unpushed transfer commit by an eligible native-worktree `devrites-slice-wright` — transport, not shipping authority or a checkpoint.
 
+<!-- root-only -->
 ## Agents
 
 | Agent |
@@ -34,7 +37,9 @@ Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
 | `devrites-slice-wright` |
 
 Files own briefs; [`parallel-dispatch.md`](../parallel-dispatch.md) owns rosters.
+<!-- /root-only -->
 
+<!-- root-only -->
 ## Native invocation
 
 Skills name exact fresh roles, omit native fields;
@@ -47,6 +52,7 @@ dispatch <slug> open|start|seal|return` (a solo dispatch is a wave of one;
 start/return auto-record metrics). Without a workspace the plain host dispatch
 contract above applies and no engine tracking is required.
 Workflow-named skills (e.g. devrites-source-driven) are invoked inline in the root context, never dispatched as agents.
+<!-- /root-only -->
 
 ## Source-writing boundary
 
@@ -63,7 +69,7 @@ starts, it records an advisory claim — `devrites-engine claim add --session
 <id> <paths>` — retains the returned `<claim-id>`, then checks the same paths
 with `devrites-engine claim check --session <id> <paths>`; a held claim from a
 live foreign session is never merged later or overridden. Unattended, skip only
-work that needs those paths, run independent work, and re-check `claim list --all`
+work that needs those paths, run independent work, and re-check `claim list`
 before stopping; stop and report the holder only when nothing independent remains. On every
 host-confirmed terminal path after `add` ([unknown outcomes keep it](../parallel-dispatch.md#cancellation-and-terminal-reconciliation)) — return,
 rejected result, stop, or a launch refused with no handle — run
@@ -74,7 +80,7 @@ Claims cover product paths only; root-authored `.devrites/**` files use
 [`workflow-artifacts.md`](workflow-artifacts.md) admission instead.
 Expiry is not proof the holder stopped: size `claim add --ttl <minutes>` to the
 expected write (engine max 240) and re-add before it lapses; before writing, also
-read `claim list --all` — a foreign `expired` claim on overlapping paths whose
+read `claim list` — a foreign `expired` claim on overlapping paths whose
 session is not proven terminal counts as held (stop and report). `dead` (engine-proven
 exited holder) or `released` is terminal: reconcile per
 [§ Cancellation](../parallel-dispatch.md#cancellation-and-terminal-reconciliation). **Failing case:**
@@ -188,6 +194,7 @@ return is the bundle the root writes) and the wright's change evidence.
   never rewrites, merges or summarizes a row; deduplication references rows by
   position or ID instead of rewording them.
 
+<!-- root-only -->
 ## Reconciliation
 
 Root rejects stale/out-of-scope work, dedupes by root cause, records
@@ -200,3 +207,4 @@ Route defects before correction: product/acceptance → Spec Drift Guard/Clarify
 architecture/slicing/proof → Plan/Vet; source/test → wright;
 external/pre-existing → blocker/defer. Never patch downstream to hide an upstream
 defect.
+<!-- /root-only -->

@@ -124,9 +124,9 @@ EXPECTED_NORMAL_GENERATED_DELTA = {
 }
 EXPECTED_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "7a44b3037e6e601132d38af412be55a577d09003deedf64ac2946173607a454b",
+        "20bccf86a4fc8238961c7cf94a914c0711298423f6d4f7580d8cc72452ea2659",
     "codex/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "a178f2d1afc0d3a803a044087d8f7dbbea847d8f6590e45d3ae5af37d2f7bd37",
+        "415ef99af7666b7f35a592cbc349b2a92905b1f786aaf0008b26f48fcf021a6b",
 }
 PRECHANGE_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
@@ -7416,7 +7416,7 @@ def default_tests(root: Path) -> None:
         ("complete_stage_gate_failure_rollback", check_complete_stage_gate_failure_rollback),
         ("instruction_size_baseline", lambda: (
             (lambda measured: require(
-                measured[0] == 284 and measured[1] <= 1600000 and 1600000 - measured[1] > 14,
+                measured[0] == 285 and measured[1] <= 1600000 and 1600000 - measured[1] > 14,
                 "instruction size count/cap/headroom",
             ))(check_instruction_size_baseline(root))
         )),

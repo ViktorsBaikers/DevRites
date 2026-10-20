@@ -225,6 +225,44 @@ cat > "$SK/rite-build/SKILL.md" <<'EOF'
 EOF
 expect_fail "rootOnly not loaded" "is not in always/triggers"
 
+# --- a loaded file marked Root-only must be listed in rootOnly ----------------
+cat > "$SK/devrites-lib/reference/root.md" <<'EOF'
+# root
+
+> Root-only: not inlined in --role bundles.
+EOF
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"always":["devrites-lib/reference/root.md"]} -->
+# build
+EOF
+expect_fail "marked always path not rootOnly" "root.md is marked Root-only but missing from rootOnly"
+
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"triggers":{"security":["devrites-lib/reference/root.md"]}} -->
+# build
+EOF
+expect_fail "marked trigger path not rootOnly" "root.md is marked Root-only but missing from rootOnly"
+
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"triggers":{"security":["devrites-lib/reference/root.md"]},"rootOnly":["devrites-lib/reference/root.md"]} -->
+# build
+EOF
+expect_ok "marked path listed in rootOnly"
+
+# A marker quoted below the first section heading is body text, not a header.
+cat > "$SK/devrites-lib/reference/root.md" <<'EOF'
+# root
+
+## Example
+
+> Root-only: not inlined in --role bundles.
+EOF
+cat > "$SK/rite-build/SKILL.md" <<'EOF'
+<!-- loads: {"always":["devrites-lib/reference/root.md"]} -->
+# build
+EOF
+expect_ok "marker below a section heading is ignored"
+
 # --- invalid JSON -----------------------------------------------------------
 cat > "$SK/rite-build/SKILL.md" <<'EOF'
 <!-- loads: {not json} -->

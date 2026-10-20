@@ -24,7 +24,7 @@ devrites-engine check readiness <slug>
 devrites-engine check readiness --emit-binding <slug>
 devrites-engine check seal <slug>
 devrites-engine check slice <slug> <SLICE-ID>
-devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path>
+devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path> [--worktree|--staged|--base <ref>] [--snapshot|--baseline] [--verbose]
 devrites-engine check task-graph <slug>
 devrites-engine check regression <slug> [--update]
 devrites-engine check drift <slug> [--record]

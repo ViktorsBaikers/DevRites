@@ -5,13 +5,14 @@
 Every external tool here is optional; fall back to `Read` / `Grep` / `Glob`, always available. Never assume installation or block a phase on a missing tool. A step that needs an optional tool names its fallback chain up front and re-verifies availability after any environment change — a wrapper script or alias can satisfy a "missing" binary, and a skipped step over an absent-in-name tool is a finding, not a shortcut. An unreadable, quarantined, permission-blocked, or parse-failed target is recorded as a finding (`cannot_verify: unreadable <path>`), never silently skipped — a scan that reports clean while skipping files has not run.
 
 For the pack-canonical decision tree (graph vs LSP vs grep vs read), load
-[`code-navigation.md`](code-navigation.md) alongside this file.
+[`code-index.md`](code-index.md) alongside this file; edit-safety rules live in
+[`code-navigation.md`](code-navigation.md).
 
 ## Route by question type
 
 | Question type | Preferred route | Fallback | Output cost / failure mode |
 | --- | --- | --- | --- |
-| Relationship/impact (callers, blast radius) | codebase-memory-mcp per [`code-navigation.md`](code-navigation.md) | LSP references + Grep | Bounded paths are compact; reading every hit inflates context |
+| Relationship/impact (callers, blast radius) | codebase-memory-mcp per [`code-index.md`](code-index.md) | LSP references + Grep | Bounded paths are compact; reading every hit inflates context |
 | Exact string/literal (error, config) | Grep | — | Matching lines are small; whole-file scans waste context |
 | Structural/AST shape | Installed AST search; else index + filter | Grep punctuation patterns | Exact nodes avoid regex false positives and false negatives; a regex-fallback absence claim stays `uncertain` unless every hit and a known-positive control were checked |
 | Value/taint flow source→sink across files | Manual hop-by-hop read of each edge; an analyzer counts only at its declared depth | `cannot_verify` | A call path or single-function scan read as flow proof |
@@ -79,7 +80,7 @@ orient incomplete; stop and run primary route or record `cannot_verify`.
 
 For "where is X / what calls X / what breaks" questions use codebase-memory-mcp, the one supported index:
 
-1. **Route, preflight, and coverage:** follow [`code-navigation.md`](code-navigation.md) (`search_graph`, `trace_path`, `detect_changes`, `get_architecture`, `get_code_snippet`, `check_index_coverage`).
+1. **Route, preflight, and coverage:** follow [`code-index.md`](code-index.md) (`search_graph`, `trace_path`, `detect_changes`, `get_architecture`, `get_code_snippet`, `check_index_coverage`).
 2. **Verify consequential claims in live code; never re-query for reassurance.** For blast-radius/every-caller claims inspect exact definitions/references; when the index disagrees with live code, live code wins.
 3. **Fallback:** LSP go-to-definition/references/diagnostics plus `Read`/`Grep`/`Glob`, reading comprehensively (core rule 1). Missing tools never block or justify speculative installs.
 

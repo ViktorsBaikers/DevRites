@@ -5,7 +5,7 @@ argument-hint: "<what to change>"
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/definition-of-done.md","devrites-lib/reference/orchestration-profiles.md"],"triggers":{"coding":["devrites-lib/reference/standards/coding-style.md"],"testing":["devrites-lib/reference/standards/testing.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"security":["devrites-lib/reference/standards/security.md"],"principles":["devrites-lib/reference/standards/principles.md"],"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["state.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/definition-of-done.md","devrites-lib/reference/orchestration-profiles.md"],"triggers":{"coding":["devrites-lib/reference/standards/coding-style.md"],"testing":["devrites-lib/reference/standards/testing.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"security":["devrites-lib/reference/standards/security.md"],"principles":["devrites-lib/reference/standards/principles.md"],"afk":["devrites-lib/reference/standards/afk-hitl.md"]},"workspace":["state.md"],"rootOnly":["devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase quick` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 

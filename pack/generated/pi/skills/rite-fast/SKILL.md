@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/definition-of-done.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/standards/spec-grammar.md","rite-fast/reference/artifacts.md","rite-fast/reference/check-and-triage.md"],"triggers":{"risk":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/security.md"],"testing":["devrites-lib/reference/standards/testing.md"]},"workspace":["spec.md","plan.md","evidence.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/definition-of-done.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/standards/spec-grammar.md","rite-fast/reference/artifacts.md","rite-fast/reference/check-and-triage.md"],"triggers":{"risk":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/security.md"],"testing":["devrites-lib/reference/standards/testing.md"]},"workspace":["spec.md","plan.md","evidence.md"],"rootOnly":["devrites-lib/reference/standards/afk-hitl.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase fast` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # /rite-fast: shortened lane for mid-size work

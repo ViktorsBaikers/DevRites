@@ -57,7 +57,7 @@ the record, not from transcript memory. Then `devrites-engine check
 regression <slug>`: `BLOCKED` names a durable fact lost since the last
 checkpoint; `unproven` does not block. Before any re-dispatch, run
 `devrites-engine dispatch <slug> status`, `devrites-engine parallel status --root <repo>
---slug <slug>`, and `devrites-engine claim list --all`, and reconcile open waves, leases, and
+--slug <slug>`, and `devrites-engine claim list`, and reconcile open waves, leases, and
 claims per [`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation) § Cancellation.
 **Failing case:** after compaction the root re-dispatches a review cohort whose original
 children still run, and duplicate accounts arrive.

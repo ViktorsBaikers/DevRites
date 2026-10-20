@@ -1,5 +1,7 @@
 # Workflow Artifact identity
 
+> Root-only: not inlined in --role bundles.
+
 > Applies when: a plan declares root-authored executable workflow files.
 
 Workflow Artifact plans/isolates/proves; never enters product candidate/readiness/

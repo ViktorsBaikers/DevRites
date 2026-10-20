@@ -9,7 +9,8 @@ when the task needs it.
 | --- | --- |
 | Operating rules, precedence, evidence | `pack/.claude/skills/devrites-lib/reference/standards/core.md` |
 | Which standard applies | `pack/.claude/skills/devrites-lib/reference/standards/README.md` |
-| Tool routing (structural vs literal) | `pack/.claude/skills/devrites-lib/reference/standards/tooling.md` + `code-navigation.md` |
+| Tool routing (structural vs literal) | `pack/.claude/skills/devrites-lib/reference/standards/tooling.md` + `code-index.md` |
+| Cross-file edit safety | `pack/.claude/skills/devrites-lib/reference/standards/code-navigation.md` |
 | Repo agent contract | `AGENTS.md` |
 
 ## Layer 1 — Phase owner
@@ -48,7 +49,7 @@ when the task needs it.
 
 ## Layer 3 — Code intelligence (optional)
 
-See `code-navigation.md` for the decision tree. The one supported index is
+See `code-index.md` for the decision tree. The one supported index is
 codebase-memory-mcp; it lives in its central store (`~/.cache/codebase-memory-mcp`),
 not in the repository.
 

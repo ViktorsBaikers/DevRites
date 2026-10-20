@@ -68,7 +68,7 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
 1. **ORIENT.** Before editing, read the target files and their neighbors. Learn the
    local naming, casing, layers, error model, test style, and existing helpers. With
    codebase-memory-mcp available (preflight, coverage, host access, and fallback in
-   `.claude/skills/devrites-lib/reference/standards/code-navigation.md`): get exact
+   `.claude/skills/devrites-lib/reference/standards/code-index.md`): get exact
    names from `search_graph`, the affected set from `trace_path` (`direction:
    "inbound"`) before editing, and bodies from `get_code_snippet`; after edits,
    compare `detect_changes` (explicit `base_branch`) with the contract's path list.

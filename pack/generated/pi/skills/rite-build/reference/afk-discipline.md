@@ -1,5 +1,7 @@
 # AFK discipline for unattended `/rite-build`
 
+> Root-only: not inlined in --role bundles.
+
 AFK mode is active when `.devrites/AFK` exists. It lets `/rite-build` chain slices
 without per-slice user input. The rules below limit that unattended work.
 

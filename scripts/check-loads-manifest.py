@@ -20,6 +20,9 @@ producing incomplete context bundles at runtime:
      devrites-lib/reference/workspace-artifact-schema.md.
   6. Every rootOnly path is also declared in `always` or a trigger list, so
      the exclusion cannot silently name a file the bundle never loads.
+  7. Every loaded path whose header (text before its first `## ` heading)
+     carries the `> Root-only:` marker is listed in that manifest's
+     rootOnly, so the file marker stays the one source of truth.
 
 Run: python3 scripts/check-loads-manifest.py    (exit 0 clean, 1 on any violation)
 """
@@ -42,6 +45,14 @@ def repo_paths(root):
 KNOWN_KEYS = {"always", "triggers", "workspace", "workspaceByRole", "agents",
               "rootOnly"}
 RESERVED_TRIGGERS = {"agents"}  # auto-fired by `context --role`
+ROOT_ONLY_MARKER = re.compile(r"^> Root-only:", re.MULTILINE)
+
+
+def has_root_only_marker(path):
+    """True when the file's header (before its first `## `) is marked."""
+    text = open(path, encoding="utf-8").read()
+    header = re.split(r"^## ", text, maxsplit=1, flags=re.M)[0]
+    return bool(ROOT_ONLY_MARKER.search(header))
 
 
 def engine_signal_regexes(triggers_go):
@@ -173,6 +184,13 @@ def main():
             if path not in loaded:
                 problems.append(
                     f"{rel}: rootOnly path {path} is not in always/triggers")
+        root_only = set(manifest.get("rootOnly", []))
+        for path in sorted(loaded - root_only):
+            abs_path = os.path.join(skills, path)
+            if os.path.isfile(abs_path) and has_root_only_marker(abs_path):
+                problems.append(
+                    f"{rel}: {path} is marked Root-only but missing from "
+                    "rootOnly")
 
         # every trigger name needs a fire path: engine signal, prose
         # annotation, reserved auto-fire name, or a mention in the skill's
