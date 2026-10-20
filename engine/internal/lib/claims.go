@@ -272,45 +272,52 @@ func claimAdd(root string, args []string, stdout, stderr io.Writer) int {
 			raw = append(raw, args[i])
 		}
 	}
+	_, code := addClaim(root, session, reason, ttl, raw, stdout, stderr)
+	return code
+}
+
+// addClaim records one claim and returns its id. It refuses, writing nothing,
+// while a live foreign session holds an overlapping path.
+func addClaim(root, session, reason string, ttl int, raw []string, stdout, stderr io.Writer) (string, int) {
 	if !validSession(session) {
 		fmt.Fprintln(stderr, "claim: --session is required (1-128 chars: letters, digits, - _ . : /)")
-		return 2
+		return "", 2
 	}
 	paths, err := normalizeClaimPaths(raw)
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
-		return 2
+		return "", 2
 	}
 	path := claimsPath(root)
 	// Hold the ledger lock across read, conflict check, and append so two
 	// sessions cannot both pass the check and claim the same path.
-	code := 0
+	id, code := "", 0
 	if err := state.WithLock(path+".lock", func() error {
-		code = claimAddLocked(path, session, reason, ttl, paths, stdout, stderr)
+		id, code = claimAddLocked(path, session, reason, ttl, paths, stdout, stderr)
 		return nil
 	}); err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
-		return 2
+		return "", 2
 	}
-	return code
+	return id, code
 }
 
-func claimAddLocked(path, session, reason string, ttl int, paths []string, stdout, stderr io.Writer) int {
+func claimAddLocked(path, session, reason string, ttl int, paths []string, stdout, stderr io.Writer) (string, int) {
 	latest, order, bad, err := readClaims(path)
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
-		return 2
+		return "", 2
 	}
 	if bad > 0 {
 		fmt.Fprintf(stderr, unparsedLedgerMsg, bad)
-		return 2
+		return "", 2
 	}
 	now := time.Now().UTC()
 	probe := newHolderProbe()
 	conflicts := claimConflicts(probe.withoutGone(liveClaims(latest, order, now)), session, paths)
 	if len(conflicts) > 0 {
 		printConflicts(stderr, conflicts)
-		return 3
+		return "", 3
 	}
 	rec := &claimRecord{
 		ID:        newClaimID(),
@@ -325,10 +332,10 @@ func claimAddLocked(path, session, reason string, ttl int, paths []string, stdou
 	}
 	if err := appendClaim(path, rec); err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
-		return 2
+		return "", 2
 	}
 	fmt.Fprintf(stdout, "claim: %s claimed %d path(s) until %s\n", rec.ID, len(paths), rec.ExpiresAt)
-	return 0
+	return rec.ID, 0
 }
 
 func claimRelease(root string, args []string, stdout, stderr io.Writer) int {
@@ -350,33 +357,38 @@ func claimRelease(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "claim: release requires --session and --id")
 		return 2
 	}
-	path := claimsPath(root)
-	latest, _, _, err := readClaims(path)
+	n, err := releaseClaim(root, session, id)
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
 		return 2
 	}
+	fmt.Fprintf(stdout, "claim: %s released %d path(s)\n", id, n)
+	return 0
+}
+
+// releaseClaim marks session's claim id released and returns its path count.
+func releaseClaim(root, session, id string) (int, error) {
+	path := claimsPath(root)
+	latest, _, _, err := readClaims(path)
+	if err != nil {
+		return 0, err
+	}
 	rec, ok := latest[id]
 	if !ok {
-		fmt.Fprintf(stderr, "claim: unknown claim %q\n", id)
-		return 2
+		return 0, fmt.Errorf("unknown claim %q", id)
 	}
 	if rec.Session != session {
-		fmt.Fprintf(stderr, "claim: %q belongs to session %q, not %q\n", id, rec.Session, session)
-		return 2
+		return 0, fmt.Errorf("%q belongs to session %q, not %q", id, rec.Session, session)
 	}
 	if rec.Released {
-		fmt.Fprintf(stderr, "claim: %q already released\n", id)
-		return 2
+		return 0, fmt.Errorf("%q already released", id)
 	}
 	released := *rec
 	released.Released = true
 	if err := appendClaim(path, &released); err != nil {
-		fmt.Fprintf(stderr, "claim: %v\n", err)
-		return 2
+		return 0, err
 	}
-	fmt.Fprintf(stdout, "claim: %s released %d path(s)\n", id, len(rec.Paths))
-	return 0
+	return len(rec.Paths), nil
 }
 
 func claimList(root string, args []string, stdout, stderr io.Writer) int {

@@ -342,3 +342,275 @@ func TestReviewerTemplatesLeadWithStrictHead(t *testing.T) {
 		t.Fatalf("checked %d reviewer templates; the glob or role match is broken", checked)
 	}
 }
+
+// The start that gives the last role its handle seals the wave at launch; a
+// partial set stays open, and an explicit seal afterwards is a no-op.
+func TestDispatchStartAutoSeals(t *testing.T) {
+	root, _ := newWorkspace(t, "build")
+	steps := []struct {
+		args []string
+		code int
+		want string
+		deny string
+	}{
+		{[]string{"open", "--phase", "review", "--wave", "w", "--role", "a", "--role", "b"}, 0, "2 roles declared", ""},
+		{[]string{"start", "--wave", "w", "--role", "a", "--handle", "h1"}, 0, "a started", "sealed"},
+		{[]string{"return", "--wave", "w", "--role", "a"}, 3, "not sealed (state open)", ""},
+		{[]string{"start", "--wave", "w", "--role", "b", "--handle", "h1"}, 3, "distinct handle required", ""},
+		{[]string{"start", "--wave", "w", "--role", "b", "--handle", "h2"}, 0, "dispatch: wave w sealed (2 roles)", ""},
+		{[]string{"seal", "--wave", "w"}, 0, "wave w already sealed", ""},
+		{[]string{"return", "--wave", "w", "--role", "a"}, 0, "wave w sealed", ""},
+		{[]string{"seal", "--wave", "w"}, 0, "already sealed", ""},
+		{[]string{"return", "--wave", "w", "--role", "b"}, 0, "wave w complete", "released claim"},
+		{[]string{"seal", "--wave", "w"}, 3, "not open (state complete)", ""},
+	}
+	for i, s := range steps {
+		code, out := runDispatchT(t, root, s.args...)
+		if code != s.code || !strings.Contains(out, s.want) || (s.deny != "" && strings.Contains(out, s.deny)) {
+			t.Fatalf("step %d %v: code=%d want %d, want %q deny %q\n%s", i, s.args, code, s.code, s.want, s.deny, out)
+		}
+	}
+}
+
+// open --claim-session/--claim records the wave's claim, the completing return
+// releases it, and abandon keeps it unless --release.
+func TestDispatchWaveClaim(t *testing.T) {
+	claimOf := func(t *testing.T, root, wave string) string {
+		t.Helper()
+		f, _, err := loadDispatch(root, "feat")
+		if err != nil || f.Waves[wave] == nil {
+			t.Fatalf("load wave %s: %v", wave, err)
+		}
+		return f.Waves[wave].Claim
+	}
+	held := func(t *testing.T, root string) bool {
+		t.Helper()
+		code, _, _ := runClaim(t, root, "check", "--session", "other", "pkg/a.go")
+		return code == 3
+	}
+	open := []string{"open", "--phase", "review", "--wave", "w", "--role", "a", "--claim-session", "me", "--claim", "pkg/a.go", "--claim", "pkg/b.go"}
+
+	t.Run("return releases", func(t *testing.T) {
+		root, _ := newWorkspace(t, "build")
+		if code, out := runDispatchT(t, root, append(open, "--claim-ttl", "120")...); code != 0 || !strings.Contains(out, "claimed 2 path(s)") {
+			t.Fatalf("open: code=%d\n%s", code, out)
+		}
+		id := claimOf(t, root, "w")
+		if _, out, _ := runClaim(t, root, "list"); !strings.HasPrefix(out, id+" live") || !strings.Contains(out, `reason="dispatch wave w"`) {
+			t.Fatalf("claim not live under the wave id %q:\n%s", id, out)
+		}
+		runDispatchT(t, root, "start", "--wave", "w", "--role", "a", "--handle", "h")
+		if !held(t, root) {
+			t.Fatal("claim must hold while the wave runs")
+		}
+		if code, out := runDispatchT(t, root, "return", "--wave", "w", "--role", "a"); code != 0 || !strings.Contains(out, "released claim "+id+" (2 path(s))") {
+			t.Fatalf("return: code=%d\n%s", code, out)
+		}
+		if held(t, root) {
+			t.Fatal("completed wave left its claim held")
+		}
+	})
+
+	t.Run("foreign holder refuses open", func(t *testing.T) {
+		root, _ := newWorkspace(t, "build")
+		if code, _, e := runClaim(t, root, "add", "--session", "other", "pkg"); code != 0 {
+			t.Fatalf("foreign add: %d %s", code, e)
+		}
+		if code, out := runDispatchT(t, root, open...); code != 3 || !strings.Contains(out, `BLOCKED: pkg held by session "other"`) {
+			t.Fatalf("open over a foreign claim: code=%d\n%s", code, out)
+		}
+		if code, out := runDispatchT(t, root, "status", "--wave", "w"); code != 3 || !strings.Contains(out, `no wave "w"`) {
+			t.Fatalf("refused open created a wave: code=%d\n%s", code, out)
+		}
+		if _, out, _ := runClaim(t, root, "list", "--all", "--session", "me"); !strings.Contains(out, "no claims") {
+			t.Fatalf("refused open left a claim:\n%s", out)
+		}
+	})
+
+	t.Run("refused open leaves no claim", func(t *testing.T) {
+		root, _ := newWorkspace(t, "build")
+		// A reviewer wave without --packet is refused after the claim flags parse.
+		args := []string{"open", "--phase", "review", "--wave", "w", "--role", "code-reviewer", "--claim-session", "me", "--claim", "pkg/a.go"}
+		if code, out := runDispatchT(t, root, args...); code != 3 || !strings.Contains(out, "BLOCKED") {
+			t.Fatalf("open without packet: code=%d\n%s", code, out)
+		}
+		if held(t, root) {
+			t.Fatal("refused open left a claim")
+		}
+	})
+
+	t.Run("claim flags go together", func(t *testing.T) {
+		root, _ := newWorkspace(t, "build")
+		for _, extra := range [][]string{{"--claim", "pkg/a.go"}, {"--claim-session", "me"}} {
+			args := append([]string{"open", "--phase", "review", "--wave", "w", "--role", "a"}, extra...)
+			if code, out := runDispatchT(t, root, args...); code != 2 || !strings.Contains(out, "go together") {
+				t.Fatalf("%v: code=%d\n%s", extra, code, out)
+			}
+		}
+		if code, out := runDispatchT(t, root, "open", "--phase", "review", "--wave", "w", "--role", "a", "--claim-ttl", "x"); code != 2 || !strings.Contains(out, "--claim-ttl expects minutes") {
+			t.Fatalf("bad ttl: code=%d\n%s", code, out)
+		}
+		for _, tc := range []struct {
+			args []string
+			want string
+		}{
+			{[]string{"open", "--phase", "review", "--wave", "w", "--role", "a", "--claim-ttl", "60"}, "go together"},
+			{[]string{"start", "--wave", "w", "--role", "a", "--handle", "h", "--claim", "pkg/a.go"}, "apply to open only"},
+			{[]string{"return", "--wave", "w", "--role", "a", "--claim-ttl", "60"}, "apply to open only"},
+			{[]string{"start", "--wave", "w", "--role", "a", "--handle", "h", "--release"}, "applies to abandon only"},
+		} {
+			if code, out := runDispatchT(t, root, tc.args...); code != 2 || !strings.Contains(out, tc.want) {
+				t.Fatalf("%v: code=%d\n%s", tc.args, code, out)
+			}
+		}
+	})
+
+	t.Run("reopen keeps or replaces the kept claim", func(t *testing.T) {
+		for _, reopen := range [][]string{open, open[:7]} {
+			root, _ := newWorkspace(t, "build")
+			runDispatchT(t, root, open...)
+			runDispatchT(t, root, "start", "--wave", "w", "--role", "a", "--handle", "h")
+			runDispatchT(t, root, "abandon", "--wave", "w", "--reason", "timeout")
+			old := claimOf(t, root, "w")
+			if code, out := runDispatchT(t, root, reopen...); code != 0 {
+				t.Fatalf("reopen %v: code=%d\n%s", reopen, code, out)
+			}
+			if len(reopen) == len(open) && claimOf(t, root, "w") == old {
+				t.Fatal("reopen with claim flags kept the old claim id")
+			}
+			if len(reopen) < len(open) && claimOf(t, root, "w") != old {
+				t.Fatal("reopen without claim flags dropped the kept claim")
+			}
+			runDispatchT(t, root, "start", "--wave", "w", "--role", "a", "--handle", "h2")
+			if code, out := runDispatchT(t, root, "return", "--wave", "w", "--role", "a"); code != 0 || strings.Contains(out, "WARNING") {
+				t.Fatalf("return: code=%d\n%s", code, out)
+			}
+			if held(t, root) {
+				t.Fatalf("reopen %v left a claim held", reopen)
+			}
+			if _, out, _ := runClaim(t, root, "list"); strings.Contains(out, " live") {
+				t.Fatalf("reopen %v left a live claim:\n%s", reopen, out)
+			}
+		}
+	})
+
+	t.Run("abandon keeps claim unless release", func(t *testing.T) {
+		root, _ := newWorkspace(t, "build")
+		runDispatchT(t, root, open...)
+		runDispatchT(t, root, "start", "--wave", "w", "--role", "a", "--handle", "h")
+		if code, out := runDispatchT(t, root, "abandon", "--wave", "w", "--reason", "timeout"); code != 3 || strings.Contains(out, "released claim") {
+			t.Fatalf("abandon: code=%d\n%s", code, out)
+		}
+		if !held(t, root) {
+			t.Fatal("abandon without --release dropped the claim")
+		}
+		if code, out := runDispatchT(t, root, "abandon", "--wave", "w", "--reason", "host refused launch", "--release"); code != 3 || !strings.Contains(out, "released claim") {
+			t.Fatalf("abandon --release: code=%d\n%s", code, out)
+		}
+		if held(t, root) {
+			t.Fatal("abandon --release left the claim held")
+		}
+	})
+
+	t.Run("no claim flags keep old behavior", func(t *testing.T) {
+		root, _ := newWorkspace(t, "build")
+		for _, args := range [][]string{
+			{"open", "--phase", "review", "--wave", "w", "--role", "a"},
+			{"start", "--wave", "w", "--role", "a", "--handle", "h"},
+			{"seal", "--wave", "w"},
+			{"return", "--wave", "w", "--role", "a"},
+		} {
+			if code, out := runDispatchT(t, root, args...); code != 0 || strings.Contains(out, "claim") {
+				t.Fatalf("%v: code=%d\n%s", args, code, out)
+			}
+		}
+		if code, out := runDispatchT(t, root, "abandon", "--wave", "w2", "--reason", "x", "--release"); code != 3 || !strings.Contains(out, `no wave "w2"`) {
+			t.Fatalf("abandon of absent wave: code=%d\n%s", code, out)
+		}
+		if _, err := os.Stat(filepath.Join(root, ClaimsFile)); !os.IsNotExist(err) {
+			t.Fatalf("claimless waves touched the ledger: %v", err)
+		}
+	})
+}
+
+// An AFK first-round build wright wave narrower than the from-plan batch is
+// refused until evidence.md records why the skipped picks run serially;
+// repair rounds, lease siblings, and HITL runs are never refused.
+func TestDispatchRefusesNarrowFirstRoundUnderAFK(t *testing.T) {
+	root, featureDir := planWorkspace(t)
+	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")
+	open := func(wave string, ids ...string) (int, string) {
+		args := []string{"open", "--phase", "build", "--wave", wave, "--role", "slice-wright", "--contract", wrightContractPath(t)}
+		for _, id := range ids {
+			args = append(args, "--slice", id)
+		}
+		return runDispatchT(t, root, args...)
+	}
+
+	code, out := open("w1", "SLICE-002")
+	if code != 3 || !strings.Contains(out, "picks SLICE-002,SLICE-003") || !strings.Contains(out, "devrites-engine parallel select --root "+filepath.Dir(root)+" --slug feat --cap 3 --from-plan") || !strings.Contains(out, "parallel create") || !strings.Contains(out, "`serial: SLICE-003 —") {
+		t.Fatalf("narrow first round must be refused with the batch and command: code=%d\n%s", code, out)
+	}
+	// A record naming another slice, or one with no reason, does not clear it.
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "- serial: SLICE-004 — shares go.sum with SLICE-003\nserial: SLICE-003\n")
+	if code, out := open("w1", "SLICE-002"); code != 3 {
+		t.Fatalf("unrelated or reasonless serial record must not clear: code=%d\n%s", code, out)
+	}
+	// A reason may open with a code span; an empty code span is no reason.
+	for line, want := range map[string]bool{"serial: SLICE-003 — host lacks worktrees": true, "serial: SLICE-003 -- `go.sum` shared": true, "serial: SLICE-003 — `": false} {
+		if got := serialRecordRe.MatchString(line); got != want {
+			t.Fatalf("serialRecordRe(%q)=%v, want %v", line, got, want)
+		}
+	}
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "- serial: SLICE-003 — `go.sum` shared with SLICE-004\n")
+	if code, out := open("w1", "SLICE-002"); code != 0 {
+		t.Fatalf("a serial record naming the skipped pick must clear: code=%d\n%s", code, out)
+	}
+
+	// Repair round: SLICE-002 already has rounds, so no record is needed.
+	if err := os.Remove(filepath.Join(featureDir, "evidence.md")); err != nil {
+		t.Fatal(err)
+	}
+	if code, out := open("w2", "SLICE-002"); code != 0 {
+		t.Fatalf("repair round must never be refused: code=%d\n%s", code, out)
+	}
+
+	// SLICE-004 is first-round and narrower than the batch, but HITL (no AFK)
+	// is never refused.
+	if code, out := open("w3", "SLICE-004"); code != 3 {
+		t.Fatalf("premise: AFK first round for SLICE-004 refused: code=%d\n%s", code, out)
+	}
+	if err := os.Remove(filepath.Join(root, "AFK")); err != nil {
+		t.Fatal(err)
+	}
+	if code, out := open("w3", "SLICE-004"); code != 0 {
+		t.Fatalf("HITL run must never be refused: code=%d\n%s", code, out)
+	}
+}
+
+func TestDispatchNeverRefusesFullBatchWave(t *testing.T) {
+	root, _ := planWorkspace(t)
+	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")
+	code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "both", "--role", "slice-wright", "--slice", "SLICE-002", "--slice", "SLICE-003", "--contract", wrightContractPath(t))
+	if code != 0 {
+		t.Fatalf("a wave holding the whole batch must never be refused: code=%d\n%s", code, out)
+	}
+}
+
+func TestDispatchNeverRefusesLeaseSibling(t *testing.T) {
+	root, _ := planWorkspace(t)
+	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")
+	writePlanLease(t, root)
+	// Without go.mod, SLICE-003 and SLICE-004 are both pickable beside the
+	// running SLICE-002, so only the lease-sibling rule admits this wave.
+	if err := os.Remove(filepath.Join(filepath.Dir(root), "go.mod")); err != nil {
+		t.Fatal(err)
+	}
+	if _, batch, _ := planBatch(root, "feat", 3); !slices.Equal(batch, []string{"SLICE-003", "SLICE-004"}) {
+		t.Fatalf("premise: batch=%v", batch)
+	}
+	code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "w1", "--role", "slice-wright", "--slice", "SLICE-002", "--contract", wrightContractPath(t))
+	if code != 0 {
+		t.Fatalf("lease sibling must never be refused: code=%d\n%s", code, out)
+	}
+}

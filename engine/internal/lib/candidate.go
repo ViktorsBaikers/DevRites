@@ -69,29 +69,38 @@ func loadCandidateIdentity(root, slug string) (candidateIdentity, error) {
 		return candidateIdentity{}, fmt.Errorf("candidate manifest %s: %w; refresh touched-files.md", manifestPath, err)
 	}
 	project := projectDir(root)
-	var total int64
-	for i := range rows {
-		if err := validateCandidateRow(project, &rows[i]); err != nil {
-			return candidateIdentity{}, fmt.Errorf("candidate %q: %w", rows[i].path, err)
-		}
-		if rows[i].state == "present" {
-			// ponytail: the 4096-row cap bounds portable pairwise identity checks; index native file IDs if that cap grows.
-			for prior := range rows[:i] {
-				if rows[prior].state == "present" && os.SameFile(rows[prior].info, rows[i].info) {
-					return candidateIdentity{}, fmt.Errorf("candidate %q: same filesystem object as candidate %q", rows[i].path, rows[prior].path)
-				}
-			}
-			if rows[i].size > maxCandidateTotalBytes-total {
-				return candidateIdentity{}, errors.New("candidate present files exceed 256 MiB aggregate limit")
-			}
-			total += rows[i].size
-		}
+	if err := validateCandidateRows(project, rows); err != nil {
+		return candidateIdentity{}, err
 	}
 	digest, err := hashCandidate(project, rows)
 	if err != nil {
 		return candidateIdentity{}, err
 	}
 	return candidateIdentity{digest: digest, rows: rows}, nil
+}
+
+// validateCandidateRows checks every row against the filesystem and the
+// per-file, aggregate, and distinct-object bounds before anything is hashed.
+func validateCandidateRows(project string, rows []candidateRow) error {
+	var total int64
+	for i := range rows {
+		if err := validateCandidateRow(project, &rows[i]); err != nil {
+			return fmt.Errorf("candidate %q: %w", rows[i].path, err)
+		}
+		if rows[i].state == "present" {
+			// ponytail: the 4096-row cap bounds portable pairwise identity checks; index native file IDs if that cap grows.
+			for prior := range rows[:i] {
+				if rows[prior].state == "present" && os.SameFile(rows[prior].info, rows[i].info) {
+					return fmt.Errorf("candidate %q: same filesystem object as candidate %q", rows[i].path, rows[prior].path)
+				}
+			}
+			if rows[i].size > maxCandidateTotalBytes-total {
+				return errors.New("candidate present files exceed 256 MiB aggregate limit")
+			}
+			total += rows[i].size
+		}
+	}
+	return nil
 }
 
 func readBoundedRegularFile(name string, limit int64) ([]byte, error) {

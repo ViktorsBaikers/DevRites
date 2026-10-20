@@ -42,14 +42,19 @@ func rootModeFor(command string, args []string) rootMode {
 		return rootStrictUsage
 	case "check":
 		switch subcommand {
-		case "candidate", "readiness", "seal", "task-graph", "diff-scope", "slice", "regression", "windows", "drift":
+		case "candidate", "readiness", "preconditions", "seal", "task-graph", "diff-scope", "slice", "regression", "windows", "drift":
 			return rootStrictUsage
 		case "indexes", "dup":
 			return rootLenient
 		}
 		return rootUnused
-	case "orient", "next", "context", "metrics", "dispatch", "handoff", "note":
+	case "orient", "next", "context", "metrics", "dispatch", "handoff", "note", "packet":
 		return rootStrictUsage
+	case "candidate":
+		if subcommand == "freeze" {
+			return rootStrictUsage
+		}
+		return rootUnused
 	case "claim":
 		switch subcommand {
 		case "add", "release":

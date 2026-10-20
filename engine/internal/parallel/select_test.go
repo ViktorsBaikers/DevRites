@@ -93,3 +93,38 @@ func TestSelectCLIRequiresCap(t *testing.T) {
 		t.Fatalf("code=%d want %d stderr=%s", code, ExitUsage, stderr.String())
 	}
 }
+
+// --from-plan takes the ready set from PlanReady instead of JSON input.
+func TestSelectCLIFromPlan(t *testing.T) {
+	saved := PlanReady
+	t.Cleanup(func() { PlanReady = saved })
+	run := func(args ...string) (int, string, string) {
+		var stdout, stderr bytes.Buffer
+		code := Run("parallel", append([]string{"select", "--cap", "5"}, args...), strings.NewReader(""), &stdout, &stderr)
+		return code, stdout.String(), stderr.String()
+	}
+
+	PlanReady = nil
+	if code, _, stderr := run("--slug", "feat", "--from-plan"); code != ExitBlocked || !strings.Contains(stderr, "unavailable") {
+		t.Fatalf("unwired hook: code=%d stderr=%s", code, stderr)
+	}
+	PlanReady = func(root, slug string) ([]SlicePaths, error) {
+		if slug != "feat" {
+			t.Fatalf("slug=%q", slug)
+		}
+		return []SlicePaths{
+			{ID: "SLICE-004", Paths: []string{"src/a.go"}},
+			{ID: "SLICE-005", Paths: []string{"src/b.go"}},
+			{ID: "SLICE-006", Paths: []string{"src/A.go"}},
+		}, nil
+	}
+	code, stdout, stderr := run("--root", t.TempDir(), "--slug", "feat", "--from-plan")
+	if code != ExitOK || stdout != "select: n_eff=2 mode=parallel slices=SLICE-004,SLICE-005\n" {
+		t.Fatalf("code=%d stdout=%q stderr=%s", code, stdout, stderr)
+	}
+	for _, args := range [][]string{{"--from-plan"}, {"--slug", "feat", "--from-plan", "slices.json"}} {
+		if code, _, _ := run(args...); code != ExitUsage {
+			t.Fatalf("%v: code=%d want %d", args, code, ExitUsage)
+		}
+	}
+}

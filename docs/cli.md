@@ -22,6 +22,7 @@ devrites-engine uninstall [flags]
 devrites-engine check candidate <slug>
 devrites-engine check readiness <slug>
 devrites-engine check readiness --emit-binding <slug>
+devrites-engine check preconditions <slug> [--slice SLICE-###] [--timeout N]
 devrites-engine check seal <slug>
 devrites-engine check slice <slug> <SLICE-ID>
 devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path> [--worktree|--staged|--base <ref>] [--snapshot|--baseline] [--verbose]
@@ -39,12 +40,14 @@ devrites-engine observe summary <slug>
 devrites-engine orient <slug>
 devrites-engine observe slice <slug> <SLICE-ID>
 devrites-engine next [slug]
-devrites-engine handoff [slug]
+devrites-engine handoff [slug] [--resume]
 devrites-engine recall --paths <p1,p2,...> [--limit n]
-devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>]
+devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>] [--whole]
 devrites-engine metrics record <slug> --phase <p> --event <e>
 devrites-engine metrics summary [slug]
 devrites-engine dispatch <slug> <open|start|seal|return|status|abandon>
+devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID>|--paths <path>...) [--base <ref>]
+devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID>] [--recheck] [--checks <G-ID,...>] [--focus <file>]
 devrites-engine parallel <subcommand>
 devrites-engine gates <subcommand> <slug>
 devrites-engine claim <add|release|list|check>
@@ -120,6 +123,9 @@ self-contained updater.
   once `eng-review.md` is required, its exact stable Build-input binding.
 - `check readiness --emit-binding <slug>` renders the exact stable Build-input
   binding for Vet to record after semantic review.
+- `check preconditions <slug>` runs the preflight rows whose `Run at` is `vet`
+  (`--slice <SLICE>` runs that slice's `pre-dispatch` rows) and records a
+  candidate-bound transcript per row; exit 3 on failure.
 - `check seal <slug>` checks final required files, open human gates, and the
   `tasks.md` slice graph. Once those files are complete, it verifies the stable
   readiness binding; only after that aggregate check passes does it verify that
@@ -209,7 +215,9 @@ or CI.
 `gates` operates the `gates.md` ledger inside a feature workspace: one gate per
 required outcome, runnable (`CHECK`+`EXPECT`, optional `CWD`) or manual
 (`EVIDENCE` only). Subcommands: `scaffold`, `status`, `run`, `reverify`,
-`lint`, `attest <id> <note>`, `abandon <id> <why>`.
+`lint`, `precheck --worktree <path>` (the wright's pre-return run of `RUN: writer`
+gates and `check windows`; writes no ledger, EVIDENCE line or transcript, though `check windows` still logs its metric; never evidence), `attest <id> <note>`,
+`abandon <id> <why>`.
 
 A runnable gate executes only when its `(CHECK, CWD)` pair exactly matches a
 `test-plan.md` `## Build-entry preflight` row. Passing writes

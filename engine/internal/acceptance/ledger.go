@@ -31,6 +31,7 @@ type Gate struct {
 	Expect   string
 	Cwd      string
 	Inputs   string // optional whitespace-separated paths/globs the result depends on
+	Run      string // optional "writer": the wright pre-runs it via `gates precheck`; default root
 	Evidence string
 	Line     int // 1-based line of the "- [ ]" row in the original text
 }
@@ -47,7 +48,7 @@ type Document struct {
 
 var (
 	gateLineRE      = regexp.MustCompile(`^\s*- \[([ xX])\] ([^\s:]+): (.*)$`)
-	attrLineRE      = regexp.MustCompile(`^(\s+)(CHECK|EXPECT|CWD|INPUTS|EVIDENCE):(.*)$`)
+	attrLineRE      = regexp.MustCompile(`^(\s+)(CHECK|EXPECT|CWD|INPUTS|EVIDENCE|RUN):(.*)$`)
 	unindentedAttr  = regexp.MustCompile(`^(CHECK|EXPECT|CWD|INPUTS|EVIDENCE):`)
 	abandonLineRE   = regexp.MustCompile(`^ABANDON: (\S+)\s*(.*)$`)
 	indentedAbandon = regexp.MustCompile(`^\s+ABANDON:`)
@@ -117,6 +118,8 @@ func ParseLedger(text string) *Document {
 				current.Cwd = value
 			case "INPUTS":
 				current.Inputs = value
+			case "RUN":
+				current.Run = value
 			case "EVIDENCE":
 				current.Evidence = value
 			}
@@ -251,6 +254,18 @@ func (e Expectation) Matches(output string) bool {
 		return e.Regex.MatchString(output)
 	}
 	return strings.Contains(output, e.Literal)
+}
+
+// WriterGates returns the live gates marked `RUN: writer`. The wright pre-runs
+// them through `gates precheck`; the root still runs every gate canonically.
+func (d *Document) WriterGates() []*Gate {
+	var gates []*Gate
+	for _, gate := range d.Gates {
+		if _, abandoned := d.Abandoned[gate.ID]; !abandoned && gate.Run == "writer" {
+			gates = append(gates, gate)
+		}
+	}
+	return gates
 }
 
 // Newline returns the document's original line-ending style for writeback.

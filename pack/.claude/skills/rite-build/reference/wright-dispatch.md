@@ -56,15 +56,19 @@ worktrees stay forbidden.
 1. Run `devrites-engine check slice <slug> <SLICE-ID>` first — it fails a
    malformed contract (missing goal, empty/invalid Writer allowlist,
    unresolvable `Satisfies` AC ids, empty proof field) before a wright
-   context is spent; a failure is a gap, not a dispatch. Then derive the
+   context is spent; a failure is a gap, not a dispatch. A slice with a
+   `pre-dispatch <SLICE-ID>` preflight row next runs
+   `devrites-engine check preconditions <slug> --slice <SLICE-ID>` before
+   `dispatch open`; non-zero is the same gap. Then derive the
    smallest exact project-relative source/test path list; reject
    directories/globs, traversal, symlink escapes, duplicates, and `.devrites/**`.
    A target composed only of vetted executable workflow artifacts routes to the
    controlling root under
    [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md);
    its rejection here is not a blocker.
-2. Include goal, verbatim acceptance, exclusions, context,
-   `test-plan.md` proof commands, applicable standards, and the exact
+2. Goal, verbatim acceptance, exclusions, context, `test-plan.md` proof
+   commands, and applicable standards reach the wright through the slice bundle
+   its contract names; only a native-worktree pilot contract adds the exact
    `WIP(<slug>):` subject (no slice id). Build the wright's read-set with
    `devrites-engine context <slug> --phase build --role slice-wright --slice <SLICE-ID> --trigger <set>`
    and hand it the bundle path (over-budget artifacts arrive as anchor indexes;
@@ -72,17 +76,19 @@ worktrees stay forbidden.
    that fire (TDD slice → `tdd`, AFK run → `afk`, UI work → `frontend`, …).
    The command prints `unselected=[...]`; an omitted applicable trigger is a gap.
    For each triggered
-   topology/data/integration standard, include only the feature-specific owner/invariant,
+   topology/data/integration standard, add as anchored `--focus` rows only the feature-specific owner/invariant,
    failure or partial-state case, recovery rule, and required proof from the vetted plan.
    Do not paste the whole standard or silently omit an applicable risk.
-   Quote every active `decisions.md` carry-forward constraint whose `Files:`
+   Quote, as a `--focus` row, every active `decisions.md` carry-forward constraint whose `Files:`
    overlap the task paths (or that names no files).
    A new path requires a new bounded contract; the wright cannot widen the task.
-   Name the writer-safe commands the wright must run (syntax/type/lint, unit and
+   Name (`--checks` gate IDs) the writer-safe commands the wright must run (syntax/type/lint, unit and
    self-check suites, a narrow local smoke of the changed path) and never forbid
    them: a wright that cannot execute writes blind and its failures surface a
    whole review round later. Only artifact-producing, consumptive, or full
-   canonical feature gates stay root-owned.
+   canonical feature gates stay root-owned; when `gates.md` has a `RUN: writer`
+   gate, the checks include `devrites-engine gates precheck <slug> --worktree <path>`
+   (those gates plus `check windows`; never evidence, root still runs every gate).
 3. Run `devrites-engine check diff-scope <slug> --snapshot` before dispatch so
    unrelated work remains distinguishable (it fingerprints every dirty path). For an isolated pilot, also record committed base SHA and exact
    baseline status before asking the host for isolation. **Failing case:** paths that
@@ -90,23 +96,26 @@ worktrees stay forbidden.
 
 ## Run
 
-Same-worktree (non-isolated) dispatch claims before writing: `devrites-engine
-claim add --session <id> <task-paths>`; retain its returned `<claim-id>`, then run
-`devrites-engine claim check --session <id> <task-paths>` — a held claim from a
-live foreign session releases the retained claim and stops the dispatch, per
+Same-worktree (non-isolated) dispatch claims before writing: the `dispatch open`
+below adds `--claim-session <id>`, one `--claim <path>` per task path, and
+`--claim-ttl <minutes>` sized to the write; it runs the
+`claim check --session <id> <task-paths>` test, and a live foreign holder fails the
+open with no wave and no claim and stops the dispatch, per
 [`agents.md`](../../devrites-lib/reference/standards/agents.md). `.devrites/**`
 is never a task path; see [Workflow Artifact admission](../../devrites-lib/reference/standards/workflow-artifacts.md).
-Write the exact contract, with its `Writer-safe checks:` line, to
-`packets/<wave>.contract.md` and hand the wright that text verbatim. Reviewers read
-that file, so it states each defect to fix with its anchor, never a reviewer's verdict,
+Render the contract with `devrites-engine packet <slug> --wave <wave> --phase build
+--role slice-wright --slice <SLICE-ID> --checks <G-ID,...> [--focus <file>]` (it
+writes the linted same-worktree `packets/<wave>.contract.md`; a native-worktree pilot
+writes its own contract with `Isolation`, `worktree_base`, and subject) and hand the wright that text verbatim. Reviewers read
+that file, so `--focus` rows state each defect to fix with its anchor, never a reviewer's verdict,
 count, or pass status ("code review is no-findings" voids the next review). Ask the host
 for the exact writer in fresh context; a repair round on the same slice whose
 returned wright the host can still continue goes to that wright on its existing
 handle instead, so it does not re-read the slice from scratch. Wait, and track it
 through the launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
 <slice-id> --role slice-wright --slice <SLICE-ID> --contract <file>` (it refuses a
-contract that forbids writer-safe checks or names none), then `start` with the host handle, `seal`, and
-`return` on completion (auto-records dispatch/return metrics). Every 5 wright
+contract that forbids writer-safe checks or names none), then `start` with the host handle
+(the last start seals the wave) and `return` on completion (auto-records dispatch/return metrics). Every 5 wright
 rounds on one slice, `open` blocks for a reslice review. First re-admit each
 finding still driving rounds under the Proportionality rule of
 [agents.md § Result admission](../../devrites-lib/reference/standards/agents.md#result-admission): one without a broken anchor or a reachable trigger becomes a
@@ -123,9 +132,11 @@ writers in one worktree, run isolated and same-worktree writers concurrently, or
 substitute a generic agent. Opt-in `/rite-build --parallel N` fans out only under
 [`parallel-batch.md`](parallel-batch.md).
 
-After `claim add`, every terminal path releases the claim with
-`devrites-engine claim release --session <id> --id <claim-id>`: successful
-return, rejected result, stop, or a launch the host refused with no handle. A
+The `return` that completes the wave releases its claim; `dispatch abandon --release`
+releases it on any other host-confirmed terminal path (a stop, a launch refused with no
+handle, or a timed-out child later confirmed terminal). A `claim add` claim releases
+with `devrites-engine claim release --session <id> --id <claim-id>` on every terminal path:
+successful return, rejected result, stop, or a launch the host refused with no handle. A
 timeout or unknown outcome keeps the claim ([`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)).
 TTL is crash recovery, not normal cleanup.
 

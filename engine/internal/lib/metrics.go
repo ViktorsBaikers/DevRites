@@ -211,6 +211,10 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 	totalBytes := int64(0)
 	totalEvents := 0
 	bad := 0
+	// Each resume's minutes to the next dispatch, in ledger (append) order:
+	// "none" when another resume came first, "open" when no dispatch followed.
+	var resumeGaps []string
+	var pendingResume *time.Time
 	// A reader, not a Scanner: one event line carries an unbounded --note. A
 	// final line without a newline is handled, then the next read is ("", EOF).
 	reader := bufio.NewReader(f)
@@ -240,6 +244,17 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		agg.events++
 		agg.bytes += ev.Bytes
 		agg.byKind[ev.Event]++
+		if ts, err := time.Parse(time.RFC3339, ev.TS); err == nil && (ev.Event == "resume" || ev.Event == "dispatch") {
+			if ev.Event == "resume" {
+				if pendingResume != nil {
+					resumeGaps = append(resumeGaps, "none")
+				}
+				pendingResume = &ts
+			} else if pendingResume != nil {
+				resumeGaps = append(resumeGaps, strconv.FormatFloat(ts.Sub(*pendingResume).Minutes(), 'f', 0, 64))
+				pendingResume = nil
+			}
+		}
 		if ev.Role != "" {
 			ragg, ok := roles[ev.Role]
 			if !ok {
@@ -306,6 +321,12 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 			}
 			fmt.Fprintln(stdout)
 		}
+	}
+	if pendingResume != nil {
+		resumeGaps = append(resumeGaps, "open")
+	}
+	if len(resumeGaps) > 0 {
+		fmt.Fprintf(stdout, "  resumes    count=%d minutes_to_dispatch=%s\n", len(resumeGaps), strings.Join(resumeGaps, ","))
 	}
 	fmt.Fprintf(stdout, "  total      events=%d bytes=%d", totalEvents, totalBytes)
 	if bad > 0 {

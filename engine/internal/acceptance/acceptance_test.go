@@ -3,6 +3,7 @@ package acceptance
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -991,5 +992,221 @@ func TestRunCLIMissingSlugIsUsage(t *testing.T) {
 		if code := Run(t.TempDir(), []string{sub}, &stdout, &stderr); code != ExitUsage {
 			t.Fatalf("%s without slug = %d, want %d", sub, code, ExitUsage)
 		}
+	}
+}
+
+// --- preconditions ---------------------------------------------------------
+
+const preconditionsPlan = `# Test plan
+
+## Build-entry preflight
+| Gate | Command | Cwd | Expected | Run at |
+|---|---|---|---|---|
+| vet probe | echo VET-OK | . | exit 0 | vet |
+| slice probe | echo PRE-OK | . | exit 0 | ` + "`pre-dispatch SLICE-002`" + ` |
+| measurement | exit 1 | . | exit 0 | action |
+| legacy | exit 1 | . | exit 0 | |
+`
+
+func TestPreflightRowsReadsOptionalRunAt(t *testing.T) {
+	rows, hasRunAt := PreflightRows([]byte(preconditionsPlan))
+	if !hasRunAt || len(rows) != 4 {
+		t.Fatalf("hasRunAt=%v rows=%+v", hasRunAt, rows)
+	}
+	if rows[0].Gate != "vet probe" || rows[0].Command != "echo VET-OK" || rows[0].Expected != "exit 0" || rows[0].RunAt != "vet" {
+		t.Fatalf("row 0 misparsed: %+v", rows[0])
+	}
+	if rows[1].RunAt != "pre-dispatch SLICE-002" || rows[3].RunAt != "" {
+		t.Fatalf("Run at cells misparsed: %q %q", rows[1].RunAt, rows[3].RunAt)
+	}
+	// A table without the column parses as before and reports no Run at.
+	legacy, legacyRunAt := PreflightRows([]byte(testPlanPreflight))
+	if legacyRunAt || len(legacy) != len(ApprovedCommands([]byte(testPlanPreflight))) {
+		t.Fatalf("legacy hasRunAt=%v rows=%+v", legacyRunAt, legacy)
+	}
+}
+
+func writePreconditionsPlan(t *testing.T, body string) (root, work string, rows []PreflightRow) {
+	t.Helper()
+	project, ledgerPath := writeWorkspace(t)
+	work = filepath.Dir(ledgerPath)
+	if err := os.WriteFile(filepath.Join(work, "test-plan.md"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ = PreflightRows([]byte(body))
+	return filepath.Join(project, ".devrites"), work, rows
+}
+
+func TestRunPreconditionsRunsOnlyMatchingRows(t *testing.T) {
+	root, work, rows := writePreconditionsPlan(t, preconditionsPlan)
+	var stdout, stderr strings.Builder
+	if code := RunPreconditions(root, []string{"feat"}, &stdout, &stderr); code != ExitOK {
+		t.Fatalf("vet run = %d\nstdout:\n%s\nstderr:\n%s", code, stdout.String(), stderr.String())
+	}
+	if out := stdout.String(); !strings.Contains(out, "result: pass") || strings.Count(out, "transcript: ") != 1 {
+		t.Fatalf("vet run must execute exactly the vet row:\n%s", out)
+	}
+	if !PreflightPassed(work, rows[0]) || PreflightPassed(work, rows[1]) || PreflightPassed(work, rows[2]) || PreflightPassed(work, rows[3]) {
+		t.Fatal("only the vet row may have a passing transcript after the vet run")
+	}
+
+	stdout.Reset()
+	if code := RunPreconditions(root, []string{"feat", "--slice", "SLICE-002"}, &stdout, &stderr); code != ExitOK {
+		t.Fatalf("pre-dispatch run = %d\n%s", code, stdout.String())
+	}
+	if !PreflightPassed(work, rows[1]) || PreflightPassed(work, rows[2]) {
+		t.Fatal("--slice must run only that slice's pre-dispatch row")
+	}
+
+	stdout.Reset()
+	// Slice IDs are SLICE-\d+, so a four-digit ID is a valid --slice value.
+	if code := RunPreconditions(root, []string{"feat", "--slice", "SLICE-1000"}, &stdout, &stderr); code != ExitOK || !strings.Contains(stdout.String(), "result: none") {
+		t.Fatalf("a slice without rows runs nothing: code=%d\n%s", code, stdout.String())
+	}
+}
+
+func TestRunPreconditionsFailsClosed(t *testing.T) {
+	failing := strings.Replace(preconditionsPlan, "echo VET-OK", "exit 3", 1)
+	root, work, rows := writePreconditionsPlan(t, failing)
+	var stdout, stderr strings.Builder
+	if code := RunPreconditions(root, []string{"feat"}, &stdout, &stderr); code != ExitBlocked || !strings.Contains(stdout.String(), "result: fail") {
+		t.Fatalf("failing vet row: code=%d\n%s", code, stdout.String())
+	}
+	if PreflightPassed(work, rows[0]) {
+		t.Fatal("a failing row must not read as passed")
+	}
+
+	typo := strings.Replace(preconditionsPlan, "| action |", "| vett |", 1)
+	root, _, _ = writePreconditionsPlan(t, typo)
+	stdout.Reset()
+	if code := RunPreconditions(root, []string{"feat"}, &stdout, &stderr); code != ExitBlocked || !strings.Contains(stdout.String(), `invalid Run at "vett"`) {
+		t.Fatalf("unknown Run at value must fail: code=%d\n%s", code, stdout.String())
+	}
+
+	for _, args := range [][]string{nil, {"feat", "--slice", "nope"}, {"feat", "--timeout", "0"}, {"feat", "extra"}} {
+		if code := RunPreconditions(root, args, &stdout, &stderr); code != ExitUsage {
+			t.Fatalf("args %q = %d, want %d", args, code, ExitUsage)
+		}
+	}
+}
+
+// --- writer precheck --------------------------------------------------------
+
+func TestParseLedgerReadsRunAttribute(t *testing.T) {
+	doc := ParseLedger("- [ ] G1: a\n  CHECK: c\n  EXPECT: o\n  RUN: writer\n- [ ] G2: b\n  CHECK: c2\n  EXPECT: o\n- [ ] G3: c\n  RUN: writer\nABANDON: G3 gone\n")
+	if len(doc.Errors) != 0 || doc.Gates[0].Run != "writer" || doc.Gates[1].Run != "" {
+		t.Fatalf("errors=%v gates=%+v", doc.Errors, doc.Gates)
+	}
+	if writers := doc.WriterGates(); len(writers) != 1 || writers[0].ID != "G1" {
+		t.Fatalf("WriterGates must return live RUN: writer rows only: %+v", writers)
+	}
+}
+
+func TestLintRunAttribute(t *testing.T) {
+	doc := ParseLedger("- [ ] G1: manual writer\n  RUN: writer\n- [ ] G2: odd value\n  CHECK: ./probe.sh\n  EXPECT: marker\n  RUN: wright\n- [ ] G3: runnable writer\n  CHECK: ./probe.sh\n  EXPECT: marker\n  RUN: writer\n")
+	rules := map[string]string{}
+	for _, f := range LintLedger(doc, []ApprovedCommand{{Command: "./probe.sh"}}) {
+		rules[f.Gate+":"+f.Rule] = f.Level
+	}
+	if rules["G1:writer-manual"] != "error" || rules["G2:run-value"] != "error" {
+		t.Fatalf("want writer-manual and run-value errors: %+v", rules)
+	}
+	if _, ok := rules["G3:writer-manual"]; ok {
+		t.Fatalf("a runnable RUN: writer row is valid: %+v", rules)
+	}
+}
+
+const precheckPlan = `# Test plan
+
+## Build-entry preflight
+
+| Command | Cwd | Purpose |
+| --- | --- | --- |
+| echo IN-WORKTREE | sub | writer probe |
+| echo x > sentinel | . | root-only probe |
+| echo nope | . | failing writer probe |
+`
+
+func TestPrecheckRunsOnlyWriterRowsInWorktreeAndWritesNothing(t *testing.T) {
+	project, ledgerPath := writeWorkspace(t)
+	root, work := filepath.Join(project, ".devrites"), filepath.Dir(ledgerPath)
+	if err := os.WriteFile(filepath.Join(work, "test-plan.md"), []byte(precheckPlan), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// CWD sub exists only in the worktree, so W1 passes only when it runs there.
+	worktree := t.TempDir()
+	if err := os.Mkdir(filepath.Join(worktree, "sub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ledger := "- [ ] W1: probe runs in the worktree\n  CHECK: echo IN-WORKTREE\n  EXPECT: IN-WORKTREE\n  CWD: sub\n  RUN: writer\n  EVIDENCE: pending\n" +
+		"- [ ] R1: root-only probe\n  CHECK: echo x > sentinel\n  EXPECT: x\n  EVIDENCE: pending\n"
+	writeLedger(t, ledgerPath, ledger)
+	var windowsArgs []string
+	t.Cleanup(func() { WindowsCheck = nil })
+	WindowsCheck = func(_ string, args []string, _, _ io.Writer) int { windowsArgs = args; return ExitOK }
+
+	var stdout, stderr strings.Builder
+	if code := Run(root, []string{"precheck", "feat", "--worktree", worktree}, &stdout, &stderr); code != ExitOK {
+		t.Fatalf("precheck=%d\nstdout:\n%s\nstderr:\n%s", code, stdout.String(), stderr.String())
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "PASS W1") || !strings.Contains(out, "PASS windows") || strings.Contains(out, "R1") {
+		t.Fatalf("precheck must run W1 and windows only:\n%s", out)
+	}
+	if want := []string{"feat", "--worktree", "--cwd", worktree}; strings.Join(windowsArgs, " ") != strings.Join(want, " ") {
+		t.Fatalf("windows args=%q want %q", windowsArgs, want)
+	}
+	for _, dir := range []string{project, worktree} {
+		if _, err := os.Stat(filepath.Join(dir, "sentinel")); !os.IsNotExist(err) {
+			t.Fatalf("root row R1 ran in %s: %v", dir, err)
+		}
+	}
+	if got := mustRead(t, ledgerPath); got != ledger {
+		t.Fatalf("precheck must leave gates.md byte-identical:\n%s", got)
+	}
+	if _, err := os.Stat(filepath.Join(work, "references")); !os.IsNotExist(err) {
+		t.Fatalf("precheck must write no transcript: %v", err)
+	}
+
+	// A failing writer row, an unapproved one, or a failing windows check each fail it.
+	writeLedger(t, ledgerPath, "- [ ] W2: fails\n  CHECK: echo nope\n  EXPECT: IN-WORKTREE\n  RUN: writer\n- [ ] W3: unvetted\n  CHECK: echo unvetted\n  EXPECT: unvetted\n  RUN: writer\n")
+	WindowsCheck = func(string, []string, io.Writer, io.Writer) int { return ExitBlocked }
+	stdout.Reset()
+	if code := Run(root, []string{"precheck", "feat", "--worktree", worktree}, &stdout, &stderr); code != ExitBlocked {
+		t.Fatalf("failing precheck=%d\n%s", code, stdout.String())
+	}
+	out = stdout.String()
+	for _, want := range []string{"FAIL W2 (EXPECT", "FAIL W3 (CHECK/CWD is not an approved", "FAIL windows", "precheck: fail"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q:\n%s", want, out)
+		}
+	}
+
+	// An engine without the windows hook fails closed.
+	writeLedger(t, ledgerPath, ledger)
+	WindowsCheck = nil
+	stdout.Reset()
+	if code := Run(root, []string{"precheck", "feat", "--worktree", worktree}, &stdout, &stderr); code != ExitBlocked || !strings.Contains(stdout.String(), "FAIL windows (check windows is not wired") {
+		t.Fatalf("unwired windows=%d\n%s", code, stdout.String())
+	}
+
+	// A malformed ledger runs nothing, even an approved writer row.
+	writeLedger(t, ledgerPath, "- [ ] W4: approved writer row\n  CHECK: echo x > sentinel\n  EXPECT: x\n  RUN: writer\n- [ ] W5: escapes\n  CHECK: echo nope\n  EXPECT: nope\n  CWD: ../out\n")
+	WindowsCheck = func(string, []string, io.Writer, io.Writer) int { return ExitOK }
+	stdout.Reset()
+	if code := Run(root, []string{"precheck", "feat", "--worktree", worktree}, &stdout, &stderr); code != ExitBlocked || !strings.Contains(stdout.String(), "error: ") {
+		t.Fatalf("malformed ledger=%d\n%s", code, stdout.String())
+	}
+	if _, err := os.Stat(filepath.Join(worktree, "sentinel")); !os.IsNotExist(err) {
+		t.Fatalf("malformed ledger still ran W4: %v", err)
+	}
+
+	for _, args := range [][]string{{"precheck", "feat"}, {"precheck", "--worktree", worktree}, {"precheck", "feat", "extra", "--worktree", worktree}} {
+		if code := Run(root, args, &stdout, &stderr); code != ExitUsage {
+			t.Fatalf("args %q = %d, want %d", args, code, ExitUsage)
+		}
+	}
+	if code := Run(root, []string{"precheck", "feat", "--worktree", filepath.Join(worktree, "missing")}, &stdout, &stderr); code != ExitBlocked {
+		t.Fatalf("missing worktree = %d", code)
 	}
 }

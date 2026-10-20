@@ -1,9 +1,13 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
+
+	"github.com/devrites/devrites/internal/acceptance"
 )
 
 // maxContractBytes bounds a wright contract read; packets stay <= 64 KiB.
@@ -26,6 +30,8 @@ var (
 	agentContractRE = regexp.MustCompile(`[\w./~-]*agents/devrites-[a-z0-9-]+\.(?:md|toml)\b`)
 	// readWordRE is a read instruction ("Read first", "read:"), not "read-only".
 	readWordRE = regexp.MustCompile(`(?i)\bread(?:\s|:|$)`)
+	// blankLineRE ends the `Writer-safe checks:` block.
+	blankLineRE = regexp.MustCompile(`\n[ \t]*\r?\n`)
 	// sectionHeadRE is a Markdown heading or a "Label:" line opening a list.
 	sectionHeadRE = regexp.MustCompile(`^\s*(?:#{1,6}\s.*|[^:]*:[\s*]*)$`)
 )
@@ -79,6 +85,47 @@ func lintWrightContract(path string) error {
 	}
 	if !writerSafeLineRE.Match(raw) {
 		return fmt.Errorf("wright contract %s names no `Writer-safe checks:` line; list the syntax/type/lint, unit/self-check and narrow smoke commands the wright runs before returning", path)
+	}
+	return nil
+}
+
+// lintWrightContractFor is lintWrightContract plus the feature's gates.md: when
+// the ledger has a live `RUN: writer` row, the contract's `Writer-safe checks:`
+// block must name `gates precheck`, so the wright runs those rows and `check
+// windows` before returning instead of a repair round finding them after. An
+// absent gates.md requires nothing.
+func lintWrightContractFor(root, slug, path string) error {
+	if err := lintWrightContract(path); err != nil {
+		return err
+	}
+	ledger, err := readWorkspaceArtifact(root, slug, acceptance.GatesFile)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("wright contract %s: %w", path, err)
+	}
+	writers := acceptance.ParseLedger(string(ledger)).WriterGates()
+	if len(writers) == 0 {
+		return nil
+	}
+	raw, err := readBoundedRegularFile(path, maxContractBytes)
+	if err != nil {
+		return fmt.Errorf("wright contract %s: %w", path, err)
+	}
+	// The block runs from the `Writer-safe checks:` line to the first blank
+	// line after its first listed check.
+	loc := writerSafeLineRE.FindIndex(raw)
+	if loc == nil {
+		return fmt.Errorf("wright contract %s changed while it was linted", path)
+	}
+	block := raw[loc[0]:]
+	if end := blankLineRE.FindIndex(block[loc[1]-1-loc[0]:]); end != nil {
+		block = block[:loc[1]-1-loc[0]+end[0]]
+	}
+	if !strings.Contains(string(block), "gates precheck") {
+		return fmt.Errorf("wright contract %s: %s marks %s `RUN: writer`, so its `Writer-safe checks:` must include `devrites-engine gates precheck %s --worktree <path>`; the wright runs those rows and `check windows` and fixes failures before returning",
+			path, acceptance.GatesFile, writers[0].ID, slug)
 	}
 	return nil
 }

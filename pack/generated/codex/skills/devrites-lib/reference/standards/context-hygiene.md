@@ -46,14 +46,13 @@ changed contracts, implementation, proof, or dependencies, not every prior gener
 Required review rosters and final proof remain. Preserve protected history unchanged;
 a compact current view references originals without omitting active requirements.
 
-**Compaction fallback:** after compaction, reload `.devrites/ACTIVE`, `state.md`,
-`questions.md`, `decisions.md`, `test-plan.md`, and `evidence.md`. When hooks do
-not restore context, run
-`devrites-engine handoff [slug]` first — one deterministic resume record reduced
-from durable artifacts (cursor, `awaiting_human`, open `questions.md` gates,
-the `gates.md` reduction with unmet/stale ids, `decisions.md` dead ends, and the
-canonical read-next order). Open the artifacts `read_next` names; resume from
-the record, not from transcript memory. Then `devrites-engine check
+**Compaction fallback:** after compaction or a resumed session, always run
+`devrites-engine handoff [slug] --resume` first (slug from `.devrites/ACTIVE`) — one
+deterministic resume record reduced from durable artifacts (cursor, `awaiting_human`,
+open `questions.md` gates, the `gates.md` reduction with unmet/stale ids,
+`decisions.md` dead ends, in-flight dispatch waves, and the read-next order over
+`state.md`, `test-plan.md`, `evidence.md`, and the other present artifacts). Open only
+the artifacts `read_next` names; resume from the record, not from transcript memory. Then `devrites-engine check
 regression <slug>`: `BLOCKED` names a durable fact lost since the last
 checkpoint; `unproven` does not block. Before any re-dispatch, run
 `devrites-engine dispatch <slug> status`, `devrites-engine parallel status --root <repo>

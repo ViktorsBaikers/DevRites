@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/devrites/devrites/internal/acceptance"
@@ -32,10 +33,14 @@ var readNextOrder = []string{
 
 // RunHandoff emits the deterministic resume record for one feature workspace:
 // cursor fields, blocking question gates, the acceptance-ledger reduction,
-// recorded dead ends, and the canonical read-next order. It never writes; the
-// record is a faithful reduction of durable artifacts so a fresh agent (or a
-// handoff writer) does not depend on transcript memory to resume.
+// recorded dead ends, in-flight dispatch waves, and the canonical read-next
+// order. The record is a faithful reduction of durable artifacts so a fresh
+// agent (or a handoff writer) does not depend on transcript memory to resume.
+// It writes nothing unless --resume is given: then it appends one resume
+// metric so `metrics summary` can time each resume to the next dispatch.
 func RunHandoff(root string, args []string, stdout, stderr io.Writer) int {
+	resume := slices.Contains(args, "--resume")
+	args = slices.DeleteFunc(slices.Clone(args), func(a string) bool { return a == "--resume" })
 	slug, code, err := ActiveSlug(root, args)
 	if err != nil {
 		fmt.Fprintf(stderr, "handoff: %v\n", err)
@@ -76,6 +81,7 @@ func RunHandoff(root string, args []string, stdout, stderr io.Writer) int {
 	writeHandoffQuestions(featureDir, stdout)
 	writeHandoffLedger(featureDir, stdout)
 	writeHandoffDeadEnds(featureDir, stdout)
+	writeHandoffWaves(root, slug, stdout)
 
 	if report.Complete() {
 		fmt.Fprintln(stdout, "missing_required: none")
@@ -83,6 +89,9 @@ func RunHandoff(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "missing_required: %s\n", strings.Join(report.MissingFiles, ", "))
 	}
 	fmt.Fprintf(stdout, "read_next: %s\n", strings.Join(readNext(featureDir), ", "))
+	if resume {
+		recordMetric(root, slug, string(report.Phase), "resume", "root", 0)
+	}
 	return 0
 }
 
@@ -158,6 +167,27 @@ func writeHandoffDeadEnds(featureDir string, stdout io.Writer) {
 	}
 	for _, end := range ends {
 		fmt.Fprintf(stdout, "dead_end: %s\n", end)
+	}
+}
+
+// writeHandoffWaves lists dispatch waves whose agents have not all returned,
+// with the reduction observe uses, so a resume reconciles a running cohort
+// instead of re-dispatching it.
+func writeHandoffWaves(root, slug string, stdout io.Writer) {
+	f, _, err := loadDispatch(root, slug)
+	if err != nil {
+		fmt.Fprintf(stdout, "inflight_waves: unreadable (%v)\n", err)
+		return
+	}
+	waves := inflightWaves(f)
+	if len(waves) == 0 {
+		fmt.Fprintln(stdout, "inflight_waves: none")
+		return
+	}
+	fmt.Fprintf(stdout, "inflight_waves: %d\n", len(waves))
+	for _, w := range waves {
+		fmt.Fprintf(stdout, "inflight_wave: %s phase=%s state=%s pending=%s slices=%s\n",
+			w.Wave, w.Phase, w.State, orDash(strings.Join(w.Pending, ",")), orDash(strings.Join(w.Slices, ",")))
 	}
 }
 

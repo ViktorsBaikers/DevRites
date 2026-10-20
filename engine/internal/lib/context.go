@@ -39,7 +39,7 @@ type loadsManifest struct {
 
 const loadsMarker = "<!-- loads:"
 
-const contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--skills-root <dir>] [--out <path>]
+const contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--whole] [--skills-root <dir>] [--out <path>]
 
 Emits one deduplicated context bundle for a phase or standalone skill
 (+ optional dispatch role) into .devrites/work/<slug>/ctx/ so an agent
@@ -55,7 +55,9 @@ and an artifact over its line/byte budget or over 16 KiB (spec.md excepted)
 becomes a by-reference index (path, SHA-256, headings, and line hits for
 every ID the block cites).
 Repeat --slice for a recheck that spans several slices. In phase build a
---role bundle other than slice-wright requires --slice (exit 3).
+--role bundle other than slice-wright requires --slice (exit 3). A root
+build or autocomplete bundle (no --role, no --slice) defaults to --slice
+<active_slice> when state.md names one present in tasks.md; --whole opts out.
 --recheck <inventory> (phase build, with --role and --slice) builds a
 bounded recheck bundle: the inventory file (relative to the workspace)
 and core.md are inlined; every other pack file becomes a by-reference
@@ -87,6 +89,14 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 		if err != nil {
 			fmt.Fprintf(stderr, "context: %v\n", err)
 			return 2
+		}
+	}
+	// The root's own build/autocomplete bundle holds one slice at a time;
+	// whole tasks/plan/decisions ride every later turn otherwise.
+	autoScope := false
+	if featureDir != "" && opts.role == "" && opts.slice == "" && !opts.whole && (opts.phase == "build" || opts.phase == "autocomplete") {
+		if id := activeSliceScope(featureDir); id != "" {
+			opts.slices, opts.slice, autoScope = []string{id}, id, true
 		}
 	}
 	skillsRoot, err := resolveSkillsRoot(root, opts.skillsRoot)
@@ -354,7 +364,11 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintln(stdout, ")")
 	if opts.slice != "" {
-		fmt.Fprintf(stdout, "scope: slice %s (%d whole, %d by-reference)\n", opts.slice, whole, byReference)
+		auto := ""
+		if autoScope {
+			auto = " (auto from state.md)"
+		}
+		fmt.Fprintf(stdout, "scope: slice %s%s (%d whole, %d by-reference)\n", opts.slice, auto, whole, byReference)
 	} else if byReference > 0 {
 		fmt.Fprintf(stdout, "scope: root (%d whole, %d by-reference over budget)\n", whole, byReference)
 	}
@@ -759,6 +773,7 @@ type contextOpts struct {
 	out            string
 	recheck        string
 	inlineContract bool
+	whole          bool
 }
 
 func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
@@ -790,6 +805,9 @@ func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
 		case "--inline-contract":
 			opts.inlineContract = true
 			continue
+		case "--whole":
+			opts.whole = true
+			continue
 		default:
 			if strings.HasPrefix(args[i], "-") {
 				fmt.Fprintf(stderr, "context: unknown flag %q\n", args[i])
@@ -815,6 +833,10 @@ func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
 		}
 	}
 	opts.slice = strings.Join(opts.slices, "+")
+	if opts.whole && opts.slice != "" {
+		fmt.Fprintf(stderr, "context: --whole conflicts with --slice\n")
+		return opts, 2
+	}
 	if opts.recheck != "" && (opts.phase != "build" || opts.role == "" || opts.slice == "") {
 		fmt.Fprintf(stderr, "context: --recheck needs --phase build, --role, and --slice\n")
 		return opts, 2
@@ -893,6 +915,24 @@ func roleAgentPath(manifest loadsManifest, role string) string {
 		}
 	}
 	return "devrites-" + role + ".md"
+}
+
+// activeSliceScope is state.md's active_slice when it names a slice block in
+// tasks.md, else "" (unset, "none", or stale cursors keep the whole bundle).
+func activeSliceScope(featureDir string) string {
+	lines := strings.Split(string(readWorkspaceFile(featureDir, "state.md")), "\n")
+	// active_slice outlives Build; after it the root's autocomplete bundle stays whole.
+	if phase, _ := state.CursorField(lines, state.CursorPhase); strings.TrimSpace(phase) != "build" {
+		return ""
+	}
+	id, _ := state.CursorField(lines, state.CursorActiveSlice)
+	if id = strings.TrimSpace(id); !state.ValidSliceID(id) {
+		return ""
+	}
+	if _, ok := state.ExtractTaskSlice(readWorkspaceFile(featureDir, "tasks.md"), id); !ok {
+		return ""
+	}
+	return id
 }
 
 func bundleName(opts contextOpts) string {

@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,10 +12,13 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/markdowntext"
+	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -23,12 +27,19 @@ import (
 // fan-out cannot silently degrade to serial (open -> every role started ->
 // seal -> returns -> complete). start/return also auto-record metrics events.
 //
-//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all]
+//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release]
 
-const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all]
+const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
-role has a distinct handle; return fails before seal. status --wave exits
+role has a distinct handle; return fails before seal. The start that gives
+the last role its handle seals the wave; seal on a sealed wave is a no-op.
+open --claim-session --claim records one file claim for the wave and fails,
+creating no wave, while a live foreign session holds a path; the return that
+completes the wave releases it, and abandon keeps it unless --release (any
+host-confirmed terminal path without a completing return, such as a stop or a
+refused launch). Re-opening an abandoned wave keeps or replaces its claim.
+status --wave exits
 nonzero until that wave is complete; bare status lists every open, sealed,
 or abandoned wave, folds complete waves into one count line (--all lists
 them too), and exits nonzero while any wave is open or sealed (abandoned
@@ -45,7 +56,10 @@ wave may (slice-bound recheck), and so may a reviewer-only wave (uncapped),
 which keys its --result findings on that slice. A --result file may already
 be the packets/ path; it is then kept as the stored return. Every 5 rounds of one kind on one slice, the
 next open is blocked until --reslice-review names a drift.md
-"## <DRIFT-ID>" heading for that slice.
+"## <DRIFT-ID>" heading for that slice. Under .devrites/AFK max_parallel >= 2,
+a first-round build wright wave narrower than the parallel select --from-plan
+batch is blocked until evidence.md records "serial: <skipped ids> — <reason>";
+repair rounds and lease siblings are never blocked.
 `
 
 // wrightRoundsPerReview is how many build wright rounds (or slice-bound Vet
@@ -66,6 +80,16 @@ type dispatchWave struct {
 	Slices          []string                 `json:"slices,omitempty"`
 	ResliceReview   string                   `json:"reslice_review,omitempty"`
 	ResliceReviewed []string                 `json:"reslice_reviewed,omitempty"`
+	Claim           string                   `json:"claim,omitempty"`
+	ClaimSession    string                   `json:"claim_session,omitempty"`
+}
+
+// dispatchClaim carries the wave-claim flags; ttl 0 means unset.
+type dispatchClaim struct {
+	session string
+	paths   []string
+	ttl     int
+	release bool
 }
 
 func waveStarted(w *dispatchWave) bool {
@@ -132,6 +156,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	var roles, sliceIDs []string
 	var positional []string
 	all := false
+	var claim dispatchClaim
 	for i := 0; i < len(args); i++ {
 		value := argAt(args, i+1)
 		switch args[i] {
@@ -158,6 +183,20 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			outcome = value
 		case "--result":
 			result = value
+		case "--claim-session":
+			claim.session = value
+		case "--claim":
+			claim.paths = append(claim.paths, value)
+		case "--claim-ttl":
+			n, err := strconv.Atoi(value)
+			if err != nil {
+				fmt.Fprintf(stderr, "dispatch: --claim-ttl expects minutes, got %q\n", value)
+				return 2
+			}
+			claim.ttl = min(max(n, claimMinTTL), claimMaxTTL)
+		case "--release":
+			claim.release = true
+			continue
 		case "--all":
 			all = true
 			continue
@@ -176,6 +215,14 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	slug, sub = positional[0], positional[1]
+	if sub != "open" && (claim.session != "" || len(claim.paths) > 0 || claim.ttl != 0) {
+		fmt.Fprintln(stderr, "dispatch: --claim-session, --claim, and --claim-ttl apply to open only")
+		return 2
+	}
+	if sub != "abandon" && claim.release {
+		fmt.Fprintln(stderr, "dispatch: --release applies to abandon only")
+		return 2
+	}
 	if _, err := devritespaths.ExistingFeatureDirChecked(root, slug); err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
 		return 2
@@ -184,7 +231,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	// an update and strand the wave short of complete.
 	code := 0
 	if err := state.WithFeatureLock(root, slug, func() error {
-		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, all, stdout, stderr)
+		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, all, claim, stdout, stderr)
 		return nil
 	}); err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -193,7 +240,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome, result string, all bool, stdout, stderr io.Writer) int {
+func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome, result string, all bool, claim dispatchClaim, stdout, stderr io.Writer) int {
 	f, path, err := loadDispatch(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -218,8 +265,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			fmt.Fprint(stderr, dispatchUsage)
 			return 2
 		}
-		if w := getWave(); w != nil && w.State != "abandoned" {
-			return fail("wave %q already exists (state %s)", wave, w.State)
+		prev := getWave()
+		if prev != nil && prev.State != "abandoned" {
+			return fail("wave %q already exists (state %s)", wave, prev.State)
 		}
 		w := &dispatchWave{Phase: phase, State: "open", Roles: map[string]*dispatchRole{}, Slices: sliceIDs}
 		for _, r := range roles {
@@ -233,7 +281,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			return code
 		}
 		if isBuildWrightWave(w) {
-			if err := lintWrightContract(contract); err != nil {
+			if err := lintWrightContractFor(root, slug, contract); err != nil {
 				return fail("BLOCKED: %v", err)
 			}
 		}
@@ -250,11 +298,33 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 				break
 			}
 		}
+		if claim.session != "" || len(claim.paths) > 0 || claim.ttl != 0 {
+			if claim.session == "" || len(claim.paths) == 0 {
+				fmt.Fprintln(stderr, "dispatch: --claim-session and --claim go together (--claim-ttl needs both)")
+				return 2
+			}
+			// The claim goes last so a refused open never leaves one behind.
+			id, code := addClaim(root, claim.session, "dispatch wave "+wave, cmp.Or(claim.ttl, claimDefaultTTL), claim.paths, stdout, stderr)
+			if code != 0 {
+				return code
+			}
+			w.Claim, w.ClaimSession = id, claim.session
+		} else if prev != nil {
+			// Inherit the abandoned wave's kept claim so the completing return releases it.
+			w.Claim, w.ClaimSession = prev.Claim, prev.ClaimSession
+		}
+		superseded := prev != nil && prev.Claim != "" && prev.Claim != w.Claim
 		f.Waves[wave] = w
 		if err := saveDispatch(path, f); err != nil {
+			if w.Claim != "" && (prev == nil || w.Claim != prev.Claim) {
+				_, _ = releaseClaim(root, w.ClaimSession, w.Claim)
+			}
 			return fail("%v", err)
 		}
 		fmt.Fprintf(stdout, "dispatch: wave %s open, %d roles declared\n", wave, len(roles))
+		if superseded {
+			releaseWaveClaim(root, wave, prev, stdout, stderr)
+		}
 		for _, line := range rounds {
 			fmt.Fprintln(stdout, line)
 		}
@@ -282,15 +352,32 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		}
 		r.Handle = handle
 		r.StartedAt = nowStamp()
+		// Handles are distinct (checked above), so the last start seals at launch.
+		sealed := true
+		for _, o := range w.Roles {
+			if o.Handle == "" {
+				sealed = false
+			}
+		}
+		if sealed {
+			w.State = "sealed"
+		}
 		if err := saveDispatch(path, f); err != nil {
 			return fail("%v", err)
 		}
 		recordMetric(root, slug, w.Phase, "dispatch", role, 0)
 		fmt.Fprintf(stdout, "dispatch: %s started (handle %s)\n", role, handle)
+		if sealed {
+			fmt.Fprintf(stdout, "dispatch: wave %s sealed (%d roles)\n", wave, len(w.Roles))
+		}
 		return 0
 
 	case "seal":
 		w := getWave()
+		if w != nil && w.State == "sealed" {
+			fmt.Fprintf(stdout, "dispatch: wave %s already sealed (%d roles)\n", wave, len(w.Roles))
+			return 0
+		}
 		if w == nil || w.State != "open" {
 			return fail("wave %q is not open (state %s)", wave, waveState(w))
 		}
@@ -355,6 +442,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		}
 		recordMetricNote(root, slug, w.Phase, "return", role, note)
 		fmt.Fprintf(stdout, "dispatch: %s returned (wave %s %s)\n", role, wave, w.State)
+		if all && w.Claim != "" {
+			releaseWaveClaim(root, wave, w, stdout, stderr)
+		}
 		if stored != "" {
 			head, _, _ := strings.Cut(note, " slice=")
 			fmt.Fprintf(stdout, "dispatch: stored %s (%s)\n", "packets/"+filepath.Base(stored), head)
@@ -425,6 +515,16 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		already := w.State == "abandoned"
 		w.State = "abandoned"
 		w.Reason = reason
+		// A timeout or unknown outcome keeps the claim; --release is for any
+		// host-confirmed terminal path without a completing return (a stop or a
+		// refused launch), including a re-run once a timed-out child is confirmed.
+		if claim.release {
+			if w.Claim == "" {
+				fmt.Fprintf(stderr, "dispatch: --release: wave %s holds no claim\n", wave)
+			} else if releaseWaveClaim(root, wave, w, stdout, stderr) {
+				w.Claim, w.ClaimSession = "", ""
+			}
+		}
 		if err := saveDispatch(path, f); err != nil {
 			return fail("%v", err)
 		}
@@ -436,6 +536,18 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 	}
 	fmt.Fprint(stderr, dispatchUsage)
 	return 2
+}
+
+// releaseWaveClaim releases w's claim and reports whether it did. A failure
+// only warns: the wave state change does not depend on it.
+func releaseWaveClaim(root, wave string, w *dispatchWave, stdout, stderr io.Writer) bool {
+	n, err := releaseClaim(root, w.ClaimSession, w.Claim)
+	if err != nil {
+		fmt.Fprintf(stderr, "dispatch: WARNING: wave %s claim not released: %v\n", wave, err)
+		return false
+	}
+	fmt.Fprintf(stdout, "dispatch: wave %s released claim %s (%d path(s))\n", wave, w.Claim, n)
+	return true
 }
 
 // maxReturnBytes bounds one stored reviewer return.
@@ -582,6 +694,7 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 		}
 	}
 	var lines, overCap []string
+	firstRound := true
 	for _, id := range w.Slices {
 		prior, reviews := 0, 0
 		var unreturned []string
@@ -601,6 +714,7 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 			}
 		}
 		round := prior + 1
+		firstRound = firstRound && prior == 0
 		if round > wrightRoundsPerReview*(1+reviews) {
 			overCap = append(overCap, id)
 		}
@@ -617,6 +731,12 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 		if review != "" {
 			fmt.Fprintf(stderr, "dispatch: --reslice-review given but no slice has reached its %d-round cap\n", wrightRoundsPerReview)
 			return nil, 2
+		}
+		if kind == "wright" && firstRound {
+			if refusal := widerBatchRefusal(root, slug, w.Slices); refusal != "" {
+				fmt.Fprintln(stderr, refusal)
+				return nil, 3
+			}
 		}
 		return lines, 0
 	}
@@ -645,6 +765,53 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 	}
 	w.ResliceReview, w.ResliceReviewed = review, overCap
 	return lines, 0
+}
+
+// serialRecordRe matches an evidence.md `serial: <ids> — <reason>` record
+// (the reason may open with a code span, never be empty); group 1 holds the ids.
+var serialRecordRe = regexp.MustCompile("(?mi)^[ \\t]*(?:[-*][ \\t]+)?`?serial:([^\\n]*?)(?:[ \\t]*[—–]|[ \\t]+--?[ \\t])[ \\t]*(?:[^\\s`]|`[^\\s`])")
+
+var sliceTokenRe = regexp.MustCompile(`(?i)\bSLICE-\d+\b`)
+
+// widerBatchRefusal refuses a first-round AFK build wright wave when
+// `parallel select --from-plan` picks more slices than the wave holds and
+// evidence.md has no `serial:` record naming each skipped pick. HITL runs,
+// lease siblings, slices the plan does not list as eligible, and selection
+// errors are never refused: the check widens batches, it never stops a build.
+func widerBatchRefusal(root, slug string, wave []string) string {
+	capN := min(afkMaxParallel(root), parallel.MaxParallelSlices)
+	if capN < 2 {
+		return ""
+	}
+	eligible, batch, err := planBatch(root, slug, capN)
+	if err != nil || len(batch) <= len(wave) {
+		return ""
+	}
+	for _, id := range wave {
+		if !containsSlice(eligible, id) {
+			return ""
+		}
+	}
+	var recorded []string
+	if raw, err := readWorkspaceArtifact(root, slug, "evidence.md"); err == nil {
+		if visible, err := markdowntext.Structural(raw); err == nil {
+			raw = visible
+		}
+		for _, m := range serialRecordRe.FindAllStringSubmatch(string(raw), -1) {
+			recorded = append(recorded, sliceTokenRe.FindAllString(m[1], -1)...)
+		}
+	}
+	var missing []string
+	for _, id := range batch {
+		if !containsSlice(wave, id) && !containsSlice(recorded, id) {
+			missing = append(missing, id)
+		}
+	}
+	if len(missing) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("dispatch: BLOCKED: AFK max_parallel %d: `%s` picks %s, wider than this wave (%s); run that batch per rite-build/reference/parallel-batch.md (`parallel create`, then one wave with a --slice per sibling), or record `serial: %s — <shared surface or reason>` in evidence.md",
+		capN, planSelectCommand(filepath.Dir(root), slug, capN), strings.Join(batch, ","), strings.Join(wave, ","), strings.Join(missing, ","))
 }
 
 // reviewerOnlyWave reports whether every role in w is a reviewer role.

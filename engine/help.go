@@ -12,11 +12,12 @@ import (
 )
 
 const (
-	checkUsage = `usage: devrites-engine check <candidate|readiness|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup> ...
+	checkUsage = `usage: devrites-engine check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup> ...
 
   check candidate <slug>
   check readiness <slug>
   check readiness --emit-binding <slug>
+  check preconditions <slug> [--slice SLICE-###] [--timeout N]
   check seal <slug>
   check path-disjoint [--root <dir>] [<json-file>|-]
   check task-graph <slug>
@@ -54,14 +55,14 @@ const (
 
 	orientUsage  = "usage: devrites-engine orient [slug]"
 	nextUsage    = "usage: devrites-engine next [slug]"
-	handoffUsage = "usage: devrites-engine handoff [slug]"
-	contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--skills-root <dir>] [--out <path>]`
+	handoffUsage = "usage: devrites-engine handoff [slug] [--resume]"
+	contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--whole] [--skills-root <dir>] [--out <path>]`
 	metricsUsage = `usage: devrites-engine metrics <record|summary> ...
 
   metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   metrics summary [slug] [--by-slice]
 `
-	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all]`
+	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release]`
 	claimUsageText = `usage: devrites-engine claim <add|release|list|check> ...
 
   claim add --session <id> [--ttl <minutes>] [--reason <s>] <path>...
@@ -79,6 +80,7 @@ const (
 	versionUsage        = "usage: devrites-engine version"
 	candidateUsage      = "usage: devrites-engine check candidate <slug>"
 	readinessUsage      = "usage: devrites-engine check readiness <slug>\n       devrites-engine check readiness --emit-binding <slug>"
+	preconditionsUsage  = "usage: devrites-engine check preconditions <slug> [--slice SLICE-###] [--timeout N]"
 	sealUsage           = "usage: devrites-engine check seal <slug>"
 	taskGraphUsage      = "usage: devrites-engine check task-graph <slug>"
 	sliceCheckUsage     = "usage: devrites-engine check slice <slug> <SLICE-ID>"
@@ -97,7 +99,7 @@ const (
 	stateAppendUsage    = `usage: devrites-engine state append <slug> <ledger.md> --heading "<text>" --body-file <path|->`
 	observeSliceUsage   = "usage: devrites-engine observe slice <slug> <SLICE-ID>"
 	observeSummaryUsage = "usage: devrites-engine observe summary [slug]"
-	gatesFamilyUsage    = `usage: devrites-engine gates <scaffold|status|run|reverify|lint|attest|abandon> <slug> ...
+	gatesFamilyUsage    = `usage: devrites-engine gates <scaffold|status|run|reverify|lint|precheck|attest|abandon> <slug> ...
 
   gates scaffold <slug>            Create gates.md from spec.md AC ids (only when absent)
   gates status <slug>              Reduce the ledger without executing; exit 3 unless ALL MET
@@ -105,6 +107,7 @@ const (
   gates reverify <slug> [--timeout N] [--transcripts]  Re-execute every runnable gate, demoting stale passes
                                    (--transcripts: one redacted, candidate-bound file per gate in references/gates/)
   gates lint <slug> [--strict]     Audit oracle quality without executing
+  gates precheck <slug> --worktree <path>  Run RUN: writer gates + check windows in <path>; no ledger, EVIDENCE or transcript write (check windows logs its metric); never evidence
   gates attest <slug> <id> <note>  Record human evidence on a manual gate
   gates abandon <slug> <id> <why>  Record a terminal ABANDON handoff on a gate
 `
@@ -128,7 +131,7 @@ func isHelpToken(arg string) bool {
 // still in flag position rather than in a value position.
 func takesSubcommand(command string) bool {
 	switch command {
-	case "check", "state", "observe", "parallel", "gates", "claim", "note", "metrics", "detect", "overhaul":
+	case "check", "state", "observe", "parallel", "gates", "claim", "note", "metrics", "detect", "overhaul", "candidate":
 		return true
 	default:
 		return false
@@ -139,9 +142,11 @@ func takesSubcommand(command string) bool {
 // value. A command listed here has known flags, so its help flag is honoured
 // anywhere except as the value of one of these flags.
 var valueFlags = map[string]map[string]bool{
-	"claim":    {"--session": true, "--reason": true, "--ttl": true, "--id": true},
-	"dispatch": {"--phase": true, "--wave": true, "--role": true, "--handle": true, "--reason": true},
-	"recall":   {"--paths": true, "--limit": true},
+	"claim":     {"--session": true, "--reason": true, "--ttl": true, "--id": true},
+	"dispatch":  {"--phase": true, "--wave": true, "--role": true, "--handle": true, "--reason": true, "--claim-session": true, "--claim": true, "--claim-ttl": true},
+	"packet":    {"--wave": true, "--phase": true, "--role": true, "--slice": true, "--checks": true, "--focus": true},
+	"candidate": {"--wave": true, "--slice": true, "--base": true},
+	"recall":    {"--paths": true, "--limit": true},
 }
 
 // hasHelpFlag reports whether args (the arguments after the command word) are a
@@ -179,7 +184,7 @@ func shouldPrintHelp(args []string) bool {
 		return true
 	}
 	switch args[0] {
-	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate", "overhaul", "next", "dispatch", "secret-scan", "open-visual", "recall":
+	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate", "overhaul", "next", "dispatch", "secret-scan", "open-visual", "recall", "packet", "candidate":
 		return len(args) >= 2 && args[1] == "help"
 	default:
 		return false
@@ -231,6 +236,10 @@ func commandHelp(args []string) (string, bool) {
 		return metricsUsage, true
 	case "dispatch":
 		return dispatchUsage, true
+	case "packet":
+		return lib.PacketUsage, true
+	case "candidate":
+		return lib.CandidateFreezeUsage, true
 	case "claim":
 		return claimUsageText, true
 	case "parallel":
@@ -262,6 +271,8 @@ func helpCheck(rest []string) string {
 		return candidateUsage
 	case "readiness":
 		return readinessUsage
+	case "preconditions":
+		return preconditionsUsage
 	case "seal":
 		return sealUsage
 	case "path-disjoint":

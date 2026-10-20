@@ -80,7 +80,10 @@ without the section, run every row each round.
 
 ## Independent Build review
 
-After inspection, freeze full slice scope and cumulative baseline diff. Initial
+After inspection, freeze full slice scope and cumulative baseline diff with
+`devrites-engine candidate freeze <slug> --wave <w> --slice <SLICE-ID> --base <baseline>`;
+render each reviewer packet with `devrites-engine packet` (never hand-written; a doubt
+reviewer's `--focus` holds its claim, 1-3 rows `- <DEC-ID> decisions.md:<line> <claim>`). Initial
 inventory: one full-diff `devrites-code-reviewer`, one `devrites-test-analyst`,
 and one exact `devrites-doubt-reviewer` per stood decision that meets
 `devrites-doubt` § When to use (boundary, data model, auth, public API, migration,
@@ -100,7 +103,7 @@ in one fresh dispatch. Supply new candidate, inventory, correction diff, tests
 and unchanged-coverage evidence under candidate integrity; include newly triggered
 roles. A changed contract or uncertain impact requires the full inventory.
 A bounded recheck bundle adds `--recheck <inventory-file>` (open `Finding:` rows
-plus correction-diff paths) to its `--slice` bundle: inventory and core inline, every
+plus correction-diff paths) to its `--slice` bundle, and its `packet` adds `--recheck`: inventory and core inline, every
 other triggered standard by anchor index plus each `<file>.md § <heading>` the
 findings cite. First reviews and full-inventory rechecks keep the plain bundle.
 Collect all required rechecks before another folded correction. Canonical recovery

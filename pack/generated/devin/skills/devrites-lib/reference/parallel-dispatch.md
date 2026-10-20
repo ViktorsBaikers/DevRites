@@ -29,7 +29,9 @@ If the candidate diff has no matching surfaces, record
 
 ## Dispatch contract
 
-1. Freeze one candidate; give each reviewer the same spec, paths, and diff.
+1. Freeze one candidate with `devrites-engine candidate freeze <slug> --wave <w>
+   (--slice <SLICE-ID> | --paths <path>...) [--base <ref>]` (writes
+   `packets/<w>.diff` and `packets/<w>.sha256`); give each reviewer the same spec, paths, and diff.
    Parallelize only when writes/state/locks/tool sessions/scarce resources
    (ports/processes/quotas/FDs/browsers/MCP) are compatible. Frozen read-only
    usually is; pressure requires batches or serial work.
@@ -39,8 +41,10 @@ If the candidate diff has no matching surfaces, record
    still validate each result's context and candidate.
 2. Build each reviewer's read-set once with
    `devrites-engine context --skills-root .devin/skills <slug> --phase <p> --role <role> --trigger <set>` and
-   hand the bundle path as the packet's source list instead of a file roster.
-   Build roles add `--slice <SLICE-ID>` (slice-scoped, slice-named bundle).
+   render each reviewer, auditor, and test-analyst packet (other roles, such as
+   `proof-runner`, keep their own) with `devrites-engine packet <slug> --wave <w> --phase <p>
+   --role <role> [--slice <SLICE-ID>] [--focus <file>]`: it names the bundle and frozen
+   diff by reference, copies the digests, and runs the `open` lints. Build roles add `--slice <SLICE-ID>` (slice-scoped, slice-named bundle).
    Evaluate the skill's trigger conditions and pass each that fires — a role's
    Trigger column maps to the phase manifest's names: `security-auditor` →
    `security`; at Review, `frontend-reviewer` → `ui` and `performance-reviewer` →
@@ -50,22 +54,25 @@ If the candidate diff has no matching surfaces, record
    omitted applicable trigger is a gap, not a shortcut.
 3. Enforce the launch barrier through the engine, not prose. Open the wave
    (`devrites-engine dispatch <slug> open --phase <p> --wave <w> --role <r>...`;
-   a reviewer, auditor, or test-analyst wave adds `--packet <file>`, the exact packet
-   those agents receive, and `open` refuses one that seeds a gate result, outcome,
+   a reviewer, auditor, or test-analyst wave adds `--packet <file>`, any one of the
+   wave's rendered `packets/<w>.<role>.md` (hand each agent its own file unedited), and `open` refuses one that seeds a gate result, outcome,
    count, or "already passed" claim; a Build reviewer wave adds `--slice <SLICE-ID>`
    so its findings key on that slice; at Review and Seal it also needs the packet to
-   name the frozen candidate diff and the manifest to cover every checkpointed path), launch every native agent nonblocking through the host's own agent
+   name the frozen candidate diff and the manifest to cover every checkpointed path;
+   a same-tree writer wave adds `--claim-session <id> --claim <path>...` per
+   [`wright-dispatch.md`](../../rite-build/reference/wright-dispatch.md#run)), launch every native agent nonblocking through the host's own agent
    tool (never a shell-launched host CLI such as `omp -p` or `claude -p`: that is a
    dispatch bridge, its PID handle dies with the session, and its return is a `gap`),
    record each returned host handle
-   (`dispatch ... start --wave <w> --role <r> --handle <id>`), then `seal` —
-   seal fails until every declared role has a distinct handle, which makes a
+   (`dispatch ... start --wave <w> --role <r> --handle <id>`) — the last start
+   seals the wave (an explicit `seal` is a no-op), which makes a
    serial launch-then-wait pattern impossible to record. Record each completion
    with `dispatch ... return`; a reviewer adds `--result <file>` holding its return verbatim (the engine stores it as `packets/<wave>-<role>.return.md`, derives the outcome from its head, and records its `Finding:` keys; a file already at that path is kept), or `--outcome <findings|no-findings|gap>` when the host cannot hand the return over as a file; `return` refuses before seal. `dispatch status`
    exits nonzero while the wave is open, sealed, or abandoned. `start`/`return`
    auto-record the dispatch/return metrics events — no separate ledger call. If
    an opened wave cannot obtain every handle or reach `seal`, run
-   `devrites-engine dispatch <slug> abandon --wave <w> --reason <reason>` before
+   `devrites-engine dispatch <slug> abandon --wave <w> --reason <reason>` (with
+   `--release` on a host-confirmed stop or refused launch) before
    recording the gap; never leave an open wave to block a retry.
 4. Ask for each exact named agent in fresh context; omit native syntax and
    `agent_type`/`task_name`/`fork_turns` from the instruction.

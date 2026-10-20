@@ -32,15 +32,18 @@ N_eff = min(
 )
 ```
 
-Select **greedily in plan order**: pass every currently dependency-ready pending slice
-(plan order, `Files likely touched`) to
-`devrites-engine parallel select --cap N [--root <dir>]`. `N_eff ≥ 2` → parallel batch;
+Select **greedily in plan order** with
+`devrites-engine parallel select --slug <slug> --cap N --from-plan`: the engine
+reads the ready set (tasks.md dependencies checked `built` in `state.md`, minus
+running-lease slices) and each slice's Writer allowlist (else `Files likely
+touched`), plus its manifest/lockfile when `External dependencies:` is not none;
+in Build, `next` prints the same `eligible_now:`/`batch:`. `N_eff ≥ 2` → parallel batch;
 `N_eff = 1` → one serial round; nothing pending → Prove. A cap that cannot be filled
 is normal: take fewer. Serial is this round's size, not the rest of the run.
 
 **Refill per landing; never wait for the batch.** Each sibling lands alone when
 green ([Lifecycle](#lifecycle) step 6). Then re-read `state.md`, pending slices, and
-the tree and run `parallel select --cap N --slug <slug>`: unlanded siblings hold
+the tree and run `parallel select --slug <slug> --cap N --from-plan`: unlanded siblings hold
 their slots and paths, landed ones count as built, and only new picks print;
 `parallel add` starts each from the control tip and its wright dispatches at once.
 No lease → plain `select` + `create`. AFK/autocomplete is one run; HITL stops after
@@ -68,8 +71,13 @@ Before `parallel select`, add each slice's hidden write surfaces (list owner:
 [repository-topology.md § Ownership rules](skill://devrites-lib/reference/standards/repository-topology.md#ownership-rules))
 — lockfile/manifest, the generated target of an edited source, migration chain,
 snapshot directory, formatter sweep — and compare paths case-folded
-(`src/Api.ts` = `src/api.ts`). Slices colliding on either run serially; the rest
-stay eligible. Record `serial: <ids> — <surface>` in `evidence.md`. **Failing
+(`src/Api.ts` = `src/api.ts`); `--from-plan` adds the manifest/lockfile itself.
+Slices colliding on either run serially; the rest
+stay eligible. Record `serial: <ids> — <surface>` in `evidence.md`. Under AFK
+with `max_parallel ≥ 2`, `dispatch open` refuses a first-round build wright wave
+narrower than the from-plan batch (printing batch and command) until the wave
+holds that batch or `serial:` names every skipped pick; repair rounds, lease
+siblings, and HITL runs are never refused. **Failing
 case:** two slices each add a dependency, run in parallel, and integrate fails or
 lands a broken lockfile.
 
@@ -89,12 +97,12 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
 
 1. Orient/gate; parse the cap; compute `N_eff` and select the eligible set
    ([Dynamic selection and re-batching](#dynamic-selection-and-re-batching)) —
-   candidates from `orient` `task_graph.slices` + built list, each candidate's
-   `Files likely touched` via `observe slice`, then
-   `parallel select --cap N` (pairwise disjointness is inside that verb).
+   `parallel select --slug <slug> --cap N --from-plan` (ready set, write paths,
+   and pairwise disjointness are inside that verb).
    Preflight each selected slice with `devrites-engine check slice <slug>
-   <id>`; a malformed contract is dropped from the batch and recorded as a
-   gap, not dispatched.
+   <id>`, plus `check preconditions <slug> --slice <id>` when it has a
+   `pre-dispatch <id>` preflight row; a malformed contract or non-zero
+   precondition is dropped from the batch and recorded as a gap, not dispatched.
 2. Write lease; freeze `B=HEAD`; `parallel create` worktrees.
 3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`;
    one `--slice` per sibling on the wave).
@@ -198,7 +206,7 @@ Repair rejected work in place; never discard/rebuild while budget remains.
 ## Engine verbs
 
 ```text
-devrites-engine parallel select --cap <1-10> [--root <dir>] [--slug <slug>] [<json-file>|-]
+devrites-engine parallel select --cap <1-10> [--root <dir>] [--slug <slug>] [--from-plan | <json-file>|-]
 devrites-engine parallel create --root <repo> --slug <slug> --batch <id> --base <B> --json <file>|-
 devrites-engine parallel add --root <repo> --slug <slug> --json <file>|-
 devrites-engine parallel record-green --root <repo> --slug <slug> --slice <id> --commit <sha>

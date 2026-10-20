@@ -65,20 +65,22 @@ Each job gets objective/exclusions, exact paths/immutable candidate, rubric/resu
 **Same-tree concurrent sessions claim first.** Worktree dispatch isolates
 parallel batch siblings, but two agent *sessions* (two hosts, two features, or
 a human plus an agent) can share one working tree. Before a same-tree writer
-starts, it records an advisory claim — `devrites-engine claim add --session
-<id> <paths>` — retains the returned `<claim-id>`, then checks the same paths
-with `devrites-engine claim check --session <id> <paths>`; a held claim from a
+starts, its `dispatch open` records an advisory claim with `--claim-session <id>
+--claim <path>...` and fails, creating no wave, while a live foreign session holds
+a path (without a wave: `claim add --session <id> <paths>`, keep its `<claim-id>`,
+then `claim check`); a held claim from a
 live foreign session is never merged later or overridden. Unattended, skip only
 work that needs those paths, run independent work, and re-check `claim list`
-before stopping; stop and report the holder only when nothing independent remains. On every
-host-confirmed terminal path after `add` ([unknown outcomes keep it](../parallel-dispatch.md#cancellation-and-terminal-reconciliation)) — return,
-rejected result, stop, or a launch refused with no handle — run
+before stopping; stop and report the holder only when nothing independent remains.
+On every host-confirmed terminal path after `add` or a claimed `dispatch open` ([unknown outcomes keep it](../parallel-dispatch.md#cancellation-and-terminal-reconciliation)),
+the wave's completing `return` releases its claim, `dispatch abandon --release`
+releases it on any other (a stop or a refused launch), and a `claim add` claim runs
 `devrites-engine claim release --session <id> --id <claim-id>`. Claims expire
 by TTL only as crash recovery; `claim list` shows who holds what. Claims are
 advisory coordination, never a substitute for the one-writer-per-worktree rule.
 Claims cover product paths only; root-authored `.devrites/**` files use
 [`workflow-artifacts.md`](workflow-artifacts.md) admission instead.
-Expiry is not proof the holder stopped: size `claim add --ttl <minutes>` to the
+Expiry is not proof the holder stopped: size `--claim-ttl` or `claim add --ttl <minutes>` to the
 expected write (engine max 240) and re-add before it lapses; before writing, also
 read `claim list` — a foreign `expired` claim on overlapping paths whose
 session is not proven terminal counts as held (stop and report). `dead` (engine-proven

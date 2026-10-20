@@ -136,7 +136,11 @@ plan declares a root-authored executable workflow file, read
 
    For each consumptive action, bind every `reference/artifacts.md` Consumptive
    action gates column; every fingerprint identifies one actionable seam; aliasing multiple
-   emit sites is a gap. Preflight observes but need not make future behavior pass.
+   emit sites is a gap. Preflight observes but need not make future behavior pass,
+   except that a manifest/lockfile edit is dry-run now: before READY run
+   `devrites-engine check preconditions <slug>` (rows with `Run at` `vet`, including each
+   `dependency-dry-run` and preserve-baseline row). A failure folds into Plan repair; only an
+   owner-owned decision becomes a question, batched under the afk-hitl decision-chain rule.
 4. **Audit readiness.** Goal-backward map every requirement, criterion, NFR,
    interaction, edge/prohibition, and decision row to one slice and executable
    proof. Verify UX/spec/architecture alignment, contracts, dependency order,

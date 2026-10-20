@@ -74,6 +74,42 @@ func SelectGreedySeeded(cap int, seed, ready []SlicePaths, root string) ([]Slice
 	return selected[len(seed):], nil
 }
 
+// PlanReady returns the plan-order ready set for `select --from-plan` (root is
+// the project root). main sets it: the task-graph reader lives in lib, which
+// imports this package.
+var PlanReady func(root, slug string) ([]SlicePaths, error)
+
+// SelectForSlug is SelectGreedySeeded seeded from slug's running lease: its
+// active slices keep their slots and paths, and nothing it names (active or
+// landed) is picked again. eligible is ready minus those names; running is -1
+// when no lease seeded the selection. An empty slug skips the lease.
+func SelectForSlug(root, slug string, capN int, ready []SlicePaths) (eligible, picks []SlicePaths, running int, err error) {
+	eligible, running = ready, -1
+	var seed []SlicePaths
+	if slug != "" {
+		lease, err := runningLease(root, slug)
+		if err != nil {
+			return nil, nil, -1, err
+		}
+		if lease != nil {
+			seed = activeSlices(lease)
+			running = len(seed)
+			named := make(map[string]bool, len(lease.Slices))
+			for _, sl := range lease.Slices {
+				named[sl.ID] = true
+			}
+			eligible = nil
+			for _, s := range ready {
+				if !named[s.ID] {
+					eligible = append(eligible, s)
+				}
+			}
+		}
+	}
+	picks, err = SelectGreedySeeded(capN, seed, eligible, root)
+	return eligible, picks, running, err
+}
+
 func selectMode(n int) string {
 	switch {
 	case n <= 0:

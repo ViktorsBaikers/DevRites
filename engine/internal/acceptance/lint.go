@@ -29,7 +29,8 @@ var (
 
 // LintLedger audits oracle quality without executing anything: fixed-output
 // commands, expectations that also appear in failure output, path-shaped
-// regexes, activity titles, unmeasured numbers, and mostly-manual ledgers.
+// regexes, activity titles, unmeasured numbers, mostly-manual ledgers, and a
+// `RUN:` value precheck cannot honor.
 // approved is the vetted (command, cwd) surface; a runnable CHECK outside it
 // is an authoring error because the runner can never execute it.
 func LintLedger(doc *Document, approved []ApprovedCommand) []Finding {
@@ -75,6 +76,13 @@ func LintLedger(doc *Document, approved []ApprovedCommand) []Finding {
 				add("warn", gate.ID, "path-read-as-regex",
 					"EXPECT %q looks like a literal path but is read as a regular expression, so its dots are wildcards", gate.Expect)
 			}
+		}
+		switch {
+		case gate.Run != "" && gate.Run != "writer" && gate.Run != "root":
+			add("error", gate.ID, "run-value", "RUN %q must be writer or root", gate.Run)
+		case gate.Run == "writer" && gate.Check == "":
+			add("error", gate.ID, "writer-manual",
+				"RUN: writer needs a CHECK: `gates precheck` executes the row, and a manual gate has nothing to execute")
 		}
 		if activityStartRE.MatchString(gate.Title) {
 			add("warn", gate.ID, "activity-not-outcome",

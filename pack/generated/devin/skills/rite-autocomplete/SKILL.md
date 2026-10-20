@@ -90,8 +90,9 @@ executable controller/harness/bundle bytes or a missing writer, read
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"lifecycle cursor encounters admitted set or resumable journal","action":"invoke classifier; execute returned route internally","return":"saved phase/action; zero intermediate reply"} -->
    Reconstruct a missing return cursor only from
    the current phase and exact approved action in `test-plan.md`/evidence, never
-   from chat. After compaction or a resumed session, read `.devrites/ACTIVE`, then
-   the `state.md` cursor, `questions.md`, `decisions.md`, and `test-plan.md`/`evidence.md`.
+   from chat. After compaction or a resumed session, always run `devrites-engine
+   handoff <slug> --resume` first (slug from `.devrites/ACTIVE`) and open only the
+   `read_next` artifacts it names, per [`context-hygiene.md`](../devrites-lib/reference/standards/context-hygiene.md) § Compaction fallback.
    Normalize current arguments to idea, `ship_preflight: yes|no`,
    `max_slices: unlimited`, `parallel: N|default`, `profile: standard|full`,
    and `cross_model: yes|no`.
@@ -112,7 +113,7 @@ executable controller/harness/bundle bytes or a missing writer, read
    `/rite-build` batch loop → `/rite-prove` → `/rite-polish` →
    `/rite-review` → `/rite-seal`. Read and execute each skill; durable files, not
    chat, carry state. Apply the mutable post-vet budget before first Build.
-   Build runs the largest eligible path-disjoint batch (cap: this invocation's
+   Build runs the path-disjoint batch `parallel select --from-plan` picks (cap: this invocation's
    `--parallel N`, else sentinel `max_parallel`, else 10) and refills a slot
    per landing until no pending slice remains; a one-slice round is serial for that round only, then
    selection runs again (host isolation still forces serial when concurrent writers
