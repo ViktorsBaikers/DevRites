@@ -441,3 +441,48 @@ func mustReadinessBinding(t *testing.T, root, slug string) string {
 	}
 	return binding
 }
+
+func TestReadinessBindingIgnoresTraceabilityProgressCells(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	workspace := writeReadinessFixture(t, root, "progress", "build")
+	path := filepath.Join(workspace, "traceability.md")
+	table := func(slices, evidence, status string) string {
+		return "# Traceability\n\n| ID | Slices | Evidence | Status |\n| --- | --- | --- | --- |\n" +
+			"| AC-001 | " + slices + " | " + evidence + " | " + status + " |\n"
+	}
+	testutil.WriteFile(t, path, table("001", "pending", "planned"))
+	vetted := mustReadinessBinding(t, root, "progress")
+	observation, err := state.ObserveWorkspace(root, "progress")
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy, err := bindReadinessInputs(observation, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if legacy == vetted {
+		t.Fatal("raw binding should differ when traceability has progress cells")
+	}
+
+	testutil.WriteFile(t, path, table("001", "EVID-001 `a\\|b`", "observed pass"))
+	if got := mustReadinessBinding(t, root, "progress"); got != vetted {
+		t.Fatalf("progress-only change altered binding: got %q want %q", got, vetted)
+	}
+	testutil.WriteFile(t, path, table("001, 002", "EVID-001", "observed pass"))
+	if got := mustReadinessBinding(t, root, "progress"); got == vetted {
+		t.Fatal("slice change did not alter binding")
+	}
+
+	// A line recorded before progress cells were excluded still verifies
+	// while traceability.md is byte-identical to what Vet bound.
+	testutil.WriteFile(t, path, table("001", "pending", "planned"))
+	testutil.WriteFile(t, filepath.Join(workspace, "eng-review.md"), "# Engineering review\n\n"+legacy+"\n")
+	observation, err = state.ObserveWorkspace(root, "progress")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := verifyReadinessBinding(observation); err != nil {
+		t.Fatalf("legacy raw binding rejected: %v", err)
+	}
+}

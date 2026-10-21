@@ -69,7 +69,9 @@ identity binds raw bytes for `spec.md`, `decision-coverage.md`,
 `architecture.md`, `plan.md`, `tasks.md`, `traceability.md`, and
 `test-plan.md`; it also binds presence or absence and bytes for optional
 `strategy.md`, `design-brief.md`, `ai-spec.md`, and project-root
-`.devrites/principles.md`. It excludes Build-mutable ledgers and evidence.
+`.devrites/principles.md`. It excludes Build-mutable ledgers and evidence. Cells under a `traceability.md` table's `Evidence` or `Status`
+header are blanked before hashing, so recording progress there does not stale
+the binding.
 
 Each input is limited to 1 MiB and the aggregate to 8 MiB; symlinks and
 non-regular files fail closed. Ordinary readiness verifies the binding whenever

@@ -157,3 +157,15 @@ func TestDriftRecordLabelsCursorPhase(t *testing.T) {
 		t.Fatalf("metrics=%q err=%v", raw, err)
 	}
 }
+
+func TestDiffInputsClassifiesTraceabilityProgressOnly(t *testing.T) {
+	base := []gate.ReadinessInputDigest{{Path: "traceability.md", Present: true, SHA256: "a", Normalized: "n"}}
+	cur := []gate.ReadinessInputDigest{{Path: "traceability.md", Present: true, SHA256: "b", Normalized: "n"}}
+	if diffs := diffInputs(base, cur); len(diffs) != 1 || diffs[0].Kind != "progress-only" {
+		t.Fatalf("diffs = %+v, want one progress-only", diffs)
+	}
+	cur[0].Normalized = "m"
+	if diffs := diffInputs(base, cur); len(diffs) != 1 || diffs[0].Kind != "changed" {
+		t.Fatalf("diffs = %+v, want one changed", diffs)
+	}
+}
