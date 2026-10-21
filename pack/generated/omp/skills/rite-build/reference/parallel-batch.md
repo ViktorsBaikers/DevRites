@@ -105,10 +105,13 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    precondition is dropped from the batch and recorded as a gap, not dispatched.
 2. Write lease; freeze `B=HEAD`; `parallel create` worktrees.
 3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`;
-   one `--slice` per sibling on the wave).
+   one `--slice` per sibling on the wave). A linked worktree has no `.devrites`:
+   tell each wright to run `gates precheck` with `DEVRITES_ROOT=<control>/.devrites`.
 4. Inspect each returned path list, cumulative diff from `B`, transfer identity,
    and required result fields against the immutable contract. Reject malformed,
-   stale, or out-of-scope work. Apply
+   stale, or out-of-scope work. Freeze and probe the sibling in its worktree:
+   `candidate freeze <slug> --wave <w> --slice <id> --base <B> --worktree <worktree_path>`,
+   `check perturb ... --worktree <worktree_path> --slice <id>`. Apply
    [independent Build review](phase-contract.md#independent-build-review): first
    full inventory, then bounded owning-role rechecks after repairs. Run approved
    proof in the same window as that review. Gap or Critical/Important → `gap`;

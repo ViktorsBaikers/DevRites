@@ -26,7 +26,7 @@ devrites-engine check preconditions <slug> [--slice SLICE-###] [--timeout N]
 devrites-engine check seal <slug>
 devrites-engine check slice <slug> <SLICE-ID>
 devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path> [--worktree|--staged|--base <ref>] [--snapshot|--baseline] [--verbose]
-devrites-engine check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N]
+devrites-engine check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N] [--worktree <path> --slice <SLICE-ID>]
 devrites-engine check task-graph <slug>
 devrites-engine check regression <slug> [--update]
 devrites-engine check drift <slug> [--record]
@@ -48,7 +48,7 @@ devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>] [--whol
 devrites-engine metrics record <slug> --phase <p> --event <e>
 devrites-engine metrics summary [slug]
 devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute>
-devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID>|--paths <path>...) [--base <ref>]
+devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID>|--paths <path>...) [--base <ref>] [--worktree <path>]
 devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID>] [--recheck] [--checks <G-ID,...>] [--focus <file>]
 devrites-engine parallel <subcommand>
 devrites-engine gates <subcommand> <slug>

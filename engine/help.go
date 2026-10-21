@@ -24,7 +24,7 @@ const (
   check slice <slug> <SLICE-ID>
   check diff-scope <slug> --allow <csv> | --allow-file <path> [--worktree|--staged|--base <ref>] [--allow-empty] [--baseline] [--verbose] [--cwd <dir>]
   check diff-scope <slug> --snapshot [--worktree|--staged|--base <ref>] [--cwd <dir>]
-  check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N]
+  check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N] [--worktree <path> --slice <SLICE-ID>]
   check skill-trust <path>
   check indexes [--root <dir>]
   check regression <slug> [--update]
