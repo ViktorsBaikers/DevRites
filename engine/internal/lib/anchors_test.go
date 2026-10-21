@@ -116,6 +116,11 @@ func TestCheckAnchorsSummaryAndMetric(t *testing.T) {
 		t.Fatalf("metrics: %v %s", err, metrics)
 	}
 
+	ret = writeReturn(t, featureDir, "Outcome: findings\nCounts: critical=0 important=1\n\nImportant: the handler skips the role check.\n")
+	if code, out := checkAnchors(t, root, "feat", ret); code != 3 || !strings.Contains(out, "BLOCKED: Counts declares 1 Critical/Important but 0 are Finding: rows") {
+		t.Fatalf("prose blocker: %d %s", code, out)
+	}
+
 	ret = writeReturn(t, featureDir, "Outcome: findings\nCounts: suggestion=1\nFinding: Suggestion | nowhere | prose | x | y | z\n")
 	if code, out := checkAnchors(t, root, "feat", ret); code != 0 || !strings.Contains(out, "OK: 0 Critical/Important rows") {
 		t.Fatalf("suggestion-only: %d %s", code, out)

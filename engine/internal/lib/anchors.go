@@ -108,11 +108,37 @@ func RunCheckAnchors(root string, args []string, stdout, stderr io.Writer) int {
 	summary := fmt.Sprintf("anchored=%d relocated=%d unverified=%d deferred=%d",
 		counts["anchored"], counts["relocated"], counts["Unverified"], counts["Deferred"])
 	recordMetricNote(root, slug, cursorPhase(root, slug), "anchors", "", summary)
+	// A head that declares more blockers than there are Finding: rows means
+	// rows were written as prose; zero parsed rows must not read as clean.
+	if declared := declaredBlockers(string(raw)); declared > rows {
+		fmt.Fprintf(stdout, "check anchors: BLOCKED: Counts declares %d Critical/Important but %d are Finding: rows; rewrite each as a Finding: row and rerun\n", declared, rows)
+		return 3
+	}
 	if counts["Unverified"]+counts["Deferred"] > 0 {
 		fmt.Fprintf(stdout, "check anchors: BLOCKED: %d Critical/Important rows, %s; Unverified and Deferred rows never drive a repair round\n", rows, summary)
 		return 3
 	}
 	fmt.Fprintf(stdout, "check anchors: OK: %d Critical/Important rows, %s\n", rows, summary)
+	return 0
+}
+
+// declaredBlockers sums the critical and important entries of the return's
+// first Counts: line, or 0 when there is none.
+func declaredBlockers(text string) int {
+	for _, line := range strings.Split(text, "\n") {
+		rest, ok := strings.CutPrefix(strings.TrimSpace(line), "Counts:")
+		if !ok {
+			continue
+		}
+		total := 0
+		for _, field := range strings.Fields(rest) {
+			if m := countRE.FindStringSubmatch(field); m != nil && (m[1] == "critical" || m[1] == "important") {
+				n, _ := strconv.Atoi(m[2])
+				total += n
+			}
+		}
+		return total
+	}
 	return 0
 }
 
