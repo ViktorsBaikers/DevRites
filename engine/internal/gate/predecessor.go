@@ -55,11 +55,11 @@ func predecessorProblems(root string, observation *state.WorkspaceObservation) [
 		return []string{fmt.Sprintf("malformed %q; rerun /rite-vet and record `%s<slug> <64-hex digest>`", lines[0], predecessorLabel)}
 	}
 	slug, recorded := match[1], match[2]
-	current, err := ReadinessBinding(root, slug)
+	current, raw, err := readinessBindings(root, slug)
 	if err != nil {
 		return []string{fmt.Sprintf("predecessor %s readiness cannot be computed (%v); rerun /rite-vet against its current plan", slug, err)}
 	}
-	if strings.TrimPrefix(current, readinessBindingLabel) != recorded {
+	if recorded != strings.TrimPrefix(current, readinessBindingLabel) && recorded != strings.TrimPrefix(raw, readinessBindingLabel) {
 		return []string{fmt.Sprintf("predecessor %s changed its planning inputs since this plan was vetted; rerun /rite-vet to re-check this plan against them and record `%s%s %s`",
 			slug, predecessorLabel, slug, strings.TrimPrefix(current, readinessBindingLabel))}
 	}
