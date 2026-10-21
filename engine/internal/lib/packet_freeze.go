@@ -12,11 +12,12 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 )
 
 // CandidateFreezeUsage is the help and usage-error text for `candidate freeze`.
-const CandidateFreezeUsage = `usage: devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID> | --paths <path>...) [--base <ref>]
+const CandidateFreezeUsage = `usage: devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID> | --paths <path>...) [--base <ref>] [--worktree <path>]
 
 Freezes one review candidate. It writes packets/<w>.diff (the path set's
 tracked changes against --base, default HEAD, plus each untracked file as a
@@ -24,7 +25,10 @@ tracked changes against --base, default HEAD, plus each untracked file as a
 sha256, and the aggregate candidate digest under the check candidate domain
 and bounds). --slice takes that slice's Writer allowlist (else Files likely
 touched) from tasks.md. A wave's frozen candidate is never replaced by a
-different one; freeze a changed candidate under a new wave.
+different one; freeze a changed candidate under a new wave. --worktree reads
+the path set from a linked worktree of this repository (a parallel sibling)
+instead of the checkout, requires --base, refuses uncommitted path-set
+changes, and records that worktree's HEAD (the transfer commit) as head.
 `
 
 // packetNameRE bounds a wave, role, phase, or slice used in a packets/ or
@@ -34,7 +38,7 @@ var packetNameRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
 // RunCandidateFreeze implements `candidate freeze`: the producer of the frozen
 // .diff a Review or Seal reviewer packet must name.
 func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) int {
-	var wave, slice, base string
+	var wave, slice, base, worktree string
 	var paths, positional []string
 	for i := 0; i < len(args); i++ {
 		value := argAt(args, i+1)
@@ -45,6 +49,8 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 			slice = value
 		case "--base":
 			base = value
+		case "--worktree":
+			worktree = value
 		case "--paths":
 			for i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
 				i++
@@ -61,7 +67,7 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 		}
 		i++
 	}
-	if len(positional) != 1 || !packetNameRE.MatchString(wave) || (slice == "") == (len(paths) == 0) {
+	if len(positional) != 1 || !packetNameRE.MatchString(wave) || (slice == "") == (len(paths) == 0) || (worktree != "" && base == "") {
 		fmt.Fprint(stderr, CandidateFreezeUsage)
 		return 2
 	}
@@ -75,16 +81,16 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 		return fail(err)
 	}
 	if slice != "" {
-		raw, err := readWorkspaceArtifact(root, slug, "tasks.md")
-		if err != nil {
+		if paths, err = slicePaths(root, slug, slice); err != nil {
 			return fail(err)
-		}
-		writes, _ := sliceWritePaths(raw, ParseTaskGraph(raw))
-		if paths = writes[slice]; len(paths) == 0 {
-			return fail(fmt.Errorf("slice %s names no Writer allowlist or Files likely touched in tasks.md", slice))
 		}
 	}
 	project := projectDir(root)
+	if worktree != "" {
+		if project, err = checkedWorktree(root, worktree); err != nil {
+			return fail(err)
+		}
+	}
 	rows, err := freezeRows(project, paths)
 	if err != nil {
 		return fail(err)
@@ -99,12 +105,24 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 	if len(diff) == 0 {
 		return fail(errors.New("the path set has no change against the base; there is no candidate to freeze"))
 	}
+	head := ""
+	if worktree != "" {
+		// Review binds to the transfer commit, so the frozen tree must be exactly it.
+		dirty, commit, err := freezeDiff(project, "HEAD", rows)
+		if err != nil {
+			return fail(err)
+		}
+		if len(dirty) != 0 {
+			return fail(errors.New("the worktree has uncommitted changes on the path set; the frozen candidate must be its HEAD transfer commit"))
+		}
+		head = "head " + commit + "\n"
+	}
 	digest, err := hashCandidate(project, rows)
 	if err != nil {
 		return fail(err)
 	}
 	var sums strings.Builder
-	fmt.Fprintf(&sums, "%s %s\nbase %s\ndiff %x packets/%s.diff\n", candidateDigestDomain, candidateDigestVersion, baseCommit, sha256.Sum256(diff), wave)
+	fmt.Fprintf(&sums, "%s %s\nbase %s\n%sdiff %x packets/%s.diff\n", candidateDigestDomain, candidateDigestVersion, baseCommit, head, sha256.Sum256(diff), wave)
 	for _, row := range rows {
 		if row.state != "present" {
 			fmt.Fprintf(&sums, "file absent %s\n", row.path)
@@ -137,6 +155,84 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 	rel := workspaceRel(root, workspace)
 	fmt.Fprintf(stdout, "candidate: %s (%d paths, base %s)\ndiff: %s/packets/%s.diff\nsha256: %s/packets/%s.sha256\n", digest, len(rows), baseCommit, rel, wave, rel, wave)
 	return 0
+}
+
+// slicePaths is the slice's tasks.md write set: Writer allowlist, else Files
+// likely touched.
+func slicePaths(root, slug, slice string) ([]string, error) {
+	raw, err := readWorkspaceArtifact(root, slug, "tasks.md")
+	if err != nil {
+		return nil, err
+	}
+	writes, _ := sliceWritePaths(raw, ParseTaskGraph(raw))
+	if len(writes[slice]) == 0 {
+		return nil, fmt.Errorf("slice %s names no Writer allowlist or Files likely touched in tasks.md", slice)
+	}
+	return writes[slice], nil
+}
+
+// checkedWorktree returns the project's directory inside path, a linked
+// worktree of the control checkout's repository: path itself, plus the
+// project's prefix below the git toplevel. It refuses a symlinked component, a
+// directory that is not a worktree's top level, a submodule, another
+// repository, a path git does not list as a worktree, and the control checkout.
+func checkedWorktree(root, path string) (string, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	if err := refuseSymlinkedPath(abs); err != nil {
+		return "", err
+	}
+	out, err := runGitCommand(projectDir(root), nil, "rev-parse", "--path-format=absolute", "--git-common-dir", "--show-toplevel", "--show-prefix")
+	if err != nil {
+		return "", err
+	}
+	control := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
+	if len(control) != 3 {
+		return "", fmt.Errorf("git rev-parse printed %q for the control checkout", out)
+	}
+	out, err = runGitCommand(abs, nil, "rev-parse", "--path-format=absolute", "--git-common-dir", "--show-toplevel", "--show-superproject-working-tree")
+	got := strings.Split(strings.TrimSpace(string(out)), "\n")
+	switch {
+	case err != nil:
+		return "", fmt.Errorf("worktree %s is not a git worktree: %w", abs, err)
+	case len(got) != 2:
+		return "", fmt.Errorf("worktree %s is inside a submodule", abs)
+	case !sameDir(got[0], control[0]):
+		return "", fmt.Errorf("worktree %s belongs to another repository", abs)
+	case !sameDir(got[1], abs):
+		return "", fmt.Errorf("worktree %s is not a worktree's top level", abs)
+	case sameDir(abs, control[1]):
+		return "", fmt.Errorf("worktree %s is the control checkout, not a linked worktree", abs)
+	}
+	registered, err := parallel.RegisteredWorktrees(control[1])
+	if err != nil {
+		return "", err
+	}
+	if !registered[abs] {
+		return "", fmt.Errorf("worktree %s is not listed by git worktree list", abs)
+	}
+	project := filepath.Join(abs, filepath.FromSlash(control[2]))
+	return project, refuseSymlinkedPath(project)
+}
+
+// sameDir reports whether a and b name one existing directory, whatever their
+// spelling.
+func sameDir(a, b string) bool {
+	ai, aerr := os.Stat(a)
+	bi, berr := os.Stat(b)
+	return aerr == nil && berr == nil && ai.IsDir() && os.SameFile(ai, bi)
+}
+
+// refuseSymlinkedPath refuses an absolute path any component of which is a
+// symlink (or that does not exist).
+func refuseSymlinkedPath(abs string) error {
+	resolved, err := filepath.EvalSymlinks(abs)
+	if err == nil && resolved != abs {
+		err = fmt.Errorf("worktree %s has a symlinked component (it resolves to %s)", abs, resolved)
+	}
+	return err
 }
 
 // freezeRows normalizes, deduplicates, and sorts the path set, marking each

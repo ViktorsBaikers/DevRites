@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1541616,
+  "total_bytes": 1541942,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -172,7 +172,7 @@
     "pack/.claude/skills/rite-build/reference/frontend-trigger.md": 2137,
     "pack/.claude/skills/rite-build/reference/one-slice-cycle.md": 3376,
     "pack/.claude/skills/rite-build/reference/output.md": 1304,
-    "pack/.claude/skills/rite-build/reference/parallel-batch.md": 15392,
+    "pack/.claude/skills/rite-build/reference/parallel-batch.md": 15718,
     "pack/.claude/skills/rite-build/reference/phase-contract.md": 8258,
     "pack/.claude/skills/rite-build/reference/spec-drift-guard.md": 4868,
     "pack/.claude/skills/rite-build/reference/tdd.md": 1357,

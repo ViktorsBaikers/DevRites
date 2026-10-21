@@ -132,6 +132,45 @@ func TestCheckPerturbProbesASubdirectoryProject(t *testing.T) {
 	}
 }
 
+// A parallel sibling's candidate lives only in its linked worktree: --worktree
+// probes that tree's HEAD plus the slice write set, with --patch resolved there.
+func TestCheckPerturbProbesALinkedWorktree(t *testing.T) {
+	project, root, workspace := perturbTestWorkspace(t, false)
+	writeFile(t, filepath.Join(workspace, "tasks.md"), "# Tasks\n\n## SLICE-001 A\nDependencies: none\nWriter allowlist: impl.txt; new.txt\n")
+	wt := filepath.Join(resolvedTempDir(t), "wt")
+	runDupGit(t, project, "worktree", "add", "-q", "-b", "sibling", wt, "HEAD")
+	writeCandidateTestFile(t, wt, "impl.txt", "guard v2\n")
+	writeCandidateTestFile(t, wt, "new.txt", "fresh\n")
+	runDupGit(t, wt, "add", "impl.txt", "new.txt")
+	runDupGit(t, wt, "commit", "-q", "-m", "feat: sibling")
+	writeCandidateTestFile(t, wt, "mutant.patch", perturbMutant("broken"))
+	// The control checkout is back at the base, so only the worktree can pass.
+	writeCandidateTestFile(t, project, "impl.txt", "guard\n")
+	if err := os.Remove(filepath.Join(project, "new.txt")); err != nil {
+		t.Fatal(err)
+	}
+
+	probe := []string{"--patch", "mutant.patch", "--expect", "TestAlias", "--gate", "G-1"}
+	for _, args := range [][]string{append(probe, "--worktree", wt), append(probe, "--slice", "SLICE-001")} {
+		if code, _ := runPerturbT(t, root, args...); code != 2 {
+			t.Fatalf("%v: want usage exit 2, got %d", args, code)
+		}
+	}
+	if code, out := runPerturbT(t, root, append(probe, "--worktree", project, "--slice", "SLICE-001")...); code != 3 || !strings.Contains(out, "refused: ") {
+		t.Fatalf("the control checkout is not a linked worktree: code=%d\n%s", code, out)
+	}
+	code, out := runPerturbT(t, root, append(probe, "--worktree", wt, "--slice", "SLICE-001")...)
+	if code != 0 || !strings.Contains(out, "transcript: .devrites/work/feature/evidence/perturb/G-1-") {
+		t.Fatalf("code=%d\n%s", code, out)
+	}
+	if got := readTestFile(t, filepath.Join(wt, "impl.txt")); got != "guard v2\n" {
+		t.Fatalf("the probe mutated the worktree: impl.txt = %q", got)
+	}
+	if worktrees := string(mustGitOutput(t, project, "worktree", "list", "--porcelain")); strings.Count(worktrees, "worktree ") != 2 {
+		t.Fatalf("the probe left its copy registered:\n%s", worktrees)
+	}
+}
+
 func TestCheckPerturbRefusesBeforeRunning(t *testing.T) {
 	_, root, workspace := perturbTestWorkspace(t, false)
 	writeFile(t, filepath.Join(workspace, "packets", "mutant.patch"), perturbMutant("broken"))

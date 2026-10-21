@@ -48,7 +48,7 @@ Usage:
                                          Report near-duplicate code clusters that survive renaming (advisory)
   devrites-engine check anchors <slug> <return-file> [--skills-root <dir>]
                                          Anchor each Critical/Important row's quotes; Unverified or Deferred rows exit 3
-  devrites-engine check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N]
+  devrites-engine check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N] [--worktree <path> --slice <SLICE-ID>]
                                          Run one mutant patch against a candidate copy; RED must name --expect
   devrites-engine observe summary <slug>   Emit sanitized JSON workspace summary
   devrites-engine orient <slug>            Alias for observe summary
@@ -60,7 +60,7 @@ Usage:
                                          Emit one deduplicated read-set bundle for a phase, skill, or dispatch role
   devrites-engine metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   devrites-engine metrics summary [slug] [--by-slice]  Summarize the metrics ledger, or per-slice rounds and agent-minutes
-  devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID> | --paths <path>...) [--base <ref>]
+  devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID> | --paths <path>...) [--base <ref>] [--worktree <path>]
                                          Freeze a review candidate to packets/<w>.diff + packets/<w>.sha256
   devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID>] [--recheck] [--checks <G-ID,...>] [--focus <file>]
                                          Render and lint one role's by-reference dispatch packet

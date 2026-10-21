@@ -22,7 +22,7 @@ import (
 )
 
 // PerturbUsage is the help and usage-error text for `check perturb`.
-const PerturbUsage = `usage: devrites-engine check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N]
+const PerturbUsage = `usage: devrites-engine check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N] [--worktree <path> --slice <SLICE-ID>]
 
 Runs one safe-perturbation probe without touching the checkout. It copies the
 current candidate (HEAD plus every touched-files.md manifest row) into a
@@ -34,8 +34,10 @@ test, jest/vitest) names --expect; a build or setup failure, a timeout, exit 0
 (the mutant survived), or a RED naming only other tests is cannot_verify. It
 then reverts the patch, requires the copy back at the candidate digest and the
 gate GREEN (exit 0 plus EXPECT), and requires the checkout candidate unchanged.
-The transcript is written under evidence/perturb/. Exit 0 verified; exit 3
-cannot_verify or refused.
+The transcript is written under evidence/perturb/. --worktree probes a linked
+worktree of this repository (a parallel sibling) instead: its HEAD plus the
+--slice write set from tasks.md, with --patch resolved against it. Exit 0
+verified; exit 3 cannot_verify or refused.
 `
 
 const perturbOutputTail = 64 << 10
@@ -65,7 +67,7 @@ type perturbProbe struct {
 // RunCheckPerturb implements `check perturb`: an engine-run, candidate-bound
 // safe-perturbation probe (testing.md § Safe perturbation).
 func RunCheckPerturb(root string, args []string, stdout, stderr io.Writer) int {
-	var patchArg, expect, gateID string
+	var patchArg, expect, gateID, worktree, slice string
 	var positional []string
 	timeout := acceptance.DefaultTimeout
 	for i := 0; i < len(args); i++ {
@@ -77,6 +79,10 @@ func RunCheckPerturb(root string, args []string, stdout, stderr io.Writer) int {
 			expect = strings.TrimSpace(value)
 		case "--gate":
 			gateID = value
+		case "--worktree":
+			worktree = value
+		case "--slice":
+			slice = value
 		case "--timeout":
 			n, err := strconv.Atoi(value)
 			if err != nil || n <= 0 {
@@ -94,7 +100,7 @@ func RunCheckPerturb(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		i++
 	}
-	if len(positional) != 1 || patchArg == "" || expect == "" || gateID == "" {
+	if len(positional) != 1 || patchArg == "" || expect == "" || gateID == "" || (worktree == "") != (slice == "") {
 		fmt.Fprint(stderr, PerturbUsage)
 		return 2
 	}
@@ -107,7 +113,19 @@ func RunCheckPerturb(root string, args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		return refuse(err)
 	}
-	identity, err := loadCandidateIdentity(root, slug)
+	project := projectDir(root)
+	load := func() (candidateIdentity, error) { return loadCandidateIdentity(root, slug) }
+	if worktree != "" {
+		if project, err = checkedWorktree(root, worktree); err != nil {
+			return refuse(err)
+		}
+		paths, err := slicePaths(root, slug, slice)
+		if err != nil {
+			return refuse(err)
+		}
+		load = func() (candidateIdentity, error) { return pathSetIdentity(project, paths) }
+	}
+	identity, err := load()
 	if err != nil {
 		return refuse(err)
 	}
@@ -115,7 +133,6 @@ func RunCheckPerturb(root string, args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		return refuse(err)
 	}
-	project := projectDir(root)
 	patchPath := patchArg
 	if !filepath.IsAbs(patchPath) {
 		patchPath = filepath.Join(project, filepath.FromSlash(patchPath))
@@ -130,7 +147,7 @@ func RunCheckPerturb(root string, args []string, stdout, stderr io.Writer) int {
 
 	probe := runPerturbProbe(project, identity, gate, patch, expect, timeout)
 	after := "unavailable"
-	if current, err := loadCandidateIdentity(root, slug); err != nil {
+	if current, err := load(); err != nil {
 		after += ": " + oneLine(err.Error())
 	} else {
 		after = current.digest
@@ -150,6 +167,20 @@ func RunCheckPerturb(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "check perturb: verified: %s RED named %s, restored copy GREEN, candidate %s unchanged\ntranscript: %s\n", gate.ID, expect, identity.digest, rel)
 	return 0
+}
+
+// pathSetIdentity validates and hashes the path set in project, as candidate
+// freeze does, for a candidate that has no manifest.
+func pathSetIdentity(project string, paths []string) (candidateIdentity, error) {
+	rows, err := freezeRows(project, paths)
+	if err == nil {
+		err = validateCandidateRows(project, rows)
+	}
+	if err != nil {
+		return candidateIdentity{}, err
+	}
+	digest, err := hashCandidate(project, rows)
+	return candidateIdentity{digest: digest, rows: rows}, err
 }
 
 // perturbGate returns the live runnable gate id, refusing a CHECK/CWD that is

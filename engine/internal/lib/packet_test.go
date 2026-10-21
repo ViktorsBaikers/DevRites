@@ -145,6 +145,99 @@ func TestCandidateFreezeTakesSliceAllowlist(t *testing.T) {
 	}
 }
 
+// resolvedTempDir is t.TempDir() with symlinks resolved (macOS /var is one):
+// checkedWorktree refuses a symlinked spelling.
+func resolvedTempDir(t *testing.T) string {
+	t.Helper()
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+// linkedWorktreeRepo commits src/a.go in a fresh candidate workspace and adds
+// a linked worktree on its own branch, as parallel create does for a sibling.
+func linkedWorktreeRepo(t *testing.T) (project, root, base, wt string) {
+	t.Helper()
+	project, root = writeCandidateTestWorkspace(t, "")
+	initDupRepo(t, project)
+	writeCandidateTestFile(t, project, "src/a.go", "package a\n")
+	runDupGit(t, project, "add", "src")
+	runDupGit(t, project, "commit", "-q", "-m", "chore: baseline")
+	base = strings.TrimSpace(string(mustGitOutput(t, project, "rev-parse", "HEAD")))
+	wt = filepath.Join(resolvedTempDir(t), "wt")
+	runDupGit(t, project, "worktree", "add", "-q", "-b", "sibling", wt, base)
+	return project, root, base, wt
+}
+
+func TestCandidateFreezeReadsALinkedWorktree(t *testing.T) {
+	_, root, base, wt := linkedWorktreeRepo(t)
+	workspace := filepath.Join(root, "work", "feature")
+	writeFile(t, filepath.Join(workspace, "tasks.md"), "# Tasks\n\n## SLICE-001 A\nDependencies: none\nWriter allowlist: src/a.go; src/a_test.go\n")
+	writeCandidateTestFile(t, wt, "src/a.go", "package a // sibling\n")
+	runDupGit(t, wt, "commit", "-q", "-am", "feat: sibling")
+	head := strings.TrimSpace(string(mustGitOutput(t, wt, "rev-parse", "HEAD")))
+
+	if code, out := runFreezeT(t, root, "--wave", "s0", "--slice", "SLICE-001", "--base", base); code != 3 || !strings.Contains(out, "no change against the base") {
+		t.Fatalf("the control checkout does not hold the sibling's change: code=%d\n%s", code, out)
+	}
+	if code, out := runFreezeT(t, root, "--wave", "s1", "--slice", "SLICE-001", "--worktree", wt); code != 2 {
+		t.Fatalf("--worktree without --base is a usage error: code=%d\n%s", code, out)
+	}
+	if code, out := runFreezeT(t, root, "--wave", "s1", "--slice", "SLICE-001", "--base", base, "--worktree", wt); code != 0 {
+		t.Fatalf("worktree freeze: code=%d\n%s", code, out)
+	}
+	sums := readTestFile(t, filepath.Join(workspace, "packets", "s1.sha256"))
+	for _, want := range []string{
+		"base " + base + "\nhead " + head + "\ndiff ",
+		fmt.Sprintf("file %x src/a.go\n", sha256.Sum256([]byte("package a // sibling\n"))),
+		"file absent src/a_test.go\n",
+	} {
+		if !strings.Contains(sums, want) {
+			t.Fatalf("sha256 lacks %q:\n%s", want, sums)
+		}
+	}
+	if diff := readTestFile(t, filepath.Join(workspace, "packets", "s1.diff")); !strings.Contains(diff, "+package a // sibling") {
+		t.Fatalf("the frozen diff is not the worktree's change:\n%s", diff)
+	}
+	if code, out := runFreezeT(t, root, "--wave", "s2", "--paths", ".devrites/work/feature/state.md", "--base", base, "--worktree", wt); code != 3 || !strings.Contains(out, "workflow state") {
+		t.Fatalf("workflow state is never a candidate path: code=%d\n%s", code, out)
+	}
+	writeCandidateTestFile(t, wt, "src/a_test.go", "package a\n")
+	if code, out := runFreezeT(t, root, "--wave", "s2", "--slice", "SLICE-001", "--base", base, "--worktree", wt); code != 3 || !strings.Contains(out, "uncommitted changes") {
+		t.Fatalf("a frozen worktree candidate must be its HEAD transfer commit: code=%d\n%s", code, out)
+	}
+}
+
+func TestCheckedWorktreeRefusesAnythingButALinkedWorktree(t *testing.T) {
+	project, root, _, wt := linkedWorktreeRepo(t)
+	if got, err := checkedWorktree(root, wt); err != nil || got != wt {
+		t.Fatalf("a linked worktree: %q, %v", got, err)
+	}
+	other := resolvedTempDir(t)
+	initDupRepo(t, other)
+	link := filepath.Join(resolvedTempDir(t), "link")
+	if err := os.Symlink(wt, link); err != nil {
+		t.Fatal(err)
+	}
+	control, err := filepath.EvalSymlinks(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ path, want string }{
+		{resolvedTempDir(t), "is not a git worktree"},
+		{filepath.Join(wt, "src"), "is not a worktree's top level"},
+		{other, "belongs to another repository"},
+		{control, "is the control checkout"},
+		{link, "symlinked component"},
+	} {
+		if _, err := checkedWorktree(root, tc.path); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%s: err=%v, want %q", tc.path, err, tc.want)
+		}
+	}
+}
+
 func mustGitOutput(t *testing.T, project string, args ...string) []byte {
 	t.Helper()
 	out, err := runGitCommand(project, nil, args...)

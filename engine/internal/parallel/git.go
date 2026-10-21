@@ -236,6 +236,9 @@ func registeredWorktrees(repo string) (map[string]bool, error) {
 	return set, nil
 }
 
+// RegisteredWorktrees is registeredWorktrees for callers outside the package.
+func RegisteredWorktrees(repo string) (map[string]bool, error) { return registeredWorktrees(repo) }
+
 func resolvedPath(p string) string {
 	if r, err := filepath.EvalSymlinks(p); err == nil {
 		return r
