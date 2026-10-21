@@ -2,6 +2,18 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.3](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.2...v7.0.3) (2026-10-21)
+
+### Changed
+
+* **no-release:** move the Go toolchain to go1.27.3 ([#155](https://github.com/ViktorsBaikers/DevRites/issues/155)) ([293da70](https://github.com/ViktorsBaikers/DevRites/commit/293da70c8c4b4de8ed22caababa7914594c1ff9b))
+
+### Fixed
+
+* **devrites:** freeze and probe a parallel sibling in its worktree ([#156](https://github.com/ViktorsBaikers/DevRites/issues/156)) ([e959804](https://github.com/ViktorsBaikers/DevRites/commit/e959804721f291db3b489eb30988792c5ab3c3fb))
+* **no-release:** check anchors blocks prose-only blocker returns ([#154](https://github.com/ViktorsBaikers/DevRites/issues/154)) ([0807fe2](https://github.com/ViktorsBaikers/DevRites/commit/0807fe2f92100188616110beb037d81e752ee1b8))
+* **no-release:** traceability progress cells no longer stale readiness ([#153](https://github.com/ViktorsBaikers/DevRites/issues/153)) ([7465b3e](https://github.com/ViktorsBaikers/DevRites/commit/7465b3eaaf180718015dfdab3d0af96579ab5b85))
+
 ## [7.0.2](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.1...v7.0.2) (2026-10-20)
 
 ### Fixed
