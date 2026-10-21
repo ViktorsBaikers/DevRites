@@ -160,7 +160,8 @@ self-contained updater.
   ones; unresolved slots print `unresolved` rather than guessing.
 - `check anchors <slug> <return-file>` anchors each Critical/Important row's
   quote at its cited `file:line` and its `breaks` quote; Unverified or Deferred
-  rows exit `3` and never drive a repair round.
+  rows exit `3` and never drive a repair round. A `Counts:` head declaring more
+  Critical/Important findings than there are `Finding:` rows also exits `3`.
 - `check dup [slug] [--all|--worktree|--staged|--base <ref>]` reports advisory
   near-duplicate code clusters that survive comment stripping, literal
   collapsing, and identifier renaming. Diff modes mark units overlapping
