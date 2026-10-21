@@ -132,7 +132,14 @@ func compareDrift(workspace, baselinePath string, digests []gate.ReadinessInputD
 	if !hasBaseline {
 		return compareDriftFallback(workspace, binding, stdout)
 	}
-	diffs := diffInputs(baseline.Inputs, digests)
+	var diffs []driftDiff
+	for _, d := range diffInputs(baseline.Inputs, digests) {
+		if d.Kind == "progress-only" {
+			fmt.Fprintf(stdout, "check drift: %s progress-only — only Evidence/Status cells moved; no re-vet needed\n", d.Path)
+			continue
+		}
+		diffs = append(diffs, d)
+	}
 	if len(diffs) == 0 && baseline.Binding == binding {
 		fmt.Fprintf(stdout, "check drift: none (baseline %s)\n", baseline.RecordedAt)
 		return 0
@@ -215,6 +222,9 @@ func diffInputs(base, current []gate.ReadinessInputDigest) []driftDiff {
 			kind := "changed"
 			if b.Normalized != "" && b.Normalized == c.Normalized {
 				kind = "reviewed-identity-only"
+				if b.Path == "traceability.md" {
+					kind = "progress-only"
+				}
 			}
 			diffs = append(diffs, driftDiff{Path: b.Path, Kind: kind})
 		}

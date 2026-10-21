@@ -49,6 +49,10 @@ func ReadinessBinding(root, slug string) (string, error) {
 }
 
 func readinessBindingFromObservation(observation *state.WorkspaceObservation) (string, error) {
+	return bindReadinessInputs(observation, true)
+}
+
+func bindReadinessInputs(observation *state.WorkspaceObservation, blankProgress bool) (string, error) {
 	digest := sha256.New()
 	writeReadinessField(digest, readinessBindingDomain)
 	writeReadinessField(digest, readinessBindingVersion)
@@ -57,6 +61,9 @@ func readinessBindingFromObservation(observation *state.WorkspaceObservation) (s
 		content, present, err := retainedReadinessInput(observation, input)
 		if err != nil {
 			return "", err
+		}
+		if blankProgress && input.logical == "traceability.md" {
+			content = withoutProgressCells(content)
 		}
 		writeReadinessField(digest, string(input.logical))
 		if present {
@@ -110,6 +117,12 @@ func verifyReadinessBinding(observation *state.WorkspaceObservation) (string, er
 	if err != nil {
 		return "", err
 	}
+	// A line recorded over the raw bytes, before progress cells were blanked,
+	// still verifies while those bytes are unchanged.
+	legacy, err := bindReadinessInputs(observation, false)
+	if err != nil {
+		return "", err
+	}
 	fact, ok := observation.Fact("eng-review.md")
 	if !ok || fact.State() == state.ArtifactAbsent {
 		return expected, errors.New("readiness input eng-review.md is missing")
@@ -130,7 +143,7 @@ func verifyReadinessBinding(observation *state.WorkspaceObservation) (string, er
 			continue
 		}
 		attempts++
-		if line == expected {
+		if line == expected || line == legacy {
 			matches++
 		}
 	}
@@ -150,7 +163,7 @@ type ReadinessInputDigest struct {
 	SHA256  string `json:"sha256,omitempty"`
 	// Normalized is test-plan.md's digest without its reviewed-identity lines,
 	// so drift can prove a Workflow Artifact byte correction changed nothing
-	// else Vet approved.
+	// else Vet approved, or traceability.md's digest without progress cells.
 	Normalized string `json:"normalized,omitempty"`
 }
 
@@ -187,14 +200,95 @@ func ReadinessInputDigests(root, slug string) ([]ReadinessInputDigest, string, e
 		if present {
 			sum := sha256.Sum256(content)
 			entry.SHA256 = hex.EncodeToString(sum[:])
-			if input.logical == "test-plan.md" {
+			switch input.logical {
+			case "test-plan.md":
 				normalized := sha256.Sum256(withoutReviewedIdentity(content))
+				entry.Normalized = hex.EncodeToString(normalized[:])
+			case "traceability.md":
+				normalized := sha256.Sum256(withoutProgressCells(content))
 				entry.Normalized = hex.EncodeToString(normalized[:])
 			}
 		}
 		digests = append(digests, entry)
 	}
 	return digests, binding, nil
+}
+
+// progressColumns name the traceability.md columns Build and Prove fill in as
+// evidence lands. Vet approves the rows, not their progress, so the binding
+// blanks these cells and keeps every other cell byte-exact.
+var progressColumns = map[string]bool{"evidence": true, "status": true}
+
+var delimiterCellRE = regexp.MustCompile(`^\s*:?-+:?\s*$`)
+
+// withoutProgressCells blanks every Evidence and Status cell in the Markdown
+// tables of content. A table is the header row, its delimiter row, and the
+// table rows that follow.
+func withoutProgressCells(content []byte) []byte {
+	lines := strings.Split(string(content), "\n")
+	var blank []int
+	for i, line := range lines {
+		prefix, cells, ok := tableCells(line)
+		switch {
+		case !ok:
+			blank = nil
+		case i+1 < len(lines) && delimiterRow(lines[i+1]):
+			blank = nil
+			for c, cell := range cells {
+				if progressColumns[strings.ToLower(strings.TrimSpace(cell))] {
+					blank = append(blank, c)
+				}
+			}
+		case len(blank) > 0 && !delimiterRow(line):
+			for _, c := range blank {
+				if c < len(cells) {
+					cells[c] = ""
+				}
+			}
+			lines[i] = prefix + "|" + strings.Join(cells, "|") + "|"
+		}
+	}
+	return []byte(strings.Join(lines, "\n"))
+}
+
+// tableCells splits a Markdown table row on its unescaped pipes. prefix is the
+// indentation before the first pipe.
+func tableCells(line string) (prefix string, cells []string, ok bool) {
+	trimmed := strings.TrimRight(strings.TrimSuffix(line, "\r"), " \t")
+	start := strings.Index(trimmed, "|")
+	if start < 0 || strings.TrimSpace(trimmed[:start]) != "" {
+		return "", nil, false
+	}
+	var cell strings.Builder
+	for i := start + 1; i < len(trimmed); i++ {
+		switch {
+		case trimmed[i] == '\\' && i+1 < len(trimmed) && trimmed[i+1] == '|':
+			cell.WriteString(`\|`)
+			i++
+		case trimmed[i] == '|':
+			cells = append(cells, cell.String())
+			cell.Reset()
+		default:
+			cell.WriteByte(trimmed[i])
+		}
+	}
+	if cell.Len() > 0 {
+		cells = append(cells, cell.String())
+	}
+	return trimmed[:start], cells, true
+}
+
+func delimiterRow(line string) bool {
+	_, cells, ok := tableCells(line)
+	if !ok || len(cells) == 0 {
+		return false
+	}
+	for _, cell := range cells {
+		if !delimiterCellRE.MatchString(cell) {
+			return false
+		}
+	}
+	return true
 }
 
 func readinessDiagnosticError(diagnostic state.ArtifactDiagnostic) error {
