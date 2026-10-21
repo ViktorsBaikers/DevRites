@@ -90,6 +90,6 @@ Build and Prove fill `traceability.md`'s Evidence and Status cells as evidence
 lands, and those cells are Build-mutable evidence projections that Vet does not
 approve. The binding therefore hashes `traceability.md` with every cell under an
 `Evidence` or `Status` table header blanked; every other byte stays bound. A
-binding line recorded over the raw bytes still verifies while the inputs are
-unchanged, and `check drift` reports a change confined to those cells as
+binding line recorded over the raw bytes still verifies in `check readiness`
+while the inputs are unchanged, and `check drift` reports a change confined to those cells as
 `progress-only`. Guard: `engine/internal/gate/readiness_binding_test.go`.

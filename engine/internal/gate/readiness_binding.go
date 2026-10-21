@@ -48,21 +48,6 @@ func ReadinessBinding(root, slug string) (string, error) {
 	return readinessBindingFromObservation(observation)
 }
 
-// readinessBindings returns the binding Vet records now and the raw-bytes
-// binding that lines recorded before progress cells were excluded carry. Both
-// are equal when traceability.md has no Evidence or Status column.
-func readinessBindings(root, slug string) (current, raw string, err error) {
-	observation, err := state.ObserveWorkspace(root, slug)
-	if err != nil {
-		return "", "", err
-	}
-	if current, err = readinessBindingFromObservation(observation); err != nil {
-		return "", "", err
-	}
-	raw, err = bindReadinessInputs(observation, false)
-	return current, raw, err
-}
-
 func readinessBindingFromObservation(observation *state.WorkspaceObservation) (string, error) {
 	return bindReadinessInputs(observation, true)
 }
@@ -132,6 +117,8 @@ func verifyReadinessBinding(observation *state.WorkspaceObservation) (string, er
 	if err != nil {
 		return "", err
 	}
+	// A line recorded over the raw bytes, before progress cells were blanked,
+	// still verifies while those bytes are unchanged.
 	legacy, err := bindReadinessInputs(observation, false)
 	if err != nil {
 		return "", err
