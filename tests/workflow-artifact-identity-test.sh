@@ -4721,12 +4721,12 @@ def check_actual_engine_separation(root: Path) -> None:
             engine = Path(engine_override).resolve()
             require(engine.is_file(), "configured engine CLI")
         else:
-            # The module pins `toolchain go1.27.2`; a newer local Go satisfies it and
+            # The module pins `toolchain go1.27.3`; a newer local Go satisfies it and
             # would report its own version, so select the pin explicitly and build the
             # private engine with it. Deterministic on any machine, unchanged on CI.
-            pinned = {**os.environ, "GOTOOLCHAIN": "go1.27.2"}
+            pinned = {**os.environ, "GOTOOLCHAIN": "go1.27.3"}
             version = command_output(["go", "-C", str(project / "engine"), "env", "GOVERSION"], env=pinned)
-            require(version.returncode == 0 and "go1.27.2" in version.stdout, "module-selected Go 1.27.2")
+            require(version.returncode == 0 and "go1.27.3" in version.stdout, "module-selected Go 1.27.3")
             engine = private / "bin/devrites-engine"
             engine.parent.mkdir()
             build = command_output(["go", "-C", str(project / "engine"), "build", "-o", str(engine), "."], env=pinned)

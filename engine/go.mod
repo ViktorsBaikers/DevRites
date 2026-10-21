@@ -2,4 +2,4 @@ module github.com/devrites/devrites
 
 go 1.26
 
-toolchain go1.27.2
+toolchain go1.27.3
