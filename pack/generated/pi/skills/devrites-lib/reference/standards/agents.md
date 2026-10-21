@@ -191,6 +191,12 @@ return is the bundle the root writes) and the wright's change evidence.
   `no-findings`.
 - No restated task, preamble, approach narrative or closing summary. An optional
   `Notes:` block carries at most five lines that no row can hold.
+- Your last message is your return; the host delivers only that message. If a
+  hook, rule judge or system reminder arrives after your report, reply with the
+  complete report again, head first, with any correction inside it. Never end on a
+  reply that only answers the reminder. **Failing case:** a rule judge flagged a
+  simplifier's finished report; it answered the flag, and the host delivered that
+  answer instead of its rows.
 - Point, don't paste: cite `file:line` with at most one quoted line (160
   characters); for a command, give the exact command, its exit code and the one
   decisive output line. Never paste whole files, diffs, logs or test output.
