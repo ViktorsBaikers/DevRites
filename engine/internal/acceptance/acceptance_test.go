@@ -1062,6 +1062,12 @@ func TestRunPreconditionsRunsOnlyMatchingRows(t *testing.T) {
 	}
 
 	stdout.Reset()
+	if code := RunPreconditions(root, []string{"feat", "--slice", "SLICE-002"}, &stdout, &stderr); code != ExitOK ||
+		!strings.Contains(stdout.String(), ": pass (kept;") || strings.Contains(stdout.String(), "transcript: ") || !strings.Contains(stdout.String(), "result: pass") {
+		t.Fatalf("a passed pre-dispatch row is a pre-edit baseline and must not re-run on re-dispatch: code=%d\n%s", code, stdout.String())
+	}
+
+	stdout.Reset()
 	// Slice IDs are SLICE-\d+, so a four-digit ID is a valid --slice value.
 	if code := RunPreconditions(root, []string{"feat", "--slice", "SLICE-1000"}, &stdout, &stderr); code != ExitOK || !strings.Contains(stdout.String(), "result: none") {
 		t.Fatalf("a slice without rows runs nothing: code=%d\n%s", code, stdout.String())

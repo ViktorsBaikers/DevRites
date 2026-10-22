@@ -77,7 +77,9 @@ func PreflightPassed(work string, row PreflightRow) bool {
 // RunPreconditions is `check preconditions <slug> [--slice S]`: it executes
 // the Build-entry preflight rows whose `Run at` is `vet` (or, with --slice,
 // `pre-dispatch <S>`), writes one candidate-bound transcript per row, and exits
-// ExitBlocked on any failure. Rows are the approved surface itself, so nothing
+// ExitBlocked on any failure. A pre-dispatch row that already passed keeps that
+// transcript: it is a pre-edit baseline, and a repair round's re-dispatch would
+// otherwise re-run it against the slice's own unfinished edits. Rows are the approved surface itself, so nothing
 // outside test-plan.md runs; `action` rows and rows without a `Run at` cell
 // never run here.
 func RunPreconditions(root string, args []string, stdout, stderr io.Writer) int {
@@ -157,7 +159,7 @@ func RunPreconditions(root string, args []string, stdout, stderr io.Writer) int 
 // and whether any row ran.
 func runPreflightRows(root, slug, work, project, runAt string, rows []PreflightRow, timeout time.Duration, stdout io.Writer) (bool, bool, error) {
 	before := candidateLabel(root, slug)
-	failed := false
+	failed, kept := false, false
 	doc := &Document{}
 	var results []GateResult
 	for _, row := range rows {
@@ -168,6 +170,11 @@ func runPreflightRows(root, slug, work, project, runAt string, rows []PreflightR
 			continue
 		}
 		if !strings.EqualFold(row.RunAt, runAt) {
+			continue
+		}
+		if preDispatchRunAtRE.MatchString(runAt) && PreflightPassed(work, row) {
+			fmt.Fprintf(stdout, "row %s: pass (kept; a pre-dispatch row runs once, before the slice's first edit)\n", PreflightGateID(row))
+			kept = true
 			continue
 		}
 		gate := &Gate{ID: PreflightGateID(row), Title: row.Gate, Check: row.Command, Cwd: row.Cwd,
@@ -197,5 +204,5 @@ func runPreflightRows(root, slug, work, project, runAt string, rows []PreflightR
 			return failed, true, fmt.Errorf("transcript: %w", err)
 		}
 	}
-	return failed, len(results) > 0, nil
+	return failed, kept || len(results) > 0, nil
 }

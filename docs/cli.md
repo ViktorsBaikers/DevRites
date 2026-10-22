@@ -128,8 +128,9 @@ self-contained updater.
 - `check readiness --emit-binding <slug>` renders the exact stable Build-input
   binding for Vet to record after semantic review.
 - `check preconditions <slug>` runs the preflight rows whose `Run at` is `vet`
-  (`--slice <SLICE>` runs that slice's `pre-dispatch` rows) and records a
-  candidate-bound transcript per row; exit 3 on failure.
+  (`--slice <SLICE>` runs that slice's `pre-dispatch` rows, keeping one that
+  already passed) and records a candidate-bound transcript per row; exit 3 on
+  failure.
 - `check seal <slug>` checks final required files, open human gates, and the
   `tasks.md` slice graph. Once those files are complete, it verifies the stable
   readiness binding; only after that aggregate check passes does it verify that
