@@ -33,10 +33,11 @@ Subcommands:
                              (--transcripts writes one redacted, candidate-bound
                              file per gate under references/gates/<gate-id>/)
   lint <slug> [--strict]     Audit oracle quality without executing
-  precheck <slug> --worktree <path>
+  precheck <slug> --worktree <path> [--slice <SLICE-ID>]
                              Run every RUN: writer gate, then check windows, in
                              <path>; writes no ledger, EVIDENCE line or
-                             transcript (check windows still logs its metric)
+                             transcript (check windows still logs its metric);
+                             --slice skips gates owned only by other unbuilt slices
   attest <slug> <id> <note>  Record human evidence on a manual gate
   abandon <slug> <id> <why>  Record a terminal ABANDON handoff on a gate
 
@@ -373,17 +374,26 @@ func cmdLint(root string, args []string, stdout, stderr io.Writer) int {
 // lib.RunCheckWindows because acceptance cannot import lib (lib imports it).
 var WindowsCheck func(root string, args []string, stdout, stderr io.Writer) int
 
+// PrecheckSkips maps each writer gate id `gates precheck --slice` skips to the
+// unbuilt slices that own it; main wires it to lib.PrecheckSkips for the same
+// reason as WindowsCheck.
+var PrecheckSkips func(root, slug, slice string, gateIDs []string) (map[string]string, error)
+
 // cmdPrecheck is the wright's pre-return run of the `RUN: writer` gates and
 // `check windows` against its worktree. It reads gates.md but writes no
 // ledger, EVIDENCE line or transcript: nothing it prints is evidence, and the
-// root still runs every gate canonically.
+// root still runs every gate canonically. --slice skips the gates that only
+// other unbuilt slices own, whose capability the worktree cannot have yet.
 func cmdPrecheck(root string, args []string, stdout, stderr io.Writer) int {
-	const usage = "usage: devrites-engine gates precheck <slug> --worktree <path>"
-	var slug, worktree string
+	const usage = "usage: devrites-engine gates precheck <slug> --worktree <path> [--slice <SLICE-ID>]"
+	var slug, worktree, slice string
 	for i := 0; i < len(args); i++ {
 		switch {
 		case args[i] == "--worktree" && i+1 < len(args) && worktree == "":
 			worktree = args[i+1]
+			i++
+		case args[i] == "--slice" && i+1 < len(args) && slice == "":
+			slice = args[i+1]
 			i++
 		case strings.HasPrefix(args[i], "-") || slug != "":
 			fmt.Fprintln(stderr, usage)
@@ -392,7 +402,7 @@ func cmdPrecheck(root string, args []string, stdout, stderr io.Writer) int {
 			slug = args[i]
 		}
 	}
-	if slug == "" || worktree == "" {
+	if slug == "" || worktree == "" || (slice != "" && !state.ValidSliceID(slice)) {
 		fmt.Fprintln(stderr, usage)
 		return ExitUsage
 	}
@@ -426,9 +436,29 @@ func cmdPrecheck(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "precheck: fail (not evidence; fix before returning)")
 		return ExitBlocked
 	}
+	writers := doc.WriterGates()
+	var skips map[string]string
+	if slice != "" {
+		if PrecheckSkips == nil {
+			fmt.Fprintln(stderr, "gates precheck: --slice is not wired into this engine")
+			return ExitBlocked
+		}
+		ids := make([]string, len(writers))
+		for i, gate := range writers {
+			ids[i] = gate.ID
+		}
+		if skips, err = PrecheckSkips(root, slug, slice, ids); err != nil {
+			fmt.Fprintf(stderr, "gates precheck: %v\n", err)
+			return ExitBlocked
+		}
+	}
 	failed := false
 	approved := loadTestPlan(testPlanPath)
-	for _, gate := range doc.WriterGates() {
+	for _, gate := range writers {
+		if owners := skips[gate.ID]; owners != "" {
+			fmt.Fprintf(stdout, "SKIP %s (owned by unbuilt %s, not %s)\n", gate.ID, owners, slice)
+			continue
+		}
 		expectation, expectErr := CompileExpect(gate.Expect)
 		switch {
 		case gate.Check == "":

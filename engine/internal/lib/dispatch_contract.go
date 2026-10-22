@@ -124,7 +124,7 @@ func lintWrightContractFor(root, slug, path string) error {
 		block = block[:loc[1]-1-loc[0]+end[0]]
 	}
 	if !strings.Contains(string(block), "gates precheck") {
-		return fmt.Errorf("wright contract %s: %s marks %s `RUN: writer`, so its `Writer-safe checks:` must include `devrites-engine gates precheck %s --worktree <path>`; the wright runs those rows and `check windows` and fixes failures before returning",
+		return fmt.Errorf("wright contract %s: %s marks %s `RUN: writer`, so its `Writer-safe checks:` must include `devrites-engine gates precheck %s --worktree <path> --slice <SLICE-ID>`; the wright runs those rows and `check windows` and fixes failures before returning",
 			path, acceptance.GatesFile, writers[0].ID, slug)
 	}
 	return nil

@@ -16,6 +16,7 @@ import (
 	"github.com/devrites/devrites/internal/overhaul"
 	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/rootfacts"
+	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/version"
 )
 
@@ -124,6 +125,8 @@ func init() {
 	parallel.PlanReady = lib.PlanReady
 	// `gates precheck` runs `check windows` through this hook for the same reason.
 	acceptance.WindowsCheck = lib.RunCheckWindows
+	// ...and `gates precheck --slice` learns which writer gates to skip.
+	acceptance.PrecheckSkips = lib.PrecheckSkips
 }
 
 // run is the testable entry point. It returns the process exit code.
@@ -328,6 +331,18 @@ func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Write
 	if err != nil {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
 		return exitUsage
+	}
+	// Leaving Vet, every unbuilt slice must already pass Build-entry `check
+	// slice`. The gate package reads no workspace path itself, so the CLI
+	// composes this lib check onto its result, as seal does below.
+	if kind == gate.Readiness && result.Phase == state.PhaseVet && len(result.MissingFiles) == 0 {
+		for _, problem := range lib.UnbuiltSliceProblems(root, args[0]) {
+			result.StateProblems = append(result.StateProblems, "slice-check: "+problem)
+			if !result.Blocked {
+				result.Blocked = true
+				result.ReasonID = gate.ResultReasonID(kind, true)
+			}
+		}
 	}
 	if result.Blocked {
 		fmt.Fprint(stdout, result.Render())

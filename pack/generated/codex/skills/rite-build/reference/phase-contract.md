@@ -76,7 +76,9 @@ With a `test-plan.md` `## Feature gates` section, step 6 runs `Tests/proof` and 
 other row; feature gates run once per parallel landing, on control, while worktree
 wrights continue. The next landing and Prove wait for them; red is a fingerprint
 against slices landed since the last green run. Serial same-worktree mode, and plans
-without the section, run every row each round.
+without the section, run every row each round. Run gate, benchmark and proof commands
+through the host's shell tool, never a code-evaluation subprocess, whose environment
+can lack the owner's exported variables.
 
 ## Independent Build review
 

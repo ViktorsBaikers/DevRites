@@ -185,6 +185,9 @@ func TestCrossPackageHooksAreWired(t *testing.T) {
 	if acceptance.WindowsCheck == nil {
 		t.Fatal("acceptance.WindowsCheck is not wired in init; every `gates precheck` would FAIL windows")
 	}
+	if acceptance.PrecheckSkips == nil {
+		t.Fatal("acceptance.PrecheckSkips is not wired in init; every `gates precheck --slice` would exit 3")
+	}
 }
 
 func TestNestedCommandFamilyUsageListsOnlyRetainedCommands(t *testing.T) {

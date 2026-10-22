@@ -3,10 +3,13 @@ package lib
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/acceptance"
 )
 
 func TestParseTaskGraphOK(t *testing.T) {
@@ -475,5 +478,53 @@ func TestScheduleRoundsSkipsSliceWithoutPaths(t *testing.T) {
 	paths, _ := sliceWritePaths([]byte(edgeTasks), graph)
 	if got := scheduleRounds(graph, paths, t.TempDir()); got != 0 {
 		t.Fatalf("rounds=%d, want 0 when slices declare no write paths", got)
+	}
+}
+
+// `gates precheck --slice` runs the writer gates of its slice, of built slices
+// and of no slice, and skips a gate only other unbuilt slices name: here
+// AC-003, whose failing CHECK would otherwise fail SLICE-002's precheck.
+func TestPrecheckSliceSkipsLaterSliceWriterGates(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	featureDir := filepath.Join(root, "work", "feat")
+	writeFile(t, filepath.Join(featureDir, "state.md"), "- Phase: build\n- Status: running\n- [x] SLICE-001 built — abc1234\n")
+	writeFile(t, filepath.Join(featureDir, "tasks.md"), "# Tasks\n\n"+
+		"## SLICE-001 One\nSatisfies: AC-001\nDependencies: none\n\n"+
+		"## SLICE-002 Two\nSatisfies: AC-002\nDependencies: SLICE-001\n\n"+
+		"## SLICE-003 Three\nSatisfies: AC-003\nDependencies: SLICE-002\n")
+	writeFile(t, filepath.Join(featureDir, "test-plan.md"), "# Test plan\n\n## Build-entry preflight\n\n| Command | Cwd | Purpose |\n| --- | --- | --- |\n"+
+		"| echo ONE | . | built |\n| echo TWO | . | current |\n| echo THREE | . | later |\n| echo FREE | . | unowned |\n")
+	writeFile(t, filepath.Join(featureDir, "gates.md"), "# Gates\n\n"+
+		"- [ ] AC-001: one\n  CHECK: echo ONE\n  EXPECT: ONE\n  RUN: writer\n"+
+		"- [ ] AC-002: two\n  CHECK: echo TWO\n  EXPECT: TWO\n  RUN: writer\n"+
+		"- [ ] AC-003: three\n  CHECK: echo THREE\n  EXPECT: NOT-YET-BUILT\n  RUN: writer\n"+
+		"- [ ] G-FREE: no slice names it\n  CHECK: echo FREE\n  EXPECT: FREE\n  RUN: writer\n")
+	t.Cleanup(func() { acceptance.WindowsCheck, acceptance.PrecheckSkips = nil, nil })
+	acceptance.WindowsCheck = func(string, []string, io.Writer, io.Writer) int { return acceptance.ExitOK }
+	acceptance.PrecheckSkips = PrecheckSkips
+	precheck := func(extra ...string) (string, int) {
+		var stdout, stderr strings.Builder
+		code := acceptance.Run(root, append([]string{"precheck", "feat", "--worktree", t.TempDir()}, extra...), &stdout, &stderr)
+		return stdout.String() + stderr.String(), code
+	}
+
+	out, code := precheck("--slice", "SLICE-002")
+	if code != acceptance.ExitOK {
+		t.Fatalf("precheck --slice SLICE-002 = %d\n%s", code, out)
+	}
+	for _, want := range []string{"PASS AC-001\n", "PASS AC-002\n", "PASS G-FREE\n", "SKIP AC-003 (owned by unbuilt SLICE-003, not SLICE-002)\n"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q:\n%s", want, out)
+		}
+	}
+	if out, code := precheck(); code != acceptance.ExitBlocked || !strings.Contains(out, "FAIL AC-003") {
+		t.Fatalf("without --slice every writer gate still runs: code=%d\n%s", code, out)
+	}
+	if out, code := precheck("--slice", "SLICE-009"); code != acceptance.ExitBlocked || !strings.Contains(out, "SLICE-009 not found in tasks.md") {
+		t.Fatalf("unknown slice: code=%d\n%s", code, out)
+	}
+	if _, code := precheck("--slice", "two"); code != acceptance.ExitUsage {
+		t.Fatalf("malformed slice id = %d, want usage", code)
 	}
 }

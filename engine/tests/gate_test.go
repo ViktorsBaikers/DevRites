@@ -105,6 +105,57 @@ func TestReadinessBlocksStaleBindingExactCLIContract(t *testing.T) {
 	}
 }
 
+// Leaving Vet, readiness replays Build-entry `check slice` over every unbuilt
+// slice, so a plan defect is found once at Vet instead of once per dispatch.
+func TestReadinessReplaysSliceCheckForUnbuiltSlicesLeavingVet(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	const slug = "vet-slices"
+	writeCompleteGateCLIWorkspace(t, root, slug, state.PhaseVet, state.PhaseVet, "none\n")
+	workspace := filepath.Join(root, "work", slug)
+	testutil.WriteFile(t, filepath.Join(workspace, "spec.md"), "# Spec\n\n## Acceptance criteria\n- AC-001: one\n- AC-002: two\n")
+	testutil.WriteFile(t, filepath.Join(workspace, "test-plan.md"), "# Test plan\n\nAC-001 and AC-002: go test ./...\n")
+	readiness := func(built, allowlist2 string) (string, int) {
+		t.Helper()
+		testutil.WriteFile(t, filepath.Join(workspace, "state.md"), "- Phase: vet\n- Status: running\n"+built)
+		testutil.WriteFile(t, filepath.Join(workspace, "tasks.md"), "# Tasks\n\n"+
+			"## SLICE-001 One\nGoal: one\nSatisfies: AC-001\nDependencies: none\nWriter allowlist: src/a.go\nFiles likely touched: src/a.go\nTests/proof: go test ./...\n\n"+
+			"## SLICE-002 Two\nGoal: two\nSatisfies: AC-002\nDependencies: none\n"+allowlist2+"Files likely touched: src/b.go\nTests/proof: go test ./...\n\n"+
+			"## SLICE-003 Deferred hardening\nGoal: later\nSatisfies: none\nDependencies: none\n")
+		testutil.WriteFile(t, filepath.Join(workspace, "eng-review.md"), "# Engineering review\n\nREADY\n")
+		binding, err := internalgate.ReadinessBinding(root, slug)
+		if err != nil {
+			t.Fatal(err)
+		}
+		testutil.AppendFile(t, filepath.Join(workspace, "eng-review.md"), "\n"+binding+"\n")
+		out, errOut, code := runDevrites(t, root, "check", "readiness", slug)
+		if errOut != "" {
+			t.Fatalf("stderr=%q", errOut)
+		}
+		return out, code
+	}
+	const pass = "gate: readiness\nfeature: " + slug + "\nphase: vet\nresult: pass\nreason: DRV-GATE-READINESS-PASSED\n"
+
+	out, code := readiness("", "")
+	want := "gate: readiness\n" +
+		"feature: " + slug + "\n" +
+		"phase: vet\n" +
+		"result: blocked (state invariant)\n" +
+		"reason: DRV-GATE-READINESS-MISSING\n" +
+		"invariant: slice-check: SLICE-002 would fail Build-entry `check slice`: Writer allowlist missing or empty — dispatch requires exact project-relative paths; fix it in /rite-plan before READY\n" +
+		"retry: devrites-engine check readiness " + slug + "\n"
+	if code != 3 || out != want {
+		t.Fatalf("unbuilt slice without a Writer allowlist: code=%d stdout=%q, want code=3 stdout=%q", code, out, want)
+	}
+	// The allowlist clears it; the deferred Satisfies: none slice never blocks.
+	if out, code := readiness("", "Writer allowlist: src/b.go\n"); code != 0 || out != pass {
+		t.Fatalf("with a Writer allowlist: code=%d stdout=%q, want code=0 stdout=%q", code, out, pass)
+	}
+	// A slice state.md checks built is never dispatched again, so it is exempt.
+	if out, code := readiness("- [x] SLICE-002 built — abc1234\n", ""); code != 0 || out != pass {
+		t.Fatalf("built slice without a Writer allowlist: code=%d stdout=%q, want code=0 stdout=%q", code, out, pass)
+	}
+}
+
 func TestReadinessUsesStructuralArtifactsOnly(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	testutil.WriteFile(t, filepath.Join(root, "work", "tempered", "state.md"), `# State

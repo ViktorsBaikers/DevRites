@@ -116,6 +116,45 @@ func PlanReady(repoRoot, slug string) ([]parallel.SlicePaths, error) {
 	return planReady(filepath.Join(repoRoot, devritespaths.DevritesRootName), slug)
 }
 
+// PrecheckSkips maps each gate id `gates precheck --slice <slice>` skips to the
+// slices that own it. Gate ids reuse AC-### ids, so a gate's owners are the
+// tasks.md slices whose block names its id; it is skipped only when no owner is
+// slice or built. A gate no slice names still runs. root is the .devrites
+// directory.
+func PrecheckSkips(root, slug, slice string, gateIDs []string) (map[string]string, error) {
+	raw, err := readWorkspaceArtifact(root, slug, "tasks.md")
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := state.ExtractTaskSlice(raw, slice); !ok {
+		return nil, fmt.Errorf("%s not found in tasks.md", slice)
+	}
+	built, err := builtSlices(root, slug)
+	if err != nil {
+		return nil, err
+	}
+	live := map[string]bool{}
+	owners := map[string][]string{}
+	for _, s := range ParseTaskGraph(raw).Slices {
+		block, _ := state.ExtractTaskSlice(raw, s.ID)
+		for _, ac := range sliceACRe.FindAllString(block, -1) {
+			switch {
+			case s.ID == slice || built[sliceNumber(s.ID)]:
+				live[ac] = true
+			case !slices.Contains(owners[ac], s.ID):
+				owners[ac] = append(owners[ac], s.ID)
+			}
+		}
+	}
+	skips := map[string]string{}
+	for _, id := range gateIDs {
+		if !live[id] && len(owners[id]) > 0 {
+			skips[id] = strings.Join(owners[id], ", ")
+		}
+	}
+	return skips, nil
+}
+
 // planReady lists, in plan order, the tasks.md slices state.md does not check
 // built whose dependencies it all checks built, each with its sliceWritePaths
 // plus its dependency manifest and lockfile when it declares external

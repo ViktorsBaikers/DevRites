@@ -122,7 +122,9 @@ self-contained updater.
 
 - `check readiness <slug>` verifies the files required to leave the workspace's
   current phase, the `tasks.md` slice graph once that artifact is required, and,
-  once `eng-review.md` is required, its exact stable Build-input binding.
+  once `eng-review.md` is required, its exact stable Build-input binding. Leaving
+  Vet, it also runs the Build-entry `check slice` contract on every slice
+  `state.md` does not check built, except a deferred `Satisfies: none` slice.
 - `check readiness --emit-binding <slug>` renders the exact stable Build-input
   binding for Vet to record after semantic review.
 - `check preconditions <slug>` runs the preflight rows whose `Run at` is `vet`
@@ -221,8 +223,8 @@ or CI.
 `gates` operates the `gates.md` ledger inside a feature workspace: one gate per
 required outcome, runnable (`CHECK`+`EXPECT`, optional `CWD`) or manual
 (`EVIDENCE` only). Subcommands: `scaffold`, `status`, `run`, `reverify`,
-`lint`, `precheck --worktree <path>` (the wright's pre-return run of `RUN: writer`
-gates and `check windows`; writes no ledger, EVIDENCE line or transcript, though `check windows` still logs its metric; never evidence), `attest <id> <note>`,
+`lint`, `precheck --worktree <path> [--slice <SLICE-ID>]` (the wright's pre-return run of `RUN: writer`
+gates and `check windows`; `--slice` skips a gate only other unbuilt slices own; writes no ledger, EVIDENCE line or transcript, though `check windows` still logs its metric; never evidence), `attest <id> <note>`,
 `abandon <id> <why>`.
 
 A runnable gate executes only when its `(CHECK, CWD)` pair exactly matches a

@@ -63,7 +63,7 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"packet", "help"}, want: "devrites-engine packet <slug>"},
 		{args: []string{"packet", "x", "--wave", "w1", "--help"}, want: "[--recheck] [--checks <G-ID,...>]"},
 		{args: []string{"candidate", "freeze", "--help"}, want: "devrites-engine candidate freeze <slug>"},
-		{args: []string{"gates", "precheck", "--help"}, want: "gates precheck <slug> --worktree <path>"},
+		{args: []string{"gates", "precheck", "--help"}, want: "gates precheck <slug> --worktree <path> [--slice <SLICE-ID>]"},
 		{args: []string{"context", "--help"}, want: "[--role <r>] [--slice <SLICE-###>]"},
 		{args: []string{"context", "--help"}, want: "[--inline-contract] [--whole]"},
 		{args: []string{"metrics", "--help"}, want: "metrics summary [slug] [--by-slice]"},

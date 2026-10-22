@@ -214,6 +214,7 @@ Consumes / Produces: <interfaces read and exposed>
 Known-Gotchas: <ordering hazards and framework footguns | none>
 Prior-slice learnings: <constraints learned earlier | none>
 Files likely touched: <real paths>
+Writer allowlist: <exact project-relative files the wright may edit (a superset of Files likely touched)>
 Tests/proof: <exact command + cwd + expected signal + prerequisites/provenance inputs>
 Browser proof required: <yes | no>
 Frontend craft required: <yes | no>
