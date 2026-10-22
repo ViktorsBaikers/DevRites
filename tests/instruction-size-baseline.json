@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1542840,
+  "total_bytes": 1543310,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -137,7 +137,7 @@
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/plan.md": 2384,
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/slides.md": 2014,
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/table.md": 2015,
-    "pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md": 22003,
+    "pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md": 22473,
     "pack/.claude/skills/devrites-lib/SKILL.md": 5853,
     "pack/.claude/skills/devrites-prose-craft/reference/banned-phrases.md": 6494,
     "pack/.claude/skills/devrites-prose-craft/reference/examples.md": 6317,

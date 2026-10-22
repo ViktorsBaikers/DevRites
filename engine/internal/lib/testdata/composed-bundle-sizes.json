@@ -70,20 +70,20 @@
     "roleCeiling": 32566
   },
   "rite-converge": {
-    "root": 142248,
+    "root": 142718,
     "role": "evidence-scout",
     "roleFloor": 75064,
-    "roleCeiling": 119673
+    "roleCeiling": 120143
   },
   "rite-customize": {
     "root": 37062,
     "floor": 12768
   },
   "rite-define": {
-    "root": 189862,
+    "root": 190332,
     "role": "plan-drafter",
     "roleFloor": 85516,
-    "roleCeiling": 149717
+    "roleCeiling": 150187
   },
   "rite-doctor": {
     "root": 12855,
@@ -162,10 +162,10 @@
     "floor": 17452
   },
   "rite-review": {
-    "root": 217149,
+    "root": 217619,
     "role": "code-reviewer",
     "roleFloor": 39787,
-    "roleCeiling": 179055
+    "roleCeiling": 179525
   },
   "rite-seal": {
     "root": 158769,
