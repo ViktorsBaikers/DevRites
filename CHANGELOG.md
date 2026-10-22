@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.9](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.8...v7.0.9) (2026-10-22)
+
+### Fixed
+
+* **devrites:** keep a passed pre-dispatch row on re-dispatch ([#165](https://github.com/ViktorsBaikers/DevRites/issues/165)) ([927f5a4](https://github.com/ViktorsBaikers/DevRites/commit/927f5a482cfb70c84255a9ead467251483de7fee))
+
 ## [7.0.8](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.7...v7.0.8) (2026-10-22)
 
 ### Fixed
