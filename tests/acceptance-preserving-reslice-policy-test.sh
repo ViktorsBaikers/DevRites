@@ -63,6 +63,7 @@ import signal
 import stat
 import subprocess
 import sys
+import time
 
 ROOT = Path(sys.argv[1])
 TEMP = Path(sys.argv[2])
@@ -2077,7 +2078,9 @@ def recovery_drills():
                     os.write(write_descriptor, b"1")
                     if failure_kind == "command":
                         raise ContractFailure("injected command failure")
-                    signal.pause()
+                    # pause() would miss a signal that lands before it blocks.
+                    while True:
+                        time.sleep(0.05)
 
                 def protected_validation():
                     if sha256(protected.read_bytes()).hexdigest() != expected_protected:
@@ -2308,7 +2311,8 @@ def committed_cleanup_drills(signals):
                 def boundary_callback(current_boundary):
                     if current_boundary == boundary:
                         os.write(write_descriptor, b"1")
-                        signal.pause()
+                        while True:
+                            time.sleep(0.05)
 
                 parent_descriptor = os.open(drill, DIRECTORY_FLAGS)
                 transaction_descriptor = os.open(
