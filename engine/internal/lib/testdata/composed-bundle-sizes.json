@@ -1,6 +1,6 @@
 {
   "devrites-api-interface": {
-    "root": 72344,
+    "root": 72571,
     "floor": 12855
   },
   "devrites-audit": {
@@ -18,7 +18,7 @@
     "floor": 23467
   },
   "devrites-doubt": {
-    "root": 105110,
+    "root": 105337,
     "role": "doubt-reviewer",
     "roleFloor": 24672,
     "roleCeiling": 53282
@@ -28,7 +28,7 @@
     "floor": 54329
   },
   "devrites-interview": {
-    "root": 44581,
+    "root": 44808,
     "floor": 15289
   },
   "devrites-prose-craft": {
@@ -42,7 +42,7 @@
     "roleCeiling": 36423
   },
   "devrites-ux-shape": {
-    "root": 69446,
+    "root": 69673,
     "floor": 40154
   },
   "rite": {
@@ -54,17 +54,17 @@
     "floor": 17870
   },
   "rite-autocomplete": {
-    "root": 111059,
-    "floor": 76434
+    "root": 111286,
+    "floor": 76661
   },
   "rite-build": {
-    "root": 253948,
+    "root": 254175,
     "role": "code-reviewer",
     "roleFloor": 38977,
     "roleCeiling": 125549
   },
   "rite-clarify": {
-    "root": 72686,
+    "root": 72913,
     "role": "evidence-scout",
     "roleFloor": 32566,
     "roleCeiling": 32566
@@ -80,7 +80,7 @@
     "floor": 12768
   },
   "rite-define": {
-    "root": 190332,
+    "root": 190559,
     "role": "plan-drafter",
     "roleFloor": 85516,
     "roleCeiling": 150187
@@ -90,7 +90,7 @@
     "floor": 12855
   },
   "rite-dogfood": {
-    "root": 101827,
+    "root": 102054,
     "floor": 39706
   },
   "rite-explain": {
@@ -98,7 +98,7 @@
     "floor": 6576
   },
   "rite-fast": {
-    "root": 116874,
+    "root": 117101,
     "floor": 42219
   },
   "rite-frame": {
@@ -154,11 +154,11 @@
     "roleCeiling": 150971
   },
   "rite-quick": {
-    "root": 101009,
+    "root": 101236,
     "floor": 18372
   },
   "rite-resolve": {
-    "root": 50139,
+    "root": 50366,
     "floor": 17452
   },
   "rite-review": {
@@ -174,11 +174,11 @@
     "roleCeiling": 132379
   },
   "rite-ship": {
-    "root": 70706,
+    "root": 70933,
     "floor": 41412
   },
   "rite-spec": {
-    "root": 166132,
+    "root": 166359,
     "role": "evidence-scout",
     "roleFloor": 75563,
     "roleCeiling": 126011
@@ -188,7 +188,7 @@
     "floor": 12855
   },
   "rite-temper": {
-    "root": 132053,
+    "root": 132280,
     "role": "strategy-reviewer",
     "roleFloor": 49956,
     "roleCeiling": 89025
@@ -200,7 +200,7 @@
     "roleCeiling": 36525
   },
   "rite-vet": {
-    "root": 254418,
+    "root": 254645,
     "role": "devex-reviewer",
     "roleFloor": 62293,
     "roleCeiling": 161494
