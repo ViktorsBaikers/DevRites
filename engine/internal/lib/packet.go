@@ -19,10 +19,11 @@ const PacketUsage = `usage: devrites-engine packet <slug> --wave <w> --phase <p>
 
 Renders one role's by-reference dispatch packet and runs the lints dispatch
 open runs on it; a refused packet is removed and the command exits 3. A
-wright role (needs --slice and --checks) writes a same-worktree
-packets/<w>.contract.md with the slice's Writer allowlist and each --checks
-gates.md gate's CHECK, which must be an approved test-plan.md Build-entry
-preflight row; a native-worktree pilot keeps its own contract. A reviewer
+wright role (needs --slice) writes a same-worktree packets/<w>.contract.md
+with the slice's Writer allowlist, its tasks.md Tests/proof as a writer-safe
+check, and each --checks gates.md gate's CHECK, which must be an approved
+test-plan.md Build-entry preflight row; a native-worktree pilot keeps its own
+contract. A reviewer
 role (*-reviewer, *-auditor, test-analyst) writes packets/<w>.<role>.md with
 its Outcome/Counts return head. Read first names the role's context bundle
 (run context first; --recheck names the build --recheck bundle) and
@@ -136,13 +137,11 @@ func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
 		for _, p := range writes[slice] {
 			fmt.Fprintf(&b, "- %s\n", p)
 		}
-		if checks != "" {
-			lines, err := writerSafeChecks(root, slug, slice, checks)
-			if err != nil {
-				return fail(err)
-			}
-			b.WriteString("\n" + lines)
+		lines, err := writerSafeChecks(root, slug, slice, raw, checks)
+		if err != nil {
+			return fail(err)
 		}
+		b.WriteString("\n" + lines)
 	}
 	if candidate != "" {
 		source := "verbatim from"
@@ -247,24 +246,42 @@ func frozenCandidate(workspace, wave string) (sums string, partial bool, err err
 	return head.String(), true, nil
 }
 
-// writerSafeChecks resolves each named gates.md gate to its CHECK, refusing an
-// unknown gate or a CHECK no approved test-plan.md preflight row vets, and adds
-// `gates precheck --slice <slice>` when the ledger marks a gate `RUN: writer`.
-func writerSafeChecks(root, slug, slice, ids string) (string, error) {
-	ledger, err := readWorkspaceArtifact(root, slug, acceptance.GatesFile)
-	if err != nil {
-		return "", fmt.Errorf("--checks: %w", err)
+// writerSafeChecks lists the slice's own tasks.md Tests/proof first, so a
+// narrow package check never has to borrow a root-owned acceptance gate. It
+// then resolves each named gates.md gate to its CHECK, refusing an unknown gate
+// or a CHECK no approved test-plan.md preflight row vets, and adds `gates
+// precheck --slice <slice>` when the ledger marks a gate `RUN: writer`.
+func writerSafeChecks(root, slug, slice string, tasks []byte, ids string) (string, error) {
+	var names []string
+	var rows strings.Builder
+	block, _ := state.ExtractTaskSlice(tasks, slice)
+	if proof, _ := fieldValue(sliceFields(block), "tests/proof", "tests", "proof"); proof != "" {
+		names = append(names, slice+" Tests/proof")
+		fmt.Fprintf(&rows, "- %s Tests/proof (tasks.md): %s\n", slice, proof)
+	} else if ids == "" {
+		return "", fmt.Errorf("slice %s names no Tests/proof in tasks.md and --checks names no gate", slice)
 	}
-	plan, err := readWorkspaceArtifact(root, slug, "test-plan.md")
+	ledger, err := readWorkspaceArtifact(root, slug, acceptance.GatesFile)
+	if ids == "" && errors.Is(err, os.ErrNotExist) {
+		return "Writer-safe checks: " + strings.Join(names, ", ") + "\n" + rows.String(), nil
+	}
 	if err != nil {
 		return "", fmt.Errorf("--checks: %w", err)
 	}
 	doc := acceptance.ParseLedger(string(ledger))
-	approved := acceptance.ApprovedCommands(plan)
-	var names []string
-	var rows strings.Builder
+	var approved []acceptance.ApprovedCommand
+	if ids != "" {
+		plan, err := readWorkspaceArtifact(root, slug, "test-plan.md")
+		if err != nil {
+			return "", fmt.Errorf("--checks: %w", err)
+		}
+		approved = acceptance.ApprovedCommands(plan)
+	}
 	for _, id := range strings.Split(ids, ",") {
 		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
 		var gate *acceptance.Gate
 		for _, g := range doc.Gates {
 			if g.ID == id {
