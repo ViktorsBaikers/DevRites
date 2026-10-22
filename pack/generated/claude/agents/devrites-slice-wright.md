@@ -107,7 +107,8 @@ unclear boundary is underspecified: return `Escalation` without proceeding.
      in product source, tests, comments, or filenames.
 4. **VERIFY (fail-on-red).** Run writer-safe tests/types/lint: `Tests/proof` plus
    tests of changed code; `## Feature gates` rows are root-owned, except that when the
-   contract lists `gates precheck` you run it on your worktree and fix every FAIL
+   contract lists `gates precheck --slice <SLICE-ID>` you run it on your worktree
+   (`SKIP` rows are gates of unbuilt slices) and fix every FAIL
    in your paths before returning; a FAIL you cannot fix there is an Escalation
    (its output is never evidence). Writer-safe means
    local and non-consumptive — syntax/type/lint, unit and self-check suites, and a

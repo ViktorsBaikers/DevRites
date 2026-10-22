@@ -121,6 +121,7 @@ func TestLintWrightContractForWriterGates(t *testing.T) {
 		{"writer row, precheck missing", runnable + "  RUN: writer\n", "Writer-safe checks: go vet ./...\n", "must include `devrites-engine gates precheck feat"},
 		{"writer row, precheck inline", runnable + "  RUN: writer\n", "Writer-safe checks: go vet ./...; devrites-engine gates precheck feat --worktree .\n", ""},
 		{"writer row, precheck listed", runnable + "  RUN: writer\n", "Writer-safe checks:\n- go vet ./...\n- devrites-engine gates precheck feat --worktree .\n", ""},
+		{"writer row, sliced precheck", runnable + "  RUN: writer\n", "Writer-safe checks:\n- go vet ./...\n- devrites-engine gates precheck feat --worktree . --slice SLICE-001\n", ""},
 		{"writer row, precheck outside block", runnable + "  RUN: writer\n", "Writer-safe checks: go vet ./...\n\nNotes: gates precheck is for later.\n", "must include"},
 		{"abandoned writer row", runnable + "  RUN: writer\nABANDON: G1 vendor gone\n", "Writer-safe checks: go vet ./...\n", ""},
 		{"root row", runnable + "  RUN: root\n", "Writer-safe checks: go vet ./...\n", ""},

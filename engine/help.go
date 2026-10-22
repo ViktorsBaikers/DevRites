@@ -109,7 +109,7 @@ const (
   gates reverify <slug> [--timeout N] [--transcripts]  Re-execute every runnable gate, demoting stale passes
                                    (--transcripts: one redacted, candidate-bound file per gate in references/gates/)
   gates lint <slug> [--strict]     Audit oracle quality without executing
-  gates precheck <slug> --worktree <path>  Run RUN: writer gates + check windows in <path>; no ledger, EVIDENCE or transcript write (check windows logs its metric); never evidence
+  gates precheck <slug> --worktree <path> [--slice <SLICE-ID>]  Run RUN: writer gates + check windows in <path>; --slice skips gates owned only by other unbuilt slices; no ledger, EVIDENCE or transcript write (check windows logs its metric); never evidence
   gates attest <slug> <id> <note>  Record human evidence on a manual gate
   gates abandon <slug> <id> <why>  Record a terminal ABANDON handoff on a gate
 `

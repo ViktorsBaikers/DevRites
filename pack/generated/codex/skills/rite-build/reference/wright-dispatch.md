@@ -87,8 +87,9 @@ worktrees stay forbidden.
    them: a wright that cannot execute writes blind and its failures surface a
    whole review round later. Only artifact-producing, consumptive, or full
    canonical feature gates stay root-owned; when `gates.md` has a `RUN: writer`
-   gate, the checks include `devrites-engine gates precheck <slug> --worktree <path>`
-   (those gates plus `check windows`; never evidence, root still runs every gate).
+   gate, the checks include `devrites-engine gates precheck <slug> --worktree <path> --slice <SLICE-ID>`
+   (those gates, minus ones only other unbuilt slices own, plus `check windows`;
+   never evidence, root still runs every gate).
 3. Run `devrites-engine check diff-scope <slug> --snapshot` before dispatch so
    unrelated work remains distinguishable (it fingerprints every dirty path). For an isolated pilot, also record committed base SHA and exact
    baseline status before asking the host for isolation. **Failing case:** paths that

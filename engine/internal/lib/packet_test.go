@@ -445,7 +445,7 @@ func TestPacketWrightNamesGatesPrecheckForWriterGates(t *testing.T) {
 		t.Fatalf("code=%d\n%s", code, out)
 	}
 	text := readTestFile(t, filepath.Join(workspace, "packets", "SLICE-001.contract.md"))
-	if !strings.Contains(text, "- G-UNIT (cwd engine): `go test ./...`\n- gates precheck (cwd repository root): `devrites-engine gates precheck feature --worktree .`\n\n") {
-		t.Fatalf("a RUN: writer ledger needs gates precheck in the Writer-safe checks:\n%s", text)
+	if !strings.Contains(text, "- G-UNIT (cwd engine): `go test ./...`\n- gates precheck (cwd repository root): `devrites-engine gates precheck feature --worktree . --slice SLICE-001`\n\n") {
+		t.Fatalf("a RUN: writer ledger needs a slice-scoped gates precheck in the Writer-safe checks:\n%s", text)
 	}
 }

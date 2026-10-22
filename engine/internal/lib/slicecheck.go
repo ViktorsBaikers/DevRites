@@ -126,7 +126,55 @@ func RunCheckSlice(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "check slice: %s not found in tasks.md\n", sliceID)
 		return 3
 	}
+	spec, specErr := readWorkspaceArtifact(root, slug, "spec.md")
+	problems := sliceContractProblems(block, spec, specErr)
 
+	if n, over := sliceSizeAdvisory(block); over {
+		fmt.Fprintf(stdout, "check slice: ADVISORY size: %s has %d Writer allowlist files (>= %d); consider an acceptance-preserving split\n", sliceID, n, sliceFileAdvisory)
+	}
+	printProportion(root, slug, sliceID, stdout)
+	if len(problems) > 0 {
+		fmt.Fprintf(stdout, "check slice: %s BLOCKED\n", sliceID)
+		for _, p := range problems {
+			fmt.Fprintf(stdout, "  - %s\n", p)
+		}
+		return 3
+	}
+	allow, _ := fieldValue(sliceFields(block), "writer allowlist")
+	fmt.Fprintf(stdout, "check slice: %s ok (paths=%d acs=%d)\n", sliceID, len(parsePathList(allow)), len(sliceACRe.FindAllString(block, -1)))
+	return 0
+}
+
+// UnbuiltSliceProblems replays sliceContractProblems over every tasks.md slice
+// state.md does not check built, so Vet fails on the defects Build-entry
+// `check slice` would otherwise find one dispatch at a time. A deferred
+// `Satisfies: none` slice is never dispatched and is skipped.
+func UnbuiltSliceProblems(root, slug string) []string {
+	tasks, err := readWorkspaceArtifact(root, slug, "tasks.md")
+	if err != nil {
+		return []string{fmt.Sprintf("slice contracts cannot be checked: %v", err)}
+	}
+	built, err := builtSlices(root, slug)
+	if err != nil {
+		return []string{fmt.Sprintf("slice contracts cannot be checked: %v", err)}
+	}
+	spec, specErr := readWorkspaceArtifact(root, slug, "spec.md")
+	var problems []string
+	for _, s := range ParseTaskGraph(tasks).Slices {
+		block, _ := state.ExtractTaskSlice(tasks, s.ID)
+		if satisfies, _ := fieldValue(sliceFields(block), "satisfies"); built[sliceNumber(s.ID)] || strings.EqualFold(satisfies, "none") {
+			continue
+		}
+		for _, p := range sliceContractProblems(block, spec, specErr) {
+			problems = append(problems, fmt.Sprintf("%s would fail Build-entry `check slice`: %s; fix it in /rite-plan before READY", s.ID, p))
+		}
+	}
+	return problems
+}
+
+// sliceContractProblems returns every problem `check slice` blocks a slice's
+// dispatch on. Each reads only the slice block and spec.md, never build state.
+func sliceContractProblems(block string, spec []byte, specErr error) []string {
 	var problems []string
 	fields := sliceFields(block)
 
@@ -158,44 +206,28 @@ func RunCheckSlice(root string, args []string, stdout, stderr io.Writer) int {
 	acs := sliceACRe.FindAllString(block, -1)
 	if len(acs) == 0 {
 		problems = append(problems, "no AC-### coverage declared — every slice must satisfy acceptance criteria")
+	} else if specErr != nil {
+		problems = append(problems, fmt.Sprintf("spec.md unavailable — cannot verify %d AC reference(s)", len(acs)))
 	} else {
-		spec, specErr := readWorkspaceArtifact(root, slug, "spec.md")
-		if specErr != nil {
-			problems = append(problems, fmt.Sprintf("spec.md unavailable — cannot verify %d AC reference(s)", len(acs)))
-		} else {
-			specText := string(spec)
-			seen := map[string]bool{}
-			var unknown []string
-			for _, ac := range acs {
-				if seen[ac] {
-					continue
-				}
-				seen[ac] = true
-				if !strings.Contains(specText, ac) {
-					unknown = append(unknown, ac)
-				}
+		specText := string(spec)
+		seen := map[string]bool{}
+		var unknown []string
+		for _, ac := range acs {
+			if seen[ac] {
+				continue
 			}
-			for _, ac := range unknown {
-				problems = append(problems, fmt.Sprintf("%s is referenced but not declared in spec.md", ac))
+			seen[ac] = true
+			if !strings.Contains(specText, ac) {
+				unknown = append(unknown, ac)
 			}
+		}
+		for _, ac := range unknown {
+			problems = append(problems, fmt.Sprintf("%s is referenced but not declared in spec.md", ac))
 		}
 	}
 
 	if proof, ok := fieldValue(fields, "tests/proof", "tests", "proof"); !ok || proof == "" {
 		problems = append(problems, "Tests/proof field missing or empty — no evidence plan for the slice")
 	}
-
-	if n, over := sliceSizeAdvisory(block); over {
-		fmt.Fprintf(stdout, "check slice: ADVISORY size: %s has %d Writer allowlist files (>= %d); consider an acceptance-preserving split\n", sliceID, n, sliceFileAdvisory)
-	}
-	printProportion(root, slug, sliceID, stdout)
-	if len(problems) > 0 {
-		fmt.Fprintf(stdout, "check slice: %s BLOCKED\n", sliceID)
-		for _, p := range problems {
-			fmt.Fprintf(stdout, "  - %s\n", p)
-		}
-		return 3
-	}
-	fmt.Fprintf(stdout, "check slice: %s ok (paths=%d acs=%d)\n", sliceID, len(allowlist), len(acs))
-	return 0
+	return problems
 }

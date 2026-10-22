@@ -137,7 +137,7 @@ func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(&b, "- %s\n", p)
 		}
 		if checks != "" {
-			lines, err := writerSafeChecks(root, slug, checks)
+			lines, err := writerSafeChecks(root, slug, slice, checks)
 			if err != nil {
 				return fail(err)
 			}
@@ -249,8 +249,8 @@ func frozenCandidate(workspace, wave string) (sums string, partial bool, err err
 
 // writerSafeChecks resolves each named gates.md gate to its CHECK, refusing an
 // unknown gate or a CHECK no approved test-plan.md preflight row vets, and adds
-// `gates precheck` when the ledger marks a gate `RUN: writer`.
-func writerSafeChecks(root, slug, ids string) (string, error) {
+// `gates precheck --slice <slice>` when the ledger marks a gate `RUN: writer`.
+func writerSafeChecks(root, slug, slice, ids string) (string, error) {
 	ledger, err := readWorkspaceArtifact(root, slug, acceptance.GatesFile)
 	if err != nil {
 		return "", fmt.Errorf("--checks: %w", err)
@@ -288,7 +288,7 @@ func writerSafeChecks(root, slug, ids string) (string, error) {
 		fmt.Fprintf(&rows, "- %s (cwd %s): `%s`\n", id, cwd, gate.Check)
 	}
 	if len(doc.WriterGates()) > 0 {
-		fmt.Fprintf(&rows, "- gates precheck (cwd repository root): `devrites-engine gates precheck %s --worktree .`\n", slug)
+		fmt.Fprintf(&rows, "- gates precheck (cwd repository root): `devrites-engine gates precheck %s --worktree . --slice %s`\n", slug, slice)
 	}
 	return "Writer-safe checks: " + strings.Join(names, ", ") + "\n" + rows.String(), nil
 }

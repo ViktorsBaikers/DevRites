@@ -6,6 +6,19 @@ cursor forms remain readable, but a cursor with no `schema` row needs
 `devrites-engine migrate <slug>` before the engine accepts it. `/rite-upgrade` audits
 without path/alias/format migration.
 
+## Contents
+
+- [Slug identity](#slug-identity)
+- [Required by phase](#required-by-phase)
+- [What each file owns](#what-each-file-owns)
+- [Candidate manifest and bindings](#candidate-manifest-and-bindings)
+- [Anchored notes](#anchored-notes)
+- [Native readiness ownership](#native-readiness-ownership)
+- [Canonical slice grammar](#canonical-slice-grammar)
+- [Read next by phase](#read-next-by-phase)
+- [Do not duplicate](#do-not-duplicate)
+- [ID contract](#id-contract)
+
 ## Slug identity
 
 New slugs derive from the objective: lowercase ASCII kebab-case matching
@@ -214,6 +227,7 @@ Consumes / Produces: <interfaces read and exposed>
 Known-Gotchas: <ordering hazards and framework footguns | none>
 Prior-slice learnings: <constraints learned earlier | none>
 Files likely touched: <real paths>
+Writer allowlist: <exact project-relative files the wright may edit (a superset of Files likely touched)>
 Tests/proof: <exact command + cwd + expected signal + prerequisites/provenance inputs>
 Browser proof required: <yes | no>
 Frontend craft required: <yes | no>
