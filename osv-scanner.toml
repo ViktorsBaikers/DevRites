@@ -18,3 +18,11 @@
 id = "GHSA-vfj7-8cjw-p6xm"
 ignoreUntil = 2026-11-29
 reason = "braces@3.0.3 via micromatch in commit-analyzer; release job only expands repository-controlled release-rule patterns. Remove once a patched braces release exists."
+
+# 2026-10-22: ip-address@10.7.2 is bundled inside npm@11.21.1; no npm release
+# bundles the patched 10.7.4 yet. Owner: release-maintainers. Mirrors
+# scripts/npm-audit-exceptions.json.
+[[IgnoredVulns]]
+id = "GHSA-rxp7-6hxx-x8q5"
+ignoreUntil = 2026-11-29
+reason = "ip-address@10.7.2 bundled in npm; only socks parses it for a SOCKS proxy address and the release job sets no proxy. Remove once npm bundles ip-address >=10.7.4."
