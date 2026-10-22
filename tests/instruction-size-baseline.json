@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1543670,
+  "total_bytes": 1543984,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -68,7 +68,7 @@
     "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md": 12480,
     "pack/.claude/skills/devrites-lib/reference/reply-contract.md": 5498,
     "pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md": 3792,
-    "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 29177,
+    "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 29404,
     "pack/.claude/skills/devrites-lib/reference/standards/agents.md": 16278,
     "pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md": 4116,
     "pack/.claude/skills/devrites-lib/reference/standards/architecture-health.md": 3407,
@@ -283,7 +283,7 @@
     "pack/.claude/skills/rite-vet/reference/depth.md": 3814,
     "pack/.claude/skills/rite-vet/reference/eng-lenses.md": 3590,
     "pack/.claude/skills/rite-vet/reference/review-axes.md": 11885,
-    "pack/.claude/skills/rite-vet/SKILL.md": 20315,
+    "pack/.claude/skills/rite-vet/SKILL.md": 20402,
     "pack/.claude/skills/rite-watch-pr/SKILL.md": 4634,
     "pack/.claude/skills/rite-zoom-out/SKILL.md": 3853,
     "pack/.claude/skills/rite/reference/menu.md": 3978,

@@ -387,6 +387,9 @@ access, safety and irreversible-action boundaries independently stop work.
   next full-inventory gate (Vet `mechanism` → one `test-plan.md` proof row; Build →
   the `$rite-review` roster) — never by another repair round in this phase. Review
   closes every deferred row with a labeled verdict; Seal blocks on any without one.
+  A Vet write-set closure row (plan-reviewer dimension 6) is never late: it names
+  an unbuilt slice's missing path and folds in this phase's one Plan repair, since
+  deferring it only reopens Plan at that slice's Build entry.
   **Failing case:** round 4 finds three Important items on clauses untouched since
   round 1 and dispatches another repair.
 - **Recovery findings need a discriminator; recovery scope stays frozen.** While a
