@@ -357,7 +357,7 @@ func TestPacketRefusesUnsafeInputs(t *testing.T) {
 		{"seeded focus row", []string{"--wave", "r1", "--phase", "review", "--role", "code-reviewer", "--focus", "seeded.md"}, 3, "seeds a conclusion", "r1.code-reviewer.md"},
 		{"unknown gate", []string{"--wave", "SLICE-001", "--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001", "--checks", "G-UNIT,G-NOPE"}, 3, `gate "G-NOPE" is not in gates.md`, "SLICE-001.contract.md"},
 		{"unapproved gate", []string{"--wave", "SLICE-001", "--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001", "--checks", "G-ROGUE"}, 3, "not an approved test-plan.md Build-entry preflight row", "SLICE-001.contract.md"},
-		{"wright without checks", []string{"--wave", "SLICE-001", "--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001"}, 3, "names no `Writer-safe checks:` line", "SLICE-001.contract.md"},
+		{"wright without checks", []string{"--wave", "SLICE-001", "--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001"}, 3, "names no Tests/proof in tasks.md and --checks names no gate", "SLICE-001.contract.md"},
 		{"review without freeze", []string{"--wave", "r9", "--phase", "review", "--role", "code-reviewer"}, 3, "needs a frozen candidate", "r9.code-reviewer.md"},
 		{"missing bundle", []string{"--wave", "r1", "--phase", "seal", "--role", "code-reviewer"}, 3, "seal-code-reviewer.bundle.md is missing", "r1.code-reviewer.md"},
 		{"non-reviewer role", []string{"--wave", "r1", "--phase", "plan", "--role", "plan-drafter"}, 2, "usage:", ""},
@@ -435,6 +435,24 @@ func TestPacketKeepsHeaderRowsOfLargeCandidate(t *testing.T) {
 	if strings.Contains(text, "file0000.go") || !strings.Contains(text, "header rows verbatim; per-file rows in .devrites/work/feature/packets/r3.sha256") ||
 		!strings.Contains(text, "packets/r3.diff\naggregate 3333333333333333333333333333333333333333333333333333333333333333\n```") {
 		t.Fatalf("a large candidate keeps only its header rows:\n%s", text)
+	}
+}
+
+func TestPacketWrightListsSliceTestsProof(t *testing.T) {
+	root, workspace, _ := packetTestWorkspace(t)
+	writeFile(t, filepath.Join(workspace, "tasks.md"), "# Tasks\n\n## SLICE-001 A\nDependencies: none\nWriter allowlist: src/a.go; src/a_test.go\nTests/proof: `go test ./src/...` ok incl. TestA\n")
+	contract := filepath.Join(workspace, "packets", "SLICE-001.contract.md")
+	if code, out := runPacketT(t, root, "--wave", "SLICE-001", "--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001"); code != 0 {
+		t.Fatalf("a slice's own Tests/proof needs no gate: code=%d\n%s", code, out)
+	}
+	if text := readTestFile(t, contract); !strings.Contains(text, "Writer-safe checks: SLICE-001 Tests/proof\n- SLICE-001 Tests/proof (tasks.md): `go test ./src/...` ok incl. TestA\n\n") {
+		t.Fatalf("the contract lacks the slice's Tests/proof:\n%s", text)
+	}
+	if code, out := runPacketT(t, root, "--wave", "SLICE-001", "--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001", "--checks", "G-UNIT"); code != 0 {
+		t.Fatalf("code=%d\n%s", code, out)
+	}
+	if text := readTestFile(t, contract); !strings.Contains(text, "Writer-safe checks: SLICE-001 Tests/proof, G-UNIT\n- SLICE-001 Tests/proof (tasks.md): `go test ./src/...` ok incl. TestA\n- G-UNIT (cwd engine): `go test ./...`\n\n") {
+		t.Fatalf("--checks gates follow the slice's Tests/proof:\n%s", text)
 	}
 }
 

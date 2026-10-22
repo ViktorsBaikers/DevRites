@@ -84,11 +84,11 @@ worktrees stay forbidden.
    Quote, as a `--focus` row, every active `decisions.md` carry-forward constraint whose `Files:`
    overlap the task paths (or that names no files).
    A new path requires a new bounded contract; the wright cannot widen the task.
-   Name (`--checks` gate IDs) the writer-safe commands the wright must run (syntax/type/lint, unit and
-   self-check suites, a narrow local smoke of the changed path) and never forbid
-   them: a wright that cannot execute writes blind and its failures surface a
-   whole review round later. Only artifact-producing, consumptive, or full
-   canonical feature gates stay root-owned; when `gates.md` has a `RUN: writer`
+   The contract lists the slice's `Tests/proof` as writer-safe checks (syntax/type/lint,
+   unit and self-check suites, a narrow smoke of the changed path); `--checks` adds
+   gate IDs. Never forbid them: a blind wright's failures surface a review
+   round later. Artifact-producing, consumptive, or full canonical feature
+   gates stay root-owned, never in `--checks`; when `gates.md` has a `RUN: writer`
    gate, the checks include `devrites-engine gates precheck <slug> --worktree <path> --slice <SLICE-ID>`
    (those gates, minus ones only other unbuilt slices own, plus `check windows`;
    never evidence, root still runs every gate).
@@ -107,7 +107,7 @@ open with no wave and no claim and stops the dispatch, per
 [`agents.md`](../../devrites-lib/reference/standards/agents.md). `.devrites/**`
 is never a task path; see [Workflow Artifact admission](../../devrites-lib/reference/standards/workflow-artifacts.md).
 Render the contract with `devrites-engine packet <slug> --wave <wave> --phase build
---role slice-wright --slice <SLICE-ID> --checks <G-ID,...> [--focus <file>]` (it
+--role slice-wright --slice <SLICE-ID> [--checks <G-ID,...>] [--focus <file>]` (it
 writes the linted same-worktree `packets/<wave>.contract.md`; a native-worktree pilot
 writes its own contract with `Isolation`, `worktree_base`, and subject) and hand the wright that text verbatim. Reviewers read
 that file, so `--focus` rows state each defect to fix with its anchor, never a reviewer's verdict,
