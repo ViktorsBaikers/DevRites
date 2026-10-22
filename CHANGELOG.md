@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.5](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.4...v7.0.5) (2026-10-22)
+
+### Fixed
+
+* **devrites:** catch Build-entry slice defects at Vet ([#158](https://github.com/ViktorsBaikers/DevRites/issues/158)) ([34b65b7](https://github.com/ViktorsBaikers/DevRites/commit/34b65b7d819c308b46dc609d215ff698315b4b44))
+* **devrites:** clear expiring audit exceptions and Windows race flake ([#159](https://github.com/ViktorsBaikers/DevRites/issues/159)) ([0e6a85a](https://github.com/ViktorsBaikers/DevRites/commit/0e6a85a7726d80b6e259a68975bf2892ad621a51))
+
 ## [7.0.4](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.3...v7.0.4) (2026-10-21)
 
 ### Fixed
