@@ -623,7 +623,11 @@ func mustRead(t *testing.T, path string) string {
 func TestGitReturnsWhenHookGrandchildHoldsPipe(t *testing.T) {
 	repo, _ := setupRepo(t)
 	hook := filepath.Join(repo, ".git", "hooks", "pre-commit")
-	if err := os.WriteFile(hook, []byte("#!/bin/sh\nsleep 30\n"), 0o755); err != nil {
+	// The hook outlives git's timeout plus wait delay, so it still holds the pipe
+	// when git returns, then exits before the temp dir is removed: on Windows a
+	// live process keeps its working directory locked.
+	const hookSleep = 10 * time.Second
+	if err := os.WriteFile(hook, []byte(fmt.Sprintf("#!/bin/sh\nsleep %d\n", int(hookSleep.Seconds()))), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(repo, "new.txt"), []byte("x\n"), 0o644); err != nil {
@@ -635,6 +639,11 @@ func TestGitReturnsWhenHookGrandchildHoldsPipe(t *testing.T) {
 	t.Cleanup(func() { gitTimeout = prev })
 
 	start := time.Now()
+	t.Cleanup(func() {
+		if d := time.Until(start.Add(hookSleep + time.Second)); d > 0 {
+			time.Sleep(d)
+		}
+	})
 	_, err := git(repo, "commit", "-m", "m")
 	elapsed := time.Since(start)
 	if err == nil {
