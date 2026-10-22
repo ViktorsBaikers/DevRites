@@ -76,6 +76,13 @@ line, and then assign the band. Do not choose a score and justify it afterward:
    speculate about micro-optimizations.
 6. **Reversibility & blast radius:** treat auth, migration, public API, and data
    model changes conservatively. Every destructive step needs a rollback.
+   Close every unbuilt slice's write set against the live tree: real callers and
+   consumers of what it changes (`trace_path` inbound), tests that exercise
+   behavior it changes or retires, build/runtime/config files and generated
+   outputs its result needs, and tooling it relies on must each be owned by that
+   slice or an earlier one. Each gap is a `kind: contract` row naming the exact
+   path and owning slice. **Failing case:** a slice that moves startup into a
+   constructor omits the `main.go` caller, found only at its Build entry.
 7. **Failure-mode coverage:** for each new codepath, find a realistic failure such
    as a timeout, nil value, race, or stale state. A silent failure with **no test AND
    no error handling** is a critical gap. For every consumptive action under

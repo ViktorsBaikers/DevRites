@@ -65,7 +65,9 @@ worktrees stay forbidden.
    A target composed only of vetted executable workflow artifacts routes to the
    controlling root under
    [`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md);
-   its rejection here is not a blocker.
+   its rejection here is not a blocker. Vet already closed the slice's write
+   set; re-check only consumers of files earlier slices changed since the
+   readiness binding, and fold a gap through `/rite-plan` before dispatch.
 2. Goal, verbatim acceptance, exclusions, context, `test-plan.md` proof
    commands, and applicable standards reach the wright through the slice bundle
    its contract names; only a native-worktree pilot contract adds the exact

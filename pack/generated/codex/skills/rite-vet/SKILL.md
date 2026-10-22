@@ -212,7 +212,9 @@ plan declares a root-authored executable workflow file, read
    `Readiness inputs SHA-256` with
    `devrites-engine check readiness --emit-binding <slug>`; normal readiness check
    must pass, and it replays Build-entry `check slice` on every unbuilt slice, so
-   READY needs each to pass (fix failures in `$rite-plan`). A `sequence_lookahead: yes` workspace also records one
+   READY needs each to pass (fix failures in `$rite-plan`). READY also needs every
+   unbuilt slice's write set closed against the live tree (plan-reviewer
+   dimension 6), so frontier gaps fold in one Plan repair, not one per slice. A `sequence_lookahead: yes` workspace also records one
    `Predecessor readiness: <predecessor> <digest>` line from the predecessor's
    `--emit-binding` hex; readiness re-checks it. Record the per-input drift baseline alongside it:
    `devrites-engine check drift <slug> --record` — a later stale binding then
