@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.8](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.7...v7.0.8) (2026-10-22)
+
+### Fixed
+
+* **devrites:** wright contract lists the slice's tests/proof ([#162](https://github.com/ViktorsBaikers/DevRites/issues/162)) ([ce38f3c](https://github.com/ViktorsBaikers/DevRites/commit/ce38f3c850d32f9f614945dd9d6869dade85cf20))
+* **no-release:** except bundled npm ip-address advisory to 11-29 ([#163](https://github.com/ViktorsBaikers/DevRites/issues/163)) ([d558f28](https://github.com/ViktorsBaikers/DevRites/commit/d558f28cdacbdcd796e84e05589642c4485e0bb3))
+
 ## [7.0.7](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.6...v7.0.7) (2026-10-22)
 
 ### Fixed
