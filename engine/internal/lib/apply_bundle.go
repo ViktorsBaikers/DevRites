@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/devrites/devrites/internal/acceptance"
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/state"
@@ -360,7 +361,8 @@ func applyHunks(base string, hunks []candidateHunk) (string, []string) {
 
 // checkBundleResult rejects an outcome the root would otherwise discover only
 // at Vet: a tracked ID that vanished from every touched file without being
-// listed in retired_ids, a new tasks.md graph problem, or a budgeted artifact
+// listed in retired_ids, a new tasks.md graph problem, a new test-plan.md
+// preflight row that cannot run as written, or a budgeted artifact
 // that grew into material overshoot without a covering
 // `Budget override: <=N lines; <reason>` line.
 func checkBundleResult(targets []*bundleTarget, retired map[string]bool) []string {
@@ -397,6 +399,17 @@ func checkBundleResult(targets []*bundleTarget, retired map[string]bool) []strin
 			for _, p := range state.ParseTaskGraph(target.after).Problems {
 				if !old[p] {
 					problems = append(problems, "tasks.md: "+p)
+				}
+			}
+		}
+		if name == "test-plan.md" && filepath.Dir(target.rel) == "." {
+			old := map[string]bool{}
+			for _, p := range acceptance.PreflightShapeProblems(target.before) {
+				old[p] = true
+			}
+			for _, p := range acceptance.PreflightShapeProblems(target.after) {
+				if !old[p] {
+					problems = append(problems, "test-plan.md: "+p)
 				}
 			}
 		}

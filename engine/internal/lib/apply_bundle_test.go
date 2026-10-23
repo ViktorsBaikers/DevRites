@@ -136,6 +136,11 @@ func TestApplyBundleRefusesAndWritesNothing(t *testing.T) {
 			return []candidateFile{patch("plan.md", candidateHunk{OldText: "ship in order.\n", NewText: "ship in order.\n\n## Repair delta, 2026-10-16\nAC-001 ships first.\n"})},
 				map[string]string{"plan.md": pinOf(t, dir, "plan.md")}, nil
 		}, "dated delta section"},
+		{"unescaped preflight pipe", func(dir string) ([]candidateFile, map[string]string, []string) {
+			content := "# Test plan\n\n## Build-entry preflight\n| Gate | Command | Cwd | Expected | Run at |\n|---|---|---|---|---|\n" +
+				"| probe | `test -f a || exit 1` | . | exit 0 | vet |\n"
+			return []candidateFile{{Path: "test-plan.md", Operation: "create", Content: &content}}, nil, nil
+		}, "escape each `|`"},
 		{"budget growth", func(dir string) ([]candidateFile, map[string]string, []string) {
 			return []candidateFile{patch("plan.md", candidateHunk{OldText: "# Plan\n", NewText: "# Plan\n" + strings.Repeat("line\n", 400)})},
 				map[string]string{"plan.md": pinOf(t, dir, "plan.md")}, nil

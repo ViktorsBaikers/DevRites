@@ -1,6 +1,7 @@
 package acceptance
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -25,6 +26,9 @@ type PreflightRow struct {
 	// RunAt is the optional `Run at` cell (`vet`, `pre-dispatch SLICE-###`,
 	// `action`), whitespace-collapsed; "" when the row or table has none.
 	RunAt string
+	// Width and HeaderWidth are the row's and its table header's cell counts;
+	// they differ when a bare `|` in a command splits the row.
+	Width, HeaderWidth int
 }
 
 // ApprovedCommands extracts the approved command surface of test-plan.md: the
@@ -56,7 +60,7 @@ func PreflightRows(testPlan []byte) (rows []PreflightRow, hasRunAt bool) {
 		return nil, false
 	}
 	inSection := false
-	commandCol, cwdCol, gateCol, expectedCol, runAtCol := -1, -1, -1, -1, -1
+	commandCol, cwdCol, gateCol, expectedCol, runAtCol, headerWidth := -1, -1, -1, -1, -1, 0
 	for _, line := range strings.Split(string(structural), "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "##") {
@@ -77,6 +81,7 @@ func PreflightRows(testPlan []byte) (rows []PreflightRow, hasRunAt bool) {
 			gateCol = columnIndex(cells, "gate")
 			expectedCol = columnIndex(cells, "expected")
 			runAtCol = columnIndex(cells, "run at")
+			headerWidth = len(cells)
 			hasRunAt = hasRunAt || (commandCol >= 0 && runAtCol >= 0)
 			continue
 		}
@@ -87,7 +92,7 @@ func PreflightRows(testPlan []byte) (rows []PreflightRow, hasRunAt bool) {
 		if command == "" {
 			continue
 		}
-		row := PreflightRow{ApprovedCommand: ApprovedCommand{Command: command}}
+		row := PreflightRow{ApprovedCommand: ApprovedCommand{Command: command}, Width: len(cells), HeaderWidth: headerWidth}
 		if cwdCol >= 0 && cwdCol < len(cells) {
 			row.Cwd = normalizeApprovedCwd(cells[cwdCol])
 		}
@@ -97,6 +102,30 @@ func PreflightRows(testPlan []byte) (rows []PreflightRow, hasRunAt bool) {
 		rows = append(rows, row)
 	}
 	return rows, hasRunAt
+}
+
+// PreflightShapeProblems names each Build-entry preflight row that cannot run
+// as written: a cell count that differs from its header (an unescaped `|`
+// in the command, which must be written `\|`) or an invalid `Run at` value.
+// `check preconditions` would otherwise find it only when Vet runs the row.
+func PreflightShapeProblems(testPlan []byte) []string {
+	rows, _ := PreflightRows(testPlan)
+	var problems []string
+	for _, row := range rows {
+		name := valueOr(row.Gate, row.Command)
+		if row.Width != row.HeaderWidth {
+			problems = append(problems, fmt.Sprintf("preflight row %q has %d cells but its header has %d; escape each `|` in the command as `\\|`", name, row.Width, row.HeaderWidth))
+		} else if !ValidRunAt(row.RunAt) {
+			problems = append(problems, fmt.Sprintf("preflight row %q has invalid Run at %q (want vet, pre-dispatch SLICE-###, or action)", name, row.RunAt))
+		}
+	}
+	return problems
+}
+
+// ValidRunAt reports whether a `Run at` cell is empty or a known value.
+func ValidRunAt(runAt string) bool {
+	lower := strings.ToLower(runAt)
+	return lower == "" || lower == "vet" || lower == "action" || preDispatchRunAtRE.MatchString(runAt)
 }
 
 // cellText returns a cell's trimmed text without code backticks, "" when the

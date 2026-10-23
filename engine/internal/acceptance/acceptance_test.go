@@ -1074,6 +1074,24 @@ func TestRunPreconditionsRunsOnlyMatchingRows(t *testing.T) {
 	}
 }
 
+func TestPreflightShapeProblems(t *testing.T) {
+	if problems := PreflightShapeProblems([]byte(preconditionsPlan)); len(problems) != 0 {
+		t.Fatalf("a well-formed table has no problems: %v", problems)
+	}
+	escaped := strings.Replace(preconditionsPlan, "echo VET-OK", "true \\|\\| echo VET-OK", 1)
+	if problems := PreflightShapeProblems([]byte(escaped)); len(problems) != 0 {
+		t.Fatalf("an escaped pipe keeps the row whole: %v", problems)
+	}
+	bare := strings.Replace(preconditionsPlan, "echo VET-OK", "true || echo VET-OK", 1)
+	if problems := PreflightShapeProblems([]byte(bare)); len(problems) != 1 || !strings.Contains(problems[0], `"vet probe" has 7 cells but its header has 5`) {
+		t.Fatalf("a bare pipe splits the row: %v", problems)
+	}
+	typo := strings.Replace(preconditionsPlan, "| action |", "| vett |", 1)
+	if problems := PreflightShapeProblems([]byte(typo)); len(problems) != 1 || !strings.Contains(problems[0], `invalid Run at "vett"`) {
+		t.Fatalf("an unknown Run at is a problem: %v", problems)
+	}
+}
+
 func TestRunPreconditionsFailsClosed(t *testing.T) {
 	failing := strings.Replace(preconditionsPlan, "echo VET-OK", "exit 3", 1)
 	root, work, rows := writePreconditionsPlan(t, failing)
