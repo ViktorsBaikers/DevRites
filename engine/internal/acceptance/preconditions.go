@@ -163,8 +163,7 @@ func runPreflightRows(root, slug, work, project, runAt string, rows []PreflightR
 	doc := &Document{}
 	var results []GateResult
 	for _, row := range rows {
-		lower := strings.ToLower(row.RunAt)
-		if lower != "" && lower != "vet" && lower != "action" && !preDispatchRunAtRE.MatchString(row.RunAt) {
+		if !ValidRunAt(row.RunAt) {
 			fmt.Fprintf(stdout, "row %s: invalid Run at %q (want vet, pre-dispatch SLICE-###, or action)\n", valueOr(row.Gate, row.Command), row.RunAt)
 			failed = true
 			continue
