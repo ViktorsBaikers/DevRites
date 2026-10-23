@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.10](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.9...v7.0.10) (2026-10-23)
+
+### Fixed
+
+* **devrites:** apply-bundle refuses an unrunnable preflight row ([#166](https://github.com/ViktorsBaikers/DevRites/issues/166)) ([6bc06a4](https://github.com/ViktorsBaikers/DevRites/commit/6bc06a40530e3456b80883303e345fb25d45357a))
+
 ## [7.0.9](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.8...v7.0.9) (2026-10-22)
 
 ### Fixed
