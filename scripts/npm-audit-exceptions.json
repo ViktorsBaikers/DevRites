@@ -1,17 +1,5 @@
 [
   {
-    "id": "GHSA-vfj7-8cjw-p6xm",
-    "package": "braces",
-    "range": "<=3.0.3",
-    "nodes": [
-      "node_modules/braces"
-    ],
-    "source": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
-    "owner": "release-maintainers",
-    "reason": "braces@3.0.3 is the latest release and no patched version exists; it reaches the tree through micromatch in @semantic-release/commit-analyzer. The release job only matches repository-controlled release-rule patterns against commit fields, so braces never parses untrusted patterns. Remove once a patched braces release exists.",
-    "expires": "2026-11-29"
-  },
-  {
     "id": "GHSA-rxp7-6hxx-x8q5",
     "package": "ip-address",
     "range": "<=10.7.3",
@@ -22,5 +10,29 @@
     "owner": "release-maintainers",
     "reason": "ip-address@10.7.2 is bundled inside npm (pinned to 11.21.1 through the @semantic-release/npm override), so an override cannot replace it, and no npm release yet bundles the patched 10.7.4 (npm 12.2.1 still ships 10.7.2). Inside npm only socks uses it, to parse a SOCKS proxy address; the release job configures no proxy, so it never parses untrusted input. Remove once an npm release bundles ip-address >=10.7.4.",
     "expires": "2026-11-29"
+  },
+  {
+    "id": "GHSA-4qv8-2p9j-2685",
+    "package": "undici",
+    "range": ">=6.5.0 <6.29.1",
+    "nodes": [
+      "node_modules/npm/node_modules/undici"
+    ],
+    "source": "https://github.com/advisories/GHSA-4qv8-2p9j-2685",
+    "owner": "release-maintainers",
+    "reason": "undici@6.29.0 is bundled in npm@11.21.1; npm@12.2.1 also bundles 6.29.0, and supported nested overrides plus npm audit fix leave it unchanged after clean install. The bundled copy is imported only by node-gyp header downloads (Agent/fetch); it is not used as EventSource by npm tooling. Remove when npm bundles undici >=6.29.1.",
+    "expires": "2026-11-07"
+  },
+  {
+    "id": "GHSA-xjj6-f33q-929c",
+    "package": "undici",
+    "range": ">=6.23.0 <6.29.1",
+    "nodes": [
+      "node_modules/npm/node_modules/undici"
+    ],
+    "source": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+    "owner": "release-maintainers",
+    "reason": "undici@6.29.0 is bundled in npm@11.21.1; npm@12.2.1 also bundles 6.29.0, and supported nested overrides plus npm audit fix leave it unchanged after clean install. The sole bundled importer is node-gyp header-download fetch: crafted response encodings could cause denial of service if that path is invoked. Current release commands do not invoke node-gyp explicitly; this is temporary acceptance of that tooling risk, not proof of unreachability. Remove when npm bundles undici >=6.29.1.",
+    "expires": "2026-11-07"
   }
 ]
