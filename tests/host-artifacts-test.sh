@@ -354,6 +354,21 @@ else
   ok "generated model-visible artifacts contain no source ADR identifiers"
 fi
 for host in claude codex omp pi devin; do
+  proof_runner="$OUT/$host/agents/devrites-proof-runner.md"
+  [ "$host" != codex ] || proof_runner="$OUT/$host/agents/devrites-proof-runner.toml"
+  if grep -q 'Read-only local filesystem inspection and digest calculations are permitted' "$proof_runner" &&
+    ! grep -q 'Execute no command' "$proof_runner"; then
+    ok "$host proof runner permits read-only evidence inspection"
+  else
+    no "$host proof runner blocks read-only evidence inspection"
+  fi
+  if grep -q 'Execute no test, build, benchmark, gate, application or other effectful command' "$proof_runner" &&
+    grep -q 'perform no external write' "$proof_runner" &&
+    grep -q 'do not edit source, tests' "$proof_runner"; then
+    ok "$host proof runner forbids gate execution and evidence writes"
+  else
+    no "$host proof runner lost its execution or write boundary"
+  fi
   authoring="$OUT/$host/skills/devrites-lib/reference/standards/skill-authoring.md"
   if grep -q 'Source-checkout only' "$authoring" &&
     grep -q 'where `pack/\.claude/` exists' "$authoring" &&
