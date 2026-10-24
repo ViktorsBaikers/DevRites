@@ -1,17 +1,5 @@
 [
   {
-    "id": "GHSA-vfj7-8cjw-p6xm",
-    "package": "braces",
-    "range": "<=3.0.3",
-    "nodes": [
-      "node_modules/braces"
-    ],
-    "source": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
-    "owner": "release-maintainers",
-    "reason": "braces@3.0.3 is the latest release and no patched version exists; it reaches the tree through micromatch in @semantic-release/commit-analyzer. The release job only matches repository-controlled release-rule patterns against commit fields, so braces never parses untrusted patterns. Remove once a patched braces release exists.",
-    "expires": "2026-11-29"
-  },
-  {
     "id": "GHSA-rxp7-6hxx-x8q5",
     "package": "ip-address",
     "range": "<=10.7.3",

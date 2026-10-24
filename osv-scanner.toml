@@ -11,14 +11,6 @@
 # Leave this file without ignore entries until a new exact, owned,
 # expiring exception is required.
 
-# 2026-10-22: npm@11.21.1 (via @semantic-release/npm override) cleared every
-# bundled-npm advisory. braces@3.0.3 is still the latest release with no fix.
-# Owner: release-maintainers. Mirrors scripts/npm-audit-exceptions.json.
-[[IgnoredVulns]]
-id = "GHSA-vfj7-8cjw-p6xm"
-ignoreUntil = 2026-11-29
-reason = "braces@3.0.3 via micromatch in commit-analyzer; release job only expands repository-controlled release-rule patterns. Remove once a patched braces release exists."
-
 # 2026-10-22: ip-address@10.7.2 is bundled inside npm@11.21.1; no npm release
 # bundles the patched 10.7.4 yet. Owner: release-maintainers. Mirrors
 # scripts/npm-audit-exceptions.json.
