@@ -217,14 +217,15 @@ func (a anchorer) breaks(cells []string) (status, detail string) {
 		_, size := utf8.DecodeRuneInString(cited[open:])
 		name, quote := cited[:open], cited[open+size:closing]
 		var paths []string
-		switch base := mdName(name); base {
-		case "":
+		file := mdName(name)
+		switch base := filepath.Base(file); {
+		case file == "":
 			paths = []string{filepath.Join(a.workspace, "spec.md"), filepath.Join(a.workspace, "decisions.md")}
-		case "spec.md", "decisions.md":
+		case base == "spec.md" || base == "decisions.md":
 			paths = []string{filepath.Join(a.workspace, base)}
 		default:
-			if skills, err := resolveSkillsRoot(a.root, a.skillsRoot); err == nil {
-				paths = []string{filepath.Join(skills, "devrites-lib", "reference", "standards", base)}
+			if path := a.standardPath(file); path != "" {
+				paths = []string{path}
 			}
 		}
 		var text []string
@@ -265,11 +266,46 @@ func (a anchorer) lines(rel string) ([]string, error) {
 	return nil, fmt.Errorf("%s is not a file under the workspace or project", rel)
 }
 
-// mdName is the base name of the first .md file a breaks anchor names, or "".
+func (a anchorer) standardPath(name string) string {
+	name = filepath.ToSlash(name)
+	if strings.Contains("/"+name+"/", "/../") || strings.ContainsRune(name, '\\') {
+		return ""
+	}
+	skills, err := resolveSkillsRoot(a.root, a.skillsRoot)
+	if err != nil {
+		return ""
+	}
+	standards, err := filepath.Abs(filepath.Join(skills, "devrites-lib", "reference", "standards"))
+	if err != nil {
+		return ""
+	}
+	full := name
+	if !filepath.IsAbs(full) {
+		full = filepath.Join(a.project, filepath.FromSlash(name))
+	}
+	if rel, err := filepath.Rel(standards, full); err != nil || !filepath.IsLocal(rel) {
+		if !filepath.IsLocal(name) {
+			return ""
+		}
+		full = filepath.Join(standards, filepath.FromSlash(name))
+	}
+	if !safepath.WithinResolved(full, standards) {
+		return ""
+	}
+	return full
+}
+
+// mdName is the first .md path a breaks anchor names, or "".
 func mdName(name string) string {
-	for _, field := range strings.Fields(strings.ReplaceAll(name, "`", " ")) {
-		if field = strings.TrimRight(field, ",;:"); strings.HasSuffix(field, ".md") {
-			return filepath.Base(field)
+	for i, part := range strings.Split(name, "`") {
+		fields := strings.Fields(part)
+		if i%2 == 1 {
+			fields = []string{part}
+		}
+		for _, field := range fields {
+			if field = strings.TrimRight(field, ",;:"); strings.HasSuffix(field, ".md") {
+				return field
+			}
 		}
 	}
 	return ""
