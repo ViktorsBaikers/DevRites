@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.11](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.10...v7.0.11) (2026-10-24)
+
+### Fixed
+
+* **deps:** restore dependency audits with bounded exceptions ([#168](https://github.com/ViktorsBaikers/DevRites/issues/168)) ([89b4aa7](https://github.com/ViktorsBaikers/DevRites/commit/89b4aa733d2395c09f979757cde094f57daca822))
+* **devrites:** permit proof runner read-only inspection ([#167](https://github.com/ViktorsBaikers/DevRites/issues/167)) ([aa11b9e](https://github.com/ViktorsBaikers/DevRites/commit/aa11b9e889a67f11de943fa9d90bff9ed0fd6bf3))
+
 ## [7.0.10](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.9...v7.0.10) (2026-10-23)
 
 ### Fixed
