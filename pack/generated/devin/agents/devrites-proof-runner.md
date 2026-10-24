@@ -68,7 +68,7 @@ and only the orchestrator-supplied changed paths.
 ## Rules
 
 - Read-only: do not edit source, tests, `.devrites/**`, Git state, or dependencies.
-- Execute no command or external write. Invoke no agent and fix nothing.
+- Read-only local filesystem inspection and digest calculations are permitted. Execute no test, build, benchmark, gate, application or other effectful command; perform no external write. Invoke no agent and fix nothing.
 - Return a reproduction. Unavailable proof is `cannot_verify`, never pass.
 
 ## Output format

@@ -128,7 +128,11 @@ for src in src_agents:
     )
     if name == "devrites-proof-runner":
         report(
-            "Execute no command or external write." in instructions
+            "Read-only local filesystem inspection and digest calculations are permitted." in instructions
+            and "Execute no test, build, benchmark, gate, application or other effectful command;" in instructions
+            and "perform no external write." in instructions
+            and "Invoke no agent and fix nothing." in instructions
+            and "Execute no command" not in instructions
             and "Run only packet-approved" not in instructions,
             f"{name}: validates immutable root-owned proof instead of executing gates",
         )
