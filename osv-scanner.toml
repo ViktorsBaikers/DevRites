@@ -18,3 +18,14 @@
 id = "GHSA-rxp7-6hxx-x8q5"
 ignoreUntil = 2026-11-29
 reason = "ip-address@10.7.2 bundled in npm; only socks parses it for a SOCKS proxy address and the release job sets no proxy. Remove once npm bundles ip-address >=10.7.4."
+
+# Proposed temporary acceptance of npm-bundled undici; owner: release-maintainers.
+[[IgnoredVulns]]
+id = "GHSA-4qv8-2p9j-2685"
+ignoreUntil = 2026-11-07
+reason = "undici@6.29.0 is bundled in npm@11.21.1; npm@12.2.1 also bundles 6.29.0, and supported nested overrides plus npm audit fix leave it unchanged after clean install. The bundled copy is imported only by node-gyp header downloads (Agent/fetch); it is not used as EventSource by npm tooling. Remove when npm bundles undici >=6.29.1."
+
+[[IgnoredVulns]]
+id = "GHSA-xjj6-f33q-929c"
+ignoreUntil = 2026-11-07
+reason = "undici@6.29.0 is bundled in npm@11.21.1; npm@12.2.1 also bundles 6.29.0, and supported nested overrides plus npm audit fix leave it unchanged after clean install. The sole bundled importer is node-gyp header-download fetch: crafted response encodings could cause denial of service if that path is invoked. Current release commands do not invoke node-gyp explicitly; this is temporary acceptance of that tooling risk, not proof of unreachability. Remove when npm bundles undici >=6.29.1."
