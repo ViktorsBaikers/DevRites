@@ -73,6 +73,8 @@ func TestCheckAnchorsRows(t *testing.T) {
 		{"breaks decision", "src/a.go:4", "`return r.User`", `breaks DEC-1 "Admins bypass the role check only through Root"`, 0, "anchored src/a.go:4"},
 		{"breaks standard", "src/a.go:4", "`return r.User`", `breaks security.md § Reachability sets severity "Severity follows the trust boundary an attacker can reach"`, 0, "anchored src/a.go:4"},
 		{"breaks non-standard file", "src/a.go:4", "`return r.User`", `breaks contract.md § X "Severity follows the trust boundary an attacker can reach"`, 3, "breaks anchor lost: contract.md § X is unreadable"},
+		{"first path unquoted", "src/a.go:4", "`return r.User`", "breaks contract.md then `security.md` § X \"Severity follows the trust boundary an attacker can reach\"", 3, "unverified=1"},
+		{"first path quoted", "src/a.go:4", "`return r.User`", "breaks `security.md` then contract.md § X \"Severity follows the trust boundary an attacker can reach\"", 0, "anchored src/a.go:4"},
 		{"breaks curly quotes", "src/a.go:4", "`return r.User`", "breaks AC-1 “checks the caller's role before returning user data”", 0, "anchored src/a.go:4"},
 	}
 	for _, c := range cases {
@@ -159,6 +161,67 @@ func TestCheckAnchorsSkillsRoot(t *testing.T) {
 	}
 	if code, out := checkAnchors(t, root, "feat", ret); code != 3 || !strings.Contains(out, "host.md § Install is unreadable") {
 		t.Fatalf("default skills root: %d %s", code, out)
+	}
+}
+
+func TestCheckAnchorsStandardPaths(t *testing.T) {
+	for _, skillsRoot := range []string{"pack/.claude/skills", ".agents/skills", "custom skills"} {
+		t.Run(skillsRoot, func(t *testing.T) {
+			root, featureDir := anchorsProject(t)
+			project := filepath.Dir(root)
+			standardsRel := skillsRoot + "/devrites-lib/reference/standards"
+			standards := filepath.Join(project, standardsRel)
+			const rule = "Acquired resource without a matching release on every exit path"
+			writeFile(t, filepath.Join(standards, "review/default.md"), rule+"\n")
+			writeFile(t, filepath.Join(standards, "default.md"), "A different flat standard must not supply the nested rule.\n")
+			writeFile(t, filepath.Join(standards, "security.md"), rule+"\n")
+			writeFile(t, filepath.Join(project, "plan.md"), rule+"\n")
+			writeFile(t, filepath.Join(project, "other/skills/devrites-lib/reference/standards/security.md"), rule+"\n")
+			outside := filepath.Join(project, "outside")
+			writeFile(t, filepath.Join(outside, "default.md"), rule+"\n")
+			if err := os.Symlink(filepath.Join(outside, "default.md"), filepath.Join(standards, "linked.md")); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(outside, filepath.Join(standards, "linked")); err != nil {
+				t.Fatal(err)
+			}
+			cases := []struct {
+				name, path string
+				code       int
+			}{
+				{"nested", "review/default.md", 0},
+				{"qualified nested", standardsRel + "/review/default.md", 0},
+				{"native qualified nested", filepath.Join(standardsRel, "review", "default.md"), 0},
+				{"absolute nested", filepath.Join(standards, "review/default.md"), 0},
+				{"flat", "security.md", 0},
+				{"qualified flat", standardsRel + "/security.md", 0},
+				{"absolute flat", filepath.Join(standards, "security.md"), 0},
+				{"wrong nested rule", "missing/default.md", 3},
+				{"wrong authority", "other/skills/devrites-lib/reference/standards/security.md", 3},
+				{"project artifact", "plan.md", 3},
+				{"absolute project artifact", filepath.Join(project, "plan.md"), 3},
+				{"parent traversal", "../security.md", 3},
+				{"internal traversal", "review/../security.md", 3},
+				{"backslash traversal", `review\..\security.md`, 3},
+				{"qualified traversal", standardsRel + "/review/../security.md", 3},
+				{"file symlink escape", "linked.md", 3},
+				{"directory symlink escape", "linked/default.md", 3},
+			}
+			for _, c := range cases {
+				t.Run(c.name, func(t *testing.T) {
+					ret := writeReturn(t, featureDir, anchorsRow("Critical", "src/a.go:4", "`return r.User`",
+						fmt.Sprintf("breaks `%s` § Resource lifecycle %q", c.path, rule))+"\n")
+					code, out := checkAnchors(t, root, "feat", ret, "--skills-root", skillsRoot)
+					want := "anchored src/a.go:4"
+					if c.code == 3 {
+						want = "unverified=1"
+					}
+					if code != c.code || !strings.Contains(out, want) {
+						t.Fatalf("want exit %d with %q, got %d:\n%s", c.code, want, code, out)
+					}
+				})
+			}
+		})
 	}
 }
 
