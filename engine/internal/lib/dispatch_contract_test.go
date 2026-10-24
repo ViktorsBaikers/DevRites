@@ -65,7 +65,7 @@ func TestDispatchOpenRefusesBlindWrightContract(t *testing.T) {
 	if code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "b1", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", blind); code != 3 || !strings.Contains(out, "forbids writer-safe execution") {
 		t.Fatalf("blind contract: code=%d\n%s", code, out)
 	}
-	if code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "b1", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)); code != 0 || !strings.Contains(out, "wright round 1") {
+	if code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "b1", "--role", "slice-wright", "--slice", "SLICE-001", "--contract", wrightContractPath(t)); code != 0 || !strings.Contains(out, "wright round 1") || !strings.Contains(out, "dispatch: wave b1 open") || !strings.Contains(out, "dispatch: ADVISORY: wright contract reminder:") {
 		t.Fatalf("valid contract after refusals must open round 1: code=%d\n%s", code, out)
 	}
 	if code, out := runDispatchT(t, root, "open", "--phase", "vet", "--wave", "v1", "--role", "plan-reviewer", "--packet", reviewerPacketPath(t)); code != 0 {
