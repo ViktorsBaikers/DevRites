@@ -87,10 +87,9 @@ from your side.
     cast, or silent fallback that hides an unclear invariant?
   - Are repository/deployable roots, canonical contract and mutable-state ownership,
     shared resources, and sync/async consistency boundaries preserved without a cycle?
-  - Run `devrites-engine check dup <slug>` for near-duplicate leads, using the
-    mode that matches the packet's diff: `--base <ref>` when the feature's work
-    is committed, `--staged`/`--worktree` for uncommitted diffs. Triage each
-    reported cluster per
+  - Run `devrites-engine check dup` without a feature slug, following the
+    [read-only scan rule](../skills/devrites-lib/reference/standards/code-review.md).
+    Triage each reported cluster per
     [`duplicate-code.md`](../skills/devrites-lib/reference/standards/duplicate-code.md)
     — merge, keep-with-reason, or watch. A `*`-marked unit the diff added needs a
     verdict, not suppression.

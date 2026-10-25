@@ -40,9 +40,9 @@ If it does not, do not merge it.
    Search for a **reimplemented-elsewhere** twin: a new function/module that
    semantically duplicates an existing one (renamed, reshaped, or vendored) is an
    architecture finding; reuse the canonical implementation or justify the fork.
-   Run `devrites-engine check dup` in the mode matching the diff (`--base <ref>`
-   for committed work, `--staged`/`--worktree` for uncommitted) for leads and
-   triage each cluster per [`duplicate-code.md`](duplicate-code.md).
+   Run read-only advisory `devrites-engine check dup` without a slug (no metrics):
+   `--base <ref>` committed; `--staged`/`--worktree` uncommitted. Triage each
+   cluster. Caller bans apply; unavailable scans remain gaps.
 6. **Security:** trust boundaries, input validation, authz, secrets.
 7. **Risk:** migrations, destructive changes, rollback.
 8. **Read depth matches risk:** the review's `Basis` names **full reads of the largest
