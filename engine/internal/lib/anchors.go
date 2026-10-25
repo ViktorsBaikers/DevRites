@@ -40,8 +40,9 @@ import (
 const AnchorsUsage = "usage: devrites-engine check anchors <slug> <return-file> [--skills-root <dir>]"
 
 var (
-	anchorSiteRE     = regexp.MustCompile(`^(\S+?)(?::([0-9]+)(?::[0-9]+)?(?:[-–]([0-9]+))?)?$`)
-	anchorSeverityRE = regexp.MustCompile(`(?i)^\W*(critical|important)\b`)
+	anchorSiteRE       = regexp.MustCompile(`^(\S+?)(?::([0-9]+)(?::[0-9]+)?(?:[-–]([0-9]+))?)?$`)
+	anchorSeverityRE   = regexp.MustCompile(`(?i)^\W*(critical|important)\b`)
+	anchorLineSuffixRE = regexp.MustCompile(`:[0-9]+(?:[-–][0-9]+)?$`)
 )
 
 type anchorer struct{ root, project, workspace, skillsRoot string }
@@ -303,7 +304,8 @@ func mdName(name string) string {
 			fields = []string{part}
 		}
 		for _, field := range fields {
-			if field = strings.TrimRight(field, ",;:"); strings.HasSuffix(field, ".md") {
+			field = anchorLineSuffixRE.ReplaceAllString(strings.TrimRight(field, ",;:"), "")
+			if strings.HasSuffix(field, ".md") {
 				return field
 			}
 		}
