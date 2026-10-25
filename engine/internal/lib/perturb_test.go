@@ -16,6 +16,7 @@ import (
 // copy fails setup instead of reaching GREEN.
 const perturbCheck = `grep -q 'guard v2' impl.txt && test -f new.txt || { echo 'setup: candidate missing'; exit 2; }
 case "$(cat impl.txt)" in
+*styled*) printf '  \033[31m✕\033[39m rejects \033[1malias\033[22m (3 ms)\n'; exit 1;;
 *broken*) echo '    --- FAIL: TestAlias (0.00s)'; echo FAIL; exit 1;;
 *other*) echo '--- FAIL: TestRacing (0.00s)'; exit 1;;
 *nobuild*) echo './impl.go:3:1: syntax error'; echo 'FAIL example [build failed]'; exit 1;;
@@ -78,6 +79,8 @@ func TestCheckPerturbProbesAnIsolatedCandidateCopy(t *testing.T) {
 	}{
 		{"attributable RED", "G-1", perturbMutant("broken"), "TestAlias", 0,
 			[]string{"VERDICT: verified", "RED_MATCH: --- FAIL: TestAlias (0.00s)", "GREEN_MET: true", "PATCH_FILES: impl.txt"}},
+		{"styled attributable RED", "G-1", perturbMutant("styled"), "rejects alias", 0,
+			[]string{"VERDICT: verified", "RED_MATCH: \x1b[31m✕\x1b[39m rejects \x1b[1malias\x1b[22m (3 ms)\n", "--- RED OUTPUT (tail) ---\n  \x1b[31m✕\x1b[39m rejects \x1b[1malias\x1b[22m (3 ms)\n", "RED_FAILED: rejects alias\n"}},
 		{"RED from another test", "G-1", perturbMutant("other"), "TestAlias", 3,
 			[]string{"VERDICT: cannot_verify", "RED names other tests (TestRacing), not TestAlias", "GREEN_EXIT: not run"}},
 		{"build failure", "G-1", perturbMutant("nobuild"), "TestAlias", 3,
@@ -226,5 +229,56 @@ func TestClassifyPerturbRed(t *testing.T) {
 		if match != tc.match || (tc.reason == "") != (reason == "") || !strings.Contains(reason, tc.reason) {
 			t.Fatalf("%s: match=%q reason=%q", tc.name, match, reason)
 		}
+	}
+}
+
+func TestClassifyPerturbRedSGR(t *testing.T) {
+	cases := []struct {
+		name, line, expect, failed string
+	}{
+		{"go", "\x1b[31m--- FAIL: Test\x1b[1mAlias\x1b[0m (0.00s)", "TestAlias", "TestAlias"},
+		{"pytest", "\x1b[31mFAILED\x1b[0m tests/test_a.py::test_\x1b[1mguard\x1b[0m - assert 1 == 2", "test_guard", "tests/test_a.py::test_guard"},
+		{"cargo", "test store::alias_\x1b[1mguard\x1b[0m ... \x1b[31mFAILED\x1b[0m", "alias_guard", "store::alias_guard"},
+		{"jest", "  \x1b[31m✕\x1b[39m rejects \x1b[1malias\x1b[22m (3 ms)", "rejects alias", "rejects alias"},
+		{"vitest", " \x1b[38;2;255;0;0m×\x1b[0m store > rejects \x1b[38;5;196malias\x1b[m 4ms", "rejects alias", "store > rejects alias"},
+		{"colon SGR", "\x1b[38:2::255:0:0m×\x1b[0m rejects alias 4ms", "rejects alias", "rejects alias"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			outcome := acceptance.RunOutcome{Output: tc.line + "\r\n", ExitCode: 1}
+			match, failed, reason := classifyPerturbRed(outcome, tc.expect)
+			if match != strings.TrimSpace(tc.line) || len(failed) != 1 || failed[0] != tc.failed || reason != "" {
+				t.Fatalf("match=%q failed=%q reason=%q", match, failed, reason)
+			}
+			if outcome.Output != tc.line+"\r\n" {
+				t.Fatalf("raw output changed: %q", outcome.Output)
+			}
+		})
+	}
+}
+
+func TestClassifyPerturbRedRefusesStyledNonTargetFailures(t *testing.T) {
+	cases := []struct {
+		name, output, reason string
+		exit                 int
+		err                  error
+	}{
+		{"other test", "\x1b[31m✕\x1b[0m rejects other (3 ms)\n", "names other tests (rejects other)", 1, nil},
+		{"build", "\x1b[31mFAIL example [build failed]\x1b[0m\n", "no runner FAIL line", 1, nil},
+		{"setup", "\x1b[31mError: setup failed for rejects alias\x1b[0m\n", "no runner FAIL line", 1, nil},
+		{"exit zero", "\x1b[31m✕ rejects alias\x1b[0m\n", "the mutant survived", 0, nil},
+		{"timeout", "\x1b[31m✕ rejects alias\x1b[0m\n", "did not complete", 1, errors.New("check timed out after 1s")},
+		{"execution error", "\x1b[31m✕ rejects alias\x1b[0m\n", "did not complete", 1, errors.New("execution failed")},
+		{"erase control", "\x1b[2K✕ rejects alias\n", "no runner FAIL line", 1, nil},
+		{"cursor control", "\x1b[1G✕ rejects alias\n", "no runner FAIL line", 1, nil},
+		{"OSC control", "\x1b]0;title\a✕ rejects alias\n", "no runner FAIL line", 1, nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			match, _, reason := classifyPerturbRed(acceptance.RunOutcome{Output: tc.output, ExitCode: tc.exit, Err: tc.err}, "rejects alias")
+			if match != "" || !strings.Contains(reason, tc.reason) {
+				t.Fatalf("match=%q reason=%q", match, reason)
+			}
+		})
 	}
 }

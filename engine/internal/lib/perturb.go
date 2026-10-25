@@ -44,6 +44,7 @@ const perturbOutputTail = 64 << 10
 
 var (
 	perturbNameRE = regexp.MustCompile(`[^A-Za-z0-9._-]`)
+	perturbSGRRE  = regexp.MustCompile(`\x1b\[[0-9;:]*m`)
 	// perturbFailREs capture the failed test name from one runner FAIL line.
 	perturbFailREs = []*regexp.Regexp{
 		regexp.MustCompile(`^\s*--- FAIL: (\S+)`),                                 // go test
@@ -335,8 +336,9 @@ func classifyPerturbRed(outcome acceptance.RunOutcome, expect string) (match str
 	}
 	for _, line := range strings.Split(outcome.Output, "\n") {
 		line = strings.TrimRight(line, "\r")
+		plain := perturbSGRRE.ReplaceAllString(line, "")
 		for _, re := range perturbFailREs {
-			m := re.FindStringSubmatch(line)
+			m := re.FindStringSubmatch(plain)
 			if m == nil {
 				continue
 			}
