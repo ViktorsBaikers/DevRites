@@ -72,7 +72,10 @@ func TestCheckAnchorsRows(t *testing.T) {
 		{"no breaks cell", "src/a.go:4", "`return r.User`", "no spec line", 3, "— no spec anchor"},
 		{"breaks decision", "src/a.go:4", "`return r.User`", `breaks DEC-1 "Admins bypass the role check only through Root"`, 0, "anchored src/a.go:4"},
 		{"breaks standard", "src/a.go:4", "`return r.User`", `breaks security.md § Reachability sets severity "Severity follows the trust boundary an attacker can reach"`, 0, "anchored src/a.go:4"},
+		{"breaks qualified standard line", "src/a.go:4", "`return r.User`", `breaks pack/.claude/skills/devrites-lib/reference/standards/security.md:2 § Reachability sets severity "Severity follows the trust boundary an attacker can reach"`, 0, "anchored src/a.go:4"},
+		{"standard line cannot use spec quote", "src/a.go:4", "`return r.User`", `breaks security.md:2 § Reachability sets severity "checks the caller's role before returning user data"`, 3, "breaks anchor lost"},
 		{"breaks non-standard file", "src/a.go:4", "`return r.User`", `breaks contract.md § X "Severity follows the trust boundary an attacker can reach"`, 3, "breaks anchor lost: contract.md § X is unreadable"},
+		{"first path with line", "src/a.go:4", "`return r.User`", `breaks contract.md:2 then security.md § X "Severity follows the trust boundary an attacker can reach"`, 3, "unverified=1"},
 		{"first path unquoted", "src/a.go:4", "`return r.User`", "breaks contract.md then `security.md` § X \"Severity follows the trust boundary an attacker can reach\"", 3, "unverified=1"},
 		{"first path quoted", "src/a.go:4", "`return r.User`", "breaks `security.md` then contract.md § X \"Severity follows the trust boundary an attacker can reach\"", 0, "anchored src/a.go:4"},
 		{"breaks curly quotes", "src/a.go:4", "`return r.User`", "breaks AC-1 “checks the caller's role before returning user data”", 0, "anchored src/a.go:4"},
@@ -175,6 +178,7 @@ func TestCheckAnchorsStandardPaths(t *testing.T) {
 			writeFile(t, filepath.Join(standards, "review/default.md"), rule+"\n")
 			writeFile(t, filepath.Join(standards, "default.md"), "A different flat standard must not supply the nested rule.\n")
 			writeFile(t, filepath.Join(standards, "security.md"), rule+"\n")
+			writeFile(t, filepath.Join(standards, "../security.md"), rule+"\n")
 			writeFile(t, filepath.Join(project, "plan.md"), rule+"\n")
 			writeFile(t, filepath.Join(project, "other/skills/devrites-lib/reference/standards/security.md"), rule+"\n")
 			outside := filepath.Join(project, "outside")
@@ -191,20 +195,25 @@ func TestCheckAnchorsStandardPaths(t *testing.T) {
 			}{
 				{"nested", "review/default.md", 0},
 				{"qualified nested", standardsRel + "/review/default.md", 0},
+				{"qualified nested line", standardsRel + "/review/default.md:166", 0},
+				{"qualified nested range", standardsRel + "/review/default.md:166-170", 0},
 				{"native qualified nested", filepath.Join(standardsRel, "review", "default.md"), 0},
 				{"absolute nested", filepath.Join(standards, "review/default.md"), 0},
 				{"flat", "security.md", 0},
 				{"qualified flat", standardsRel + "/security.md", 0},
 				{"absolute flat", filepath.Join(standards, "security.md"), 0},
+				{"absolute flat line", filepath.Join(standards, "security.md") + ":66", 0},
 				{"wrong nested rule", "missing/default.md", 3},
 				{"wrong authority", "other/skills/devrites-lib/reference/standards/security.md", 3},
 				{"project artifact", "plan.md", 3},
 				{"absolute project artifact", filepath.Join(project, "plan.md"), 3},
 				{"parent traversal", "../security.md", 3},
+				{"parent traversal line", "../security.md:66", 3},
 				{"internal traversal", "review/../security.md", 3},
 				{"backslash traversal", `review\..\security.md`, 3},
 				{"qualified traversal", standardsRel + "/review/../security.md", 3},
 				{"file symlink escape", "linked.md", 3},
+				{"file symlink escape range", "linked.md:1-2", 3},
 				{"directory symlink escape", "linked/default.md", 3},
 			}
 			for _, c := range cases {
