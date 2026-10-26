@@ -396,6 +396,9 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 		if suggested := suggestTriggers(manifest, root, featureDir, opts); len(suggested) > 0 {
 			fmt.Fprintf(stdout, "triggers: suggested=[%s] (advisory — confirm each before use)\n",
 				strings.Join(suggested, ","))
+			// The advisory list is only actionable if the agent is told how to
+			// apply it; no shipped guidance names the flag.
+			fmt.Fprintf(stdout, "triggers: apply with: %s\n", triggerApplyCommand(opts, suggested))
 		}
 	}
 	if len(missingRequired) > 0 {
