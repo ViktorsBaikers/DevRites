@@ -116,13 +116,13 @@ next sequence continuation through Vet in a second session, then stop.
    `/rite-build` batch loop → `/rite-prove` → `/rite-polish` →
    `/rite-review` → `/rite-seal`. Read and execute each skill; durable files, not
    chat, carry state. Apply the mutable post-vet budget before first Build.
-   Build runs the path-disjoint batch `parallel select --from-plan` picks (cap: this invocation's
-   `--parallel N`, else sentinel `max_parallel`, else 10) and refills a slot
-   per landing until no pending slice remains; a one-slice round is serial for that round only, then
-   selection runs again (host isolation still forces serial when concurrent writers
-   cannot be separated). When `--parallel N`
-   is present, pass it into `/rite-build` and do not consult leftover sentinel
-   `max_parallel`.
+   Build uses `parallel select --from-plan` (cap: explicit `--parallel N`, else
+   sentinel `max_parallel`, else 10), refilling per landing until none pending;
+   a one-slice round is serial for that round only; reselect afterward. Host
+   isolation may force serial. If `--parallel N` is explicit,
+   pass it into `/rite-build` and ignore leftover sentinel `max_parallel`.
+   Otherwise pass the resolved sentinel/default cap into `/rite-build` as
+   `--parallel N`, never bare `/rite-build`.
    **Completion:** loop reaches Seal GO or persists a valid stop before any later phase.
 5. **Apply stops.** At every gate use
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:
