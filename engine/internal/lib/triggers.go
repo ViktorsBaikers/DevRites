@@ -156,3 +156,26 @@ func afkAllowsParallel(content string) bool {
 	}
 	return n > 1
 }
+
+// triggerApplyCommand renders the command that applies the suggested triggers.
+// The suggestions are never applied automatically (see the file header), so the
+// agent needs a copy-pasteable form or the advisory list has no consumer.
+func triggerApplyCommand(opts contextOpts, suggested []string) string {
+	parts := []string{"devrites-engine", "context"}
+	if opts.slug != "" {
+		parts = append(parts, opts.slug)
+	}
+	for _, flag := range []struct{ name, value string }{
+		{"--phase", opts.phase},
+		{"--skill", opts.skill},
+		{"--role", opts.role},
+		{"--slice", opts.slice},
+		{"--out", opts.out},
+	} {
+		if flag.value != "" {
+			parts = append(parts, flag.name, flag.value)
+		}
+	}
+	parts = append(parts, "--trigger", strings.Join(suggested, ","))
+	return strings.Join(parts, " ")
+}

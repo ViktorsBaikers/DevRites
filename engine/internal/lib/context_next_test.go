@@ -390,6 +390,9 @@ func TestContextSuggestsTriggersFromFacts(t *testing.T) {
 	if !strings.Contains(out, "suggested=[") {
 		t.Fatalf("suggested line absent:\n%s", out)
 	}
+	if !strings.Contains(out, "triggers: apply with: devrites-engine context feat --phase build --role slice-wright --trigger ") {
+		t.Fatalf("apply hint absent or malformed:\n%s", out)
+	}
 	if strings.Contains(out, "cross-model") && strings.Contains(out[strings.Index(out, "suggested="):], "cross-model") {
 		t.Fatalf("flag-only trigger must not be suggested:\n%s", out)
 	}
