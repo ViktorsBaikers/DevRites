@@ -14,7 +14,7 @@ user-invocable: true
 HITL stops; a later user invocation starts the next slice.
 Explicit `.devrites/AFK` alone lets the controlling root chain under green proof,
 caps and pause rules. Every wright returns after one slice.
-**Opt-in:** `/rite-build --parallel N` (2≤N≤10; N=1≡serial) follows
+**HITL:** `/rite-build --parallel N` (2≤N≤10; N=1≡serial) follows
 [`reference/parallel-batch.md`](reference/parallel-batch.md)
 ([`one-slice-cycle.md`](reference/one-slice-cycle.md)).
 
@@ -45,8 +45,8 @@ Wright applies anti-slop; root verifies returns and never patches source. Refuse
 
 ## Invariants
 
-- Default: one slice; writers serial on control (core.md #5). Parallel only via
-  `--parallel N` under [`reference/parallel-batch.md`](reference/parallel-batch.md).
+- Standalone HITL default: serial on control (core.md #5). AFK/`--parallel N`
+  uses [`parallel-batch.md`](reference/parallel-batch.md).
   Same-worktree multi-writer / root-emulated concurrency forbidden.
   Native-worktree pilot = single-slice isolation when `wright-dispatch.md`
   preflight + reconcile hold.
@@ -80,7 +80,8 @@ Wright applies anti-slop; root verifies returns and never patches source. Refuse
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"Vet-ready admitted bytes require root authorship outside product wright","action":"ROOT_TRANSACTION; root writes only admitted .devrites/** targets","return":"saved Build slice cursor; wright product allowlist unchanged"} -->
 ## `--parallel N` (opt-in)
 
-Omitted/`1` ≡ serial; `2`–`10` is a **cap** — the root runs the largest eligible
+HITL default/explicit `1` ≡ serial; AFK inherits cap.
+`2`–`10` is a **cap** — the root runs an eligible
 path-disjoint set it can start now (`N_eff`, from `parallel select --from-plan`), takes fewer when the cap cannot be
 filled, and refills a slot per landing (serial slice or one sibling) until
 no pending slice remains

@@ -579,6 +579,19 @@ func TestSelectCLISeededByLease(t *testing.T) {
 		t.Fatalf("code=%d out=%q want %q err=%q", code, out, want, errOut)
 	}
 
+	for _, tc := range []struct {
+		cap  string
+		want string
+	}{
+		{"3", "select: n_eff=1 mode=parallel slices=D running=2\n"},
+		{"2", "select: n_eff=0 mode=none slices= running=2\n"},
+	} {
+		code, out, errOut := runCLI(t, in, "select", "--cap", tc.cap, "--root", root, "--slug", rollSlug, "-")
+		if code != ExitOK || out != tc.want {
+			t.Fatalf("cap=%s code=%d out=%q want %q err=%q", tc.cap, code, out, tc.want, errOut)
+		}
+	}
+
 	// Without a lease, --slug changes nothing.
 	code, out, errOut = runCLI(t, in, "select", "--cap", "4", "--root", t.TempDir(), "--slug", rollSlug, "-")
 	if want := "select: n_eff=4 mode=parallel slices=s2,C,D,E\n"; code != ExitOK || out != want {

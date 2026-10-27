@@ -37,13 +37,15 @@ Select **greedily in plan order** with
 reads the ready set (tasks.md dependencies checked `built` in `state.md`, minus
 running-lease slices) and each slice's Writer allowlist (else `Files likely
 touched`), plus its manifest/lockfile when `External dependencies:` is not none;
-in Build, `next` prints the same `eligible_now:`/`batch:`. `N_eff ≥ 2` → parallel batch;
-`N_eff = 1` → one serial round; nothing pending → Prove. A cap that cannot be filled
-is normal: take fewer. Serial is this round's size, not the rest of the run.
+`next` prints `eligible_now:`/`batch:`. `n_eff` counts new picks only.
+With a running lease, a single new pick still uses `parallel add`;
+`n_eff=0` with a running lease waits for siblings, not Prove. Without one:
+≥2 → parallel batch, 1 → serial, none pending → Prove.
+Serial is this round only; a cap need not be filled.
 
 **Refill per landing; never wait for the batch.** Each sibling lands alone when
-green ([Lifecycle](#lifecycle) step 6). Then re-read `state.md`, pending slices, and
-the tree and run `parallel select --slug <slug> --cap N --from-plan`: unlanded siblings hold
+green ([Lifecycle](#lifecycle) step 6). Re-read state, pending slices, and the
+tree; reselect: unlanded siblings hold
 their slots and paths, landed ones count as built, and only new picks print;
 `parallel add` starts each from the control tip and its wright dispatches at once.
 No lease → plain `select` + `create`. AFK/autocomplete is one run; HITL stops after
@@ -223,13 +225,13 @@ devrites-engine parallel lease-write|lease-read|lease-clear --root <repo> --slug
 #   parallel cleanup --root <repo> --slug <slug> --force   (salvages, prints retained refs)
 ```
 
-`integrate` without `--apply-to-control` stages the per-sibling commits, leaves
-the lease `running` and control at `B`; cleanup still refuses — the commits
-cannot be lost. `record-green` and `integrate` also accept an `integrate-failed`
-lease, so a failed integrate retries after repair. `--apply-to-control`
-refuses when control moved past `B` or holds uncommitted changes on slice
-paths — stop for the human (never stash or commit their work); the batch is
-untouched. Go is SSOT; never ad-hoc git/bash orchestration.
+`integrate` without `--apply-to-control` stages commits; lease stays `running`,
+control stays at its expected tip, cleanup refuses. `record-green` and `integrate`
+accept `integrate-failed` for retry. Applied landings advance `control_tip`
+(initially `B`), permitting landings/refill. External control movement or
+uncommitted slice-path edits with `--apply-to-control` cause refusal:
+stop for the human (never stash or commit their work); the batch is untouched.
+Go is SSOT; never ad-hoc git/bash orchestration.
 
 ## Runtime isolation
 

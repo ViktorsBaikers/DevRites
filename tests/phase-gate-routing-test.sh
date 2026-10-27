@@ -37,6 +37,7 @@ PLAN="$ROOT/pack/.claude/skills/rite-plan/SKILL.md"
 PLAN_GRAPH="$ROOT/pack/.claude/skills/rite-plan/reference/dependency-graph.md"
 VET="$ROOT/pack/.claude/skills/rite-vet/SKILL.md"
 BUILD="$ROOT/pack/.claude/skills/rite-build/reference/phase-contract.md"
+BUILD_SKILL="$ROOT/pack/.claude/skills/rite-build/SKILL.md"
 BUILD_PARALLEL="$ROOT/pack/.claude/skills/rite-build/reference/parallel-batch.md"
 BUILD_SLICE="$ROOT/pack/.claude/skills/rite-build/reference/one-slice-cycle.md"
 CODE_REVIEWER="$ROOT/pack/.claude/agents/devrites-code-reviewer.md"
@@ -142,11 +143,18 @@ require "$BUILD_PARALLEL" 'Expected test-first RED' 'parallel distinguishes TDD 
 require "$BUILD_PARALLEL" 'A distinct post-repair Critical/Important gets a new fingerprint' 'parallel build continues on distinct post-repair findings'
 require "$BUILD_PARALLEL" 'Reconcile retained repair-round artifacts by exact causal fingerprint before honoring a stored blocked status/verdict.' 'parallel build reconciles stale blocked cold resumes'
 require "$BUILD_PARALLEL" 'Serial is this round' 'parallel serial fallback is per-round not a latched mode'
+require "$BUILD_PARALLEL" '`n_eff` counts new picks only' 'parallel selection distinguishes new picks from running siblings'
+require_flat "$BUILD_PARALLEL" 'a single new pick still uses `parallel add`' 'one-slot refill stays in the running parallel lease'
+require_flat "$BUILD_PARALLEL" '`n_eff=0` with a running lease waits for siblings, not Prove.' 'a full running lease does not advance to Prove'
 require "$BUILD_PARALLEL" 'parallel select --cap' 'parallel width is engine-selected each round'
 require "$BUILD_SLICE" 'return to parallel-batch selection' 'AFK serial round re-enters parallel selection when a cap is armed'
 require "$AUTOCOMPLETE" 'one-slice round is serial for that round only' 'autocomplete does not latch serial after a one-slice round'
 require "$AUTOCOMPLETE" 'leftover `max_parallel: 1`' 'autocomplete --parallel overrides leftover serial sentinel'
 require "$AUTOCOMPLETE" 'pass it into `/rite-build`' 'autocomplete forwards --parallel into rite-build'
+require_flat "$AUTOCOMPLETE" 'Otherwise pass the resolved sentinel/default cap into `/rite-build` as `--parallel N`' 'autocomplete forwards inherited caps rather than invoking bare serial Build'
+require "$BUILD_SKILL" 'Standalone HITL default:' 'Build scopes its one-slice default to standalone HITL'
+forbid "$BUILD_SKILL" 'Parallel only via' 'Build permits inherited unattended parallel caps'
+forbid "$BUILD_PARALLEL" 'refuses when control moved past `B`' 'rolling landings do not mistake lease-owned control advancement for external edits'
 require "$BUILD_PARALLEL" 'leftover sentinel `max_parallel` is ignored' 'parallel-batch treats autocomplete --parallel as the cap'
 require "$AUTOCOMPLETE" 'unless `continue_sequence: false`' 'autocomplete chains recorded continuations by default'
 require "$AFK_HITL" 'Under `/rite-autocomplete`, absent means on' 'absent continue_sequence defaults on under autocomplete'
