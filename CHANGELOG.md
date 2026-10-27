@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.17](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.16...v7.0.17) (2026-10-27)
+
+### Fixed
+
+* **devrites:** drop the wall-clock number the engine never reads ([#177](https://github.com/ViktorsBaikers/DevRites/issues/177)) ([8f4f1dc](https://github.com/ViktorsBaikers/DevRites/commit/8f4f1dccd8bee342619cb1b3ab152733549d8d84)), references [#176](https://github.com/ViktorsBaikers/DevRites/issues/176) [#176](https://github.com/ViktorsBaikers/DevRites/issues/176) [#176](https://github.com/ViktorsBaikers/DevRites/issues/176)
+* **devrites:** mark AFK sentinel caps as non-ceilings under autocomplete ([#176](https://github.com/ViktorsBaikers/DevRites/issues/176)) ([808d767](https://github.com/ViktorsBaikers/DevRites/commit/808d767adaf79eef0fa2eebab111842e003772b0))
+
 ## [7.0.16](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.15...v7.0.16) (2026-10-27)
 
 ### Fixed
