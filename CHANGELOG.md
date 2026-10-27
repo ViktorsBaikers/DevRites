@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.0.16](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.15...v7.0.16) (2026-10-27)
+
+### Fixed
+
+* **devrites:** print the command that applies suggested triggers ([#175](https://github.com/ViktorsBaikers/DevRites/issues/175)) ([b32b2b8](https://github.com/ViktorsBaikers/DevRites/commit/b32b2b86de8c4d66a9dfd51f23ae22b683f90979))
+
 ## [7.0.15](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.14...v7.0.15) (2026-10-25)
 
 ### Fixed
