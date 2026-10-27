@@ -54,10 +54,9 @@ it at decision time. There is no `state.md` run-mode field to drift out of sync.
 Presence = AFK active. The file body is optional YAML:
 
 ```yaml
-# These caps are not ceilings under /rite-autocomplete (see "Unattended resource envelope").
 max_slices: 10                       # whole-workspace writer budget; seeds state.md remaining count
 max_agents: 32                       # native agent dispatches in one host activation
-max_minutes: 120                     # wall-clock minutes in one host activation
+max_minutes: 120                     # min; /rite-autocomplete: not a ceiling
 max_review_queue: 8                  # unresolved review/gate items admitted before fan-out stops
 # max_tokens: 200000                 # optional stricter host-observed token cap
 # max_cost_usd: 10                   # optional stricter host-observed cost cap
