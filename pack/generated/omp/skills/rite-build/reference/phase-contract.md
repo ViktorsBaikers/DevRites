@@ -73,12 +73,24 @@ One contract builds one slice: preserve TDD, exact paths and independent judgmen
 ## Proof tiers
 
 With a `test-plan.md` `## Feature gates` section, step 6 runs `Tests/proof` and every
-other row; feature gates run once per parallel landing, on control, while worktree
-wrights continue. The next landing and Prove wait for them; red is a fingerprint
-against slices landed since the last green run. Serial same-worktree mode, and plans
+other row; feature gates run once per landing train, on control, while worktree
+wrights continue: land every green sibling together, run the suite once, and bisect only
+on red. The next train and Prove wait for them; red is a fingerprint against slices
+landed since the last green run. Serial same-worktree mode, and plans
 without the section, run every row each round. Run gate, benchmark and proof commands
 through the host's shell tool, never a code-evaluation subprocess, whose environment
 can lack the owner's exported variables.
+
+Wrights run only the tests their changed paths reach, resolved from the merge base
+against the plan's baseline rather than the last commit; Prove and Seal always run the
+full suite. Resolve that narrow set with
+`devrites-engine check affected <changed path...>`, which expands a changed package to its
+dependent packages and widens on its own when a path is a module manifest, a generated
+artifact, CI config, shared testdata, or one it cannot classify. Widen to the full suite
+inside Build the moment a slice touches `go.mod` or a
+lockfile, generated artifacts, CI config, a shared test harness, or whenever no test can
+be named for a changed path. When selection is uncertain, run the full suite: the narrow
+set is an optimisation, never a substitute.
 
 ## Independent Build review
 

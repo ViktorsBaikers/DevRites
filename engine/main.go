@@ -229,6 +229,8 @@ func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 		return parallel.Run("path-disjoint", rest, stdin, stdout, stderr)
 	case "task-graph":
 		return cmdTaskGraph(root, rest, stdout, stderr)
+	case "affected":
+		return lib.RunCheckAffected(root, rest, stdout, stderr)
 	case "slice":
 		return lib.RunCheckSlice(root, rest, stdout, stderr)
 	case "diff-scope":
@@ -378,11 +380,26 @@ func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Write
 }
 
 func cmdTaskGraph(root string, args []string, stdout, stderr io.Writer) int {
-	if len(args) != 1 {
+	strict, slug, seen := false, "", false
+	for _, a := range args {
+		if a == "--strict" {
+			strict = true
+			continue
+		}
+		if a == "" || seen {
+			fmt.Fprintln(stderr, taskGraphUsage)
+			return exitUsage
+		}
+		slug, seen = a, true
+	}
+	if !seen {
 		fmt.Fprintln(stderr, taskGraphUsage)
 		return exitUsage
 	}
-	return lib.RunTaskGraphCheck(root, args[0], stdout, stderr)
+	if strict {
+		return lib.RunTaskGraphCheckStrict(root, slug, stdout, stderr)
+	}
+	return lib.RunTaskGraphCheck(root, slug, stdout, stderr)
 }
 
 func cmdSkillTrust(args []string, stdout, stderr io.Writer) int {

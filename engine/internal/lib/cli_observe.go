@@ -9,8 +9,20 @@ import (
 	"github.com/devrites/devrites/internal/state"
 )
 
-// RunTaskGraphCheck validates tasks.md for one slug.
+// RunTaskGraphCheck validates tasks.md for one slug. Shared-path findings are
+// advisory: they never change the exit code.
 func RunTaskGraphCheck(root, slug string, stdout, stderr io.Writer) int {
+	return runTaskGraphCheck(root, slug, false, stdout, stderr)
+}
+
+// RunTaskGraphCheckStrict is RunTaskGraphCheck, except a plan whose shared-path
+// writer count breaches the hub limit is refused instead of only advised. That is
+// the plan-shape repair point: split disjointly rather than widen the cap.
+func RunTaskGraphCheckStrict(root, slug string, stdout, stderr io.Writer) int {
+	return runTaskGraphCheck(root, slug, true, stdout, stderr)
+}
+
+func runTaskGraphCheck(root, slug string, strict bool, stdout, stderr io.Writer) int {
 	graph, err := CheckTaskGraph(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "task-graph: %v\n", err)
@@ -38,8 +50,14 @@ func RunTaskGraphCheck(root, slug string, stdout, stderr io.Writer) int {
 			recordMetric(root, slug, "define", "size-advisory", "", int64(over))
 		}
 		paths, serial := sliceWritePaths(raw, graph)
-		if rounds := scheduleRounds(graph, paths, root); rounds > 0 {
-			fmt.Fprintf(stdout, "task-graph: schedule: %d slices in %d build rounds at cap %d\n", len(graph.Slices), rounds, parallel.MaxParallelSlices)
+		if plan, idle, maxReady := schedulePlan(graph, paths, root); len(plan) > 0 {
+			fmt.Fprintf(stdout, "task-graph: schedule: %d slices in %d build rounds at cap %d, width %d, idle-eligible %d\n", len(graph.Slices), len(plan), parallel.MaxParallelSlices, scheduleWidth(plan), idle)
+			if chain := chainAdvisories(graph, serial, len(plan), maxReady); len(chain) > 0 {
+				for _, line := range chain {
+					fmt.Fprintf(stdout, "task-graph: %s\n", line)
+				}
+				recordMetric(root, slug, "define", "chain-advisory", "", int64(len(chain)))
+			}
 		}
 		if hubs := hubAdvisories(graph, paths, serial); len(hubs) > 0 {
 			for _, line := range hubs[:min(len(hubs), hubAdvisoryShown)] {
@@ -49,6 +67,10 @@ func RunTaskGraphCheck(root, slug string, stdout, stderr io.Writer) int {
 				fmt.Fprintf(stdout, "task-graph: ADVISORY hub: %d more shared paths; fix the ones above first\n", extra)
 			}
 			recordMetric(root, slug, "define", "hub-advisory", "", int64(len(hubs)))
+			if strict {
+				fmt.Fprintf(stdout, "task-graph: BLOCKED: %d shared path(s) with %d+ writers; split disjointly (acceptance-preserving) or record `Serial rationale:`\n", len(hubs), hubAdvisoryMin)
+				return 3
+			}
 		}
 	}
 	if edges := edgeAdvisories(graph); len(edges) > 0 {

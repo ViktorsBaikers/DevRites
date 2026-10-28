@@ -118,6 +118,10 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    full inventory, then bounded owning-role rechecks after repairs. Run approved
    proof in the same window as that review. Gap or Critical/Important → `gap`;
    else proof → `green|red|gap`.
+
+   A recheck round is one dispatch per changed surface, not one per checklist: the
+   recheck agent carries every open checklist (code, test, doubt) for that diff and
+   answers each by name. Merging cuts dispatches; dropping a checklist does not.
    Reviewer fan-out for a batch is itself batched under
    [`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md#scale-limits)
    (≈4 concurrent read-only reviewers, 8 only with disjoint paths), and `max_agents`
@@ -139,11 +143,11 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
 7. Each landing: FF control (the branch that held `HEAD` when the batch started —
    often `main`/`master`, otherwise whatever the user was on) by one local commit,
    never pushed; union that sibling's paths into `touched-files.md`; update
-   state/evidence; AFK +1 for that sibling; optional `check candidate`. Then
-   refill ([Dynamic selection](#dynamic-selection-and-re-batching)) and start the
-   feature gates on control
-   ([Proof tiers](phase-contract.md#proof-tiers)); the next landing waits for them
-   to pass, the refilled wrights do not.
+   state/evidence; AFK +1; optional `check candidate`. Land every green sibling,
+   refill ([Dynamic selection](#dynamic-selection-and-re-batching)), then run the
+   feature gates once for the train
+   ([Proof tiers](phase-contract.md#proof-tiers)); the next train waits, the
+   refilled wrights do not.
 8. Cleanup runs only after the last landing marks the lease `complete` — work
    landed in control, so `parallel cleanup` removes worktrees/branches.
    Blocked/human-stopped batches keep lease, worktrees, branches — nothing is
