@@ -1,9 +1,8 @@
 # Stop conditions: when autocomplete pauses
 
-On a real stop, write `state.md` as `awaiting_human` or `blocked`, persist the
-reason, and include one resume command. Agent-owned recovery never ends the run:
-a spent strategy escalates and a fully escalated fingerprint parks while other
-work continues ([retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)).
+On real stops, persist `state.md` `awaiting_human` or `blocked`, reason, and one
+resume command. Agent-owned recovery never ends the run: spent strategies
+escalate; fully escalated fingerprints park while other work continues ([retry contract](../../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)).
 `--ship` never bypasses a stop.
 
 Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
@@ -14,7 +13,7 @@ Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preservin
 
 ## Always stop
 
-Regardless of flags or AFK ceiling:
+Flags/AFK ceiling never override:
 
 - destructive data migration;
 - auth/authz boundary change;
@@ -22,8 +21,8 @@ Regardless of flags or AFK ceiling:
 - external-service contract change; or
 - filesystem destruction outside the workspace.
 
-Red proof cannot advance. Run bounded Debug Recovery and escalate spent
-strategies; a fully escalated fingerprint parks unless the remaining owner is human.
+Red proof cannot advance. Run bounded Debug Recovery; escalate spent strategies.
+Fully escalated fingerprints park unless remaining owner is human.
 
 ## Not stops: internal technical routing
 
@@ -32,13 +31,12 @@ forward work, persists the return cursor, and invokes Plan repair plus Recovery
 Vet inline. The same applies to nested `STOP`/`Next step` when its decision is
 agent-owned.
 
-Agent-owned backtracking is not a stop condition while the exact causal
-fingerprint has budget. Invoke the earlier phase, affected Vet, remediation, and
-proof; then resume the origin. Three no-progress corrections of that exact
-fingerprint spend only its current strategy: escalate to the next correction
-class inline (shared root cause, diagnostic amplification, boundary redesign)
-with a fresh budget, never asking permission. After three escalations in this
-activation the fingerprint parks; finish all independent work, then stop once.
+Agent-owned backtracking is not a stop condition while its exact causal
+fingerprint has budget: invoke earlier phase, affected Vet, remediation, proof;
+resume origin. Three no-progress corrections spend only that fingerprint's current
+strategy: escalate inline to the next class (shared root cause, diagnostic
+amplification, boundary redesign) with fresh budget, without permission. After
+three escalations per activation it parks; finish independent work, then stop once.
 Preserve reproduction, attempts, and dead ends; never offer `/rite-plan unblock`
 or another routine phase command. A new user-issued `/rite-autocomplete`
 reopens parked fingerprints with fresh escalation; wakes and compaction do not.
@@ -50,11 +48,10 @@ It blocks another execution; retained new Critical/Important evidence still
 enters offline recovery. After affected Vet is READY, pause for fresh action
 authorization and never reuse old GO.
 
-Past evidence being irretrievable is not by itself terminal. If an in-scope
-trusted seam can uniquely discriminate the next failure, run diagnostic-
-amplification Plan repair and narrow Vet inline, then pause for fresh GO before
-one evidence-acquisition attempt. Without a safe seam, escalate to the next
-class or park; only a real human/risk/scope gate stops for a human.
+Past evidence being irretrievable is not by itself terminal. If an in-scope trusted seam
+uniquely discriminates the next failure, run diagnostic-amplification Plan repair
+and narrow Vet inline; pause for fresh GO before one evidence-acquisition attempt.
+Without a safe seam, escalate or park; only a real human/risk/scope gate stops for a human.
 
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"classifier returns owner-busy, exhausted, or existing hard gate","action":"escalate BLOCKED_EXHAUSTED; on WAIT_ACTIVE_OWNER run independent work and recheck; stop on exact BLOCKED_GATE result","return":"unchanged cursor plus fixed route-owned output"} -->
 ## Other stop classes
@@ -74,10 +71,9 @@ class or park; only a real human/risk/scope gate stops for a human.
 - **Clarify:** material `open`/unowned decision coverage or a
   low-confidence high-consequence assumption. Continue the initial interview;
   never arm AFK early.
-- **Seal:** remaining NO-GO after recommended-option questions are closed, with
-  every remaining blocker and fix direction. Never round up to GO. An open
-  recommended-option blocking question is not a Seal stop: resolve it, recover
-  agent-owned findings, then re-enter Seal. A first NO-GO is not a stop either:
+- **Seal:** report remaining NO-GO with every blocker/fix direction; never round
+  up to GO. Resolve recommended-option blocking questions internally; recover
+  agent-owned findings and re-enter Seal. A first NO-GO is not a stop:
   recover every agent-owned blocker (missing or unbound proof, a reviewer gap root
   can close, a finding with a fix direction, a missing `review.md` verdict), then
   re-enter Seal. The unattended `N` to accepting Important risks means repair, not
@@ -95,23 +91,26 @@ class or park; only a real human/risk/scope gate stops for a human.
 - **Resource envelope:** overlapping run or missing AFK after arm still stops.
   Do not stop on `--max-slices`, `max_agents`, `max_minutes`, or `max_review_queue`.
 - **Confidence:** intent still cannot become testable acceptance after interview.
-- **Repeated failure:** not a stop. Escalate; a fully escalated fingerprint parks,
-  and the run stops only once no independent work remains.
-- **Resolver failure:** `devrites-engine state resolve` not found, or nonzero exit.
-  Never hand-edit `questions.md`/`state.md` in its place. Not found stops at once;
-  nonzero allows one identical re-run (the fingerprint is command + exit code +
-  decisive stderr line; an unchanged re-run is not a correction, so no further
-  attempts). Then stop `blocked` with the exact command, exit code, and stderr line,
-  and resume action `/rite-doctor`.
+- **Repeated failure:** not a stop. Escalate; fully escalated fingerprints park.
+  Stop only when no independent work remains.
+- **Resolver failure:** `devrites-engine state resolve` missing or nonzero.
+  Never hand-edit `questions.md`/`state.md` instead. Missing stops immediately;
+  nonzero permits one identical re-run (fingerprint: command + exit code + decisive
+  stderr line; unchanged re-run is no correction, no further attempts). Then stop
+  `blocked`: exact command, exit code, stderr line; resume via `/rite-doctor`.
 
 ## Final GO and durable stop
 
-`--ship`/`--yolo` never authorizes Git. With a flag, complete Ship preflight,
-disclose the exact plan, and stop for literal `GO` plus native approval. Without
-one, stop at Seal GO with `/rite-ship`. Seal GO, AFK, prior approval, and flags
-never satisfy Ship approval.
+With a recorded continuation, no opt-out, and workspace budget, Seal GO stays
+internal: continue without `--ship`, leaving milestones sealed/unshipped. Only the
+final milestone, explicit `continue_sequence: false`, or exhausted sequence cap
+ends green sequence continuation.
 
-A cold-resumable stop records `state.md` status, exact reason, and one resume
-action: the human-owned action, or `/rite-autocomplete` to reopen parked
-fingerprints; the owning question/drift/seal entry explains it. The user-facing line says what stopped
-and, only when applicable, what human action resumes it.
+There, `--ship`/`--yolo` requires [Ship preflight](../../rite-ship/reference/git-ship.md#before-type-go):
+disclose exact plan; stop for fresh literal `GO` plus native approval.
+Without flags, stop at Seal GO with `/rite-ship`. Seal GO never authorizes Git
+or satisfies Ship approval; neither do AFK, prior approval, or flags.
+
+Record cold-resumable `state.md` stops: status, exact reason, one resume action
+(human-owned or `/rite-autocomplete` to reopen parked fingerprints). Explain in
+owning question/drift/seal entry. Tell user what stopped and any required human action.

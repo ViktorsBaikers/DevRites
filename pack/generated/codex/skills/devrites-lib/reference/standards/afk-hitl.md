@@ -4,11 +4,8 @@
 
 > Applies when: any rite/devrites skill that can pause for a human or run unattended; irreversible-risk list, budgets, recovery accounting.
 
-Defines two modes for `rite-*`/`devrites-*` skills that may pause; main
-callers are `$rite-build`, `$rite-status`, `$rite-resolve`, and
-`devrites-doubt`.
-
-The contract uses one sentinel, one queue, and one resume verb.
+Two pause modes for `rite-*`/`devrites-*`, chiefly `$rite-build`, `$rite-status`,
+`$rite-resolve`, `devrites-doubt`: one sentinel, queue, resume verb.
 
 ## Contents
 
@@ -46,15 +43,15 @@ The contract uses one sentinel, one queue, and one resume verb.
   ceiling (and every irreversible-risk item) pause and queue a `questions.md` entry for
   `$rite-resolve`.
 
-`.devrites/AFK` presence is authoritative for run mode; gate-deciding skills re-read
-it at decision time. There is no `state.md` run-mode field to drift out of sync.
+`.devrites/AFK` presence owns run mode; gate-deciding skills re-read it at decision
+time. No `state.md` run-mode field can drift out of sync.
 
 ## The sentinel: `.devrites/AFK`
 
 Presence = AFK active. The file body is optional YAML:
 
 ```yaml
-max_slices: 10                       # whole-workspace writer budget; seeds state.md remaining count
+max_slices: 10 # whole-workspace writer budget; seeds state.md remaining count
 max_agents: 32                       # native agent dispatches in one host activation
 max_minutes: 120                     # min; $rite-autocomplete: not a ceiling
 max_review_queue: 8                  # unresolved review/gate items admitted before fan-out stops
@@ -64,55 +61,52 @@ notify: 'curl -fsS -m 10 -d "$DEVRITES_QID: $DEVRITES_QUESTION" ntfy.sh/my-topic
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
 continue_sequence: true              # after Seal GO, open the next recorded continuation
 max_workspaces: 5                    # workspaces one armed sequence may open
-max_parallel: 10                     # unattended default cap; `--parallel N` on this invocation wins and may rewrite only this field
+max_parallel: 10 # unattended default cap; `--parallel N` on this invocation wins and may rewrite only this field
 ```
 
-The file is **read-only config**: never rewritten in place, except `$rite-autocomplete --parallel N` writes or replaces only `max_parallel: N`. `max_slices` is the initial
-budget; the mutable remaining count is the `state.md` cursor
-`afk_slices_remaining` (`AFK slices remaining: <n>` in the released bullet
-form), owned by the controlling root. Recognize either spelling and preserve
-the existing table or bullet presentation. Before dispatch, a configured
-`max_slices` and any existing remaining value must be decimal nonnegative
-integers; malformed or negative values fail closed. The pending → built state transition spends
+The file is **read-only config**: never rewritten in place, except `$rite-autocomplete --parallel N` writes or replaces only `max_parallel: N`.
+
+Outside active `$rite-autocomplete`, the following slice-budget rules apply:
+`max_slices` seeds root-owned `state.md` cursor `afk_slices_remaining`
+(released bullet alias: `AFK slices remaining: <n>`). Accept either spelling;
+preserve table/bullet presentation. Before dispatch, require configured
+`max_slices` and existing remaining values to be decimal nonnegative integers;
+malformed or negative values fail closed. The pending → built state transition spends
 exactly one slice: on the first green slice write `max_slices - 1`, otherwise
 write `remaining - 1`, never below zero. Re-reading an already built slice does
 not spend again. At zero, stop before the next dispatch.
 
-An orchestrator that can derive a stricter budget only after planning may pre-seed
-`afk_slices_remaining` in `state.md` before the first dispatch instead of rewriting the
-sentinel. It uses the minimum of pending work and every configured/explicit cap. An
-existing counter may be lowered but never increased or reinitialized. Once present, that state
-counter is the effective remaining budget even when the read-only sentinel omits
-`max_slices`.
+A stricter post-planning budget may pre-seed `afk_slices_remaining` before first
+dispatch, not rewrite the sentinel: use the minimum of pending work and all
+configured/explicit caps. An existing counter may be lowered but never increased or reinitialized.
+It remains effective even if the sentinel omits `max_slices`. Under active `$rite-autocomplete`, skip these slice-cap checks,
+charges, zero stops, and minimum-cap seeding; use its
+[post-Vet budget](../../../rite-autocomplete/reference/loop.md#derive-the-mutable-post-vet-budget).
 
 ### Sequence continuation (`continue_sequence`, `max_workspaces`)
 
-`continue_sequence: true` lets one armed run open the next **recorded** continuation
-after a `Seal GO` instead of stopping. Under `$rite-autocomplete`, absent means on, even
-in an existing sentinel; `false` opts out. `max_workspaces` (default 5) is the
-sequence budget (nonnegative decimal, fail closed): spend one when a new workspace is
-opened, never when resuming the current one. `max_slices` stays **per workspace** —
-each new workspace's `state.md` seeds its own `afk_slices_remaining`.
+`continue_sequence: true` opens the next **recorded** continuation after Seal GO.
+Under `$rite-autocomplete`, absent means on, even in existing sentinels; `false` opts out.
+`max_workspaces` (default 5): nonnegative decimal sequence budget, fail closed;
+charge new workspaces only, never resumes. `max_slices`/`afk_slices_remaining` stay **per workspace** outside active
+`$rite-autocomplete`, which uses its post-Vet pending count.
 
 The chain lives in root-owned `state.md` cursor fields, not in chat:
 `sequence_parent` (the immediately preceding workspace slug), `sequence_position`
 (1-based ordinal), `sequence_workspaces_remaining` (slots the chain may still
 open after this workspace), and — on the release milestone only —
-`sequence_role: release`. Seeding is exactly-once because the values are
-derived, not remembered: a continuation's fields are computed from its recorded
-parent and the parent's counter at creation, and a resumed run that finds a
-continuation workspace missing the fields re-derives the same values from its
-`brief.md` parent/position plus the parent's counter — never a second charge. A
-workspace without a recorded parent/position is not a sequence member; the
-counter only decreases, malformed values fail closed, and `0` opens nothing.
+`sequence_role: release`. Seed exactly once from the recorded parent and its counter at creation.
+On resume, re-derive missing continuation fields from its `brief.md` parent/position
+and parent counter — same values, never a second charge. No recorded parent/position means no sequence membership. Counter only decreases;
+malformed values fail closed; `0` opens nothing.
 `sequence_role: release` makes `check candidate` and `check seal` require the
 candidate manifest to cover the whole recorded chain — run
 `devrites-engine state merge-manifest <slug>` before Prove.
 
 - Only continuations recorded in the parent's `decisions.md` sequence
   ([slicing.md § Continuation workspaces](../../../rite-plan/reference/slicing.md#continuation-workspaces))
-  qualify; no recorded next entry, or the cap/review-queue bound reached, stops
-  with the winning reason.
+  qualify; no next entry or exhausted `max_workspaces` stops with that reason. The review-queue bound applies only outside active
+  `$rite-autocomplete`.
 - Milestones are **not** shipped: they stay sealed and unarchived in `.devrites/work/`
   with `Next step: $rite-ship` preserved. Local `WIP(<slug>):` checkpoints still
   land ([checkpoint.md](../../../rite-build/reference/checkpoint.md)), so the tree
@@ -120,8 +114,9 @@ candidate manifest to cover the whole recorded chain — run
 - Git stays human-gated. The release ship is one disclosed plan, one literal `GO`, and
   one native approval; it collapses the sequence's `WIP` commits into the single
   release commit and may archive the sealed predecessors.
-- Every human-owned, safety, access, exhaustion, and `NO-GO` condition still stops the
-  run exactly as without this field.
+- Human-owned, safety, access, and exhaustion stops remain. Active
+  `$rite-autocomplete` recovers agent-owned Seal `NO-GO` per
+  [stop-conditions.md](../../../rite-autocomplete/reference/stop-conditions.md), not a handoff.
 
 `max_parallel` is the unattended default batch cap only when this invocation does
 not contain `--parallel N`; `1` forces the serial cycle only in that default
@@ -145,28 +140,30 @@ Existing sentinels that declare writer admission but miss/malform these fail clo
 state-owned slice counter. A leftover `expires_at` is ignored and never rewritten.
 Read-only watchers use equivalent native caps from [`loop-operations.md`](loop-operations.md).
 
+Outside active `$rite-autocomplete`, the following dispatch/queue limits apply:
 `max_agents` counts every leaf in the native activation, including failures and
 parallel branches; do not add dispatch telemetry to `.devrites/`. `max_review_queue`
 counts open validating questions plus unresolved admitted Critical/Important findings.
-Above it stop; at it run only reconciliation that reduces the queue. Optional
-`max_tokens`/`max_cost_usd` lower enforceable native caps; if declared but unobservable, stop.
+Above it stop; at it run only reconciliation that reduces the queue.
+
+Optional `max_tokens`/`max_cost_usd` lower native caps in all unattended modes; if declared but unobservable, stop.
 `$rite-autocomplete` deliberately ignores `max_slices`, `max_agents`, `max_minutes` and
 `max_review_queue` ([stop-conditions.md](../../../rite-autocomplete/reference/stop-conditions.md));
-there they are not a ceiling.
+not ceilings there.
 
 Numeric limits are nonnegative decimals. Before costly checks, fan-out, or writing,
-run cheap readiness, reject overlap, count queue, and confirm agent/time/token/cost
-headroom; re-check after every result. Never start one call that can exceed remaining
-headroom. Agent/time/token/cost counters are per native activation and start fresh only
-for a genuinely new activation. Slices, recovery attempts, and current
-review queue remain durable/recomputed across wakes. Persist each activation stop and
-checkpoint before notification.
+run cheap readiness and reject overlap. Outside active `$rite-autocomplete`, count
+queue and confirm agent/time headroom; under Autocomplete those ignored limits
+never block admission. In both cases confirm declared token/cost and native safety
+headroom; re-check after every result. Never start a call that can exceed an
+applicable remaining limit. Agent/time/token/cost counters are per native activation and start fresh only
+for a new activation. Slice/recovery state and review queue remain durable/recomputed across wakes.
+Persist stops/checkpoints before notification.
 
-New sentinels write no `expires_at` and no notification/token/cost cap.
-Post-Vet pending count may lower slices. Existing files
-never receive missing defaults implicitly.
+New sentinels omit `expires_at` and notification/token/cost caps. Post-Vet pending
+count may lower standalone slices. Never add missing defaults to existing files.
 
-To leave AFK, delete the file. The next skill invocation reverts to HITL.
+Delete the file to restore HITL on the next invocation.
 
 ## The four gates
 
@@ -223,10 +220,9 @@ keep the **rejected options in `questions.md`**.
 
 ## Decision ownership: search before asking
 
-A gate is human only when its remaining choice is human-owned. First search live code,
-project/decision docs, and authoritative dependency sources; make and record reversible
-implementation/test choices. Ask only about product, scope, acceptance, architecture policy,
-irreversible risk, or human-only access/action.
+First search live code, project/decision docs, and authoritative dependency sources;
+make and record reversible implementation/test choices. Ask only human-owned
+product, scope, acceptance, architecture-policy, irreversible-risk, or access/action choices.
 
 Objective test/build/tool failure runs bounded `devrites-debug-recovery`; fix it, or escalate and
 park it under the [retry contract](#retry-cap-no-progress-loops-and-self-resolve). Never ask

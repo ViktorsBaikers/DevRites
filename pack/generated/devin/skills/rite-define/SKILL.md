@@ -146,21 +146,18 @@ Pull these via `Read` when shaping the plan:
    cross-slice boundary names producer, consumer, invariant, integration step, and proof.
    Map each applicable topology/data/integration risk to a slice, failure/recovery path,
    and discriminating proof; a risk cannot live only in the architecture narrative.
-4a. **Persist traceability natively.** The drafter proposes and root writes
+4a. **Persist traceability natively.** Drafter proposes; root writes
    `traceability.md` (`AC/REQ ID → slice → proof → evidence ID → files → status`).
-   Re-read spec, tasks, and proof fields: every ID must exist and every mapping
-   preserve meaning, not just labels. Reject orphans, inventions, and false mappings;
-   `/rite-prove` and `/rite-seal` read this file directly. Reference the plan's
-   `Shared contract proof` rows from existing slice/proof mappings; do not create a second
-   traceability system.
-5. **Complexity and deviations gate:** justify anything outside DevRites defaults (new dep,
-   extra abstraction, second design system) in the plan; if you can't justify it, simplify.
-   **Principles conformance:** read `.devrites/principles.md` (if present) and confirm the
-   approach honors every declared invariant. A plan that conflicts with one is not "a deviation
-   to justify away": either reshape the approach to conform, or, when the conflict is genuine and
-   intended, route it through the Spec Drift Guard plus a recorded decision and a scoped principle
-   exception a human approves. Never ready a plan that silently violates an invariant. (Re-scored
-   as a blocking gate at `/rite-vet`; no file → none declared → nothing to check.)
+   Re-read spec/tasks/proof: require real IDs, meaning-preserving mappings, not
+   just labels. Reject orphans/inventions/false mappings. `/rite-prove` and
+   `/rite-seal` read it directly. Reference plan `Shared contract proof` rows from
+   existing slice/proof mappings; never create a second traceability system.
+5. **Complexity and deviations gate:** justify deviations from DevRites defaults
+   (new dep, extra abstraction, second design system) in plan; else simplify.
+   **Principles conformance:** honor all `.devrites/principles.md` invariants
+   (absent → none). Reshape conflicts; intended genuine conflicts need Spec Drift
+   Guard, a recorded decision, and a human-approved scoped principle exception.
+   Never ready silent violations; `/rite-vet` re-scores this blocking gate.
 6. **Write** `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` — save the
    accepted bundle under `packets/` and apply it with `devrites-engine state
    apply-bundle <slug> <bundle.json>` before root reconciliation edits; update
@@ -168,27 +165,31 @@ Pull these via `Read` when shaping the plan:
    `flows.md` (**Mermaid-first**). If a richer reviewable visual earns it, emit
    `visual/<flow>.html` + `visual/<flow>.outline.md` after loading matching playbooks from
    [`../devrites-lib/reference/visual-playbooks/index.md`](../devrites-lib/reference/visual-playbooks/index.md)
-   (progressive; never preload all seven), link the pair from `flows.md`, treat outline as
-   SSOT (outline wins), and never require Lavish or a new phase.
-6a. **Cross-artifact gate.** Read spec, tasks, and traceability together: every
-   buildable AC/REQ maps to an existing slice/proof, every slice maps to real
-   acceptance, and names/prose agree. Missing, duplicate, contradictory, or
-   meaning-changing mappings block. Then run
+   (progressive; never preload all seven), link both from `flows.md`; outline is
+   SSOT (wins). No Lavish or new phase required.
+6a. **Cross-artifact gate.** Read spec/tasks/traceability together: each buildable
+   AC/REQ maps to existing slice/proof; each slice maps to real acceptance;
+   names/prose agree. Missing, duplicate, contradictory, or meaning-changing
+   mappings block. Run
    `devrites-engine check task-graph <slug> --strict`; a malformed dependency graph, or a
    shared path written by `hubAdvisoryMin`+ slices with no `Serial rationale:`, blocks
-   before Vet rather than spending a reviewer context on invalid tasks. Resolve each
+   before Vet; no reviewer context for invalid tasks. Resolve each
    `ADVISORY size:`/`hub:`/`chain:` line now (split or seam slice, or a rationale);
    `--strict` refuses the contended plan, the default run only advises.
 7. **Readiness gate** (`plan-template.md`): require CLEAR coverage; complete acceptance,
    wiring, shared-contract proof, applicable outputs, and rollback; risk-first acyclic order;
    justified deviations; and every horizon item present, with blockers resolved, planning
    items resolved/validly spiked, and local/action entries bounded and owned.
-   **Stop and confirm** before code. Render the review-before-code
-   digest first: `Intent` (one sentence from the spec), `Done means` (acceptance coverage x/y),
-   `Plan sanity` (slice count + riskiest boundary/gate), `Expected build interruptions`
-   (`none` or only justified action-time gates), and `Build exactly this?` (yes → approve;
-   no → `/rite-plan revise`). When the human confirms the plan, write `Plan approved: <iso>` to
-   `state.md` (see [state-workspace](../rite-spec/reference/state-workspace.md)).
+   **Standalone: stop and confirm** before code. Render digest: `Intent` (one
+   spec sentence), `Done means` (AC coverage x/y), `Plan sanity` (slice count +
+   riskiest boundary/gate), `Expected build interruptions` (`none` or justified
+   action-time gates), `Build exactly this?` (yes → approve; no → `/rite-plan revise`).
+   Human confirmation writes `Plan approved: <iso>` to `state.md`
+   ([state-workspace](../rite-spec/reference/state-workspace.md)).
+   Under active `/rite-autocomplete`, once this readiness gate is green and no
+   unresolved human-owned decision, irreversible-risk, scope, or access gate remains,
+   root writes autonomous approval to existing `Plan approved: <iso>` cursor and records Autocomplete provenance and rationale in `decisions.md`;
+   never claim human approval. Return internally for `/rite-vet`. Plan approval grants no protected-path, Git, or safety authority.
 
 ## tasks.md slice format
 

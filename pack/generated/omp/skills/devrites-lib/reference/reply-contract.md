@@ -1,8 +1,7 @@
 # DevRites completion reply contract
 
-Use the host's normal response. Do not run a progress renderer, emit session
-telemetry, assign a health score, or repeat state already visible in the durable
-artifact.
+Use normal host responses. No progress renderer, session telemetry, health score,
+or repetition of durable artifact state.
 
 Keep the reply compact and evidence-backed:
 
@@ -21,16 +20,17 @@ Next: <one recommended action>
 Record: <primary durable artifact path>
 ```
 
-`Changed:` is the complete write set, not a highlight reel: every file written
-or edited this turn — workspace artifact and project source alike — appears
-there or inside one named grouped entry, so a reviewer can `git diff` exactly
-those paths. `Record:` then names the single durable artifact a later session
-reads first.
+`Changed:` lists every file written/edited this turn (workspace and source),
+individually or in one named group, so reviewers can `git diff` those paths.
+`Record:` names the single durable artifact the next session reads first.
 
-Mid-flight replies — the turns between completion states — obey the same economy:
+Active `/rite-autocomplete` consumes green checkpoints/`next_action` internally.
+Continue execution or tool progress; never end with a text-only final reply between green phases.
 
-- **Restate position.** The reader cannot hold "step 3 of 5" between turns; name it
-  (`step N of M` / `state: <where things stand>`) rather than asking them to remember.
+Standalone HITL mid-flight replies follow the same economy:
+
+- **Restate position** (`step N of M` / `state: <where things stand>`); do not rely
+  on the reader remembering it between turns.
 - **One next action, doable now.** `Next:` names one concrete action completable in
   under two minutes — a command, a file to open, a yes/no decision. "Want me to
   continue?" is a stall, not an action.

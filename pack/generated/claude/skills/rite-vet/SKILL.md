@@ -11,10 +11,10 @@ user-invocable: true
 
 # /rite-vet: review the plan before build
 
-Vet every plan's scope, architecture, quality, proof, performance, failures and writer
-safety. Fold cited technical findings; design Build tests. Temper owns product;
-Vet owns implementation; current `$ARGUMENTS` (`--full`) feeds the depth triggers in
-`reference/depth.md`; profiles never remove the exact plan-reviewer gate
+Vet each plan: scope, architecture, quality, proof, performance, failures, writer
+safety. Fold cited technical findings; design Build tests. Temper owns product,
+Vet implementation. Current `$ARGUMENTS` (`--full`) feeds `reference/depth.md`
+triggers; profiles never remove the exact plan-reviewer gate
 ([orchestration-profiles.md](../devrites-lib/reference/orchestration-profiles.md)).
 
 ## Rules
@@ -41,21 +41,23 @@ plan declares a root-authored executable workflow file, read
 
 ## Invariants
 
-- Review implementation, not ambition. Challenge creep, complexity, proof, and
-  risk without changing accepted product scope.
-- Root owns decisions/writes/readiness; reviewers judge without route policy.
-  Cite findings/confidence; suppress
-  unverified or confidence ≤4 findings under `review-axes.md`.
-  Lens arrows in `eng-lenses.md` are heuristics; band findings only under the
-  four `review-axes.md` names.
-- Auth, migration, public API, and data-model changes use maximum caution and the
-  irreversible-risk stop. Project principles never become trade-offs.
+- Review implementation, not ambition. Challenge creep/complexity/proof/risk
+  without changing accepted product scope.
+- Root owns decisions/writes/readiness; reviewers judge, not route. Cite
+  findings/confidence; suppress unverified or confidence ≤4 findings per
+  `review-axes.md`. `eng-lenses.md` arrows are heuristics; use only the four
+  `review-axes.md` band names.
+- Auth, migration, public API, and data-model changes need maximum caution,
+  full review, and explicit rollback. Pause only for
+  [canonical irreversible-risk items](../devrites-lib/reference/standards/afk-hitl.md#irreversible-risk-list-always-pause)
+  or unresolved human-owned decisions, not an already-approved reversible internal
+  data-model change. Project principles never become trade-offs.
 - **Governance-protected paths** (`.devrites/**`, pack skill/agent trees,
-  `NOTICE.md` generator regions, CI/hook config named in repo docs) require explicit
-  human approval before plan slices may edit them. A slice touching a protected path
-  without approval → Vet **NEEDS CLARIFICATION**.
-- Use the lowest axis band; never average or round thin to ready. Search before
-  asking and resolve reversible technical choices. Ask only human-owned choices.
+  `NOTICE.md` generator regions, documented CI/hook config) require explicit
+  human approval before plan slices edit them; absent approval → Vet
+  **NEEDS CLARIFICATION**.
+- Use lowest axis band; never average/round thin to ready. Search; resolve
+  reversible technical choices; ask only human-owned.
 - Preserve a valid technical return cursor. Agent-owned `NEEDS REPLAN` returns
   internally to its caller, not to the human; on a direct invocation there is
   no caller, so Vet becomes it — save a return cursor
@@ -76,18 +78,16 @@ plan declares a root-authored executable workflow file, read
    assumptions, and state. Require approved Plan and `Decision coverage: CLEAR`;
    otherwise stop for Define or Clarify. Check placement (`get_architecture`),
    blast radius (`trace_path`), and reuse (`search_graph`) per [`code-navigation.md`](../devrites-lib/reference/standards/code-navigation.md).
-1. **Select depth.** Apply `reference/depth.md` exactly; never skip. Every initial
-   pass records an engineering verdict and test-plan coverage. A valid Recovery
-   recheck retains prior depth and enters 1b.
-1a. **Independent initial pass.** Freeze candidate and dispatch the exact fresh
-   read-only plan reviewer — plus developer-experience reviewer for developer
-   surfaces (trigger `devex`) and the current strategy reviewer after significant
-   Temper — in
-   parallel under `../devrites-lib/reference/parallel-dispatch.md`; they are
-   independent read-only passes on one frozen candidate. Missing
-   required account blocks. Run root steps 2–4, including step 3's preflight
-   commands, on the same frozen candidate while the wave is out; reconcile the
-   accounts when they return.
+1. **Select depth.** Apply `reference/depth.md` exactly; never skip. Initial passes
+   record engineering verdict and test-plan coverage. Valid Recovery rechecks
+   retain prior depth; enter 1b.
+1a. **Independent initial pass.** Freeze candidate; dispatch exact fresh read-only
+   plan reviewer, plus developer-experience reviewer for developer surfaces
+   (trigger `devex`) and current strategy reviewer after significant Temper, in
+   parallel under `../devrites-lib/reference/parallel-dispatch.md`: independent
+   read-only passes on one frozen candidate. Missing required account blocks.
+   Meanwhile run root steps 2–4, including step 3 preflight commands, on that
+   candidate; reconcile returned accounts.
 1b. **Recovery recheck.** Require valid return cursor, accepted prior finding,
    exact fingerprint/reproduction, repaired candidate identity, changed
    paths/criteria, affected drift/evidence, and the recorded delta self-check.
@@ -118,14 +118,13 @@ plan declares a root-authored executable workflow file, read
    Do not fall through to steps 2–7. Retain evidenced unchanged coverage; changed
    global contract/uncertain impact requires full applicable review. Reopen historical
    findings only for affected invariants/dependencies.
-2. **Challenge scope.** Apply review-axes §0 and search accepted decisions.
+2. **Challenge scope.** Apply review-axes §0; search accepted decisions.
    Harden to the smallest contract-complete plan, using marked topology action.
    Then verify bidirectional ID-and-meaning traceability across spec/plan/
    tasks/test-plan/traceability, acceptance, terms, principles, anti-slop,
    and conventions; every slice and test-plan row maps to a live requirement
-   and vice versa. Critical gaps and
-   unexcepted principle breaches block; record the challenge result in `eng-review.md`
-   §2 (Scope challenge) after recheck.
+   and vice versa. Critical gaps/unexcepted principle breaches block. Record
+   rechecked result in `eng-review.md` §2 (Scope challenge).
 3. **Preflight Build entry.** Under `reference/artifacts.md`, verify exact
    command/cwd/tool/version/prerequisite; output filters must preserve upstream
    failure. Verify dependencies from authoritative source plus nearest manifest.

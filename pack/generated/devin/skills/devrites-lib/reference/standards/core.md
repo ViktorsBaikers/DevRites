@@ -2,14 +2,12 @@
 
 > Applies when: always; every workspace rite reads it first.
 
-Each workspace rite reads core first. Its `loads:` manifest `always` set is its required
-read-set (`devrites-engine context --skills-root .devin/skills <slug> --skill <name>` where a workspace exists, else
-read the listed files); a trigger's files load when its named condition holds. Load any
-other rule file from `README.md` on demand.
+Read core first, then the `loads:` manifest `always` set (via
+`devrites-engine context --skills-root .devin/skills <slug> --skill <name>` with a workspace, else listed files).
+Load trigger files when their named condition holds; other `README.md` rules on demand.
 
-Rules are cited as `core.md #N` (CORE-N). Numbering is stable: text may be
-reworded, an ID never changes meaning. Other files name the ID instead of
-repeating the rule.
+Cite rules as `core.md #N` (CORE-N), not repeated text. IDs keep their meaning
+even when reworded.
 
 Uppercase MUST/MUST NOT/SHOULD/SHOULD NOT/MAY carry RFC 2119 meaning: MUST is a gate;
 a SHOULD deviation records its reason in `decisions.md` (the exception procedure); MAY
@@ -20,9 +18,9 @@ Repository conventions follow [Precedence](#precedence).
 
 ## Operating rules (every phase)
 
-1. **Right step, right time:** use the smallest workflow and load only relevant
-   files. Batch independent reads and cover the relevant code, not just the first
-   match. Prefer an available code index for structure; see
+1. **Right step, right time:** use the smallest workflow/relevant read-set. Batch
+   independent reads; cover relevant code beyond the first match. Prefer an
+   available structural code index; see
    [`tooling.md`](tooling.md) and [`code-index.md`](code-index.md).
 2. **No silent assumptions:** surface material assumptions; ask when the answer
    changes scope, architecture, data model, UX, security, migration risk, or
@@ -35,9 +33,10 @@ Repository conventions follow [Precedence](#precedence).
    artifact in place so the code "matches." Append a dated delta through the
    owning rite, or record drift. **Failing case:** Build edits `spec.md`
    acceptance criteria to fit the implementation.
-5. **One slice at a time:** leave one vertical slice working and proven, then
-   stop. HITL never auto-continues; AFK runs to its slice budget
-   ([`afk-hitl.md`](afk-hitl.md)).
+5. **One slice at a time:** prove each vertical slice working.
+   Standalone HITL stops after one slice; standalone AFK runs to its slice budget
+   ([`afk-hitl.md`](afk-hitl.md)). Active `/rite-autocomplete` returns green
+   checkpoints internally and continues the lifecycle to completion or a genuine stop.
 6. **Evidence over confidence:** tests, builds, runtime, screenshots beat
    assertions; record commands and output. Tag how each claim was known:
    `observed` (you ran or read the evidence), `inferred` (deduced — name the
@@ -69,51 +68,50 @@ Each gate is declared as **Name · Precondition · Satisfying observation (exact
 
 Verdict discipline — no vacuous verdicts:
 
-- The precondition asserts the artifact **exists and is non-empty**, not merely that its
-  path resolves. **Failing case:** a phase passes its prerequisite gate, then dies
-  mid-analysis reading a missing spec.
+- The precondition asserts the artifact **exists and is non-empty**, not just a
+  resolved path. **Failing case:** prerequisite passes, analysis dies on a missing spec.
 - A verdict is **PASS**, **FAIL**, or **NOT-RUN**. A NOT-RUN carries its named marker
   (`unavailable: <reason>`, `unproven`, `partial: <what ran>`) in the consuming artifact;
   it never renders as clean and never goes silent. **Failing case:** a review sub-step
   that never ran is simply omitted from the summary, which reads as a clean run.
-- A PASS is valid only when the observation states a **positive count of items actually
-  checked**; zero checked items is FAIL. **Failing case:** an unparseable checklist yields
-  an empty result set and a green verdict over zero evidence.
+- PASS needs a **positive count of items actually checked**; zero is FAIL.
+  **Failing case:** an unparseable checklist produces an empty green result.
 - Scope-bearing gates name their **baseline** and fail only on issues attributable to the
   change; "could not run" (timeout, unreachable, parse failure) is never recorded as
   "failed". **Failing case:** a dependency gate reddens on a pre-existing advisory
   unrelated to the diff.
-- Failure behavior is **abort** (stop; the blocked step is named) or **record-and-continue**
-  (the FAIL/NOT-RUN is recorded with its marker and the run proceeds). Both are legal;
-  silent is not.
+- Failure behavior is **abort** (name blocked step and stop) or **record-and-continue**
+  (record FAIL/NOT-RUN with its marker, proceed). Never silent.
 
 <!-- root-only -->
 ## Caller-owned technical backtracking
 
 When a rite invokes an earlier rite inline to repair an agent-owned technical gap, the original rite stays the controlling caller: a nested `STOP` is a phase boundary, not user-facing. The caller re-reads `state.md`, follows the return cursor/`next_action`, and resumes unless a human-owned, safety, access, budget, or parked-recovery stop is active ([Persistence before stopping](#persistence-before-stopping-handoff-discipline)). Derive `parked-recovery` from the fingerprint's recorded no-progress attempts and escalations, not from a stale `state.md` label; one consumed authorization doesn't exhaust offline recovery from retained new evidence.
 
-An intermediate `Next step` is cold-resume metadata. Do not ask the human to
-copy routine `/rite-plan repair`, `/rite-vet`, `/rite-build`, or proof-rerun
-commands during the active recovery chain. Only the controlling caller emits
-the final response; standalone phase invocations still stop normally.
+Under active `/rite-autocomplete`, green slice/phase checkpoints and their recorded
+`next_action` are internal continuation edges, not final replies. Consume them and
+technical backtracking until requested completion or a genuine stop; tool progress never yields control.
+
+Intermediate `Next step` is cold-resume metadata, not a human copy/paste request
+for routine `/rite-plan repair`, `/rite-vet`, `/rite-build`, or proof reruns during
+active recovery. Only the caller emits the final response; standalone phases stop normally.
 <!-- /root-only -->
 
 <!-- root-only -->
 ## Final response
 
-Immediately before its final response, each rite loads
-[`reply-contract.md`](../reply-contract.md) then uses the compact form: evidenced
-claims plus one next action.
+Immediately before its final response, the controlling caller or standalone rite loads
+[`reply-contract.md`](../reply-contract.md): compact evidenced claims, one next action.
 <!-- /root-only -->
 
 ## Rationalization guard
 
-On an excuse, apply its matching
-[`anti-patterns.md` rebuttal](anti-patterns.md#universal-rationalizations) before continuing.
+Before continuing on an excuse, apply its
+[`anti-patterns.md` rebuttal](anti-patterns.md#universal-rationalizations).
 
 ## Rule summary (load the full file when in scope)
 
-These universal musts link to their full rules; load depth only when needed.
+Universal musts; load linked rules when needed.
 
 - **Fail fast, no silent catches.** Validate early; catch narrow, recover or
   rethrow with context; fail closed on auth/permission/transaction. →
@@ -136,7 +134,7 @@ These universal musts link to their full rules; load depth only when needed.
 - **Measure before you optimize.** An optimisation without a measurement is a
   guess that adds complexity. → [`performance.md`](performance.md)
 - **Names reveal intent.** No `process()` / `handle()` / `data` / `temp`.
-  One concept, one word, across the codebase. → [`coding-style.md`](coding-style.md)
+  One word per concept codebase-wide. → [`coding-style.md`](coding-style.md)
 - **Comments explain *why*, not *what*.** Rename before you comment; delete
   commented-out code. → [`coding-style.md`](coding-style.md)
 - **Write like a human, not a model.** Cut filler, fake contrast/profundity,
@@ -167,19 +165,21 @@ Before any `rite-*` skill stops:
   [--unset key]`; a new ledger section via `state append <slug> <ledger> --heading "<id>"
   --body-file <path|->`. Never splice workspace Markdown with an ad-hoc script or regex.
 
-A skill that stops without doing this leaves the workspace incomplete.
+Stopping without this leaves an incomplete workspace.
 <!-- /root-only -->
 
 ## Context hygiene (end of every phase)
 
 Long contexts degrade reasoning quality. Act on context at **50-70% used, not 95%**.
 
-Read the engine `context` bundle once per phase instead of re-reading the files it
-contains; after compaction re-read the bundle, not its sources.
+Read the engine `context` bundle once per phase, not its sources; after compaction
+re-read the bundle.
 
 <!-- root-only -->
-Every rite names the single resume command on its action line; a `↻ Hygiene:` footer
-advises `/clear`, `/compact`, or `/rite-handoff` and never a competing command. Full phase-by-phase guidance:
+Only controlling-caller final replies or standalone rites name a resume command
+on the action line; nested phases persist it internally, not as a handoff.
+A `↻ Hygiene:` footer advises `/clear`, `/compact`, or `/rite-handoff`, never a
+competing command. Phase guidance:
 [`context-hygiene.md`](context-hygiene.md).
 <!-- /root-only -->
 

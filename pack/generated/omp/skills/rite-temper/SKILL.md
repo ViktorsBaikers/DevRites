@@ -11,10 +11,10 @@ user-invocable: true
 
 # /rite-temper: review scope and risk before planning
 
-Review the readied spec for ambition, scope, pre-mortem risk and unnecessary surface. Fold accepted decisions into the canonical contract before
-`/rite-define`. This step is optional for small work and skips low-stakes specs, but
-`/rite-autocomplete` always invokes it. **Read the active workspace first**; if there
-is no readied `spec.md`, tell the user to run `/rite-spec`. Review depth follows
+Review readied spec ambition, scope, pre-mortem risk, and excess surface. Fold
+accepted decisions into the canonical contract before `/rite-define`. Optional for
+small work; skips low-stakes specs; `/rite-autocomplete` always invokes it.
+**Read active workspace first**; no readied `spec.md` → `/rite-spec`. Depth follows
 [`devrites-lib/reference/orchestration-profiles.md`](skill://devrites-lib/reference/orchestration-profiles.md);
 the required exact strategy reviewer never changes with profile.
 
@@ -28,24 +28,24 @@ that needs more than the default pre-mortem) selected by the section's risk). Lo
 the spec applicability map triggers that risk family.
 
 ## Operating rules
-- **Raise outcome ambition without expanding the solution unnecessarily.** Solve the
-  underlying problem without adding speculative capability or abstraction.
+- **Raise outcome ambition, not excess solution surface.** Solve the underlying
+  problem without speculative capability/abstraction.
 - **Route every scope change through the Spec Drift Guard.** A scope change takes effect
   only when `spec.md` records the confirmed decision. Growth (`expand`, extra
   acceptance) needs a resolved human `questions.md` qid, so an unattended run holds it
   open. Irreversible-risk still pauses.
-- **Apply maximum caution to hard-to-reverse changes.** Auth, migration, public API, and
-  data-model changes always pause under the irreversible-risk list.
-- **Honest verdict.** Never round "needs work" up to "ready"; record every scope call's *why*.
-- **Search before asking.** Apply [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) decision ownership; only human-owned calls
-  enter the interactive walk.
-- **You write; the reviewer judges.** You are the single canonical writer (`strategy.md` +
-  the spec edits); the reviewer agent is read-only.
-- **Require spec-quality checklists for significant features.** Before hardening,
-  confirm `checklists/<domain>.md` exist and pass ([`spec-checklists.md`](skill://rite-spec/reference/spec-checklists.md)); a
-  scope expansion you fold in **adds its own** rows (new Success/Acceptance criteria get
-  checklist rows too). A folded expansion with an unquantified criterion is a CRITICAL
-  failure that reopens the readiness gate.
+- **Maximum caution:** auth, migration, public API, and data-model changes need
+  full review and explicit rollback. Pause only for [canonical irreversible-risk items](skill://devrites-lib/reference/standards/afk-hitl.md#irreversible-risk-list-always-pause)
+  or unresolved human-owned decisions, not an already-approved reversible internal data-model change.
+- **Honest verdict.** Never round "needs work" to "ready"; record each scope call's *why*.
+- **Search before asking.** Apply [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md) ownership;
+  only human-owned calls enter the interactive walk.
+- **You write; reviewer judges.** Sole canonical writer: `strategy.md` + spec edits;
+  reviewer is read-only.
+- **Significant features require spec-quality checklists.** Before hardening,
+  require passing `checklists/<domain>.md` ([`spec-checklists.md`](skill://rite-spec/reference/spec-checklists.md)); a
+  folded scope expansion **adds its own** rows, including new Success/Acceptance
+  criteria. An unquantified folded criterion is a CRITICAL failure reopening readiness.
 
 ## Workflow
 0. **Read `.omp/skills/devrites-lib/reference/standards/core.md`**, then

@@ -140,30 +140,28 @@ next sequence continuation through Vet in a second session, then stop.
    product scope is never auto-resolved by a recommended option; it stops for a human.
    A spent strategy escalates; parked recovery records
    `Next step: /rite-autocomplete`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
-6. **Seal boundary.** Without a ship flag, leave the sealed workspace unshipped and
-   open the next recorded continuation
+6. **Seal boundary.** With or without a ship flag, leave intermediate sealed
+   workspaces unshipped and open the next recorded continuation
    ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation))
    unless `continue_sequence: false`, the sequence budget is spent, or no entry
-   remains; then stop at Seal GO with `/rite-ship`. Report the sequence position on
-   every stop.
-   With a ship flag, perform Ship preflight, disclose the exact Git plan, and stop for
-   fresh literal `GO` plus native approval. **Completion:** performed no Git action before fresh literal `GO` plus native approval.
+   remains. At that boundary without a ship flag, stop at Seal GO with `/rite-ship`.
+   Report sequence position at every stop. Only at that boundary, with a ship flag, perform Ship preflight,
+   disclose the exact Git plan, and stop for fresh literal `GO` plus native approval. **Completion:** performed no Git action before fresh literal `GO` plus native approval.
 
 ## Reply and resume
 
-HITL Build returns after one slice; Autocomplete ignores `--max-slices` and
-keeps chaining pending slices. One Autocomplete invocation owns all internal
-backtracking. Context pressure, compaction, or a nested completion footer does
+HITL Build returns after one slice; Autocomplete ignores `--max-slices`, chaining
+pending slices. Each Autocomplete invocation owns internal backtracking. Context pressure, compaction, or a nested completion footer does
 not create a stop; persist and resume the cursor.
 
-Reply only at a final state, never as mid-run progress: a text-only turn ends
-the run, so after a compaction or phase change keep calling tools. Use one terse line:
+Reply only at final state: text-only turns end the run. Keep
+calling tools after compaction or phase changes. Use one line:
 
 ```text
 Autocomplete: <slug>
 spec <done|stopped> · clarify <clear|stopped> · temper <done|stopped> · define <done|stopped> · vet <ready|stopped> · build <n/N|stopped> · prove <done|stopped> · polish <done|stopped> · review <done|stopped> · seal <GO|NO-GO|stopped>
 ```
 
-Final state is `Shipped`, `Stopped`, `Awaiting human`, `NO-GO`, or `GO`; do not
-write a narrative recap. Require a clean or accepted baseline, land a local
-unpushed checkpoint after each green check, and never auto-pass a red gate.
+Final state: `Shipped`, `Stopped`, `Awaiting human`, `NO-GO`, or `GO`; no narrative
+recap. Require clean or accepted baseline; land local unpushed checkpoints after
+each green check; never auto-pass red gates.

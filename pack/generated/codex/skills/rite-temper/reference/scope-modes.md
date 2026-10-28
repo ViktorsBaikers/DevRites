@@ -1,7 +1,6 @@
 # Scope modes + the two passes
 
-The heart of `$rite-temper`: two ordered passes (heat, then quench), converging on exactly
-one scope mode. Ambition is a **generative** move followed by a **required convergence**: the
+`$rite-temper`: two ordered passes (heat, then quench), converging on one scope mode. Ambition is a **generative** move followed by a **required convergence**: the
 divergence is never the spec; the converged sweet spot is.
 
 ## Pass 1: FORWARD (heat: raise ambition on the outcome)
@@ -41,11 +40,11 @@ Mode selection is the first convergence move. Record the chosen mode + rationale
 | **REDUCE-TO-MVP** | Over-scoped: second-system bloat, ~all must-haves, gold-plating | Hammer scope to the Minimum Usable Subset; move the rest to Non-goals with one-line reasons + revisit notes | Strongest YAGNI alignment. Cutting acceptance is **still a spec change**: record it via the Guard, never a silent trim |
 
 ## Bound ambition by reversibility
-The bigger the bet, the more it must be reversible. Irreversible-risk areas (auth, migrations,
-public API, data model) get the **opposite** of ambition: maximum conservatism, explicit
-rollback, and they **always pause** regardless of mode (the [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md) irreversible-risk
-list is honored verbatim). Size big bets so that if the whole thing vanished tomorrow, you'd be
-fine.
+Bigger bets need more reversibility. Auth, migrations, public API, and data-model
+changes need maximum conservatism, full review, and explicit rollback.
+Pause only for actual [canonical irreversible-risk items](../../devrites-lib/reference/standards/afk-hitl.md#irreversible-risk-list-always-pause)
+or unresolved human-owned decisions, not an already-approved reversible internal
+data-model change. Size bets to tolerate their disappearance tomorrow.
 
 ## Effort foresight (frame it now, not "later")
 While choosing scope, surface the late-stage questions early: *"What will surprise us at

@@ -1,7 +1,6 @@
 # The autocomplete loop: arm AFK, drive every phase
 
-Autocomplete sequences existing `/rite-*` workflows without pausing between
-routine phases. Acceptance-preserving Reslice authority is
+Autocomplete chains existing `/rite-*` workflows without routine-phase pauses. Acceptance-preserving Reslice authority is
 `.pi/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
@@ -23,7 +22,7 @@ allow_gates: [advisory, validating]
 # notify: "<cmd>"
 ```
 
-Read an existing sentinel first. Preserve it byte-for-byte when valid, except
+Read existing sentinel first. Preserve valid bytes, except
 when this invocation contains `--parallel N`: then write or replace only
 `max_parallel: N` and leave every other key unchanged. Stop if the sentinel is
 malformed. Do not stop because it names `max_slices` / `max_agents` /
@@ -41,10 +40,9 @@ remaining. AFK configuration itself stays unchanged.
 
 ### Admit each unattended cycle
 
-Before every phase, review fan-out, recovery, or writer dispatch: cheapest
+Before each phase, review fan-out, recovery, or writer dispatch: cheapest
 readiness check first; reject overlap. Do not stop on `max_agents`,
-`max_minutes`, or `max_review_queue`. Count every leaf result. A new activation
-gets fresh activation-local counters but retains durable slice/recovery state.
+`max_minutes`, or `max_review_queue`. Count every leaf result. New activations reset activation-local counters, retaining durable slice/recovery state.
 
 [Build return](../../rite-build/reference/output.md#caller-owned-continuation).
 Pass `--parallel N`; ignore leftover cap/headroom, remaining-0,
@@ -57,7 +55,7 @@ without recommendations, and Seal judgment (`slice: seal`) still pause.
 
 ## Phase arc
 
-Workspace files carry state; chat does not. Read and execute each phase skill:
+Workspace files, not chat, carry state. Read/execute each phase skill:
 
 | Step | Phase | Completion / edge |
 | --- | --- | --- |
@@ -73,9 +71,8 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 | 10 | `/rite-seal` | GO/NO-GO; no Git |
 | 11 | `/rite-ship` | only after GO; `--ship` never authorizes Git; stop at literal-GO/native approval |
 
-Before advancing, check
-[stop-conditions.md](stop-conditions.md). After source edits, discard stale pass
-evidence. Re-read the active workspace before each phase. On a cold resume or
+Check [stop-conditions.md](stop-conditions.md) before advancing. Discard stale
+pass evidence after source edits. Re-read active workspace before each phase. On a cold resume or
 new activation, run `devrites-engine check regression <slug>`: `BLOCKED` names a
 durable fact lost since the last checkpoint — restore or route it through its
 owning phase before continuing; `unproven` does not block. After each phase's
@@ -92,37 +89,35 @@ step 10 does not end the run: leave the sealed workspace unshipped with its
 (`/rite-spec <parent>-<n> "<objective>"` from the parent's `decisions.md` sequence)
 and re-enter step 1. Spend one workspace per opened continuation.
 
-When that workspace already exists because a [lookahead](lookahead.md) session
-planned it, do not specify it again. Wait while `devrites-engine claim check
---workspace <child>` exits 3 (a live lookahead holds it), then set
-`.devrites/ACTIVE` to the child and resume from its cursor at step 1. A
-predecessor replan since its Vet blocks the child's readiness with
-`DRV-GATE-READINESS-STALE`; route that to `/rite-vet` before Build.
+For a child already planned by [lookahead](lookahead.md), do not re-specify.
+Wait while `devrites-engine claim check --workspace <child>` exits 3 (live
+lookahead), then set `.devrites/ACTIVE` to the child and resume its cursor at
+step 1. A predecessor replan since its Vet blocks child readiness with
+`DRV-GATE-READINESS-STALE`; route to `/rite-vet` before Build.
 
-Spend accounting is durable in `state.md` cursors, not chat. Before invoking the
-continuation, ensure the current workspace's `sequence_workspaces_remaining` is
-set — absent, write `max_workspaces - 1` and `sequence_position: 1` first — and
-`> 0`. `/rite-spec` seeds the child's sequence cursor at creation per the
+Before invoking a continuation, require durable `state.md`
+`sequence_workspaces_remaining > 0`; if absent, first write
+`max_workspaces - 1` and `sequence_position: 1`. `/rite-spec` seeds the child's sequence cursor at creation per the
 [continuation contract](../../rite-plan/reference/slicing.md#continuation-workspaces);
-after the child's `state.md` exists, verify it — `sequence_parent` = the current
-slug, `sequence_position` = parent position + 1,
+verify the created child's `state.md`: `sequence_parent` = current slug,
+`sequence_position` = parent position + 1,
 `sequence_workspaces_remaining` = parent remaining − 1, and — when the recorded
 entry is the sequence's release milestone — `sequence_role: release` (gates then
-require the union manifest). On resume, a child whose
-fields are missing is re-seeded from its `brief.md` parent/position and the
-parent's counter (same values, never a second charge); a child with no recorded
-parent/position is not a sequence member and the chain stops.
+require the union manifest). On resume, re-seed missing child fields from its `brief.md` parent/position and
+parent counter (same values, no second charge). No recorded parent/position
+means no sequence membership: stop the chain.
 
-Stop instead when: no recorded next entry; the cap or review-queue bound is
-reached; a human-owned, safety, access, or parked-recovery stop fires; or Seal returns
-`NO-GO`. On stop, report the sequence position, the sealed-but-unshipped workspaces, and
-the single release command (`/rite-autocomplete <release milestone> --ship`, or
+Stop sequence continuation when: `continue_sequence: false`; no recorded next
+entry (the final milestone); the `max_workspaces` cap is reached; or a genuine
+human-owned, safety, access, or parked-recovery stop fires. `max_review_queue`
+never stops Autocomplete; agent-owned Seal `NO-GO` enters recovery, not a handoff.
+Intermediate sealed milestones continue without `--ship` and without Git mutation. On stop, report sequence position, sealed/unshipped workspaces, and
+one release command (`/rite-autocomplete <release milestone> --ship`, or
 `/rite-ship` for the current sealed workspace when the sequence is complete).
 
 ## Backtrack without handing off
 
-The active Autocomplete root remains caller whenever a later phase exposes an
-agent-owned earlier-phase gap:
+Autocomplete remains caller for agent-owned earlier-phase gaps:
 
 1. Save the originating phase/action unless a valid native return cursor exists.
 2. On cold resume, reconcile the terminal cursor against durable fingerprint
@@ -152,6 +147,8 @@ and park it after three escalations while independent work continues.
 
 ## Continuous caller obligation
 
+Green slice/phase checkpoints consume their recorded `next_action` internally;
+only the caller replies finally at completion or a genuine stop.
 No user-facing reply is permitted while durable state contains agent-owned
 `NEEDS_REPLAN`, an intermediate Plan/Vet action, a distinct retained
 Critical/Important fingerprint below its cap or with an escalation left, runnable
@@ -162,7 +159,6 @@ already names a ranked recommended option. Invoke the next internal repair or
 `state resolve` exits 1 on every call and the loop re-invokes it without end. A narrow reviewer closing one finding and exposing another
 Critical/Important invariant is progress, not exhaustion.
 
-The number of completed repair/Vet cycles is not a stop condition. Context
-pressure, compaction, session duration, and nested completion do not convert an
-internal checkpoint into a handoff. Persist it and resume until the requested
-rest point or a shared human/safety/access/parked-recovery condition.
+The number of completed repair/Vet cycles, context pressure, compaction, session
+duration, and nested completion never turn checkpoints into handoffs. Persist and
+resume to the requested rest point or shared human/safety/access/parked-recovery stop.
