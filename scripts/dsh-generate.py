@@ -26,6 +26,13 @@ the dependent work. Report the failure; never impersonate the specialist inline.
 The orchestrator writes workspace bookkeeping; only the named writer writes source
 and tests within its path contract. No skill or result authorizes commits, pushes,
 publishing, deployment, or other irreversible actions without explicit approval.
+Use configured Codebase Memory MCP queries first for structural code questions.
+Check index status, freshness, and coverage before relying on graph results; verify
+material findings in source. Only the orchestrator may index, using cache-only
+`index_repository` with persistence omitted or false. Children never index: hand
+missing or stale coverage to the parent, or use grep/glob/read for source fallback.
+If the MCP server or index is unavailable, continue with grep/glob/read. Keep
+grep/glob for literal searches. MCP permissions are separate from the file sandbox.
 """
 
 DSH_DOCTOR = """   On DSH, require the loaded `.dsh/cordis.patch.yml` overlay, the exact named
@@ -39,6 +46,25 @@ DSH_DOCTOR = """   On DSH, require the loaded `.dsh/cordis.patch.yml` overlay, t
 TOOLS = {"Read": ["read", "read_image"], "Grep": ["grep"], "Glob": ["glob"],
          "Bash": ["bash", "job_output", "job_kill", "job_list"], "Edit": ["edit"], "Write": ["write"],
          "Skill": ["skill"], "WebFetch": ["web_fetch"], "WebSearch": ["web_search"]}
+MCP_PREFIX = "mcp__codebase-memory-mcp__"
+MCP_QUERY_TOOLS = {MCP_PREFIX + name for name in (
+    "index_status", "list_projects", "get_graph_schema", "get_architecture",
+    "search_graph", "search_code", "trace_path", "trace_call_path", "get_code_snippet",
+    "get_file_outline", "query_graph", "detect_changes", "check_index_coverage", "compare_graphs",
+)}
+MCP_INDEX_TOOL = MCP_PREFIX + "index_repository"
+
+
+def mapped_tools(raw):
+    tools = set()
+    for token in raw.split(","):
+        token = token.strip()
+        tools.update(TOOLS.get(token, []))
+        if token == MCP_PREFIX + "*":
+            tools.update(MCP_QUERY_TOOLS)
+        elif token in MCP_QUERY_TOOLS:
+            tools.add(token)
+    return sorted(tools)
 
 
 def tool_plugins(tools):
@@ -101,13 +127,10 @@ def generate(source, target):
         fields, body = frontmatter(text)
         role = fields["name"]
         permission = "workspace-write" if fields.get("permissionMode") == "acceptEdits" else "read-only"
-        tools = []
         raw = fields.get("tools", "Read, Grep, Glob, Bash, Skill" + (", Edit, Write" if permission == "workspace-write" else ""))
-        for tool in raw.split(","):
-            tools.extend(TOOLS.get(tool.strip(), []))
+        tools = mapped_tools(raw)
         if permission == "read-only":
             tools = [tool for tool in tools if tool not in ("edit", "write")]
-        tools = sorted(set(tools))
         agents.joinpath(path.name).write_text(text)
         presets.append({"id": role, "name": role, "description": fields["description"],
                         "plugins": tool_plugins(tools) + [{"id": "devrites-role", "name": "devrites:role", "config": {
@@ -115,18 +138,24 @@ def generate(source, target):
                             "instructions": body}}]})
     roles = [preset["id"] for preset in presets]
     root_tools = sorted({tool for names in TOOLS.values() for tool in names}
+                        | MCP_QUERY_TOOLS | {MCP_INDEX_TOOL}
                         | {"subagent", "list_agents", "send_message", "interrupt_agent", "ask_user_question"})
     presets.insert(0, {"id": "devrites-orchestrator", "name": "DevRites", "description": "DevRites workflow orchestrator with named fresh specialists.",
                        "plugins": tool_plugins(root_tools) + [
                            {"id": "devrites-role", "name": "devrites:role", "config": {
                                "role": "devrites-orchestrator", "permission": "workspace-write",
-                               "allowedTools": root_tools, "allowedAgentPresets": roles, "instructions": BRIDGE}},
+                                "allowedTools": root_tools, "allowedAgentPresets": roles,
+                                "indexTool": MCP_INDEX_TOOL, "instructions": BRIDGE}},
                            {"id": "devrites-subagent", "name": "@deepseek-ai/dsh-tool-subagent", "config": {
                                "provider": "spawn", "toolName": "subagent", "allowedAgentPresets": roles}},
                        ]})
     patch = [{"insert": [{"id": "devrites-presets", "name": "./specialist.mjs", "config": {"presets": presets}}]}]
     target.joinpath("runtime").mkdir()
     target.joinpath("runtime/cordis.patch.yml").write_text(json.dumps(patch, indent=2, ensure_ascii=False) + "\n")
+    mcp_patch = [{"insert": [{"id": "devrites-codebase-memory", "name": "@deepseek-ai/dsh-mcp-client", "config": {
+        "serverName": "codebase-memory-mcp", "transport": "stdio", "command": "codebase-memory-mcp", "args": [],
+    }}]}]
+    target.joinpath("runtime/codebase-memory.patch.yml").write_text(json.dumps(mcp_patch, indent=2) + "\n")
     shutil.copyfile(Path(__file__).with_name("dsh-specialist.mjs"), target / "runtime/specialist.mjs")
     target.joinpath("AGENTS.md").write_text("<!-- BEGIN DEVRITES DSH -->\n" + BRIDGE + "<!-- END DEVRITES DSH -->\n")
 

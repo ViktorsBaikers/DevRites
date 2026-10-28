@@ -47,11 +47,34 @@ export async function apply(ctx, config) {
   // Preset-local tools are inherited by the Agent; restrict at that child scope.
   ctx.on('agent/created', ({ agent }) => {
     pinPermission(agent.session);
-    agent.ctx.tools.restrict({ allow: allowedTools.filter(tool => agent.ctx.tools.get(tool, agent) !== undefined) });
+    let current;
+    let release;
+    let refreshing = false;
+    let disposed = false;
+    const refresh = () => {
+      if (refreshing || disposed) return;
+      const names = allowedTools.filter(tool => ctx.tools.get(tool) !== undefined
+        || agent.ctx.tools.get(tool, agent) !== undefined);
+      const key = JSON.stringify(names);
+      if (key === current) return;
+      refreshing = true;
+      try {
+        current = key;
+        release?.();
+        release = agent.ctx.tools.restrict({ allow: names });
+      } finally {
+        refreshing = false;
+      }
+    };
+    agent.ctx.on('tools/change', refresh);
+    agent.ctx.effect(() => () => { disposed = true; release?.(); });
+    refresh();
   });
   ctx.tools.guard(exec => {
     if (!exec.agent) return `${role}: agent identity required`;
     if (!allowed.has(exec.name)) return `${role}: tool ${exec.name} is not allowed`;
+    if (exec.name === config.indexTool && exec.arguments?.persistence !== undefined
+      && exec.arguments.persistence !== false) return `${role}: graph indexing must be cache-only (persistence: false)`;
     if (exec.name === 'subagent' && !config.allowedAgentPresets?.includes(exec.arguments?.agent_preset)) {
       return `${role}: an exact named specialist agent_preset is required`;
     }
