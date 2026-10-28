@@ -30,39 +30,39 @@ func TestValidatePayloadRequiresClaudeAndCodexFiles(t *testing.T) {
 		"devin/agents/devrites-code-reviewer.md":       {},
 		"devin/AGENTS.md":                              {},
 	}
-	if err := ValidatePayload(payload, true, true, true, true); err != nil {
+	if err := ValidatePayload(payload, true, true, true, true, false); err != nil {
 		t.Fatal(err)
 	}
 	delete(payload, "codex/config.toml")
-	err := ValidatePayload(payload, true, true, true, true)
+	err := ValidatePayload(payload, true, true, true, true, false)
 	if err == nil || !strings.Contains(err.Error(), "missing codex/config.toml") {
 		t.Fatalf("ValidatePayload error = %v, want missing codex/config.toml", err)
 	}
-	if err := ValidatePayload(payload, false, true, true, true); err != nil {
+	if err := ValidatePayload(payload, false, true, true, true, false); err != nil {
 		t.Fatalf("claude-only payload should not require codex files: %v", err)
 	}
 	delete(payload, "omp/.omp-plugin/plugin.json")
-	err = ValidatePayload(payload, false, true, true, true)
+	err = ValidatePayload(payload, false, true, true, true, false)
 	if err == nil || !strings.Contains(err.Error(), "missing omp/.omp-plugin/plugin.json") {
 		t.Fatalf("ValidatePayload error = %v, want missing omp/.omp-plugin/plugin.json", err)
 	}
 	delete(payload, "pi/prompts/rite.md")
-	err = ValidatePayload(payload, false, false, true, true)
+	err = ValidatePayload(payload, false, false, true, true, false)
 	if err == nil || !strings.Contains(err.Error(), "missing pi/prompts") {
 		t.Fatalf("ValidatePayload error = %v, want missing pi/prompts", err)
 	}
 	delete(payload, "devin/AGENTS.md")
-	err = ValidatePayload(payload, false, false, false, true)
+	err = ValidatePayload(payload, false, false, false, true, false)
 	if err == nil || !strings.Contains(err.Error(), "missing devin/AGENTS.md") {
 		t.Fatalf("ValidatePayload error = %v, want missing devin/AGENTS.md", err)
 	}
-	if err := ValidatePayload(payload, false, false, false, false); err != nil {
+	if err := ValidatePayload(payload, false, false, false, false, false); err != nil {
 		t.Fatalf("claude-only payload should not require omp, pi, or devin files: %v", err)
 	}
 }
 
 func TestInstallTreesMapPayloadsToTargets(t *testing.T) {
-	got := InstallTrees(true, true, true, true, true, true)
+	got := InstallTrees(true, true, true, true, true, true, false)
 	want := []Tree{
 		{PayloadPrefix: "claude/skills", TargetPrefix: ".claude/skills"},
 		{PayloadPrefix: "codex/skills", TargetPrefix: ".agents/skills"},
@@ -81,14 +81,14 @@ func TestInstallTreesMapPayloadsToTargets(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("InstallTrees() = %#v, want %#v", got, want)
 	}
-	for _, trees := range [][]Tree{InstallTrees(true, false, true, true, true, true), InstallTrees(false, true, true, true, true, true)} {
+	for _, trees := range [][]Tree{InstallTrees(true, false, true, true, true, true, false), InstallTrees(false, true, true, true, true, true, false)} {
 		for _, tree := range trees {
 			if tree.PayloadPrefix == "claude/workflows" {
 				t.Fatal("Claude workflow installed without both skills and agents")
 			}
 		}
 	}
-	for _, tree := range InstallTrees(true, true, true, false, false, false) {
+	for _, tree := range InstallTrees(true, true, true, false, false, false, false) {
 		if strings.HasPrefix(tree.TargetPrefix, ".omp/") {
 			t.Fatalf("omp tree installed with withOmp=false: %#v", tree)
 		}
@@ -102,7 +102,7 @@ func TestInstallTreesMapPayloadsToTargets(t *testing.T) {
 }
 
 func TestAliasTargetsIncludeOmpWhenEnabled(t *testing.T) {
-	got := AliasTargets(Alias{Name: "define"}, true, true, true, true)
+	got := AliasTargets(Alias{Name: "define"}, true, true, true, true, false)
 	want := []string{
 		".claude/skills/define/SKILL.md",
 		".agents/skills/define/SKILL.md",
@@ -113,11 +113,47 @@ func TestAliasTargetsIncludeOmpWhenEnabled(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("AliasTargets() = %#v, want %#v", got, want)
 	}
-	got = AliasTargets(Alias{Name: "define"}, true, false, false, false)
+	got = AliasTargets(Alias{Name: "define"}, true, false, false, false, false)
 	for _, rel := range got {
 		if strings.HasPrefix(rel, ".omp/") || strings.HasPrefix(rel, ".pi/") || strings.HasPrefix(rel, ".devin/") {
 			t.Fatalf("disabled-host alias installed: %s", rel)
 		}
+	}
+}
+
+func TestDshPayloadTreesAndAliases(t *testing.T) {
+	required := RequiredPayload(false, false, false, false, true)
+	for _, rel := range []string{"dsh/skills", "dsh/agents", "dsh/runtime/cordis.patch.yml", "dsh/runtime/specialist.mjs", "dsh/AGENTS.md"} {
+		found := false
+		for _, value := range required {
+			if value == rel {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("DSH payload missing %s", rel)
+		}
+	}
+	for _, tc := range []struct {
+		skills, agents bool
+		want           []Tree
+	}{
+		{true, false, []Tree{{"dsh/skills", ".dsh/skills"}}},
+		{false, true, []Tree{{"dsh/agents", ".dsh/agents"}, {"dsh/runtime", ".dsh"}}},
+	} {
+		var got []Tree
+		for _, tree := range InstallTrees(tc.skills, tc.agents, false, false, false, false, true) {
+			if strings.HasPrefix(tree.PayloadPrefix, "dsh/") {
+				got = append(got, tree)
+			}
+		}
+		if !reflect.DeepEqual(got, tc.want) {
+			t.Fatalf("DSH trees = %#v, want %#v", got, tc.want)
+		}
+	}
+	aliases := AliasTargets(Alias{Name: "define"}, false, false, false, false, true)
+	if aliases[len(aliases)-1] != ".dsh/skills/define/SKILL.md" {
+		t.Fatalf("DSH alias missing: %v", aliases)
 	}
 }
 

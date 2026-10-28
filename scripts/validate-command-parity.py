@@ -138,6 +138,7 @@ def main():
                 f"omp/commands/{name}.md",
                 f"pi/prompts/{name}.md",
                 f"devin/skills/{name}/SKILL.md",
+                f"dsh/skills/{name}/SKILL.md",
             ]:
                 if not (args.generated_root / rel).exists():
                     errors.append(f"generated artifact missing {rel}")

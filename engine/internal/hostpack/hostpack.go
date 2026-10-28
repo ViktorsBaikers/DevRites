@@ -19,12 +19,14 @@ const (
 	OmpSkillsTarget       = devritespaths.OmpSkillsTarget
 	PiSkillsTarget        = devritespaths.PiSkillsTarget
 	DevinSkillsTarget     = devritespaths.DevinSkillsTarget
+	DshSkillsTarget       = devritespaths.DshSkillsTarget
 	ClaudeAgentsTarget    = devritespaths.ClaudeAgentsTarget
 	CodexAgentsTarget     = devritespaths.CodexAgentsTarget
 	OmpAgentsTarget       = devritespaths.OmpAgentsTarget
 	OmpCommandsTarget     = devritespaths.OmpCommandsTarget
 	PiAgentsTarget        = devritespaths.PiAgentsTarget
 	DevinAgentsTarget     = devritespaths.DevinAgentsTarget
+	DshAgentsTarget       = devritespaths.DshAgentsTarget
 	PiPromptsTarget       = devritespaths.PiPromptsTarget
 	ClaudeWorkflowsTarget = devritespaths.ClaudeWorkflowsTarget
 )
@@ -111,6 +113,15 @@ var DevinAgentsMerge = MarkerMerge{
 	MarkerText: "AGENTS.md contains a DevRites managed block between BEGIN/END DEVRITES DEVIN markers.",
 }
 
+var DshAgentsMerge = MarkerMerge{
+	TargetRel:  "AGENTS.md",
+	PayloadRel: "dsh/AGENTS.md",
+	Begin:      "<!-- BEGIN DEVRITES DSH -->",
+	End:        "<!-- END DEVRITES DSH -->",
+	MarkerRel:  ".claude/devrites.dsh-agents-merge",
+	MarkerText: "AGENTS.md contains a DevRites managed block between BEGIN/END DEVRITES DSH markers.\n",
+}
+
 var CodexConfigMerge = MarkerMerge{
 	TargetRel:  ".codex/config.toml",
 	PayloadRel: "codex/config.toml",
@@ -166,6 +177,7 @@ var LegacyCodexHooksMerge = ManagedMerge{
 }
 
 var managedMerges = []ManagedMerge{
+	{MarkerRel: DshAgentsMerge.MarkerRel, TargetRel: DshAgentsMerge.TargetRel, Begin: DshAgentsMerge.Begin, End: DshAgentsMerge.End, DryRun: "AGENTS.md DevRites DSH block"},
 	{
 		MarkerRel: CodexAgentsMerge.MarkerRel,
 		TargetRel: CodexAgentsMerge.TargetRel,
@@ -202,7 +214,7 @@ var managedMerges = []ManagedMerge{
 	LegacyCodexHooksMerge,
 }
 
-func RequiredPayload(withCodex, withOmp, withPi, withDevin bool) []string {
+func RequiredPayload(withCodex, withOmp, withPi, withDevin, withDsh bool) []string {
 	required := []string{
 		"claude/skills",
 		"claude/agents",
@@ -240,11 +252,14 @@ func RequiredPayload(withCodex, withOmp, withPi, withDevin bool) []string {
 			"devin/AGENTS.md",
 		)
 	}
+	if withDsh {
+		required = append(required, "dsh/skills", "dsh/agents", "dsh/runtime/cordis.patch.yml", "dsh/runtime/specialist.mjs", "dsh/AGENTS.md")
+	}
 	return required
 }
 
-func ValidatePayload(payload fs.FS, withCodex, withOmp, withPi, withDevin bool) error {
-	for _, rel := range RequiredPayload(withCodex, withOmp, withPi, withDevin) {
+func ValidatePayload(payload fs.FS, withCodex, withOmp, withPi, withDevin, withDsh bool) error {
+	for _, rel := range RequiredPayload(withCodex, withOmp, withPi, withDevin, withDsh) {
 		if _, err := fs.Stat(payload, rel); err != nil {
 			return fmt.Errorf("missing %s", rel)
 		}
@@ -252,7 +267,7 @@ func ValidatePayload(payload fs.FS, withCodex, withOmp, withPi, withDevin bool) 
 	return nil
 }
 
-func InstallTrees(withSkills, withAgents, withCodex, withOmp, withPi, withDevin bool) []Tree {
+func InstallTrees(withSkills, withAgents, withCodex, withOmp, withPi, withDevin, withDsh bool) []Tree {
 	var trees []Tree
 	if withSkills {
 		trees = append(trees, Tree{PayloadPrefix: "claude/skills", TargetPrefix: ClaudeSkillsTarget})
@@ -274,6 +289,9 @@ func InstallTrees(withSkills, withAgents, withCodex, withOmp, withPi, withDevin 
 		if withDevin {
 			trees = append(trees, Tree{PayloadPrefix: "devin/skills", TargetPrefix: DevinSkillsTarget})
 		}
+		if withDsh {
+			trees = append(trees, Tree{PayloadPrefix: "dsh/skills", TargetPrefix: DshSkillsTarget})
+		}
 	}
 	if withAgents {
 		trees = append(trees, Tree{PayloadPrefix: "claude/agents", TargetPrefix: ClaudeAgentsTarget})
@@ -290,13 +308,16 @@ func InstallTrees(withSkills, withAgents, withCodex, withOmp, withPi, withDevin 
 			trees = append(trees, Tree{PayloadPrefix: "devin/agents", TargetPrefix: DevinAgentsTarget})
 		}
 	}
+	if withAgents && withDsh {
+		trees = append(trees, Tree{PayloadPrefix: "dsh/agents", TargetPrefix: DshAgentsTarget}, Tree{PayloadPrefix: "dsh/runtime", TargetPrefix: ".dsh"})
+	}
 	if withSkills && withAgents {
 		trees = append(trees, Tree{PayloadPrefix: "claude/workflows", TargetPrefix: ClaudeWorkflowsTarget})
 	}
 	return trees
 }
 
-func AliasTargets(alias Alias, withCodex, withOmp, withPi, withDevin bool) []string {
+func AliasTargets(alias Alias, withCodex, withOmp, withPi, withDevin, withDsh bool) []string {
 	targets := []string{filepath.ToSlash(filepath.Join(ClaudeSkillsTarget, alias.Name, "SKILL.md"))}
 	if withCodex {
 		targets = append(targets, filepath.ToSlash(filepath.Join(CodexSkillsTarget, alias.Name, "SKILL.md")))
@@ -309,6 +330,9 @@ func AliasTargets(alias Alias, withCodex, withOmp, withPi, withDevin bool) []str
 	}
 	if withDevin {
 		targets = append(targets, filepath.ToSlash(filepath.Join(DevinSkillsTarget, alias.Name, "SKILL.md")))
+	}
+	if withDsh {
+		targets = append(targets, filepath.ToSlash(filepath.Join(DshSkillsTarget, alias.Name, "SKILL.md")))
 	}
 	return targets
 }

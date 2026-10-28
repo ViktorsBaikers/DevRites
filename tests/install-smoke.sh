@@ -55,7 +55,7 @@ import (
 )
 
 func main() {
-	for _, p := range hostpack.RequiredPayload(true, true, true, true) {
+	for _, p := range hostpack.RequiredPayload(true, true, true, true, true) {
 		fmt.Println(p)
 	}
 }
@@ -67,7 +67,7 @@ if [ -z "$req" ]; then
 else
   . "$ROOT/scripts/install-lib.sh"
   std=""
-  for h in claude codex omp pi devin; do std="$std $h/skills/devrites-lib/reference/standards/agents.md"; done
+  for h in claude codex omp pi devin dsh; do std="$std $h/skills/devrites-lib/reference/standards/agents.md"; done
   M="$T/minimal"
   for r in $req $std; do
     mkdir -p "$M/$(dirname "$r")"
@@ -115,6 +115,10 @@ for f in \
   ".claude/agents/devrites-code-reviewer.md" \
   ".codex/agents/devrites-code-reviewer.toml" \
   ".codex/config.toml" \
+  ".dsh/skills/rite/SKILL.md" \
+  ".dsh/agents/devrites-slice-wright.md" \
+  ".dsh/cordis.patch.yml" \
+  ".dsh/specialist.mjs" \
   ".devin/skills/rite/SKILL.md" \
   ".devin/skills/rite-build/SKILL.md" \
   ".devin/agents/devrites-slice-wright.md" \

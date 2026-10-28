@@ -34,7 +34,8 @@ for flags in \
   "--no-agents" \
   "--no-codex" \
   "--no-pi" \
-  "--no-devin"; do
+  "--no-devin" \
+  "--no-dsh"; do
   run_flags "$flags" &
   pids+=("$!")
 done

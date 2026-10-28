@@ -1,0 +1,295 @@
+# Testing
+
+> Applies when: writing, reviewing, or relying on tests as evidence.
+
+Tests are evidence. They exist to prove behavior and to catch regressions, not to hit a
+coverage number.
+
+## Shape: a pyramid
+- **Many** fast, isolated unit tests at the base.
+- **Some** integration tests for how components fit together.
+- **Few** end-to-end tests for critical user journeys (they're slow and the most
+  flake-prone: reserve them for what matters).
+
+Size by **resource cost**, not by folder. A **small** test runs in one process, no I/O: the
+base of the pyramid, and the only size allowed to be many. A **medium** test touches the local
+machine (filesystem, a container, `localhost`). A **large** test crosses the network or a real
+external service: the flaky, slow tier E2E lives in. Push every behavior to the smallest size
+that can still prove it; a behavior provable small but written large is a slow test you'll
+learn to skip.
+
+## Completeness: every behavior, element, and flow has a test (at the right level)
+"Tested" means *every* observable behavior, *every* interactive element (input field,
+checkbox, radio, select, toggle, button, actionable link), and *every* user flow has at
+least one **asserting** test, not that a coverage % is hit. Completeness counts behaviors
+covered, not lines executed: 100% line coverage can still leave a button's click untested,
+and a button with one asserting unit test is "covered" at far less than 100% lines. Chase the
+behavior, not the number.
+
+Poor test coverage or missing tests in a brownfield area is baseline risk, not permission to leave
+the changed behavior unproven. Add the smallest surface-anchored regression test and separate
+pre-existing failures with same-command evidence.
+
+Acceptance and tests are **surface-anchored**: assert the outermost surface the intent names. If the feature promised an API response, assert the API response; a database row behind it is supporting evidence, not proof.
+
+Put each test at the level that proves it cheapest and most reliably (the pyramid above):
+- **Element / field behavior:** validation, required, format, min/max, toggle on→off, select
+  options load + change fires, button enabled/disabled, handler runs → a **unit / component**
+  test. The bulk of element coverage lives here.
+- **Wiring across a few components:** form submit → store → re-render → an **integration** test.
+- **A critical end-to-end journey:** login, checkout, a destructive / data-loss path → **one
+  E2E** test. E2E is slow + flake-prone; reserve it for journeys, **never one-per-field**.
+
+An interactive element or a user flow with **zero asserting test is a defect**: surfaced as an
+unproven gap at `/rite-prove` and a NO-GO at `/rite-seal`, the same standing as an unproven
+acceptance criterion. Assert what the element *does*, not that the markup exists.
+
+## Assertion strength: a test that can't fail proves nothing
+Completeness counts tests; strength makes them mean something. A test that passes for *any*
+implementation is theatre, and it's the shape AI reaches for by default. Reject the weak forms:
+
+### Positive, discriminating proof
+
+A behavioral requirement is proved only by observed positive, discriminating evidence that
+would fail if the behavior were absent or wrong. Skipped, focused, filtered, or pending tests,
+zero-test runs, assertion-free tests, tautologies, unexecuted commands, and success inferred
+only from exit status cannot prove behavior. A fact is something observed in an executed
+run; anything reasoned but unexecuted is an assumption — label it as such in evidence and
+replies, never report it as verified.
+
+Build, compile, typecheck, and lint prove only their corresponding static criterion, never
+runtime behavior. Explicit shell assertions and golden/text comparisons remain valid when the
+criterion genuinely concerns a textual or command-line artifact and the assertion
+discriminates the required result.
+
+- **Preserve producer failure.** `test-command | tail` may hide a failed producer. Require
+  upstream-failure semantics or separately check its status; truncated output is not a pass.
+  The same holds for status-masking forms (`|| true`, `; true`, `set +e` without a final
+  status check, `--passWithNoTests`, `--if-present`, `--exit-zero`, keep-going without a
+  final status, CI `continue-on-error`): they prove no criterion unless `test-plan.md`
+  names a separate status check. Exit 0 with printed failures, or nonzero exit reporting
+  zero failures, has status `failed` and never result `pass`.
+- **No manufactured green.** A run proves only targets it executed on its first
+  attempt on that candidate digest: snapshot/golden update mode, only-changed or one shard offered as whole-suite
+  proof, and a [retry-only pass](#determinism-no-flaky-tests) prove nothing. A baseline
+  the candidate created stays `unverified` until opened and compared against the spec.
+  **Failing case:** a fix runs the visual suite in update mode and Prove reports green.
+- **No tautologies.** Defined/non-null passes for almost anything; assert exact value, error,
+  state change, row, or event.
+- **Don't assert the mock.** A test that stubs a dependency to return `X` then asserts `X` came
+  back tests the stub, not your code. Assert the real effect on real (or realistic) data.
+- **Cover unhappy edges:** empty/missing input, omitted fields, boundaries, invalid state, and
+  long/weird input; assert the promised rejection/default.
+- **Prove it can fail.** Critical or regression paths require the [safe perturbation contract](#safe-perturbation); use the project's mutation runner when present. Unrelated baseline failures, setup/fixture crashes, collection/import errors, or a skipped/filtered target are not target-attributable RED. **Failing case:** the suite was already red elsewhere and the new test never ran.
+- **Don't mirror the implementation.** A test whose assertions restate the code under test
+  (same constant, same formula, same branch) stays green even when the logic is wrong. Assert
+  an **independently-derived** expected value: reasoned from the spec, not copied from the code.
+- **Survive a refactor.** Keep every observable result, restructure internals: a test that now
+  fails is pinned to the implementation. Assert through the users' interface, not private helpers or call order.
+- **Don't grep the source.** A test that reads a source file as text and asserts it
+  `contains("foo")` proves a string exists, not that the behavior works. It passes on dead code
+  and breaks on a harmless rename. **Execute** the code and assert its effect; reserve text
+  scanning for genuinely textual artifacts (generated output, a committed manifest, a golden snapshot).
+- **Coverage says "ran"; mutation says "checked".** Line coverage proves a line executed, not
+  that a test would catch it breaking. Where the project has a mutation runner,
+  use its documented command; a surviving mutant is a behaviour no test checks.
+  Record the evaluated-mutant count: zero evaluated, or a run cut by budget or timeout,
+  is `failed`. A surviving mutant is not proof of dead code: deleting the guarded code
+  needs an input-contract reachability argument, otherwise add the test that reds it.
+  **Failing case:** polish deletes a cancellation guard whose mutant survived.
+
+### Falsifiable checks and goldens
+
+- **A gate that cannot go red is unproven.** Before trusting a new validator or
+  oracle, feed it a planted defect and observe it fail — a check that stays green on
+  a known-bad input is checking nothing.
+- **Golden fixtures are verified by blind derivation, not inspection.** Derive the
+  expected output from rules and inputs *without looking at the golden*; adjudicate
+  any divergence against the external spec — never by majority vote between
+  reviewers, and never because the fixture is committed. A golden nobody re-derived
+  is a rumor.
+- **A rewrite or port uses the old implementation as its oracle.** Run old and new on the
+  same inputs (the existing suite, a published conformance suite, recorded requests,
+  screenshots) and diff the results;
+  parity claimed only from tests written for the new code is unproven. **Failing case:** a
+  port passes its new unit tests while the old suite fails against it.
+
+### Safe perturbation
+
+For required mutation or critical-link probes, use a faithful isolated copy of the
+current candidate, including its staged/unstaged content, never the shared proof/reviewer
+tree or HEAD alone. Bind its starting content to the candidate; retain the original
+candidate check before/after per [`candidate-integrity.md`](../candidate-integrity.md).
+Only an exact path-bounded wright may hand-edit source; its mutant patch runs via
+`devrites-engine check perturb`, recorded under `evidence/perturb/`. An existing mutation runner
+runs under normal approved command authority. Isolation grants no live-service or
+destructive authority. Input fault injection must likewise leave candidate sources intact.
+Critical/regression mutation must break the relevant implementation; an input-only
+probe cannot replace it. Critical-link checks may perturb the load-bearing input.
+
+Record the perturbation, executed target assertion's attributable RED, restoration,
+normal GREEN, and unchanged original candidate. A surviving break is an unproven gap.
+Unavailable isolation, authority, or attributable evidence is `cannot_verify`, blocking
+the required proof and Seal; never waive critical/regression obligations. **Failing
+case:** mutating a clean HEAD copy proves an older implementation while dirty candidate
+changes remain untested.
+
+## Never weaken a failing test (test integrity)
+A failing test is a signal, not an obstacle. Never delete it, skip it (`it.skip`, `xit`,
+`@pytest.mark.skip`, `t.Skip`, `#[ignore]`), mark it `xfail`, narrow the run with `.only`, or
+loosen its assertions to turn the suite green. A red test means one of two things: the code is
+wrong (fix the code) or the test is wrong (surface it as a blocking question and get the change
+agreed): never quietly make the red go away. A test weakened to clear a gate is a **Critical**
+finding. The same rule runs in reverse for a red test in code the diff did not touch: check
+whether the assertion is stale, and fix the assertion as a recorded, reviewable change —
+never bend working product code just to satisfy it. The root's diff review and dedicated test analysis compare the
+candidate with its base and reject deleted, skipped, focused, or weakened tests.
+A same-tree repair round also runs `check windows <slug> --since-dispatch <wave>`, which flags tests deleted or net assertions lost since that wave opened; tests stay editable.
+
+## The verification gap: green, but the test doesn't prove the change
+Diff review catches reaching green by *weakening* a test. This catches the quieter failure: a
+test that was never touched, is fully green, and still doesn't exercise the behavior that changed.
+A passing suite is not proof the *change* is proven: the suite could pass identically with the
+change reverted. Run this trace for each behavioral change in the diff:
+
+1. **Screen for behavioral change.** What in this diff changes an observable output, not just its
+   shape? Treat a dependency bump, a build/config edit, or a data change as behavioral too: the
+   load-bearing change often isn't the line that looks important.
+2. **Name what changed.** State the old behavior and the new one in one sentence each.
+3. **Trace to the consumer.** Find where the changed code is called from.
+4. **Inspect the consumer's test.** Does an *asserting*, surface-anchored test drive that consumer through the
+   **new** behavior, not merely execute the path, and not assert the old expectation still?
+5. **Confirm the gap is real.** A finding is: `<change at file:line>` has no test that would go red
+   if it regressed: cite the test that *should* cover it and show what it misses. No general
+   advice; a gap you can't point at is not a finding (the verification gate applies).
+
+A changed behavior with no test that would fail on its regression is an **unproven gap**: the same
+standing as an untested element or an unproven acceptance criterion. A source
+change with no test-file delta is a pointer to run this trace, never a verdict
+on its own.
+
+A change declared **behavior-preserving** (refactor, simplification) expects no red
+first. Prove it by comparing old and new results through the public seam (write a
+characterization test first when no discriminating test reaches the code), plus one
+perturbation of the shared seam that reds a caller-side test. "All tests pass" over code
+no test reaches proves nothing. **Failing case:** a refactor of an untested parser passes
+the suite and changes its empty-input output.
+
+## DAMP over DRY in tests
+Test code optimizes for a different reader than production code: someone staring at a failure who
+needs the whole scenario in front of them. A test should read like a spec: arrange, act, assert,
+visible in one screen. Prefer a little repetition over a clever shared helper that hides what the
+test exercises; **D**escriptive **A**nd **M**eaningful **P**hrases beat **D**on't **R**epeat **Y**ourself
+here. (Deliberately trades against production reuse-first: a fixture that makes the reader
+scroll away to understand the case costs more than the duplication saved.)
+
+Test data is synthetic. A generator or factory builds each named edge case (a user with
+1,000 tickets, an empty tenant); production records never enter tests, fixtures, or agent
+sandboxes ([`security.md`](security.md)).
+
+## Test doubles: reach for the real thing first
+Prefer, in order: **real > fake > stub > mock**. Use the real collaborator when it's fast and
+deterministic; a **fake** (an in-memory implementation that honors the contract) when it isn't; a
+**stub** for a canned return; a **mock** (asserting *how* it was called) only at a true boundary
+you own. Over-mocking is the failure mode: a suite stitched from mocks passes while production
+breaks, because it tested the stubs, not the code (see "Don't assert the mock" above).
+
+| Double it | Leave it real |
+|---|---|
+| The database, network, filesystem, clock, randomness | Pure functions and business logic |
+| A third-party API or paid/rate-limited service | Your own internal utilities and transforms |
+| Anything non-deterministic or slow | Validation and mapping under test |
+
+## Prove the risk the design actually introduces
+
+Select cases from the accepted spec and applicable standards, not a generic count:
+
+- Durable data changes apply [`data-integrity.md`](data-integrity.md): invalid write,
+  duplicate/retry, concurrent update, interrupted migration/backfill, old/new version
+  coexistence, tenant denial, and rollback/forward recovery as relevant.
+- API/webhook/queue/cache work applies
+  [`integration-reliability.md`](integration-reliability.md): invalid/partial response,
+  auth failure, timeout/unknown outcome, rate limit, outage, duplicate, out-of-order,
+  poison/backlog, and stale-cache/partition behavior as relevant.
+- Multi-root/service work applies [`repository-topology.md`](repository-topology.md):
+  provider and consumer both consume the canonical contract and run from their proven
+  roots. One member's green suite cannot prove another member.
+- Any serialized boundary the diff changes (HTTP, event, queue, stored payload), even in
+  one root, needs a test that crosses it. A type shared by both sides proves compile-time
+  agreement only: prove the serialized value (dates, int64 beyond 2^53, decimals, absent
+  vs `null`, an unknown enum from a newer producer) through the real encoder and decoder.
+  A contract-test pass proves its recorded interactions only, never end-to-end behavior,
+  authorization, extra fields, or side effects; run schema-driven fuzzers only against a
+  disposable target under external-write approval. **Failing case:** a shared
+  `createdAt: Date` compiles on both sides while the client receives a string.
+- A module or layer boundary the plan relies on ("only `clients/` imports the SDK") is
+  enforced by a structural test in the project's existing tooling (an import or
+  dependency rule), not by prose. Its failure message names the allowed route, so the
+  agent fixes the design instead of dodging the rule.
+- Compatibility/delivery work drives both feature-flag states and old/new caller or
+  schema combinations. Migration-before-code and code-before-migration order each need a
+  declared expected result.
+
+Dismiss an irrelevant case with a reason; silently omitting an applicable case is a gap.
+
+## False-positive and coincidental-reliance checks
+
+- **Trace cause to effect.** A test proves wiring only when real input reaches the new
+  implementation and its distinct output reaches the promised surface. Registration,
+  file existence, a spy call, or a fixture containing the expected text can pass while
+  production still uses the old path.
+- **Change the load-bearing input or implementation.** For a critical link, perturb the
+  input or break the link and observe the surface assertion fail. If another path happens
+  to produce the same output, the test relies on coincidence and needs a discriminating
+  fixture/assertion.
+- **Do not mock away the named risk.** A timeout test whose mock cannot time out, a
+  transaction test without transaction boundaries, or a tenant test with one tenant is
+  mislabeled coverage. Use a contract-capable fake, local integration surface, sandbox,
+  or authorized real boundary appropriate to the risk.
+- **Baseline environmental claims.** "Pre-existing", "only fails in CI", or "works in one
+  region/time zone" requires a before-candidate run or other dated baseline on the same
+  command and environment. Without it, classify the result as unresolved.
+
+## Determinism: no flaky tests
+- A flaky test is a broken test. Isolate and fix it immediately; don't paper over it with
+  retries or `sleep`. **Failing case:** a known-flaky test is left with retries so the
+  suite is paper-green at Prove/Seal → NO-GO.
+- **A diagnostic rerun is allowed, never proof.** Rerun a timing-shaped failure on
+  the unchanged candidate to classify it flaky or deterministic before a repair;
+  record it as diagnostic, never as a pass.
+- **Attributable RED.** A negative control or mutant counts RED only on a positive
+  marker from the targeted assertion; a setup, construction, or observation failure
+  is never credited as RED. Prove the classifier with an injected setup failure
+  that must stay uncredited.
+- **A retry-only pass is `flaky`, never green.** A pass earned by rerun on an unchanged
+  candidate digest (no admitted correction between attempts), or by a runner retry
+  setting, is `flaky`: record every attempt with the first attempt's outcome. It never
+  closes an AC, never replaces the failed attempt as proof, and routes to failure
+  triage. A diff that adds or raises runner retries is a test-integrity finding.
+  **Failing case:** run 1 exits 1, an unchanged rerun exits 0, `check candidate`
+  digests match, and `evidence.md` records green.
+- **A precondition-invalid attempt is not a failed attempt.** When the command's own
+  precondition check rejects the run as invalid and names the cause (a benchmark judge
+  reporting `INVALID reason=overlap`, say), no test verdict exists. Once that named
+  cause is corrected and the correction recorded, the next attempt on the same digest
+  is the first valid one; keep both attempts recorded. A test failure relabelled
+  "infra" with no named precondition stays `flaky`.
+- Mock/stub external services so tests are predictable and fast. Use stable selectors in
+  UI tests, not brittle positional ones.
+- No hidden shared state or order-dependence between tests.
+- **Seam the clock; never read it raw in a tested path.** Route wall-clock reads through one
+  injectable seam (an env override like `DEVRITES_NOW`, or an injected clock) so time/date-derived
+  output is pinned in tests. A raw `time.Now()` feeding output makes a golden snapshot rot at the
+  next day boundary: green today, red tomorrow, for no code change. The test must control time so
+  its result depends on behavior, not when the suite runs.
+- Pin the time zone and locale independently of the instant. Cover offset/date rollover,
+  daylight-saving gap/fold where the product supports it, and serialization round trips;
+  a UTC-only unit test does not prove local-calendar behavior.
+- **No elapsed-time assertions.** `assert elapsed < 200ms` / `took` under a threshold tests the
+  CI runner's load, not your code: flaky by construction. Assert the *result*, not the duration;
+  for ordering or concurrency use a deterministic signal (a fake clock, a channel), never a `sleep`.
+
+## Use the project's tooling
+Run the project's existing test commands and framework. Don't introduce a new test runner
+to prove one change. If a project has no tests, propose the minimal setup: ask before
+adding a framework.

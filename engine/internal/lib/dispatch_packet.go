@@ -68,7 +68,7 @@ func lintKnownRoles(root, phase string, roles []string) error {
 			skillsRoots = append(skillsRoots, dir)
 		}
 	}
-	for _, rel := range []string{".omp/skills", ".agents/skills", ".pi/skills", ".devin/skills"} {
+	for _, rel := range []string{".omp/skills", ".agents/skills", ".pi/skills", ".devin/skills", ".dsh/skills"} {
 		dir := filepath.Join(project, filepath.FromSlash(rel))
 		if info, err := os.Stat(filepath.Join(dir, "devrites-lib")); err == nil && info.IsDir() {
 			skillsRoots = append(skillsRoots, dir)

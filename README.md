@@ -24,7 +24,7 @@
 DevRites is a repository-local workflow for AI coding agents. It turns a
 feature request into a spec, a sliced plan, working code, recorded proof, a
 release decision, and an explicit ship step. It runs inside Claude Code, Codex,
-omp, pi, and Devin CLI.
+omp, pi, Devin CLI, and DSH.
 
 DevRites keeps that work in `.devrites/` inside your repository, where chat
 history can't lose it. After you clear the conversation, switch hosts, or hand
@@ -64,8 +64,7 @@ root, then run /rite-doctor ($rite-doctor in Codex) and report any FAIL line
 with its fix.
 ```
 
-The installer adds project-local support for Claude Code, Codex, omp, pi, and
-Devin CLI. It does not write skills, agents, or hooks to `~/.claude`,
+The installer adds project-local support for Claude Code, Codex, omp, pi, Devin CLI, and DSH. It does not write skills, agents, or hooks to `~/.claude`,
 `~/.codex`, `~/.pi`, or `~/.config/devin`.
 
 **2. Pick the smallest route** that still protects the work.
@@ -306,6 +305,7 @@ Run `npx devrites@latest --help` for common flags and
 | `--no-omp` | Skip `.omp` skills, agents, and command stubs. |
 | `--no-pi` | Skip `.pi` skills, agents, prompt commands, and the pi `AGENTS.md` block. |
 | `--no-devin` | Skip `.devin` skills, agents, and the Devin `AGENTS.md` block. |
+| `--no-dsh` | Skip `.dsh` skills, named presets, permission guard, and the DSH `AGENTS.md` block. |
 | `--no-agents` | Skip hook-free native specialist profiles. |
 | `--no-skills` | Skip skills and their bundled standards. |
 | `--no-binary` | Do not keep the shared `devrites-engine` binary in a user or system bin directory. On `uninstall`, keep the existing binary. |
@@ -424,6 +424,10 @@ that the intended publishing step produced it. See
 
 ## Hosts
 
+For DSH, launch `npx @deepseek-ai/dsh web --patch .dsh/cordis.patch.yml`
+and select the **DevRites** agent preset before starting a workflow. See the
+[DSH integration guide](docs/dsh.md) for permissions, dispatch, and result collection.
+
 | Host | Skills | Agents | Also installs | Invoke |
 | --- | --- | --- | --- | --- |
 | **Claude Code** | `.claude/skills/` | `.claude/agents/` | Native root permissions merged into `.claude/settings.json` | `/rite-spec` |
@@ -431,6 +435,7 @@ that the intended publishing step produced it. See
 | **omp** | `.omp/skills/` | `.omp/agents/` | Command stubs in `.omp/commands/`; `.omp/config.yml` hiding duplicate DevRites skills (only if absent) | `/rite-spec` or `/skill:rite-spec` |
 | **pi** | `.pi/skills/` | `.pi/agents/` | Prompt commands in `.pi/prompts/`, marked block in `AGENTS.md`; with Codex, `.pi/settings.json` skipping the `.agents/skills` copies (only if absent) | `/rite-spec` or `/skill:rite-spec` |
 | **Devin CLI** | `.devin/skills/` | `.devin/agents/` | Marked block in `AGENTS.md` | `/rite-spec` |
+| **DSH** | `.dsh/skills/` | Named native agent presets; profiles in `.dsh/agents/` | `.dsh/cordis.patch.yml`, role permission guard, marked block in `AGENTS.md` | `/rite-spec` in the DevRites preset |
 
 On every host, among the lifecycle `devrites-*` specialists only
 `devrites-slice-wright` is writable and the rest are read-only and hook-free;

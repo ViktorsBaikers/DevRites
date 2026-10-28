@@ -90,6 +90,7 @@ func (r *runner) preflightMerges() error {
 		{r.opts.WithCodex, hostpack.CodexAgentsMerge},
 		{r.opts.WithPi, hostpack.PiAgentsMerge},
 		{r.opts.WithDevin, hostpack.DevinAgentsMerge},
+		{r.opts.WithDsh, hostpack.DshAgentsMerge},
 	} {
 		if !m.enabled {
 			continue
@@ -160,7 +161,7 @@ func (r *runner) isPinnedAlias(rel string) bool {
 
 func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	out := map[string]bool{".devrites/README.md": true}
-	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin) {
+	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin, r.opts.WithDsh) {
 		err := fs.WalkDir(r.payloadFS, tree.PayloadPrefix, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
@@ -181,7 +182,7 @@ func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	}
 	if r.opts.WithSkills && r.opts.AliasMode == "all" {
 		for _, alias := range hostpack.Aliases {
-			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin) {
+			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin, r.opts.WithDsh) {
 				out[rel] = true
 			}
 		}
@@ -195,6 +196,9 @@ func (r *runner) desiredInstallPaths() (map[string]bool, error) {
 	}
 	if r.opts.WithSkills && r.opts.WithDevin {
 		out[hostpack.DevinAgentsMerge.MarkerRel] = true
+	}
+	if r.opts.WithSkills && r.opts.WithDsh {
+		out[hostpack.DshAgentsMerge.MarkerRel] = true
 	}
 	if r.opts.WithSkills {
 		out[hostpack.ClaudeSettingsMerge.MarkerRel] = true
@@ -217,6 +221,9 @@ func (r *runner) installMergeTargets() []string {
 		}
 		if r.opts.WithDevin {
 			out = append(out, hostpack.DevinAgentsMerge.TargetRel)
+		}
+		if r.opts.WithDsh {
+			out = append(out, hostpack.DshAgentsMerge.TargetRel)
 		}
 	}
 	return out

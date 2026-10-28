@@ -4806,7 +4806,9 @@ def create_actual_delivery_repo(root: Path, full_generator: bool = False) -> dic
     if full_generator:
         shutil.copytree(project / "pack", root / "pack")
         (root / "scripts").mkdir()
-        generator_scripts = ["build-host-artifacts.sh", "expand-includes.py"] + sorted(
+        generator_scripts = [
+            "build-host-artifacts.sh", "expand-includes.py", "dsh-generate.py", "dsh-specialist.mjs",
+        ] + sorted(
             path.name for path in (project / "scripts").glob("*-generate.sh")
         )
         for name in generator_scripts:
@@ -9029,7 +9031,9 @@ def _prepare_held_generator_view(repo_fd: int, stage_fd: int, stage_relative: st
         try:
             dst_scripts = os.open("scripts", DIRECTORY_FLAGS, dir_fd=output_fd)
             try:
-                script_names = ["build-host-artifacts.sh", "expand-includes.py"] + sorted(
+                script_names = [
+                    "build-host-artifacts.sh", "expand-includes.py", "dsh-generate.py", "dsh-specialist.mjs",
+                ] + sorted(
                     name for name in os.listdir(src_scripts)
                     if name.endswith("-generate.sh")
                 )
@@ -9039,7 +9043,7 @@ def _prepare_held_generator_view(repo_fd: int, stage_fd: int, stage_relative: st
                 os.close(dst_scripts)
         finally:
             os.close(src_scripts)
-        for name in ("claude", "codex", "devin", "omp", "pi"):
+        for name in ("claude", "codex", "devin", "dsh", "omp", "pi"):
             os.mkdir(name, 0o700, dir_fd=output_fd)
             host_fd = os.open(name, DIRECTORY_FLAGS, dir_fd=output_fd)
             try:

@@ -48,6 +48,42 @@ func TestInstallDryRunWritesNothing(t *testing.T) {
 	}
 }
 
+func TestDshInstallLifecycle(t *testing.T) {
+	t.Setenv("DEVRITES_NO_BINARY", "1")
+	payload := testPayload(t)
+	target := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(target, "AGENTS.md"), "user guidance\n")
+	testutil.WriteFile(t, filepath.Join(target, ".dsh", "user.yml"), "user configuration\n")
+	runInstall(t, target, payload, func(o *Options) {})
+	for _, rel := range []string{".dsh/skills/rite/SKILL.md", ".dsh/agents/devrites-code-reviewer.md", ".dsh/cordis.patch.yml", ".dsh/specialist.mjs"} {
+		if !exists(filepath.Join(target, filepath.FromSlash(rel))) {
+			t.Fatalf("missing %s", rel)
+		}
+	}
+	runInstall(t, target, payload, func(o *Options) {})
+	if text := testutil.ReadFile(t, filepath.Join(target, "AGENTS.md")); strings.Count(text, hostpack.DshAgentsMerge.Begin) != 1 || !strings.Contains(text, "user guidance") {
+		t.Fatalf("DSH bridge merge: %s", text)
+	}
+	runInstall(t, target, payload, func(o *Options) { o.WithDsh = false })
+	if exists(filepath.Join(target, ".dsh", "cordis.patch.yml")) {
+		t.Fatal("DSH runtime survived opt-out")
+	}
+	if strings.Contains(testutil.ReadFile(t, filepath.Join(target, "AGENTS.md")), hostpack.DshAgentsMerge.Begin) {
+		t.Fatal("DSH bridge survived opt-out")
+	}
+	if !strings.Contains(testutil.ReadFile(t, filepath.Join(target, ManifestName)), "--no-dsh") {
+		t.Fatal("DSH opt-out not persisted")
+	}
+	runInstall(t, target, payload, func(o *Options) {})
+	runUninstall(t, target)
+	if exists(filepath.Join(target, ".dsh", "specialist.mjs")) {
+		t.Fatal("DSH runtime survived uninstall")
+	}
+	if got := testutil.ReadFile(t, filepath.Join(target, ".dsh", "user.yml")); got != "user configuration\n" {
+		t.Fatal("user DSH config changed")
+	}
+}
+
 func TestInstallPrintsFirstMoveForInstalledHosts(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 
@@ -847,7 +883,7 @@ func TestLegacyCodexHooksMergeIsCleanupOnly(t *testing.T) {
 	if !ok || merge != legacy {
 		t.Fatalf("legacy marker lookup = %#v, %t", merge, ok)
 	}
-	if slices.Contains(hostpack.RequiredPayload(true, true, true, true), "codex/hooks.json") {
+	if slices.Contains(hostpack.RequiredPayload(true, true, true, true, true), "codex/hooks.json") {
 		t.Fatal("legacy Codex hooks entered the required payload")
 	}
 	r := runner{opts: DefaultOptions(ModeInstall), payloadFS: os.DirFS(testPayload(t))}
@@ -1397,6 +1433,11 @@ extends = ":workspace"
 	testutil.WriteFile(t, filepath.Join(root, "devin", "skills", "rite", "SKILL.md"), "devin rite\n")
 	testutil.WriteFile(t, filepath.Join(root, "devin", "agents", "devrites-code-reviewer.md"), "devin agent\n")
 	testutil.WriteFile(t, filepath.Join(root, "devin", "AGENTS.md"), "<!-- BEGIN DEVRITES DEVIN -->\nDevRites\n<!-- END DEVRITES DEVIN -->\n")
+	testutil.WriteFile(t, filepath.Join(root, "dsh", "skills", "rite", "SKILL.md"), "dsh rite\n")
+	testutil.WriteFile(t, filepath.Join(root, "dsh", "agents", "devrites-code-reviewer.md"), "dsh reviewer\n")
+	testutil.WriteFile(t, filepath.Join(root, "dsh", "runtime", "cordis.patch.yml"), "[]\n")
+	testutil.WriteFile(t, filepath.Join(root, "dsh", "runtime", "specialist.mjs"), "export const inject = [];\n")
+	testutil.WriteFile(t, filepath.Join(root, "dsh", "AGENTS.md"), "<!-- BEGIN DEVRITES DSH -->\nDevRites\n<!-- END DEVRITES DSH -->\n")
 }
 
 func testSource(t *testing.T, version string) string {

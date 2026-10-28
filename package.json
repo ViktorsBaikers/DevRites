@@ -40,6 +40,8 @@
     "scripts/omp-generate.sh",
     "scripts/pi-generate.sh",
     "scripts/devin-generate.sh",
+    "scripts/dsh-generate.py",
+    "scripts/dsh-specialist.mjs",
     "scripts/expand-includes.py",
     "scripts/install-lib.sh",
     "install.sh",

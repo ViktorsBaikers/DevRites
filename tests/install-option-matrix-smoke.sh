@@ -34,6 +34,8 @@ case_no_agents() {
   mkdir -p "$t"
   fail=0
   bash "$ROOT/install.sh" --target "$t" --no-agents >/dev/null 2>&1 || no "--no-agents install failed"
+  [ -d "$t/.dsh/agents" ] && no "--no-agents still installed DSH agents" || ok "--no-agents skipped DSH agents"
+  [ -f "$t/.dsh/cordis.patch.yml" ] && no "--no-agents installed DSH runtime" || ok "--no-agents skipped DSH runtime"
   [ -d "$t/.claude/agents" ] && no "--no-agents still installed agents" || ok "--no-agents skipped agents"
   [ -d "$t/.codex/agents" ] && no "--no-agents still installed Codex agents" || ok "--no-agents skipped Codex agents"
   [ -f "$t/.claude/skills/rite-build/SKILL.md" ] && ok "--no-agents still installs skills" || no "--no-agents broke skills"
@@ -115,6 +117,18 @@ case_no_devin() {
   exit "$fail"
 }
 
+case_no_dsh() {
+  local t="$T/no-dsh"
+  mkdir -p "$t"
+  fail=0
+  bash "$ROOT/install.sh" --target "$t" --no-dsh >/dev/null 2>&1 || no "--no-dsh install failed"
+  [ -d "$t/.dsh" ] && no "--no-dsh installed .dsh" || ok "--no-dsh skipped .dsh"
+  [ -d "$t/.pi" ] && ok "--no-dsh keeps pi" || no "--no-dsh dropped pi"
+  grep -q 'BEGIN DEVRITES DSH' "$t/AGENTS.md" && no "--no-dsh left bridge" || ok "--no-dsh skipped bridge"
+  grep -q -- '--no-dsh' "$t/.claude/devrites.manifest" && ok "--no-dsh persists opt-out" || no "--no-dsh did not persist"
+  exit "$fail"
+}
+
 pids=()
 case_no_agents &
 pids+=("$!")
@@ -127,6 +141,8 @@ pids+=("$!")
 case_no_pi &
 pids+=("$!")
 case_no_devin &
+pids+=("$!")
+case_no_dsh &
 pids+=("$!")
 for pid in "${pids[@]}"; do
   wait "$pid" || fail=1
