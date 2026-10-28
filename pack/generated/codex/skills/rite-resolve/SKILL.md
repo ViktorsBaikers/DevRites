@@ -39,9 +39,11 @@ Pull these via `Read` when shaping the resolve:
 - **Never overwrite an answered question.** If the qid's `status` is `answered` or
   `dropped`, refuse with the existing answer; ask the user to open a new qid that
   references the old one (the file is the audit trail).
-- **If the answer materially changes scope, architecture, or acceptance**, route it
-  through the Spec Drift Guard (`$rite-plan repair`) **after** writing the answer: do
-  not modify `spec.md` / `plan.md` inside this skill.
+- **Phase-aware handoff after writing the answer:** before planning artifacts exist,
+  recommend the current phase owner's action emitted by `state resolve` (for example,
+  `$rite-spec`), not Plan repair. Once a plan exists, material scope, architecture,
+  or acceptance changes route through the Spec Drift Guard (`$rite-plan repair`).
+  Never modify `spec.md` / `plan.md` inside this skill.
 - **The script is the source of truth.** Always invoke
   `devrites-engine state resolve`. It keeps `questions.md` + `state.md` consistent and emits the
   next-action recommendation. The one `state.md` field this skill may write by hand is the
@@ -66,8 +68,9 @@ Pull these via `Read` when shaping the resolve:
    - `--batch <plain-text-file>`: bulk resolve, one entry per qid (see
      [`reference/answer-protocol.md`](reference/answer-protocol.md) for the batch
      format).
-2. **Load context.** Read `state.md`, `questions.md`, and the relevant slice from
-   `tasks.md`. Confirm the qid is `status: open`. If `state.md` `Status` is not
+2. **Load context.** Read `state.md` and `questions.md`; require the relevant slice
+   from `tasks.md` only for an actual `SLICE-###` question, not `slice: spec | plan`.
+   Confirm the qid is `status: open`. If `state.md` `Status` is not
    `awaiting_human` and the question's `gate` is `blocking`, surface the inconsistency
    before proceeding (don't auto-repair: flag it).
 3. **Apply explicit consent.** Supplying `<qid> "<answer>"`, `--drop`, or `--batch` is the
@@ -86,13 +89,16 @@ Pull these via `Read` when shaping the resolve:
    writer left them.
    **Completion:** zero exit, or the failure reported with no hand edit.
 
-   On resume, and only after a zero exit, also clear or update the unblocked slice's `Slice mode` in `state.md`: if
+   On resume, only for an actual `SLICE-###` question and after a zero exit, clear or
+   update the unblocked slice's `Slice mode` in `state.md`: if
    the answer lets the slice proceed, drop the pause-time `Slice mode` so `$rite-build`
    re-derives it on the next selection; if the answer re-shapes how the slice should be
    built, set `Slice mode` to match.
-5. **Post-resolve hand-off.** If the answer changes product behavior or acceptance →
-   recommend `$rite-plan repair`. Otherwise → recommend the slice's natural next action
-   (typically `$rite-build` for the slice that was awaiting).
+5. **Post-resolve hand-off.** Before planning artifacts exist, recommend the emitted
+   phase-native next action (for example, `$rite-spec`); do not require or create a plan.
+   Once a plan exists, material scope, architecture, behavior, or acceptance changes →
+   recommend `$rite-plan repair` through the Spec Drift Guard. Otherwise → recommend
+   the emitted phase-native next action (typically `$rite-build` for a waiting slice).
    **Completion:** the resolved state contains exactly one next command.
 6. **STOP.** User-invoked `$rite-resolve` does not run `$rite-build` itself: the
    user re-enters the workflow explicitly. A controlling `$rite-autocomplete`
@@ -101,6 +107,7 @@ Pull these via `Read` when shaping the resolve:
    already names a ranked recommended option.
 
 > **Mid-flight discipline.** Don't edit `spec.md` / `plan.md` to "incorporate" the
-> answer. That's `$rite-plan repair`. Don't silently retry a build after the answer
+> answer. Before planning artifacts exist, return to the emitted current phase owner;
+> once a plan exists, material changes need `$rite-plan repair`. Don't silently retry a build after the answer
 > lands: the user types the next command. Don't merge two open questions into one
 > answered entry: each question is independently auditable.

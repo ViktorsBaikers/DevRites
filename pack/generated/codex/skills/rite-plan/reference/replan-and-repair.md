@@ -19,8 +19,11 @@ First (or fresh) breakdown into vertical slices. Use `task-breakdown.md` +
 
 A slice proved too large (couldn't build+prove in one cycle, or its goal has multiple
 "and"s). Split into thinner end-to-end slices, preserving acceptance coverage: split
-**by the sizing rule, not to a target count**. Update `tasks.md`; renumber; fix
-dependency edges.
+**by the sizing rule, not to a target count**. Update `tasks.md` under the canonical
+[ID contract](../../devrites-lib/reference/workspace-artifact-schema.md#id-contract):
+preserve unaffected IDs; never renumber or fill retired gaps. New meanings get the
+next unused IDs; record relationships in `decisions.md` or `drift.md` before updating
+downstream dependency edges and traceability.
 
 ## repair (after Spec Drift Guard)
 

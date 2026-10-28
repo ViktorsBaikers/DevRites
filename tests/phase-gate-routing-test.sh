@@ -509,6 +509,81 @@ require "$RESOLVE" 'explicit consent' 'resolve consumes the explicit answer'
 require "$RESOLVE" 'devrites-engine state resolve' 'resolve uses the nested state writer'
 forbid "$RESOLVE" 'confirm? (y/N)' 'resolve does not ask twice'
 
+# Confirmed cross-phase instruction conflicts; execute in CI, not maintenance sessions.
+PLAN_REPAIR="$ROOT/pack/.claude/skills/rite-plan/reference/replan-and-repair.md"
+ANSWER_PROTOCOL="$ROOT/pack/.claude/skills/rite-resolve/reference/answer-protocol.md"
+DEBUG_REGRESSION="$ROOT/pack/.claude/skills/devrites-debug-recovery/reference/regression-test.md"
+SECURITY_REVIEW="$ROOT/pack/.claude/skills/rite-review/reference/security-review.md"
+SHIP="$ROOT/pack/.claude/skills/rite-ship/SKILL.md"
+
+require_flat "$PLAN" 'Preserve `Plan approved` only for behavior/acceptance-neutral technical repair' 'neutral repair retains approval'
+require_flat "$PLAN" 'Settle human decisions and restore current `CLEAR` coverage through Clarify, then obtain renewed Plan approval BEFORE Vet' 'material repair restores coverage and approval before Vet'
+require "$PLAN" "[\`rite-define\`'s readiness/approval rule]" 'renewed approval uses Define owner without re-decomposition'
+require_flat "$PLAN" 'explicit autonomous provenance in `decisions.md` — never claim human approval' 'renewed autonomous approval retains provenance'
+forbid "$PLAN" 'reconfirm only after Clarify and Vet' 'approval cannot deadlock on Vet entry'
+
+for file in "$RESOLVE" "$ANSWER_PROTOCOL"; do
+  require_flat "$file" 'only for an actual `SLICE-###` question' 'Resolve limits slice context and updates to real slices'
+  require "$file" 'slice: spec | plan' 'Resolve supports pre-plan question scopes'
+  require_flat "$file" "current phase owner's action emitted by" 'Resolve defers pre-plan resume to phase-native writer output'
+  require_flat "$file" 'Once a plan exists, material' 'post-plan material changes retain repair routing'
+  forbid "$file" "That's \`/rite-plan repair\`" 'Resolve has no unconditional Plan repair handoff'
+done
+forbid "$RESOLVE" 'Read `state.md`, `questions.md`, and the relevant slice from' 'Resolve does not require tasks before planning'
+require "$RESOLVE" 'only for an actual `SLICE-###` question and after a zero exit' 'Slice mode changes require real slice and successful writer'
+require "$ANSWER_PROTOCOL" 'without `--human`' 'internal Autocomplete resolution never impersonates human'
+
+require "$PLAN_REPAIR" 'workspace-artifact-schema.md#id-contract' 'reslice binds canonical ID owner'
+require "$PLAN_REPAIR" 'preserve unaffected IDs; never renumber or fill retired gaps' 'reslice preserves stable IDs'
+require_flat "$PLAN_REPAIR" 'next unused IDs; record relationships in `decisions.md` or `drift.md` before updating downstream dependency edges and traceability' 'reslice maps new meanings before updating consumers'
+forbid "$PLAN_REPAIR" 'renumber; fix' 'reslice cannot renumber IDs'
+require_flat "$CORE" 'Record drift and route to the owning rite; an authorized owner repair reconciles the current owning clause in place' 'only owning rite reconciles current clause'
+require "$CORE" 'preserves rationale/history in `decisions.md`, not an adjacent dated delta' 'core retains history outside current clause'
+forbid "$CORE" 'Append a dated delta through the' 'core cannot demand forbidden adjacent delta'
+require_flat "$CORE" '**Failing case:** Build edits `spec.md` acceptance criteria to fit the implementation.' 'Build still cannot rewrite acceptance'
+
+require "$DEBUG_RECOVERY" 'The controlling root accepts and persists all recovery records' 'root owns recovery durability'
+require_flat "$DEBUG_RECOVERY" 'complete class/rationale, proposed routing, hypothesis/probe, baseline, exact failure/evidence, causal fingerprint, attempt number and failed idea/dead ends' 'leaf returns complete recovery record'
+require_flat "$DEBUG_RECOVERY" 'A leaf never writes `.devrites/**`, changes phase, invokes agents, or commits' 'recovery does not elevate leaf authority'
+for file in "$DEBUG_CLASSIFY" "$DEBUG_REGRESSION"; do
+  require "$file" '../SKILL.md#caller-owned-records-and-routing' 'loaded recovery reference binds root persistence owner'
+  require "$file" 'root acceptance' 'loaded recovery reference returns records for acceptance'
+done
+forbid "$DEBUG_CLASSIFY" 'Record class/routing in' 'cleanup cannot demand unconditional leaf writes'
+forbid "$DEBUG_REGRESSION" 'Note it in `evidence.md` and append' 'regression cannot demand unconditional leaf writes'
+
+for file in "$REVIEW" "$SECURITY_REVIEW"; do
+  require "$file" 'parallel-dispatch.md#roster' 'Review security uses shared roster owner'
+  require "$file" 'dependency-only diff' 'dependency-only diff retains required auditor'
+done
+forbid "$REVIEW" 'joins the step-3 cohort when' 'Review has no narrower private security trigger'
+forbid "$SECURITY_REVIEW" 'Apply when the feature involves' 'security reference has no stale private trigger'
+require "$SECURITY_REVIEW" 'docs-only diff with no matching surfaces' 'docs-only security not-applicable remains explicit'
+
+require "$SHIP" "read-only pre-GO ladder" 'Ship inspection cannot stage before consent'
+require "$SHIP" 'the existing index need not yet equal the candidate' 'Ship disclosure uses candidate, not prematurely staged index'
+require_flat "$SHIP" 'This is not a final candidate-clean claim' 'pre-GO scan does not certify unstaged candidate'
+require_flat "$SHIP" 'On literal GO plus native approval' 'Git mutation retains both authorizations'
+require_flat "$SHIP" 'full staged secret scan BEFORE commit' 'final scan follows exact staging before commit'
+forbid "$SHIP" 'exact manifest paths only after Seal GO' 'Seal verdict is not staging consent'
+forbid "$SHIP" 'From the verified index, build' 'Ship cannot require candidate staging for disclosure'
+
+require "$AGENTS" 'Among lifecycle `devrites-*` specialists' 'wright-only authority is lifecycle-scoped'
+require "$AGENTS" 'Independent Fast exception' 'Fast has explicit bounded authority'
+require_flat "$AGENTS" 'Only that bounded writer may edit its exact project-relative source/test paths; no workspace writes, scope widening, or second writer.' 'Fast exception preserves sole exact-path writer'
+require "$AGENTS" 'Root remains source/test nonwriter' 'Fast does not authorize root product writes'
+forbid "$AGENTS" '- Only bounded wright writes product source/tests' 'shared standard cannot ban Fast builder'
+require_flat "$AGENTS" 'Among lifecycle `devrites-*` specialists only (independent Fast exception below): Claude grants only wright `acceptEdits`;' 'host writer permissions are lifecycle-scoped without breaking generator anchor'
+
+for file in "$UPGRADE" "$UPGRADE_PLANNER"; do
+  require "$file" 'no admitted route' 'forbidden rollups cannot be admitted Upgrade repair'
+  require_flat "$file" '/rite-polish` handoff for separate user authorization' 'rollups stop for separately authorized owner'
+  require "$file" 'workspace-only Polish refresh' 'safe gate-only Polish refresh remains possible'
+  require_flat "$file" 'outside Upgrade, normal affected Prove → Review → Seal applies' 'external rollup invalidates downstream gates'
+done
+forbid "$UPGRADE" 'an old Ship-era workspace → `/rite-polish`' 'Upgrade cannot dispatch forbidden rollup'
+forbid "$UPGRADE_PLANNER" 'an old Ship-era candidate rollup to Polish' 'planner cannot admit forbidden rollup'
+
 echo ""
 [ "$fail" -eq 0 ] && echo "phase-gate-routing-test: PASS" || echo "phase-gate-routing-test: FAIL"
 exit "$fail"

@@ -1,5 +1,10 @@
 # Cleanup + classify
 
+All recording and routing below follows
+[`SKILL.md` § Caller-owned records and routing](skill://devrites-debug-recovery/SKILL.md#caller-owned-records-and-routing):
+root accepts/persists the full payload and owns transitions; leaves return proposals
+and evidence only, never workspace writes, agent launches, or commits.
+
 ## Classify one causal fingerprint
 
 Fingerprint the diagnosis, not its symptom. Reuse it until evidence disproves it; then
@@ -19,8 +24,9 @@ required before the next consumptive execution pause. Fresh authorization never
 pauses offline diagnosis or correction from retained evidence; never ask for a
 blind retry.
 
-Record class/routing in `decisions.md` and each failed attempt in `evidence.md`
-or `## Dead ends`. Apply the causal-fingerprint and three-attempt rules in
+Root records class/routing in `decisions.md` and each failed attempt in `evidence.md`
+or `## Dead ends`; leaves return the complete record for root acceptance/persistence
+before the next admission. Apply the causal-fingerprint and three-attempt rules in
 [`SKILL.md`](skill://devrites-debug-recovery/SKILL.md) Hard rules; record baseline, exact failure,
 hypothesis/probe, attempt number, and any human predicate.
 
@@ -31,4 +37,5 @@ hypothesis/probe, attempt number, and any human predicate.
 - [ ] Regression test passes (or absence of seam is documented).
 - [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix).
 - [ ] Throwaway harnesses deleted (or moved to a clearly marked debug location).
-- [ ] The correct hypothesis is stated in `evidence.md` + the commit/PR message: next debugger learns.
+- [ ] Root persists the correct hypothesis in `evidence.md`; leaves return it plus
+      proposed commit/PR wording for the authorized owner, without committing.
