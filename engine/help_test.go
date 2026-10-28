@@ -20,7 +20,7 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"-h"}, want: "Usage:"},
 		{args: []string{"help"}, want: "Usage:"},
 		{args: []string{"check", "--help"}, want: "check candidate <slug>"},
-		{args: []string{"check", "help"}, want: "check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup|anchors|perturb>"},
+		{args: []string{"check", "help"}, want: "check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|affected|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup|anchors|perturb>"},
 		{args: []string{"check", "candidate", "--help"}, want: "check candidate <slug>"},
 		{args: []string{"check", "readiness", "-h"}, want: "check readiness --emit-binding <slug>"},
 		{args: []string{"check", "preconditions", "-h"}, want: "check preconditions <slug> [--slice SLICE-###] [--timeout N]"},

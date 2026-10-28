@@ -78,12 +78,18 @@ func pathTokens(raw string) []string {
 	return out
 }
 
-// scheduleRounds replays /rite-build batch selection at the maximum cap: each
+// schedulePlan replays /rite-build batch selection at the maximum cap: each
 // round runs the plan-order path-disjoint subset of dependency-ready slices.
-// It returns 0 when a slice has no write paths or parallel select rejects them.
-func scheduleRounds(graph TaskGraphResult, paths map[string][]string, root string) int {
+// It returns the picked slice ids per round, the number of dependency-ready
+// slices each round left idle (parallelism the cap could not use), and the
+// largest dependency-ready set any round saw. That last value separates a
+// dependency chain (never more than one slice ready) from write contention
+// (many ready, one picked). It returns nil when a slice has no write paths or
+// parallel select rejects.
+func schedulePlan(graph TaskGraphResult, paths map[string][]string, root string) ([][]string, int, int) {
 	done := make(map[string]bool, len(graph.Slices))
-	rounds := 0
+	var rounds [][]string
+	idle, maxReady := 0, 0
 	for len(done) < len(graph.Slices) {
 		var ready []parallel.SlicePaths
 		for _, s := range graph.Slices {
@@ -91,23 +97,42 @@ func scheduleRounds(graph TaskGraphResult, paths map[string][]string, root strin
 				continue
 			}
 			if len(paths[s.ID]) == 0 {
-				return 0
+				return nil, 0, 0
 			}
 			ready = append(ready, parallel.SlicePaths{ID: s.ID, Paths: paths[s.ID]})
 		}
 		if len(ready) == 0 {
-			return 0
+			return nil, 0, 0
 		}
 		picked, err := parallel.SelectGreedy(parallel.MaxParallelSlices, ready, root)
 		if err != nil || len(picked) == 0 {
-			return 0
+			return nil, 0, 0
 		}
+		ids := make([]string, 0, len(picked))
 		for _, p := range picked {
 			done[p.ID] = true
+			ids = append(ids, p.ID)
 		}
-		rounds++
+		idle += len(ready) - len(picked)
+		maxReady = max(maxReady, len(ready))
+		rounds = append(rounds, ids)
 	}
-	return rounds
+	return rounds, idle, maxReady
+}
+
+// scheduleRounds returns the round count alone; see schedulePlan for the shape.
+func scheduleRounds(graph TaskGraphResult, paths map[string][]string, root string) int {
+	rounds, _, _ := schedulePlan(graph, paths, root)
+	return len(rounds)
+}
+
+// scheduleWidth is the busiest round: the plan's achieved DAG width.
+func scheduleWidth(rounds [][]string) int {
+	width := 0
+	for _, picked := range rounds {
+		width = max(width, len(picked))
+	}
+	return width
 }
 
 // PlanReady is the ready set for `parallel select --from-plan`; repoRoot is
@@ -319,8 +344,8 @@ func allDone(ids []string, done map[string]bool) bool {
 // hubAdvisories names each path written by hubAdvisoryMin+ slices that carry
 // no `Serial rationale:`, most-shared first.
 func hubAdvisories(graph TaskGraphResult, paths map[string][]string, serial map[string]bool) []string {
-	writers := map[string][]string{}
-	shown := map[string]string{} // first spelling seen, for display
+	claimed := map[string][]string{} // key -> slices claiming exactly it
+	shown := map[string]string{}     // first spelling seen, for display
 	for _, s := range graph.Slices {
 		if serial[s.ID] {
 			continue
@@ -330,12 +355,38 @@ func hubAdvisories(graph TaskGraphResult, paths map[string][]string, serial map[
 			key := strings.ToLower(path.Clean(strings.ReplaceAll(p, `\`, "/")))
 			if !seen[key] {
 				seen[key] = true
-				writers[key] = append(writers[key], s.ID)
+				claimed[key] = append(claimed[key], s.ID)
 				if _, ok := shown[key]; !ok {
 					shown[key] = p
 				}
 			}
 		}
+	}
+	// A directory claim contains every path beneath it, so writers of a path
+	// include slices claiming its ancestors and its descendants; counting exact
+	// spellings alone would report one writer for a hub every slice touches.
+	writers := map[string][]string{}
+	for key := range claimed {
+		set := map[string]bool{}
+		for _, id := range claimed[key] {
+			set[id] = true
+		}
+		for other, ids := range claimed {
+			if other == key {
+				continue
+			}
+			if strings.HasPrefix(other, key+"/") || strings.HasPrefix(key, other+"/") {
+				for _, id := range ids {
+					set[id] = true
+				}
+			}
+		}
+		ids := make([]string, 0, len(set))
+		for id := range set {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		writers[key] = ids
 	}
 	hubs := make([]string, 0, len(writers))
 	for p, ids := range writers {
@@ -354,6 +405,22 @@ func hubAdvisories(graph TaskGraphResult, paths map[string][]string, serial map[
 		lines[i] = fmt.Sprintf("ADVISORY hub: %s is written by %d slices (%s), so they build one at a time; move the shared edit into one seam slice they depend on, or record `Serial rationale:`", shown[p], len(writers[p]), strings.Join(writers[p], ", "))
 	}
 	return lines
+}
+
+// chainAdvisories names a plan whose schedule never overlaps because only one
+// slice was ever dependency-ready per round, so no parallel cap can help. A plan
+// serialized by write contention instead is a hub problem, not a chain, and a
+// plan whose slices all record `Serial rationale:` is deliberate; both stay quiet.
+func chainAdvisories(graph TaskGraphResult, serial map[string]bool, rounds, maxReady int) []string {
+	if len(graph.Slices) < 2 || rounds != len(graph.Slices) || maxReady != 1 {
+		return nil
+	}
+	for _, s := range graph.Slices {
+		if !serial[s.ID] {
+			return []string{fmt.Sprintf("ADVISORY chain: %d slices run in %d build rounds, so no two slices overlap and a parallel cap cannot help; cut a slice that stands alone, or record `Serial rationale:`", len(graph.Slices), rounds)}
+		}
+	}
+	return nil
 }
 
 // edgeAdvisories names each dependency edge that does not say what crosses it:

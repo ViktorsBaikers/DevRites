@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	checkUsage = `usage: devrites-engine check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup|anchors|perturb> ...
+	checkUsage = `usage: devrites-engine check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|affected|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup|anchors|perturb> ...
 
   check candidate <slug>
   check readiness <slug>
@@ -20,7 +20,8 @@ const (
   check preconditions <slug> [--slice SLICE-###] [--timeout N]
   check seal <slug>
   check path-disjoint [--root <dir>] [<json-file>|-]
-  check task-graph <slug>
+  check task-graph <slug> [--strict]
+  check affected <path...>
   check slice <slug> <SLICE-ID>
   check diff-scope <slug> --allow <csv> | --allow-file <path> [--worktree|--staged|--base <ref>] [--allow-empty] [--baseline] [--verbose] [--cwd <dir>]
   check diff-scope <slug> --snapshot [--worktree|--staged|--base <ref>] [--cwd <dir>]
@@ -84,7 +85,7 @@ const (
 	readinessUsage      = "usage: devrites-engine check readiness <slug>\n       devrites-engine check readiness --emit-binding <slug>"
 	preconditionsUsage  = "usage: devrites-engine check preconditions <slug> [--slice SLICE-###] [--timeout N]"
 	sealUsage           = "usage: devrites-engine check seal <slug>"
-	taskGraphUsage      = "usage: devrites-engine check task-graph <slug>"
+	taskGraphUsage      = "usage: devrites-engine check task-graph <slug> [--strict]"
 	sliceCheckUsage     = "usage: devrites-engine check slice <slug> <SLICE-ID>"
 	skillTrustUsage     = "usage: devrites-engine check skill-trust <path>"
 	indexesUsage        = "usage: devrites-engine check indexes [--root <dir>]"

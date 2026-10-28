@@ -172,8 +172,12 @@ cannot name what crosses, drop the edge; a shallow, wide graph runs in parallel.
 
 Slices sharing a file never build side by side: put a hub file's shared edit
 (registry, command table, test harness) in one seam slice the others depend on.
-`check task-graph` prints the `schedule:` and `ADVISORY hub:` lines; inseparable
-writes get `Serial rationale: <why>`. Never merge slices or drop acceptance to widen it.
+`check task-graph` prints the `schedule:`, `ADVISORY hub:` and `ADVISORY chain:` lines.
+A `chain` line means only one slice was ever ready, so the DAG rather than the cap
+serializes: cut a slice that stands alone, or record `Serial rationale: <why>`.
+`check task-graph <slug> --strict` refuses a plan whose shared path carries `ADVISORY hub:`
+writers, so a contended plan must split disjointly instead of widening the cap.
+Never merge slices or drop acceptance to widen it.
 
 ## Deferred slice
 A slice with `Satisfies: none` is an optional follow-up: plan-invented hardening or

@@ -25,7 +25,8 @@ Read named paths only. Accept released v1/v2 bullet or v3 table `state.md` under
 `.devrites/work/<slug>/`. Reject aliases, release scripts/markers, and conversion.
 
 Cite current rule plus workspace evidence for each applicable axis: cursor/topology,
-phase artifacts, decisions, planning/traceability/proof, built-code/intent, protected
+phase artifacts, decisions, planning/traceability/proof (including a `check task-graph`
+`ADVISORY chain:` schedule that no parallel cap can widen), built-code/intent, protected
 history, artifact budgets/feature ceiling (the supplied `devrites-engine orient`
 `artifact_budgets`/`bulk_files` and `task_graph.slice_count` against
 [`workspace-artifact-schema.md`](../skills/devrites-lib/reference/workspace-artifact-schema.md) and [`slicing.md`](../skills/rite-plan/reference/slicing.md) § Feature ceiling),

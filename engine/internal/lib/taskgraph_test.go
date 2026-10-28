@@ -473,6 +473,125 @@ func TestTaskGraphCheckSerialRationaleSilencesHub(t *testing.T) {
 	}
 }
 
+// A pure dependency chain: every slice waits on the one before it, so no two
+// slices can ever overlap and a parallel cap buys nothing.
+const chainTasks = `# Tasks
+
+## SLICE-001 Base
+Dependencies: none
+Writer allowlist: src/a.go
+
+## SLICE-002 Next
+Dependencies: SLICE-001 (via a)
+Writer allowlist: src/b.go
+
+## SLICE-003 Last
+Dependencies: SLICE-002 (via b)
+Writer allowlist: src/c.go
+`
+
+// Contention, not a chain: three independent slices fighting over one file give
+// rounds == slices, but many were ready each round, so the cap was blocked by
+// write overlap and the chain remedy would be wrong advice.
+const contentionTasks = `# Tasks
+
+## SLICE-001 Alpha
+Dependencies: none
+Writer allowlist: src/shared.go
+
+## SLICE-002 Beta
+Dependencies: none
+Writer allowlist: src/shared.go
+
+## SLICE-003 Gamma
+Dependencies: none
+Writer allowlist: src/shared.go
+`
+
+func TestTaskGraphCheckNoChainAdvisoryOnContention(t *testing.T) {
+	root := sliceWorkspace(t, contentionTasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 {
+		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "task-graph: schedule: 3 slices in 3 build rounds at cap 10, width 1, idle-eligible 3") {
+		t.Fatalf("expected a serial-by-contention schedule with 3 idle-eligible picks:\n%s", out)
+	}
+	if strings.Contains(out, "ADVISORY chain") {
+		t.Fatalf("contention must not be reported as a dependency chain:\n%s", out)
+	}
+}
+
+// Strict mode is the plan-shape repair point: contention is refused, not advised.
+func TestTaskGraphCheckStrictRefusesHubPlan(t *testing.T) {
+	root := sliceWorkspace(t, hubTasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheckStrict(root, "feat", stdout, stderr); code != 3 {
+		t.Fatalf("code=%d, want 3 for a contended plan\n%s", code, stdout)
+	}
+	out := stdout.String()
+	for _, want := range []string{"BLOCKED", "split disjointly"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in:\n%s", want, out)
+		}
+	}
+}
+
+func TestTaskGraphCheckStrictAllowsPlanWithoutSharedPaths(t *testing.T) {
+	root := sliceWorkspace(t, chainTasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheckStrict(root, "feat", stdout, stderr); code != 0 {
+		t.Fatalf("a chain shares no path; want 0, got %d\n%s", code, stdout)
+	}
+}
+
+func TestTaskGraphCheckAdvisoryDefaultStillAllowsHubPlan(t *testing.T) {
+	root := sliceWorkspace(t, hubTasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 {
+		t.Fatalf("non-strict default must stay advisory; got %d\n%s", code, stdout)
+	}
+}
+
+func TestTaskGraphCheckChainAdvisory(t *testing.T) {
+	root := sliceWorkspace(t, chainTasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 {
+		t.Fatalf("advisory must not block: code=%d\n%s%s", code, stdout, stderr)
+	}
+	out := stdout.String()
+	for _, want := range []string{
+		"task-graph: schedule: 3 slices in 3 build rounds at cap 10, width 1, idle-eligible 0",
+		"ADVISORY chain: 3 slices run in 3 build rounds",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in:\n%s", want, out)
+		}
+	}
+	stdout.Reset()
+	if code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr); code != 0 || !strings.Contains(stdout.String(), "chain-advisory=1") {
+		t.Fatalf("chain-advisory metric not recorded: code=%d\n%s", code, stdout)
+	}
+}
+
+func TestTaskGraphCheckNoChainAdvisoryWhenWide(t *testing.T) {
+	root := sliceWorkspace(t, hubTasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 || strings.Contains(stdout.String(), "ADVISORY chain") {
+		t.Fatalf("code=%d, want 0 and no chain advisory:\n%s", code, stdout)
+	}
+}
+
+func TestTaskGraphCheckChainSerialRationaleSilences(t *testing.T) {
+	tasks := strings.ReplaceAll(chainTasks, "Writer allowlist:", "Serial rationale: one ordered migration\nWriter allowlist:")
+	root := sliceWorkspace(t, tasks, "")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 || strings.Contains(stdout.String(), "ADVISORY chain") {
+		t.Fatalf("code=%d, want 0 and no chain advisory:\n%s", code, stdout)
+	}
+}
+
 func TestScheduleRoundsSkipsSliceWithoutPaths(t *testing.T) {
 	graph := ParseTaskGraph([]byte(edgeTasks))
 	paths, _ := sliceWritePaths([]byte(edgeTasks), graph)

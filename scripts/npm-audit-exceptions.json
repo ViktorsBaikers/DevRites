@@ -34,5 +34,41 @@
     "owner": "release-maintainers",
     "reason": "undici@6.29.0 is bundled in npm@11.21.1; npm@12.2.1 also bundles 6.29.0, and supported nested overrides plus npm audit fix leave it unchanged after clean install. The sole bundled importer is node-gyp header-download fetch: crafted response encodings could cause denial of service if that path is invoked. Current release commands do not invoke node-gyp explicitly; this is temporary acceptance of that tooling risk, not proof of unreachability. Remove when npm bundles undici >=6.29.1.",
     "expires": "2026-11-07"
+  },
+  {
+    "id": "GHSA-2m5v-pch6-74hx",
+    "package": "undici",
+    "range": ">=4.0.0 <6.29.1",
+    "nodes": [
+      "node_modules/npm/node_modules/undici"
+    ],
+    "source": "https://github.com/advisories/GHSA-2m5v-pch6-74hx",
+    "owner": "release-maintainers",
+    "reason": "npm vendors undici 6.29.0; the patched 6.29.1 exists, but npm@12.2.1 (verified from its published tarball) still vendors 6.29.0, and the copy lives inside npm's own package tarball so neither an override nor npm audit fix can replace it. The bundled client is used only by the node-gyp header-download fetch over TLS to the registry; the bypass needs an active MITM of that connection. Temporary acceptance of that risk, not proof of unreachability. Remove when npm vendors undici >=6.29.1.",
+    "expires": "2026-11-29"
+  },
+  {
+    "id": "GHSA-qrxm-fqhp-jwvm",
+    "package": "undici",
+    "range": ">=4.2.1 <6.29.1",
+    "nodes": [
+      "node_modules/npm/node_modules/undici"
+    ],
+    "source": "https://github.com/advisories/GHSA-qrxm-fqhp-jwvm",
+    "owner": "release-maintainers",
+    "reason": "npm vendors undici 6.29.0; the patched 6.29.1 exists, but npm@12.2.1 (verified from its published tarball) still vendors 6.29.0, and the copy lives inside npm's own package tarball so neither an override nor npm audit fix can replace it. The bundled client is used only by the node-gyp header-download fetch over TLS to the registry; the bypass needs an active MITM of that connection. Temporary acceptance of that risk, not proof of unreachability. Remove when npm vendors undici >=6.29.1.",
+    "expires": "2026-11-29"
+  },
+  {
+    "id": "GHSA-9fm3-97px-rjf6",
+    "package": "undici",
+    "range": ">=5.15.0 <6.29.1",
+    "nodes": [
+      "node_modules/npm/node_modules/undici"
+    ],
+    "source": "https://github.com/advisories/GHSA-9fm3-97px-rjf6",
+    "owner": "release-maintainers",
+    "reason": "npm vendors undici 6.29.0; the patched 6.29.1 exists, but npm@12.2.1 (verified from its published tarball) still vendors 6.29.0, and the copy lives inside npm's own package tarball so neither an override nor npm audit fix can replace it. No DevRites tooling imports the bundled WebSocket client, so the PONG-buffering path is not exercised. Remove when npm vendors undici >=6.29.1.",
+    "expires": "2026-11-29"
   }
 ]
