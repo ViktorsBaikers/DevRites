@@ -1,7 +1,9 @@
 # Security review (feature-scoped)
 
-Apply when the feature involves user input, auth/authz, data storage, external
-integrations, secrets, or permissions. Delegates to `devrites-audit security`.
+Use the canonical [parallel-dispatch roster trigger](../../devrites-lib/reference/parallel-dispatch.md#roster),
+including dependency and integration changes. A dependency-only diff still requires
+`devrites-security-auditor`; a docs-only diff with no matching surfaces records
+`Not-applicable: no relevant paths in diff`. Delegates to `devrites-audit security`.
 
 ## OWASP-Top-10-oriented checks
 

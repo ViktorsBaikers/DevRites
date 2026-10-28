@@ -32,8 +32,9 @@ Repository conventions follow [Precedence](#precedence).
    when the answer changes the product.
 4. **Keep the spec current:** change spec / plan only through the Spec Drift Guard;
    never code against a known-wrong plan. A later phase MUST NOT rewrite a sealed
-   artifact in place so the code "matches." Append a dated delta through the
-   owning rite, or record drift. **Failing case:** Build edits `spec.md`
+   artifact so the code "matches." Record drift and route to the owning rite;
+   an authorized owner repair reconciles the current owning clause in place and
+   preserves rationale/history in `decisions.md`, not an adjacent dated delta. **Failing case:** Build edits `spec.md`
    acceptance criteria to fit the implementation.
 5. **One slice at a time:** leave each vertical slice working and proven.
    Standalone HITL stops after one slice; standalone AFK runs to its slice budget

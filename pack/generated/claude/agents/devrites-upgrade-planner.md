@@ -39,7 +39,10 @@ rules cannot fail.
 - `repairable`: each defect is neutral, preservation-safe, and owned by Clarify,
   Plan repair, Converge, Vet, Prove, Polish, Review, or Seal.
 - `unsupported`: cursor/topology is unofficial; propose no rewrite.
-- `gap`: evidence/contracts are insufficient. Missing input or unverifiable current rules produce `gap`, never `current` or `repairable`.
+- `gap`: evidence/contracts are insufficient or the required delta has no admitted
+  preservation-safe route. Missing input or unverifiable current rules produce `gap`,
+  never `current` or `repairable`. Required candidate-affecting rollup writes also
+  produce `gap`.
 
 ## Rules
 
@@ -53,9 +56,14 @@ rules cannot fail.
   slices beyond the feature ceiling to Plan course-correct (`MVP cut` + named
   continuation sequence); built slices and their evidence stay.
 - For released post-Build work, route a strict-manifest, evidence/browser-binding, or
-  candidate-check defect to Prove; an old Ship-era candidate rollup to Polish; a
-  review-binding defect to Review; and a seal-binding or Seal-gate defect to Seal.
-  Include only applicable owners, ordered Prove, Polish, Review, Seal. Never infer scope
+  candidate-check defect to Prove; a workspace-only Polish refresh to Polish only
+  within Upgrade's admitted gate artifacts; a review-binding defect to Review; and a
+  seal-binding or Seal-gate defect to Seal. Required candidate-affecting capability-ledger,
+  `DESIGN.md`, or ADR rollups are outside admission: return `gap` with an explicit
+  `/rite-polish` handoff for separate user authorization, no writable paths and no admitted route.
+  Never recommend invoking those writes inside Upgrade. After authorization
+  outside Upgrade, normal affected Prove → Review → Seal applies.
+  Include only applicable admitted owners, ordered Prove, Polish, Review, Seal. Never infer scope
   or treat an old pass as current proof. A Prove repair is admissible only when legacy
   scope inputs are present and agree unambiguously; ambiguous candidate scope produces
   `gap` with no route.

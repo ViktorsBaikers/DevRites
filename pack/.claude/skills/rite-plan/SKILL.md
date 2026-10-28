@@ -170,8 +170,13 @@ Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/stan
    the previous vet verdict: set `Phase: plan`, `Next step: /rite-vet`, and, when
    `eng-review.md` exists, set `Implementation readiness: NEEDS REPLAN`. Never retain READY
    across changed planning inputs. Preserve `Plan approved` only for behavior/acceptance-neutral
-   technical repair; clear it for a contract-changing or newly blocking horizon item and
-   reconfirm only after Clarify and Vet close it. If you stopped for drift,
+   technical repair; clear it for a contract-changing or newly blocking horizon item.
+   Settle human decisions and restore current `CLEAR` coverage through Clarify,
+   then obtain renewed Plan approval BEFORE Vet using only
+   [`rite-define`'s readiness/approval rule](../rite-define/SKILL.md), not its initial
+   decomposition. Under active Autocomplete, retain that rule's explicit autonomous
+   provenance in `decisions.md` — never claim human approval. Approval grants no
+   protected-path, Git, or safety authority. If you stopped for drift,
    mark the `drift.md` entry resolved. Never remove or overwrite a valid caller
    return cursor while writing the Plan checkpoint.
 6. After editing `brief.md`, `spec.md`, `decisions.md`, `assumptions.md`, or `questions.md`,

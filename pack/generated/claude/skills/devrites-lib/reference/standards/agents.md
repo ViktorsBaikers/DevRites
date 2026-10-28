@@ -10,7 +10,10 @@ Follow DevRites policy and [`depth profiles`](../orchestration-profiles.md).
 - Root owns scope, questions/decisions/results, `.devrites/**`, phase transitions — not product source/tests; vetted executable workflow artifacts follow [`workflow-artifacts.md`](workflow-artifacts.md).
 - Every named role runs; unavailable → HITL, never skip/substitute.
 <!-- /root-only -->
-- Only bounded wright writes product source/tests; others inspect an immutable candidate.
+- Among lifecycle `devrites-*` specialists, only bounded wright writes product
+  source/tests; others inspect an immutable candidate. The independent `/rite-fast`
+  lane instead uses only its existing `fast-builder` as writer under its own roster;
+  never substitute a lifecycle role. Root remains source/test nonwriter.
 - Leaves never invoke agents, ask humans, change phase, push, install/deploy, migrate live data, or act irreversibly; they return evidence/proposals for root acceptance. Sole exception: one local unpushed transfer commit by an eligible native-worktree `devrites-slice-wright` — transport, not shipping authority or a checkpoint.
 
 <!-- root-only -->
@@ -56,7 +59,14 @@ Workflow-named skills (e.g. devrites-source-driven) are invoked inline in the ro
 
 ## Source-writing boundary
 
+Among lifecycle `devrites-*` specialists only (independent Fast exception below):
 Claude grants only wright `acceptEdits`; Codex root is workspace-capable (children cannot elevate). Wright alone `:workspace`; others `:read-only`. Wright gets the smallest exact project-relative source/test list — no directories/globs, traversal, or `.devrites/**`; no scope widening; root rejects `git diff --name-only` extras. Never patch product source/tests in root, bypass/substitute wright, accept drift, or recreate a dispatch bridge.
+
+Independent Fast exception: `/rite-fast` uses its existing `fast-builder` write-capable
+profile, not a `devrites-*` substitute, under the exact Fast roster and lane contract.
+Only that bounded writer may edit its exact project-relative source/test paths; no
+workspace writes, scope widening, or second writer. Root remains source/test nonwriter.
+This exception grants no additional tools, permissions, phase, agent-launch, or Git authority.
 
 Isolated-worktree pilot only under [`wright-dispatch.md`](../../../rite-build/reference/wright-dispatch.md#isolated-writer-worktree-pilot): one writer, committed/clean baseline, non-submodule parent, exact transfer commit, candidate reconciliation — never parallel writers nor weaker exact-path admission. Root may materialize only exact Vet-ready workflow-artifact paths per [`workflow-artifacts.md`](workflow-artifacts.md) — not a writer dispatch or candidate mutation.
 
