@@ -11,8 +11,7 @@ user-invocable: true
 
 # $rite-seal: GO / NO-GO
 
-Verify final candidate in `seal.md`; `$rite-ship` owns authorized irreversible
-actions and close-out.
+Verify final candidate in `seal.md`; `$rite-ship` owns authorized irreversible actions/close-out.
 
 ## Authority
 
@@ -22,13 +21,12 @@ security, principles, documentation, observability, deprecation,
 definition-of-done, and [`verification-methods.md`](../devrites-lib/reference/standards/verification-methods.md)
 for coverage-denominator and evidence-status judgment.
 Load [`final-evidence.md`](reference/final-evidence.md) and
-[`go-no-go.md`](reference/go-no-go.md) for proof and verdict safety.
-Follow the shared
-[`candidate-integrity.md`](../devrites-lib/reference/candidate-integrity.md) for
-the reviewed digest and artifact bindings.
+[`go-no-go.md`](reference/go-no-go.md) for proof/verdict safety.
+Follow [`candidate-integrity.md`](../devrites-lib/reference/candidate-integrity.md)
+for reviewed digest/artifact bindings.
 
-The host runs/reconciles named read-only reviewers; engine checks invariants.
-**Standard** is default; **Full** broadens conditional axes per
+Host runs/reconciles named read-only reviewers; engine checks invariants.
+**Standard** default; **Full** broadens conditional axes per
 [`devrites-lib/reference/orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md).
 
 ## Gate
@@ -36,7 +34,7 @@ The host runs/reconciles named read-only reviewers; engine checks invariants.
 | State | Verdict |
 |---|---|
 | Acceptance proven, deterministic checks pass, no unresolved drift or human gate, `Critical == 0`, `Important == 0` | **GO** |
-| Same, but `Important > 0` | Ask `Important findings remain. Proceed to seal? [y/N]`; default **N**. Only a human answers `y`; unattended (AFK/autocomplete) keeps **N**; standalone AFK stops for a human if Important remains; active Autocomplete repairs agent-owned findings before re-entering Seal, and only human-owned risk acceptance stops for a human |
+| Same, but `Important > 0` | Ask `Important findings remain. Proceed to seal? [y/N]`; default **N**, unattended keeps **N**. Only humans answer `y`; standalone AFK stops for a human if Important remains. Autocomplete repairs agent-owned findings, re-enters Seal; only human-owned risk acceptance stops for a human |
 | `Critical > 0` | **NO-GO** |
 | Any acceptance criterion, resolved prohibition, or declared key link lacks proof | **NO-GO** |
 | `gates status` is not `all-met` — an unmet, stale, unapproved, or abandoned ledger gate remains | **NO-GO** |
@@ -49,8 +47,8 @@ The host runs/reconciles named read-only reviewers; engine checks invariants.
 | `check regression` reports an unblessed loss vs the recorded progress baseline | **NO-GO** |
 | `check windows` reports a deferral marker the change introduced without a `windows.md` waiver | **NO-GO** |
 
-A judgment-only criterion needs the human eye; AFK records a validating question
-(`slice: seal`) and stops. Autocomplete never auto-picks it; only a human answers.
+Judgment-only criteria need humans. AFK records a validating question
+(`slice: seal`), stops; Autocomplete never auto-picks.
 
 ## Workflow
 
@@ -68,39 +66,33 @@ Follow [`reference/phase-contract.md`](reference/phase-contract.md)
 5. draft GO/NO-GO `seal.md` with acceptance, tests, decisions, and seven roster accounts plus proof-runner and doubt-reviewer
    (each engineering lane its own account);
 6. write exactly one candidate binding, then run
-   `devrites-engine check seal <slug>` for structure and identity, never semantics,
-   and, when that check reports a stale readiness-input binding, run
-   `devrites-engine check drift <slug>` before returning to Vet so the repair
-   starts at the named changed, missing, or added input,
-   and `devrites-engine check regression <slug>` to confirm no recorded progress
-   fact was lost since the last checkpoint — `BLOCKED` is NO-GO; `unproven`
-   (no baseline) does not block — plus two separate runs of `devrites-engine check windows <slug>`,
+   `devrites-engine check seal <slug>` for structure/identity, never semantics.
+   For stale readiness-input bindings, run `devrites-engine check drift <slug>`
+   before returning to Vet; start repair at the named changed/missing/added input.
+   Run `devrites-engine check regression <slug>` for progress lost since last
+   checkpoint: `BLOCKED` is NO-GO; `unproven` (no baseline) does not block.
+   Run `devrites-engine check windows <slug>` twice,
    one with `--base <release-base>` and one with `--worktree` (the only mode that scans
    untracked files; never pass both flags in one command, the last one wins) so each deferral marker the feature diff introduced
    carries a `windows.md` waiver row ([`windows.md`](../devrites-lib/reference/standards/windows.md));
-   unwaived hits are NO-GO. The engine already refuses a `gates.md` ledger
-   that is malformed, unmet,
-   stale, unapproved, or abandoned — a seal-side `gates status` reading anything
-   but `all-met` means Prove's evidence is not current; return there, never
-   attest past it. Before the Seal wave, run `devrites-engine gates reverify <slug>
-   --transcripts` on the frozen candidate, so every gate has a transcript bound to
-   this digest for the proof runner. It likewise refuses a malformed `notes.md` or any anchor
-   graded other than `exact`: `devrites-engine note check <slug> --repair`
-   re-anchors `moved` notes; `stale`/`ambiguous`/`lost` ones are corrected or
-   removed before GO. Repeat each `note: unexecuted driver` line `check seal` prints in the GO/NO-GO reply.
+   unwaived hits are NO-GO. The engine rejects malformed, unmet, stale, unapproved, or abandoned
+   `gates.md` ledgers. Unless Seal-side `gates status` says `all-met`, return to
+   Prove: evidence is not current; never attest past it. Before Seal wave, run `devrites-engine gates reverify <slug>
+   --transcripts` on the frozen candidate: bind every gate transcript to this
+   digest for the proof runner. It also rejects malformed `notes.md` or non-`exact` anchors:
+   `devrites-engine note check <slug> --repair` re-anchors `moved` notes;
+   fix/remove `stale`/`ambiguous`/`lost` notes before GO. Repeat each `note: unexecuted driver` line `check seal` prints in GO/NO-GO reply.
 
-Corrections return through affected Prove/Review before restarting Seal under
+Corrections pass affected Prove/Review before Seal restarts under
 [evidence validity](../devrites-lib/reference/candidate-integrity.md#evidence-validity).
 
-Only repository scripts/CI authorize commands; never guess.
+Only repo scripts/CI authorize commands; never guess.
 
 ## On GO
 
-Set `state.md` `Next step: $rite-ship`. Standalone Seal stops. Under active
-`$rite-autocomplete`, return internally to the caller for recorded sequence
-continuation or [Ship preflight](../rite-ship/reference/git-ship.md#before-type-go); do not emit
-a final reply at an intermediate milestone. A GO is a verdict, not
-authorization to perform an irreversible action.
+Set `state.md` `Next step: $rite-ship`. Standalone Seal stops. Under active `$rite-autocomplete`, return internally to the caller
+for recorded sequence continuation or [Ship preflight](../rite-ship/reference/git-ship.md#before-type-go),
+no intermediate final reply. GO grants no irreversible-action authority.
 
 ## Output
 
