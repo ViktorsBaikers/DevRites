@@ -2,22 +2,20 @@
 
 > Root-only: not inlined in --role bundles.
 
-AFK mode is active when `.devrites/AFK` exists. It lets `/rite-build` chain slices
-without per-slice user input. The rules below limit that unattended work.
-
-Load the shared
+`.devrites/AFK` enables unattended slice chaining. Load the shared
 [`afk-hitl.md`](skill://devrites-lib/reference/standards/afk-hitl.md#the-sentinel-devritesafk)
-contract for the sentinel schema, defaults, gate ceiling, and mutable-counter
-ownership. This file owns only Build's dispatch, charging, and red-path behavior.
+for sentinel schema, defaults, gate ceiling, and mutable-counter ownership.
+This file owns Build dispatch, charging, and red paths.
 
-Rules: green before `built`; hard `max_slices` cap; gates before the action they
-control; irreversible work (destructive/auth/public API) always pauses; a tick
-never ends with an open or sealed wave — wait for its returns or
-`dispatch abandon --reason`.
+Rules: green before `built`; gates before their action; irreversible work
+(destructive/auth/public API) pauses; no tick ends with an open/sealed wave —
+wait for returns or `dispatch abandon --reason`.
 
 ## Iteration cap
 
-The controlling root owns the cap:
+Under active `/rite-autocomplete`, skip the slice-cap checks, charges, and cap-stop message below;
+use its [admission rules](skill://rite-autocomplete/reference/loop.md#admit-each-unattended-cycle).
+Otherwise root owns cap:
 
 1. **Before every dispatch**, re-read `.devrites/AFK`, `state.md`, and the
    selected slice. This invocation's `--parallel N` is the cap when present;

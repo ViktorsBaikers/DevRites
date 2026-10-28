@@ -11,9 +11,9 @@ user-invocable: true
 
 # /rite-build: one verified slice
 
-HITL stops; a later user invocation starts the next slice.
-Explicit `.devrites/AFK` alone lets the controlling root chain under green proof,
-caps and pause rules. Every wright returns after one slice.
+Active caller takes precedence per [output.md](reference/output.md#caller-owned-continuation).
+Standalone HITL stops; standalone AFK chains under green proof, caps and pause
+rules. Every wright returns after one slice.
 **HITL:** `/rite-build --parallel N` (2≤N≤10; N=1≡serial) follows
 [`reference/parallel-batch.md`](reference/parallel-batch.md)
 ([`one-slice-cycle.md`](reference/one-slice-cycle.md)).
@@ -109,10 +109,9 @@ AFK charges per landed sibling only. Running lease blocks another
 
 Run every step in `reference/phase-contract.md`: readiness, one target, dispatch
 or canonical transaction, return inspection, independent code/doubt/test analysis,
-approved fail-on-red proof, record, AFK accounting, and stop. Use
+approved fail-on-red proof, record, and applicable accounting. Continue/reply via
 [`reference/output.md`](reference/output.md) plus the shared
-[`reply contract`](skill://devrites-lib/reference/reply-contract.md). HITL never starts
-the next slice automatically; AFK obeys remaining budget; Prove requires every slice built except a
+[`reply contract`](skill://devrites-lib/reference/reply-contract.md). Standalone AFK obeys remaining budget; Prove requires every slice built except a
 [deferred slice](skill://rite-plan/reference/slicing.md#deferred-slice).
 
 ## Phase exit

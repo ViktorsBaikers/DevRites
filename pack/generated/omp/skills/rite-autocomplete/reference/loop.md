@@ -46,15 +46,14 @@ readiness check first; reject overlap. Do not stop on `max_agents`,
 `max_minutes`, or `max_review_queue`. Count every leaf result. A new activation
 gets fresh activation-local counters but retains durable slice/recovery state.
 
-When driving `/rite-build`, ignore afk-discipline remaining-0, `--max-slices`,
-and parallel AFK headroom as stop conditions. Pass this invocation's
-`--parallel N` into `/rite-build` when present; leftover sentinel
-`max_parallel` is then not the cap. Close validating questions and blocking questions
-that already name a ranked recommended option (recommended pick via
-`devrites-engine state resolve`) instead of queuing them or handing
-`/rite-resolve` to the user. Escalating, irreversible-risk, access, and
-blocking with no recommended option still pause, as does Seal's judgment-only
-validating question (`slice: seal`).
+[Build return](skill://rite-build/reference/output.md#caller-owned-continuation).
+Pass `--parallel N`; ignore leftover cap/headroom, remaining-0,
+and `--max-slices` stops. Agent-invented dispatch, wait, tool-call, or turn budgets are not stop conditions.
+An explicit human request to pause or run only a bounded subset still wins.
+Path collisions serialize work; they do not end the run.
+Resolve ranked validating/blocking picks via `devrites-engine state resolve`;
+never hand `/rite-resolve` to the user. Escalating, irreversible-risk, access, blocking
+without recommendations, and Seal judgment (`slice: seal`) still pause.
 
 ## Phase arc
 
@@ -67,7 +66,7 @@ Workspace files carry state; chat does not. Read and execute each phase skill:
 | 3 | `/rite-temper` | harden or reduce; `expand` and extra acceptance stop for a human; irreversible risk still pauses |
 | 4 | `/rite-define` | approved plan/tasks/traceability |
 | 5 | `/rite-vet` | every plan; derive mutable budget after READY |
-| 6 | `/rite-build` batch loop | largest eligible path-disjoint set (cap: this invocation's `--parallel N`, else sentinel `max_parallel`, else 10; one-slice round when <2 eligible); refill per landing; charge once per landed slice |
+| 6 | `/rite-build` batch loop | largest eligible path-disjoint set (cap: this invocation's `--parallel N`, else sentinel `max_parallel`, else 10; serial if <2 eligible); refill per landing; charge once per landed slice |
 | 7 | `/rite-prove` | all slices built except deferred (`Satisfies: none`); approved proof; recovery on red |
 | 8 | `/rite-polish` | re-prove after code edits |
 | 9 | `/rite-review` | in-scope correction then fresh proof |

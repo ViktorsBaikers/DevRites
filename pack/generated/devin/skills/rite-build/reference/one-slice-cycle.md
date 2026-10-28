@@ -1,8 +1,8 @@
 # One-slice cycle
 
-One wright dispatch builds one thin, proven slice. HITL stops; only explicit
-`.devrites/AFK` lets the controlling root chain another pending slice under the
-green-proof, cap, and pause rules. Each wright returns after exactly one slice.
+Each wright returns after one proven slice. Root follows
+[`output.md`](output.md#caller-owned-continuation); standalone AFK uses
+`afk-discipline.md`.
 This serial cycle is the default `/rite-build`. Opt-in fan-out: [`parallel-batch.md`](parallel-batch.md) (`--parallel N`).
 
 ## The cycle
@@ -31,7 +31,9 @@ RECORD    → orchestrator: after green verification, update state.md/evidence.m
             upsert the authoritative candidate manifest from the actual scoped diff
 (CHECKPOINT) → only now, with review+proof green: local WIP(<slug>): <imperative summary>
             on the control branch (no slice id) → checkpoint.md
-NEXT      → HITL root reports and stops. AFK with parallel cap>1: return to parallel-batch selection to refill; otherwise repeat under afk-discipline.md
+NEXT → controlling caller first: return internally via output.md; no user-facing reply.
+       HITL stops. Standalone AFK with parallel cap>1:
+       return to parallel-batch selection to refill; otherwise repeat under afk-discipline.md
 ```
 
 ## Why the boundary matters

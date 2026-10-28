@@ -147,6 +147,17 @@ require "$BUILD_PARALLEL" '`n_eff` counts new picks only' 'parallel selection di
 require_flat "$BUILD_PARALLEL" 'a single new pick still uses `parallel add`' 'one-slot refill stays in the running parallel lease'
 require_flat "$BUILD_PARALLEL" '`n_eff=0` with a running lease waits for siblings, not Prove.' 'a full running lease does not advance to Prove'
 require "$BUILD_PARALLEL" 'parallel select --cap' 'parallel width is engine-selected each round'
+BUILD_OUTPUT="$ROOT/pack/.claude/skills/rite-build/reference/output.md"
+BUILD_CHECKPOINT="$ROOT/pack/.claude/skills/rite-build/reference/checkpoint.md"
+require_order "$BUILD_OUTPUT" 'Build chooses caller continuation before standalone templates' '## Caller-owned continuation' '## Standalone response'
+require_flat "$BUILD_OUTPUT" 'All built: return internally to the caller to invoke `/rite-prove` under its own contract.' 'all-built nested Build returns to caller for Prove'
+require_flat "$BUILD_SLICE" 'NEXT → controlling caller first: return internally via output.md; no user-facing reply.' 'serial NEXT preserves controlling caller'
+require_flat "$BUILD_AFK" 'Under active `/rite-autocomplete`, skip the slice-cap checks, charges, and cap-stop message below;' 'AFK cap branch excludes active autocomplete'
+require_flat "$AUTOCOMPLETE_LOOP" 'Agent-invented dispatch, wait, tool-call, or turn budgets are not stop conditions.' 'invented execution budgets cannot end autocomplete'
+require_flat "$AUTOCOMPLETE_LOOP" 'An explicit human request to pause or run only a bounded subset still wins.' 'human bounded request retains authority'
+require_flat "$AUTOCOMPLETE_LOOP" 'Path collisions serialize work; they do not end the run.' 'serial collision is not completion'
+require "$BUILD_CHECKPOINT" '- [x] SLICE-004 built — <proof/checkpoint reference>' 'checkpoint gives selector-readable checked built record'
+require_flat "$BUILD_CHECKPOINT" 'A cursor `built_slices` value or a tasks.md `Status: built` field is not a substitute.' 'checkpoint rejects unsupported completion truth'
 require "$BUILD_SLICE" 'return to parallel-batch selection' 'AFK serial round re-enters parallel selection when a cap is armed'
 require "$AUTOCOMPLETE" 'one-slice round is serial for that round only' 'autocomplete does not latch serial after a one-slice round'
 require "$AUTOCOMPLETE" 'leftover `max_parallel: 1`' 'autocomplete --parallel overrides leftover serial sentinel'

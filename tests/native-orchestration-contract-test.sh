@@ -884,7 +884,7 @@ for text, required in (
         "per native activation and start fresh only", "remain durable/recomputed across wakes",
         "`/rite-autocomplete` deliberately ignores `max_slices`, `max_agents`, `max_minutes` and `max_review_queue`",
     )),
-    (afk, ("afk-hitl.md", "dispatch, charging, and red-path behavior", "exactly once after each green built slice", "never below zero", "fails closed", "before dispatching another slice", "curl -fsS -m 10 -d")),
+    (afk, ("afk-hitl.md", "Build dispatch, charging, and red paths", "Under active `/rite-autocomplete`, skip the slice-cap checks, charges, and cap-stop message below;", "exactly once after each green built slice", "never below zero", "fails closed", "before dispatching another slice", "curl -fsS -m 10 -d")),
     (recovery, ("caller and recovery attempts", "three no-progress attempts", "Count an attempt only", "## Dead ends", "never request attempt four of the same strategy")),
     ((canonical / "skills/rite-build/reference/wright-dispatch.md").read_text(), (
         "Isolated writer-worktree pilot", "show-superproject-working-tree",
@@ -922,23 +922,28 @@ for text, required in (
 
 build_mode_contracts = {
     canonical / "skills/rite-build/SKILL.md": (
-        "HITL stops; a later user invocation starts the next",
-        "Explicit `.devrites/AFK` alone lets the controlling root chain",
+        "Active caller takes precedence per [output.md](reference/output.md#caller-owned-continuation)",
+        "Standalone HITL stops; standalone AFK chains under green proof, caps and pause rules",
+        "Standalone AFK obeys remaining budget",
         "Every wright returns after one slice",
     ),
     canonical / "skills/rite-build/reference/output.md": (
-        "Only explicit `.devrites/AFK` lets the controlling root chain",
-        "Every `devrites-slice-wright` returns after exactly one slice",
-        "Build never enters `/rite-prove` automatically",
+        "Before standalone replies, return internally to active `/rite-autocomplete`",
+        "after green proof, checkpoint, and accounting",
+        "HITL returns after one green slice; AFK chains per `afk-discipline.md`",
+        "Every wright returns after one slice",
+        "Build alone never invokes Prove",
+        "Human/safety/access/Git stops still use the shared reply contract",
     ),
     canonical / "skills/rite-build/reference/one-slice-cycle.md": (
-        "HITL stops; only explicit `.devrites/AFK` lets the controlling root chain",
-        "Each wright returns after exactly one slice",
+        "NEXT → controlling caller first: return internally via output.md; no user-facing reply.",
+        "HITL stops. Standalone AFK with parallel cap>1",
+        "Each wright returns after one proven slice",
     ),
     canonical / "skills/rite-build/reference/anti-patterns.md": (
-        "HITL needs a later user invocation",
-        "Explicit `.devrites/AFK` may let the root chain",
-        "each wright still returns after one",
+        "Caller first: [output.md](output.md#caller-owned-continuation)",
+        "Standalone HITL stops; standalone AFK chains after green proof and cap/pause gates",
+        "each wright returns after one",
     ),
     canonical / "skills/rite/SKILL.md": (
         "one slice/wright; HITL stops, `.devrites/AFK` may chain",
@@ -949,6 +954,10 @@ for path, required in build_mode_contracts.items():
     for phrase in required:
         if phrase not in text:
             raise SystemExit(f"{path}: Build HITL/AFK contract missing {phrase!r}")
+
+build_output = (canonical / "skills/rite-build/reference/output.md").read_text()
+if build_output.index("## Caller-owned continuation") >= build_output.index("## Standalone response"):
+    raise SystemExit("Build must choose caller continuation before standalone reply")
 
 retired_build_phrases = {
     canonical / "skills/rite-build/SKILL.md": (
