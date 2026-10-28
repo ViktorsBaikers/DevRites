@@ -139,13 +139,14 @@ next sequence continuation through Vet in a second session, then stop.
    product scope is never auto-resolved by a recommended option; it stops for a human.
    A spent strategy escalates; parked recovery records
    `Next step: /rite-autocomplete`, never a routine phase command. **Completion:** no stop is active, or its cursor and reason are durable.
-6. **Seal boundary.** Without a ship flag, leave the sealed workspace unshipped and
-   open the next recorded continuation
+6. **Seal boundary.** With or without a ship flag, leave intermediate sealed
+   workspaces unshipped and open the next recorded continuation
    ([loop.md § Sequence continuation](reference/loop.md#sequence-continuation))
    unless `continue_sequence: false`, the sequence budget is spent, or no entry
-   remains; then stop at Seal GO with `/rite-ship`. Report the sequence position on
-   every stop.
-   With a ship flag, perform Ship preflight, disclose the exact Git plan, and stop for
+   remains. At that final milestone, explicit opt-out, or workspace-cap boundary,
+   without a ship flag stop at Seal GO with `/rite-ship`. Report the sequence
+   position on every stop. Only at that boundary, with a ship flag, perform Ship
+   preflight, disclose the exact Git plan, and stop for
    fresh literal `GO` plus native approval. **Completion:** performed no Git action before fresh literal `GO` plus native approval.
 
 ## Reply and resume

@@ -34,7 +34,10 @@ the spec applicability map triggers that risk family.
   acceptance) needs a resolved human `questions.md` qid, so an unattended run holds it
   open. Irreversible-risk still pauses.
 - **Apply maximum caution to hard-to-reverse changes.** Auth, migration, public API, and
-  data-model changes always pause under the irreversible-risk list.
+  data-model changes require full review and explicit rollback. Pause only for
+  actual [canonical irreversible-risk items](../devrites-lib/reference/standards/afk-hitl.md#irreversible-risk-list-always-pause)
+  or unresolved human-owned decisions; an already-approved reversible internal
+  data-model change does not automatically stop.
 - **Honest verdict.** Never round "needs work" up to "ready"; record every scope call's *why*.
 - **Search before asking.** Apply [`afk-hitl.md`](../devrites-lib/reference/standards/afk-hitl.md) decision ownership; only human-owned calls
   enter the interactive walk.

@@ -47,8 +47,11 @@ plan declares a root-authored executable workflow file, read
   unverified or confidence ≤4 findings under `review-axes.md`.
   Lens arrows in `eng-lenses.md` are heuristics; band findings only under the
   four `review-axes.md` names.
-- Auth, migration, public API, and data-model changes use maximum caution and the
-  irreversible-risk stop. Project principles never become trade-offs.
+- Auth, migration, public API, and data-model changes use maximum caution,
+  full review, and explicit rollback. Pause only for actual
+  [canonical irreversible-risk items](../devrites-lib/reference/standards/afk-hitl.md#irreversible-risk-list-always-pause)
+  or unresolved human-owned decisions, not an already-approved reversible internal
+  data-model change. Project principles never become trade-offs.
 - **Governance-protected paths** (`.devrites/**`, pack skill/agent trees,
   `NOTICE.md` generator regions, CI/hook config named in repo docs) require explicit
   human approval before plan slices may edit them. A slice touching a protected path

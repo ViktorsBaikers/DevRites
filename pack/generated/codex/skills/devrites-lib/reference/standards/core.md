@@ -35,9 +35,11 @@ Repository conventions follow [Precedence](#precedence).
    artifact in place so the code "matches." Append a dated delta through the
    owning rite, or record drift. **Failing case:** Build edits `spec.md`
    acceptance criteria to fit the implementation.
-5. **One slice at a time:** leave one vertical slice working and proven, then
-   stop. HITL never auto-continues; AFK runs to its slice budget
-   ([`afk-hitl.md`](afk-hitl.md)).
+5. **One slice at a time:** leave each vertical slice working and proven.
+   Standalone HITL stops after one slice; standalone AFK runs to its slice budget
+   ([`afk-hitl.md`](afk-hitl.md)). Under active `$rite-autocomplete`, green slice
+   and phase checkpoints return internally to the controlling caller, which continues
+   the recorded lifecycle until completion or a genuine stop.
 6. **Evidence over confidence:** tests, builds, runtime, screenshots beat
    assertions; record commands and output. Tag how each claim was known:
    `observed` (you ran or read the evidence), `inferred` (deduced — name the
@@ -92,6 +94,11 @@ Verdict discipline — no vacuous verdicts:
 
 When a rite invokes an earlier rite inline to repair an agent-owned technical gap, the original rite stays the controlling caller: a nested `STOP` is a phase boundary, not user-facing. The caller re-reads `state.md`, follows the return cursor/`next_action`, and resumes unless a human-owned, safety, access, budget, or parked-recovery stop is active ([Persistence before stopping](#persistence-before-stopping-handoff-discipline)). Derive `parked-recovery` from the fingerprint's recorded no-progress attempts and escalations, not from a stale `state.md` label; one consumed authorization doesn't exhaust offline recovery from retained new evidence.
 
+The same caller ownership applies to forward progress under active `$rite-autocomplete`:
+green slice/phase checkpoints and their recorded `next_action` are internal continuation
+edges, not final replies. The caller consumes them and technical backtracking until
+its requested completion or a genuine stop; tool progress never yields control.
+
 An intermediate `Next step` is cold-resume metadata. Do not ask the human to
 copy routine `$rite-plan repair`, `$rite-vet`, `$rite-build`, or proof-rerun
 commands during the active recovery chain. Only the controlling caller emits
@@ -101,7 +108,7 @@ the final response; standalone phase invocations still stop normally.
 <!-- root-only -->
 ## Final response
 
-Immediately before its final response, each rite loads
+Immediately before its final response, the controlling caller or standalone rite loads
 [`reply-contract.md`](../reply-contract.md) then uses the compact form: evidenced
 claims plus one next action.
 <!-- /root-only -->
@@ -178,7 +185,9 @@ Read the engine `context` bundle once per phase instead of re-reading the files 
 contains; after compaction re-read the bundle, not its sources.
 
 <!-- root-only -->
-Every rite names the single resume command on its action line; a `↻ Hygiene:` footer
+Only a controlling caller's final response or a standalone rite names the single
+resume command on its action line; nested phases persist it internally, not as a
+handoff. A `↻ Hygiene:` footer
 advises `/clear`, `/compact`, or `$rite-handoff` and never a competing command. Full phase-by-phase guidance:
 [`context-hygiene.md`](context-hygiene.md).
 <!-- /root-only -->

@@ -184,12 +184,18 @@ Pull these via `Read` when shaping the plan:
    wiring, shared-contract proof, applicable outputs, and rollback; risk-first acyclic order;
    justified deviations; and every horizon item present, with blockers resolved, planning
    items resolved/validly spiked, and local/action entries bounded and owned.
-   **Stop and confirm** before code. Render the review-before-code
+   **Standalone: stop and confirm** before code. Render the review-before-code
    digest first: `Intent` (one sentence from the spec), `Done means` (acceptance coverage x/y),
    `Plan sanity` (slice count + riskiest boundary/gate), `Expected build interruptions`
    (`none` or only justified action-time gates), and `Build exactly this?` (yes → approve;
    no → `/rite-plan revise`). When the human confirms the plan, write `Plan approved: <iso>` to
    `state.md` (see [state-workspace](skill://rite-spec/reference/state-workspace.md)).
+   Under active `/rite-autocomplete`, once this readiness gate is green and no
+   unresolved human-owned decision, irreversible-risk, scope, or access gate
+   remains, root records autonomous plan approval using the existing
+   `Plan approved: <iso>` cursor and records Autocomplete provenance and rationale
+   in `decisions.md` — never claim human approval. Return internally to the caller
+   for `/rite-vet`. Plan approval grants no protected-path, Git, or safety authority.
 
 ## tasks.md slice format
 

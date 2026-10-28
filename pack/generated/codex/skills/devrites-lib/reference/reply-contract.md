@@ -27,7 +27,12 @@ there or inside one named grouped entry, so a reviewer can `git diff` exactly
 those paths. `Record:` then names the single durable artifact a later session
 reads first.
 
-Mid-flight replies — the turns between completion states — obey the same economy:
+Under active `$rite-autocomplete`, green slice/phase checkpoints and recorded
+`next_action` return internally to the caller. Continue execution or emit tool
+progress; never end with a text-only final reply between green phases.
+
+Standalone HITL mid-flight replies — the turns between completion states — obey
+the same economy:
 
 - **Restate position.** The reader cannot hold "step 3 of 5" between turns; name it
   (`step N of M` / `state: <where things stand>`) rather than asking them to remember.

@@ -67,8 +67,10 @@ max_workspaces: 5                    # workspaces one armed sequence may open
 max_parallel: 10                     # unattended default cap; `--parallel N` on this invocation wins and may rewrite only this field
 ```
 
-The file is **read-only config**: never rewritten in place, except `/rite-autocomplete --parallel N` writes or replaces only `max_parallel: N`. `max_slices` is the initial
-budget; the mutable remaining count is the `state.md` cursor
+The file is **read-only config**: never rewritten in place, except `/rite-autocomplete --parallel N` writes or replaces only `max_parallel: N`.
+
+Outside active `/rite-autocomplete`, the following slice-budget rules apply:
+`max_slices` is the initial budget; the mutable remaining count is the `state.md` cursor
 `afk_slices_remaining` (`AFK slices remaining: <n>` in the released bullet
 form), owned by the controlling root. Recognize either spelling and preserve
 the existing table or bullet presentation. Before dispatch, a configured
@@ -78,12 +80,15 @@ exactly one slice: on the first green slice write `max_slices - 1`, otherwise
 write `remaining - 1`, never below zero. Re-reading an already built slice does
 not spend again. At zero, stop before the next dispatch.
 
-An orchestrator that can derive a stricter budget only after planning may pre-seed
+Outside active `/rite-autocomplete`, an orchestrator that can derive a stricter
+budget only after planning may pre-seed
 `afk_slices_remaining` in `state.md` before the first dispatch instead of rewriting the
 sentinel. It uses the minimum of pending work and every configured/explicit cap. An
 existing counter may be lowered but never increased or reinitialized. Once present, that state
 counter is the effective remaining budget even when the read-only sentinel omits
-`max_slices`.
+`max_slices`. Under active `/rite-autocomplete`, skip these slice-cap checks,
+charges, zero stops, and minimum-cap seeding; use its
+[post-Vet budget](../../../rite-autocomplete/reference/loop.md#derive-the-mutable-post-vet-budget).
 
 ### Sequence continuation (`continue_sequence`, `max_workspaces`)
 
@@ -92,7 +97,8 @@ after a `Seal GO` instead of stopping. Under `/rite-autocomplete`, absent means 
 in an existing sentinel; `false` opts out. `max_workspaces` (default 5) is the
 sequence budget (nonnegative decimal, fail closed): spend one when a new workspace is
 opened, never when resuming the current one. `max_slices` stays **per workspace** —
-each new workspace's `state.md` seeds its own `afk_slices_remaining`.
+each new workspace's `state.md` seeds its own `afk_slices_remaining` outside active
+`/rite-autocomplete`; Autocomplete uses its post-Vet pending count instead.
 
 The chain lives in root-owned `state.md` cursor fields, not in chat:
 `sequence_parent` (the immediately preceding workspace slug), `sequence_position`
@@ -111,8 +117,9 @@ candidate manifest to cover the whole recorded chain — run
 
 - Only continuations recorded in the parent's `decisions.md` sequence
   ([slicing.md § Continuation workspaces](../../../rite-plan/reference/slicing.md#continuation-workspaces))
-  qualify; no recorded next entry, or the cap/review-queue bound reached, stops
-  with the winning reason.
+  qualify; no recorded next entry or the `max_workspaces` cap reached stops
+  with the winning reason. The review-queue bound applies only outside active
+  `/rite-autocomplete`.
 - Milestones are **not** shipped: they stay sealed and unarchived in `.devrites/work/`
   with `Next step: /rite-ship` preserved. Local `WIP(<slug>):` checkpoints still
   land ([checkpoint.md](../../../rite-build/reference/checkpoint.md)), so the tree
@@ -120,8 +127,9 @@ candidate manifest to cover the whole recorded chain — run
 - Git stays human-gated. The release ship is one disclosed plan, one literal `GO`, and
   one native approval; it collapses the sequence's `WIP` commits into the single
   release commit and may archive the sealed predecessors.
-- Every human-owned, safety, access, exhaustion, and `NO-GO` condition still stops the
-  run exactly as without this field.
+- Every genuine human-owned, safety, access, or exhaustion stop remains. Under
+  active `/rite-autocomplete`, agent-owned Seal `NO-GO` enters recovery per
+  [stop-conditions.md](../../../rite-autocomplete/reference/stop-conditions.md), not a handoff.
 
 `max_parallel` is the unattended default batch cap only when this invocation does
 not contain `--parallel N`; `1` forces the serial cycle only in that default
@@ -145,25 +153,29 @@ Existing sentinels that declare writer admission but miss/malform these fail clo
 state-owned slice counter. A leftover `expires_at` is ignored and never rewritten.
 Read-only watchers use equivalent native caps from [`loop-operations.md`](loop-operations.md).
 
+Outside active `/rite-autocomplete`, the following dispatch/queue limits apply:
 `max_agents` counts every leaf in the native activation, including failures and
 parallel branches; do not add dispatch telemetry to `.devrites/`. `max_review_queue`
 counts open validating questions plus unresolved admitted Critical/Important findings.
-Above it stop; at it run only reconciliation that reduces the queue. Optional
-`max_tokens`/`max_cost_usd` lower enforceable native caps; if declared but unobservable, stop.
+Above it stop; at it run only reconciliation that reduces the queue.
+
+In every unattended mode, optional `max_tokens`/`max_cost_usd` lower enforceable native caps; if declared but unobservable, stop.
 `/rite-autocomplete` deliberately ignores `max_slices`, `max_agents`, `max_minutes` and
 `max_review_queue` ([stop-conditions.md](../../../rite-autocomplete/reference/stop-conditions.md));
 there they are not a ceiling.
 
 Numeric limits are nonnegative decimals. Before costly checks, fan-out, or writing,
-run cheap readiness, reject overlap, count queue, and confirm agent/time/token/cost
-headroom; re-check after every result. Never start one call that can exceed remaining
-headroom. Agent/time/token/cost counters are per native activation and start fresh only
+run cheap readiness and reject overlap. Outside active `/rite-autocomplete`, count
+queue and confirm agent/time headroom; under Autocomplete those ignored limits
+never block admission. In both cases confirm declared token/cost and native safety
+headroom; re-check after every result. Never start one call that can exceed an
+applicable remaining limit. Agent/time/token/cost counters are per native activation and start fresh only
 for a genuinely new activation. Slices, recovery attempts, and current
 review queue remain durable/recomputed across wakes. Persist each activation stop and
 checkpoint before notification.
 
 New sentinels write no `expires_at` and no notification/token/cost cap.
-Post-Vet pending count may lower slices. Existing files
+Outside active `/rite-autocomplete`, post-Vet pending count may lower slices. Existing files
 never receive missing defaults implicitly.
 
 To leave AFK, delete the file. The next skill invocation reverts to HITL.

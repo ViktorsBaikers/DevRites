@@ -106,10 +106,17 @@ class or park; only a real human/risk/scope gate stops for a human.
 
 ## Final GO and durable stop
 
+Seal GO is an internal milestone while a recorded continuation remains,
+`continue_sequence` is not `false`, and `max_workspaces` permits it. Continue
+without `--ship`; leave intermediate milestones sealed and unshipped. Only the
+final milestone, explicit `continue_sequence: false`, or exhausted sequence cap
+ends green sequence continuation.
+
+At that boundary, follow [Ship preflight](../../rite-ship/reference/git-ship.md#before-type-go).
 `--ship`/`--yolo` never authorizes Git. With a flag, complete Ship preflight,
-disclose the exact plan, and stop for literal `GO` plus native approval. Without
-one, stop at Seal GO with `/rite-ship`. Seal GO, AFK, prior approval, and flags
-never satisfy Ship approval.
+disclose the exact plan, and stop for fresh literal `GO` plus native approval.
+Without one, stop at Seal GO with `/rite-ship`. Seal GO, AFK, prior approval,
+and flags never satisfy Ship approval.
 
 A cold-resumable stop records `state.md` status, exact reason, and one resume
 action: the human-owned action, or `/rite-autocomplete` to reopen parked

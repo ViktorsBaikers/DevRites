@@ -113,9 +113,11 @@ fields are missing is re-seeded from its `brief.md` parent/position and the
 parent's counter (same values, never a second charge); a child with no recorded
 parent/position is not a sequence member and the chain stops.
 
-Stop instead when: no recorded next entry; the cap or review-queue bound is
-reached; a human-owned, safety, access, or parked-recovery stop fires; or Seal returns
-`NO-GO`. On stop, report the sequence position, the sealed-but-unshipped workspaces, and
+Stop sequence continuation when: `continue_sequence: false`; no recorded next
+entry (the final milestone); the `max_workspaces` cap is reached; or a genuine
+human-owned, safety, access, or parked-recovery stop fires. `max_review_queue`
+never stops Autocomplete; agent-owned Seal `NO-GO` enters recovery, not a handoff.
+Intermediate sealed milestones continue without `--ship` and without Git mutation. On stop, report the sequence position, the sealed-but-unshipped workspaces, and
 the single release command (`/rite-autocomplete <release milestone> --ship`, or
 `/rite-ship` for the current sealed workspace when the sequence is complete).
 
@@ -152,6 +154,8 @@ and park it after three escalations while independent work continues.
 
 ## Continuous caller obligation
 
+Green slice/phase checkpoints consume their recorded `next_action` internally;
+only the controlling caller emits a final reply at completion or a genuine stop.
 No user-facing reply is permitted while durable state contains agent-owned
 `NEEDS_REPLAN`, an intermediate Plan/Vet action, a distinct retained
 Critical/Important fingerprint below its cap or with an escalation left, runnable

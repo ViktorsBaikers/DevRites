@@ -36,7 +36,7 @@ The host runs/reconciles named read-only reviewers; engine checks invariants.
 | State | Verdict |
 |---|---|
 | Acceptance proven, deterministic checks pass, no unresolved drift or human gate, `Critical == 0`, `Important == 0` | **GO** |
-| Same, but `Important > 0` | Ask `Important findings remain. Proceed to seal? [y/N]`; default **N**. Only a human answers `y`; unattended (AFK/autocomplete) keeps **N** and stops for a human if Important remains |
+| Same, but `Important > 0` | Ask `Important findings remain. Proceed to seal? [y/N]`; default **N**. Only a human answers `y`; unattended (AFK/autocomplete) keeps **N**; standalone AFK stops for a human if Important remains; active Autocomplete repairs agent-owned findings before re-entering Seal, and only human-owned risk acceptance stops for a human |
 | `Critical > 0` | **NO-GO** |
 | Any acceptance criterion, resolved prohibition, or declared key link lacks proof | **NO-GO** |
 | `gates status` is not `all-met` — an unmet, stale, unapproved, or abandoned ledger gate remains | **NO-GO** |
@@ -96,7 +96,10 @@ Only repository scripts/CI authorize commands; never guess.
 
 ## On GO
 
-Set `state.md` `Next step: /rite-ship` and stop. A GO is a verdict, not
+Set `state.md` `Next step: /rite-ship`. Standalone Seal stops. Under active
+`/rite-autocomplete`, return internally to the caller for recorded sequence
+continuation or [Ship preflight](skill://rite-ship/reference/git-ship.md#before-type-go); do not emit
+a final reply at an intermediate milestone. A GO is a verdict, not
 authorization to perform an irreversible action.
 
 ## Output
