@@ -32,7 +32,7 @@ Pull these via `Read` when the diff demands them:
 - [`principles.md`](skill://devrites-lib/reference/standards/principles.md): declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
 - [`testing.md`](skill://devrites-lib/reference/standards/testing.md): confirm that passing tests actually prove the spec.
 - [`agents.md`](skill://devrites-lib/reference/standards/agents.md): when to fan out to which review subagent.
-- [`security.md`](skill://devrites-lib/reference/standards/security.md): when the shared [`parallel-dispatch.md` roster](skill://devrites-lib/reference/parallel-dispatch.md#roster) triggers the security auditor.
+- [`security.md`](skill://devrites-lib/reference/standards/security.md): when the shared [`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md#roster) roster triggers the security auditor.
 - [`security-checklist.md`](skill://devrites-lib/reference/standards/security-checklist.md): for the same security-sensitive scope, the compact trust-boundary sweep.
 - [`repository-topology.md`](skill://devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](skill://devrites-lib/reference/standards/data-integrity.md), [`integration-reliability.md`](skill://devrites-lib/reference/standards/integration-reliability.md): only
   when the spec applicability map or final diff triggers their ownership/failure/proof checks.

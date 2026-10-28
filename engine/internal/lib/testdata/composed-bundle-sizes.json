@@ -1,216 +1,216 @@
 {
   "devrites-api-interface": {
-    "root": 72568,
-    "floor": 12855
+    "root": 72869,
+    "floor": 12975
   },
   "devrites-audit": {
-    "root": 61652,
+    "root": 62527,
     "role": "performance-reviewer",
-    "roleFloor": 29015,
-    "roleCeiling": 38317
+    "roleFloor": 29594,
+    "roleCeiling": 38896
   },
   "devrites-browser-proof": {
     "root": 57454,
     "floor": 24691
   },
   "devrites-debug-recovery": {
-    "root": 86105,
-    "floor": 23467
+    "root": 86823,
+    "floor": 24185
   },
   "devrites-doubt": {
-    "root": 105334,
+    "root": 106187,
     "role": "doubt-reviewer",
-    "roleFloor": 24672,
-    "roleCeiling": 53282
+    "roleFloor": 25251,
+    "roleCeiling": 53861
   },
   "devrites-frontend-craft": {
     "root": 78251,
     "floor": 54329
   },
   "devrites-interview": {
-    "root": 44805,
-    "floor": 15289
+    "root": 44903,
+    "floor": 15409
   },
   "devrites-prose-craft": {
     "root": 31998,
     "floor": 8728
   },
   "devrites-source-driven": {
-    "root": 40993,
+    "root": 41868,
     "role": "evidence-scout",
-    "roleFloor": 36423,
-    "roleCeiling": 36423
+    "roleFloor": 37002,
+    "roleCeiling": 37002
   },
   "devrites-ux-shape": {
     "root": 69670,
     "floor": 40154
   },
   "rite": {
-    "root": 44057,
-    "floor": 12768
+    "root": 44145,
+    "floor": 12888
   },
   "rite-adopt": {
     "root": 42164,
     "floor": 17870
   },
   "rite-autocomplete": {
-    "root": 111283,
-    "floor": 76658
+    "root": 111360,
+    "floor": 76735
   },
   "rite-build": {
-    "root": 255232,
+    "root": 255934,
     "role": "code-reviewer",
-    "roleFloor": 38977,
-    "roleCeiling": 125549
+    "roleFloor": 39550,
+    "roleCeiling": 126122
   },
   "rite-clarify": {
-    "root": 72910,
+    "root": 73763,
     "role": "evidence-scout",
-    "roleFloor": 32566,
-    "roleCeiling": 32566
+    "roleFloor": 33145,
+    "roleCeiling": 33145
   },
   "rite-converge": {
-    "root": 142718,
+    "root": 143593,
     "role": "evidence-scout",
-    "roleFloor": 75064,
-    "roleCeiling": 120143
+    "roleFloor": 75643,
+    "roleCeiling": 120722
   },
   "rite-customize": {
-    "root": 37062,
-    "floor": 12768
+    "root": 37182,
+    "floor": 12888
   },
   "rite-define": {
-    "root": 190860,
+    "root": 191713,
     "role": "plan-drafter",
-    "roleFloor": 85822,
-    "roleCeiling": 150491
+    "roleFloor": 86400,
+    "roleCeiling": 151070
   },
   "rite-doctor": {
-    "root": 12855,
-    "floor": 12855
+    "root": 12975,
+    "floor": 12975
   },
   "rite-dogfood": {
-    "root": 102051,
-    "floor": 39706
+    "root": 102117,
+    "floor": 39794
   },
   "rite-explain": {
     "root": 39364,
     "floor": 6576
   },
   "rite-fast": {
-    "root": 117098,
-    "floor": 42219
+    "root": 117196,
+    "floor": 42339
   },
   "rite-frame": {
-    "root": 49061,
-    "floor": 18424
+    "root": 49181,
+    "floor": 18544
   },
   "rite-handoff": {
-    "root": 28491,
-    "floor": 20832
+    "root": 28579,
+    "floor": 20920
   },
   "rite-harness": {
-    "root": 54188,
-    "floor": 21366
+    "root": 54276,
+    "floor": 21454
   },
   "rite-learn": {
-    "root": 44382,
+    "root": 45257,
     "role": "retrospector",
-    "roleFloor": 39788,
-    "roleCeiling": 39788
+    "roleFloor": 40367,
+    "roleCeiling": 40367
   },
   "rite-plan": {
-    "root": 153052,
+    "root": 154215,
     "role": "evidence-scout",
-    "roleFloor": 67647,
-    "roleCeiling": 98662
+    "roleFloor": 68514,
+    "roleCeiling": 99529
   },
   "rite-polish": {
-    "root": 106951,
+    "root": 107821,
     "role": "slice-wright",
-    "roleFloor": 61422,
-    "roleCeiling": 98573
+    "roleFloor": 62001,
+    "roleCeiling": 99152
   },
   "rite-pov": {
-    "root": 24601,
-    "floor": 24601
+    "root": 24721,
+    "floor": 24721
   },
   "rite-pr-feedback": {
-    "root": 60938,
-    "floor": 15574
+    "root": 61058,
+    "floor": 15694
   },
   "rite-pressure-test": {
-    "root": 21880,
-    "floor": 21880
+    "root": 22000,
+    "floor": 22000
   },
   "rite-prototype": {
-    "root": 12768,
-    "floor": 12768
+    "root": 12888,
+    "floor": 12888
   },
   "rite-prove": {
-    "root": 191161,
+    "root": 192031,
     "role": "proof-runner",
-    "roleFloor": 96217,
-    "roleCeiling": 150971
+    "roleFloor": 96796,
+    "roleCeiling": 151550
   },
   "rite-quick": {
-    "root": 101233,
-    "floor": 18372
+    "root": 101331,
+    "floor": 18492
   },
   "rite-resolve": {
-    "root": 50363,
-    "floor": 17452
+    "root": 51280,
+    "floor": 18391
   },
   "rite-review": {
-    "root": 217614,
+    "root": 218692,
     "role": "code-reviewer",
-    "roleFloor": 39787,
-    "roleCeiling": 179520
+    "roleFloor": 40366,
+    "roleCeiling": 180302
   },
   "rite-seal": {
-    "root": 158764,
+    "root": 159639,
     "role": "code-reviewer",
-    "roleFloor": 55121,
-    "roleCeiling": 132374
+    "roleFloor": 55700,
+    "roleCeiling": 132953
   },
   "rite-ship": {
-    "root": 70930,
-    "floor": 41412
+    "root": 71028,
+    "floor": 41532
   },
   "rite-spec": {
-    "root": 166356,
+    "root": 167209,
     "role": "evidence-scout",
-    "roleFloor": 75563,
-    "roleCeiling": 126011
+    "roleFloor": 76142,
+    "roleCeiling": 126590
   },
   "rite-status": {
-    "root": 12855,
-    "floor": 12855
+    "root": 12975,
+    "floor": 12975
   },
   "rite-temper": {
-    "root": 132277,
+    "root": 133129,
     "role": "strategy-reviewer",
-    "roleFloor": 49956,
-    "roleCeiling": 89025
+    "roleFloor": 50533,
+    "roleCeiling": 89602
   },
   "rite-upgrade": {
-    "root": 41387,
+    "root": 42262,
     "role": "upgrade-planner",
-    "roleFloor": 24684,
-    "roleCeiling": 36829
+    "roleFloor": 25263,
+    "roleCeiling": 37408
   },
   "rite-vet": {
-    "root": 254642,
+    "root": 254740,
     "role": "devex-reviewer",
     "roleFloor": 62293,
     "roleCeiling": 161494
   },
   "rite-watch-pr": {
-    "root": 44438,
-    "floor": 20144
+    "root": 44558,
+    "floor": 20264
   },
   "rite-zoom-out": {
-    "root": 35120,
-    "floor": 35120
+    "root": 35240,
+    "floor": 35240
   }
 }
