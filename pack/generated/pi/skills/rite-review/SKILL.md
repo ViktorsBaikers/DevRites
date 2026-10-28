@@ -32,7 +32,7 @@ Pull these via `Read` when the diff demands them:
 - [`principles.md`](../devrites-lib/reference/standards/principles.md): declared project invariants (`.devrites/principles.md`); a diff that violates one with no recorded exception is a Critical, blocking finding.
 - [`testing.md`](../devrites-lib/reference/standards/testing.md): confirm that passing tests actually prove the spec.
 - [`agents.md`](../devrites-lib/reference/standards/agents.md): when to fan out to which review subagent.
-- [`security.md`](../devrites-lib/reference/standards/security.md): when input / auth / data / integrations / secrets are in scope.
+- [`security.md`](../devrites-lib/reference/standards/security.md): when the shared [`parallel-dispatch.md`](../devrites-lib/reference/parallel-dispatch.md#roster) roster triggers the security auditor.
 - [`security-checklist.md`](../devrites-lib/reference/standards/security-checklist.md): for the same security-sensitive scope, the compact trust-boundary sweep.
 - [`repository-topology.md`](../devrites-lib/reference/standards/repository-topology.md), [`data-integrity.md`](../devrites-lib/reference/standards/data-integrity.md), [`integration-reliability.md`](../devrites-lib/reference/standards/integration-reliability.md): only
   when the spec applicability map or final diff triggers their ownership/failure/proof checks.
@@ -139,9 +139,9 @@ Pull these via `Read` when the diff demands them:
      [performance-checklist](reference/performance-checklist.md)). No UI/route/style
      paths: record `Not-applicable: no relevant paths in diff`.
 5. **Security:** `devrites-security-auditor`
-   ([security-review](reference/security-review.md)) joins the step-3 cohort when
-   input, auth, data,
-   secrets, or permissions are in the diff; else `Not-applicable: no relevant paths in diff`.
+   ([security-review](reference/security-review.md)) joins the step-3 cohort under the
+   canonical [parallel-dispatch roster trigger](../devrites-lib/reference/parallel-dispatch.md#roster),
+   including a dependency-only diff; else `Not-applicable: no relevant paths in diff`.
 6. **Performance:** `devrites-performance-reviewer`
    ([performance-review](reference/performance-review.md),
    [performance-checklist](reference/performance-checklist.md)) joins the step-3 cohort

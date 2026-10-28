@@ -45,12 +45,16 @@ if absent, route to `/rite-spec <feature>`. Ship only with current **GO** in `se
 1a. **Health (advisory).** Apply `/rite-doctor` read-only; surface WARN/FAIL without
    repair. If ACTIVE is flagged, confirm the slug.
 2. **Prepare the exact Git candidate.** Follow
-   [`git-ship.md`](reference/git-ship.md): refuse out-of-manifest staged work; stage
-   exact manifest paths only after Seal GO; compare NUL-delimited staged state/path
-   sets, require identical index/worktree bytes, and rerun candidate/Seal checks.
-   From the verified index, build the exact project-conformant message/trailers,
-   branch, tag/PR, commands, and skips.
-2a. **Credential guard (HIGH blocks).** Scan staged blobs and any PR body. HIGH stops
+   [`git-ship.md`](reference/git-ship.md)'s read-only pre-GO ladder: inspect the
+   candidate and existing NUL-delimited staged state/path set, refuse out-of-manifest
+   staged work, and rerun candidate/Seal checks. Do not stage or collapse checkpoints
+   before fresh literal `GO`. From the verified candidate, disclose the exact proposed
+   staging/collapse commands, project-conformant message/trailers, branch, tag/PR,
+   commands, and skips; the existing index need not yet equal the candidate.
+2a. **Credential guard (HIGH blocks).** Before type-GO, run only read-only scans of
+   existing staged blobs and the proposed PR body. This is not a final candidate-clean
+   claim; after literal `GO` and exact staging, repeat the full staged scan before commit.
+   HIGH stops
    and requires rotation/redaction; MEDIUM needs confirmation recorded in `ship.md`;
    LOW is FYI.
    ```bash
@@ -71,7 +75,10 @@ if absent, route to `/rite-spec <feature>`. Ship only with current **GO** in `se
    Literal `GO` proceeds once; anything else records cancellation in `ship.md` and
    stops. Any command/scope/branch/message/tag/PR change or retry needs a fresh prompt;
    native approval is still required.
-4. On GO, commit; verify committed state/path set and exact candidate digest; then push →
+4. On literal GO plus native approval, follow `git-ship.md`'s post-GO ladder:
+   disclosed collapse/staging, staged scope/byte comparisons, candidate/Seal revalidation,
+   and full staged secret scan BEFORE commit. Then commit; verify committed state/path
+   set and exact candidate digest; then push →
    tag/PR as applicable via `git-ship.md`. Record SHA and push state in `ship.md` before
    push (git-ship 7a); a push/tag/PR failure stops, and a rerun resumes at push under
    fresh type-GO. Capture branch, tag/PR URL. Mismatch stops before push/tag; retry

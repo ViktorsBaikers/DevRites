@@ -99,8 +99,13 @@ references, and only current phase contracts needed for the observed gap.
    - a missing/malformed strict manifest, missing/malformed/mismatched evidence binding,
      a browser-binding defect when that file exists, or current candidate-check failure
      → `/rite-prove`;
-   - candidate-affecting capability-ledger, `DESIGN.md`, or ADR rollups still deferred by
-     an old Ship-era workspace → `/rite-polish`;
+   - required candidate-affecting capability-ledger, `DESIGN.md`, or ADR rollups still
+     deferred by an old Ship-era workspace → `gap`: no admitted route. STOP with an
+     explicit `/rite-polish` handoff for separate user authorization; never invoke
+     those rollup writes inside Upgrade. After authorization outside Upgrade, normal
+     affected Prove → Review → Seal applies;
+   - workspace-only Polish refresh → `/rite-polish` only when its exact paths remain
+     within the admitted gate artifacts and no candidate-affecting rollup is required;
    - a missing, stale, or mismatched review binding → `/rite-review`;
    - a missing, stale, or mismatched seal binding or failed Seal gate → `/rite-seal`.
 
