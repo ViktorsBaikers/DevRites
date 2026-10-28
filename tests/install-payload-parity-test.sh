@@ -16,7 +16,7 @@ echo "== install payload parity =="
 # Required payload paths, read from the engine source (all hosts enabled).
 sed -n '/^func RequiredPayload/,/^}/p' "$ROOT/engine/internal/hostpack/hostpack.go" \
   | grep -o '"[a-z][^"]*"' | tr -d '"' | sort -u > "$TMP/required"
-for h in claude codex omp pi devin; do
+for h in claude codex omp pi devin dsh; do
   grep -q "^$h/" "$TMP/required" || no "engine required list has no $h/ entry"
 done
 
@@ -26,7 +26,7 @@ mkpayload() { # dir: every engine-required path plus each host's standards file
   while IFS= read -r rel; do
     case "${rel##*/}" in *.*) mkdir -p "$1/$(dirname "$rel")"; : > "$1/$rel" ;; *) mkdir -p "$1/$rel" ;; esac
   done < "$TMP/required"
-  for h in claude codex omp pi devin; do
+  for h in claude codex omp pi devin dsh; do
     mkdir -p "$1/$h/skills/devrites-lib/reference/standards"
     : > "$1/$h/skills/devrites-lib/reference/standards/agents.md"
   done
@@ -65,7 +65,7 @@ for s in install update; do
   mkpayload "$TMP/fx"
   run "$s" "$TMP/fx"
   [ ! -f "$TMP/marker" ] && ok "$s: complete payload is not rebuilt" || no "$s: rebuilt a complete payload"
-  for h in claude codex omp pi devin; do
+  for h in claude codex omp pi devin dsh; do
     mkpayload "$TMP/fx"; rm -rf "${TMP:?}/fx/$h"
     run "$s" "$TMP/fx"
     [ -f "$TMP/marker" ] && ok "$s: rebuilds payload missing $h/" || no "$s: skipped rebuild for payload missing $h/ ($(tail -1 "$TMP/out"))"

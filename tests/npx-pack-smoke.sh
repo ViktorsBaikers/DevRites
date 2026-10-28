@@ -106,6 +106,8 @@ for need in \
   package/scripts/ \
   package/scripts/codex-generate.sh \
   package/scripts/devin-generate.sh \
+  package/scripts/dsh-generate.py \
+  package/scripts/dsh-specialist.mjs \
   package/scripts/omp-generate.sh \
   package/scripts/pi-generate.sh \
   package/scripts/build-host-artifacts.sh \
@@ -123,6 +125,10 @@ for need in \
   package/pack/generated/devin/skills/rite-build/SKILL.md \
   package/pack/generated/devin/agents/devrites-code-reviewer.md \
   package/pack/generated/devin/AGENTS.md \
+  package/pack/generated/dsh/skills/rite-build/SKILL.md \
+  package/pack/generated/dsh/agents/devrites-code-reviewer.md \
+  package/pack/generated/dsh/runtime/cordis.patch.yml \
+  package/pack/generated/dsh/runtime/specialist.mjs \
   package/pack/.claude/; do
   echo "$contents" | grep -q "^$need" && ok "tarball ships $need" || no "tarball MISSING $need (files allowlist?)"
 done
@@ -131,6 +137,8 @@ runtime_scripts="$(printf '%s\n' \
   package/scripts/build-host-artifacts.sh \
   package/scripts/codex-generate.sh \
   package/scripts/devin-generate.sh \
+  package/scripts/dsh-generate.py \
+  package/scripts/dsh-specialist.mjs \
   package/scripts/expand-includes.py \
   package/scripts/install-lib.sh \
   package/scripts/omp-generate.sh \

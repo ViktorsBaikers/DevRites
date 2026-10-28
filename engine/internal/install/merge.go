@@ -176,6 +176,7 @@ func (r *runner) sharedMarkerMerges(merge hostpack.MarkerMerge) []hostpack.Marke
 		{r.opts.WithCodex, hostpack.CodexAgentsMerge},
 		{r.opts.WithPi, hostpack.PiAgentsMerge},
 		{r.opts.WithDevin, hostpack.DevinAgentsMerge},
+		{r.opts.WithDsh, hostpack.DshAgentsMerge},
 	} {
 		if other.enabled && other.merge.TargetRel == merge.TargetRel && other.merge.Begin != merge.Begin {
 			merges = append(merges, other.merge)

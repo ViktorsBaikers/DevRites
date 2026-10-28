@@ -17,6 +17,25 @@ func runDispatchT(t *testing.T, root string, args ...string) (int, string) {
 	return code, stdout.String() + stderr.String()
 }
 
+func TestDispatchRecognizesDshInstalledRoles(t *testing.T) {
+	project := t.TempDir()
+	for _, rel := range []string{".devrites", ".dsh/skills/devrites-lib", ".dsh/agents"} {
+		if err := os.MkdirAll(filepath.Join(project, filepath.FromSlash(rel)), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(project, ".dsh", "agents", "devrites-code-reviewer.md"), []byte("reviewer\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(project, ".devrites")
+	if err := lintKnownRoles(root, "review", []string{"code-reviewer"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := lintKnownRoles(root, "review", []string{"unknown-reviewer"}); err == nil {
+		t.Fatal("DSH install accepted an unknown specialist")
+	}
+}
+
 func TestDispatchRoundCapIgnoresSliceZeroPaddingAndPhaseCase(t *testing.T) {
 	root, _ := newWorkspace(t, "build")
 	ids := []string{"SLICE-001", "SLICE-1", "SLICE-01", "SLICE-0001", "SLICE-001"}

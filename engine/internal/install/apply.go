@@ -26,6 +26,7 @@ func (r *runner) install() error {
 	fmt.Fprintf(r.opts.Stdout, "  omp    : %s\n", yesno(r.opts.WithOmp))
 	fmt.Fprintf(r.opts.Stdout, "  pi     : %s\n", yesno(r.opts.WithPi))
 	fmt.Fprintf(r.opts.Stdout, "  devin  : %s\n", yesno(r.opts.WithDevin))
+	fmt.Fprintf(r.opts.Stdout, "  dsh    : %s\n", yesno(r.opts.WithDsh))
 	fmt.Fprintf(r.opts.Stdout, "  aliases: %s\n", r.opts.AliasMode)
 	if r.opts.DryRun {
 		fmt.Fprintln(r.opts.Stdout, "  (dry run - no changes will be made)")
@@ -43,7 +44,7 @@ func (r *runner) install() error {
 		return err
 	}
 
-	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin) {
+	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin, r.opts.WithDsh) {
 		if err := r.installTree(tree.PayloadPrefix, tree.TargetPrefix); err != nil {
 			return fmt.Errorf("install tree %s: %w", tree.TargetPrefix, err)
 		}
@@ -54,7 +55,7 @@ func (r *runner) install() error {
 			if err != nil {
 				return fmt.Errorf("render alias skill %s: %w", alias.Name, err)
 			}
-			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin) {
+			for _, rel := range hostpack.AliasTargets(alias, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin, r.opts.WithDsh) {
 				if err := r.installData(data, rel); err != nil {
 					return fmt.Errorf("install alias: %w", err)
 				}
@@ -77,6 +78,11 @@ func (r *runner) install() error {
 	if r.opts.WithSkills && r.opts.WithDevin {
 		if err := r.mergeMarkerFile(hostpack.DevinAgentsMerge); err != nil {
 			return fmt.Errorf("merge %s: %w", hostpack.DevinAgentsMerge.TargetRel, err)
+		}
+	}
+	if r.opts.WithSkills && r.opts.WithDsh {
+		if err := r.mergeMarkerFile(hostpack.DshAgentsMerge); err != nil {
+			return fmt.Errorf("merge %s: %w", hostpack.DshAgentsMerge.TargetRel, err)
 		}
 	}
 	if r.opts.WithSkills {
@@ -112,6 +118,9 @@ func (r *runner) install() error {
 	}
 	fmt.Fprintf(r.opts.Stdout, "  installed: %d   overwritten: %d   skipped(conflict): %d   pruned: %d\n", r.stats.installed, r.stats.overwrote, r.stats.skipped, r.stats.pruned)
 	if !r.opts.DryRun && r.opts.WithSkills {
+		if r.opts.WithDsh && r.opts.WithAgents {
+			fmt.Fprintln(r.opts.Stdout, "DSH: run npx @deepseek-ai/dsh web --patch .dsh/cordis.patch.yml, then select the DevRites preset.")
+		}
 		claudeHosts := "Claude"
 		if r.opts.WithDevin {
 			claudeHosts = "Claude/Devin"
@@ -444,6 +453,9 @@ func (r *runner) flagsString() string {
 	}
 	if !r.opts.WithDevin {
 		flags = append(flags, "--no-devin")
+	}
+	if !r.opts.WithDsh {
+		flags = append(flags, "--no-dsh")
 	}
 	if !r.opts.WithBinary {
 		flags = append(flags, "--no-binary")

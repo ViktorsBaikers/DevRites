@@ -1,0 +1,57 @@
+# One-slice cycle
+
+Each wright returns after one proven slice. Root follows
+[`output.md`](output.md#caller-owned-continuation); standalone AFK uses
+`afk-discipline.md`.
+This serial cycle is the default `/rite-build`. Opt-in fan-out: [`parallel-batch.md`](parallel-batch.md) (`--parallel N`).
+
+## The cycle
+
+The orchestrator (`/rite-build`) gates and records; the **wright** writes. See
+[`wright-dispatch.md`](wright-dispatch.md).
+
+```text
+SELECT    → orchestrator: restate slice goal + acceptance + scope boundary; HITL gate (pause pre-code)
+(SHAPE)   → orchestrator: missing UI design-brief.md → shape it, then /rite-vet before dispatch
+DISPATCH  → hand the slice contract to devrites-slice-wright (fresh context). Inside the wright:
+   ORIENT    → load only the files this slice touches; learn the project's idiom; reuse-first; affected set via `trace_path` (`../../devrites-lib/reference/standards/code-navigation.md`)
+   (RED)     → if behavior change: write the failing test first
+   IMPLEMENT → smallest complete version; match conventions; devrites-frontend-craft for UI
+   VERIFY    → writer-safe tests/types/lint; return code + tests (no control-branch commit)
+(DOUBT)   → orchestrator, on return: devrites-doubt each non-trivial decision the wright stood up
+            — dispatch the initial read-only reviews of distinct decisions in parallel
+            (independent claims, fresh contexts); wright fixes stay serial — writers share files
+PROVE     → root, concurrent with the reviews on the same frozen candidate:
+            required build/browser/E2E (narrow self-check/smoke first, full gate only
+            after it is green, long runs in the background; cancel one still running once
+            review or proof sends the candidate back, keeping its partial output as
+            diagnostics), then returned-diff/path recheck; fail-on-red
+            (red/gap → repair wright, then re-review and re-prove; do not commit yet)
+RECORD    → orchestrator: after green verification, update state.md/evidence.md and
+            upsert the authoritative candidate manifest from the actual scoped diff
+(CHECKPOINT) → only now, with review+proof green: local WIP(<slug>): <imperative summary>
+            on the control branch (no slice id) → checkpoint.md
+NEXT → controlling caller first: return internally via output.md; no user-facing reply.
+       HITL stops. Standalone AFK with parallel cap>1:
+       return to parallel-batch selection to refill; otherwise repeat under afk-discipline.md
+```
+
+## Why the boundary matters
+
+Reviewable diffs, early drift signal, HITL decision point, no unproven pile-ups.
+
+## Restate the scope boundary
+
+Before coding, write what this slice will and will **not** touch. This is the contract
+you check yourself against: anything outside it is scope creep or a drift event.
+
+## When the slice can't be completed cleanly
+
+- Discovered the plan is wrong → **Spec Drift Guard** (record, classify;
+  sweep every remaining contract assumption, then one folded repair+vet inline;
+  ask only for product/policy/irreversible-risk).
+- Slice is bigger than one cycle → `/rite-plan reslice` inline when AC is
+  preserved; do not emit a human Fix.
+- Blocked on a failing dependency → record in `state.md`, `/rite-plan unblock`
+  inline when the reroute is technical.
+Never power through by guessing.

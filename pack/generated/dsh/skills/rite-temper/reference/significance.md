@@ -1,0 +1,55 @@
+# Significance test: fire the full review, or skip it
+
+`/rite-temper` is **significance-gated**: full strategic rigor only when the work is big
+enough to earn it, a one-line skip otherwise. This is the shared definition used by both the
+optional `/rite-temper` path and the always-run (significance-gated) `/rite-autocomplete` step,
+so they agree on when it fires.
+
+## Fire the FULL review when ANY trips
+- **Irreversible-risk contact:** the slice/spec touches anything on the [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md)
+  irreversible-risk list: destructive data migration, auth/authz boundary, public-API break,
+  external-service contract, filesystem destruction outside the workspace.
+- **Data model:** new/changed entities, relationships, or persistence shape.
+- **Cross-module blast radius:** the impact (from codebase-memory `trace_path` per
+  `../../devrites-lib/reference/standards/code-navigation.md`, or an honest estimate) crosses
+  module/service boundaries or has many dependents.
+- **Greenfield / ambiguous scope:** a new surface with no existing seam to follow, or a spec
+  whose "right size" is genuinely open (multiple defensible scopes).
+- **Low detectability:** no existing test, gate, or monitor would show a wrong result
+  in the affected area (no suite there, silent data change), so a mistake ships unseen.
+- **Multi-slice / multi-day:** the work decomposes into several slices (large enough that a
+  wrong scope call is expensive to unwind).
+- **The user asked:** "think bigger", "is this ambitious enough", "scope check", "pre-mortem",
+  an explicit `/rite-temper` invocation, or a chosen `--mode`. An explicit ask always fires.
+
+## Skip (low stakes) when ALL hold
+- Single-module, reversible, behavior-shaped-not-structural change.
+- No irreversible-risk contact; blast radius contained to the touched files.
+- Scope is unambiguous: there's one obvious right size and the spec already has it.
+
+On skip, **don't run the passes**. Write only the one-line verdict to `strategy.md`:
+
+```markdown
+# Strategy: <slug>
+Tempered: <iso>
+
+## 1. Significance
+skipped — low stakes (<trigger>)
+Next: /rite-define
+```
+
+Then recommend `/rite-define`. A skip is a *recorded* decision, not a silent omission: the
+seal can see the call was made deliberately.
+
+## In `/rite-autocomplete`
+Autocomplete runs the significance test every feature. On skip → straight to `/rite-define`
+(no pause). On fire → run the full review, then apply the mode under the AFK rule in
+[`scope-modes.md`](scope-modes.md): `hold-rigor`, `reduce-to-MVP`, and a skip apply unattended.
+`expand` and any extra acceptance **do not** apply unattended — acceptance is never auto-grown.
+When the review lands on `expand` or any acceptance growth, the agent presents the scope call as a
+ranked `ask_user_question` option set per the HITL rule, records the open `questions.md` qid, and
+**holds the fold**: do not write *Success metrics* or *Acceptance criteria* rows, do not fold via
+Spec Drift Guard, and do not recommend `/rite-define` until a human answers the qid. A self-written
+`decisions.md` ADR is not that human answer (see [`strategy-template.md`](strategy-template.md)
+§ Write discipline); the growth stays blocked until the qid resolves. Irreversible-risk findings
+always pause.

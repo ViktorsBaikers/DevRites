@@ -83,6 +83,11 @@ for f in \
   "pi/prompts/rite.md" \
   "pi/prompts/rite-build.md" \
   "pi/AGENTS.md" \
+  "dsh/skills/rite-build/SKILL.md" \
+  "dsh/agents/devrites-slice-wright.md" \
+  "dsh/runtime/cordis.patch.yml" \
+  "dsh/runtime/specialist.mjs" \
+  "dsh/AGENTS.md" \
   "devin/skills/rite-build/SKILL.md" \
   "devin/skills/devrites-lib/reference/standards/core.md" \
   "devin/skills/rite-build/reference/wright-dispatch.md" \

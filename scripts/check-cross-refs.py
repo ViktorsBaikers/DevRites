@@ -86,7 +86,7 @@ def resolve(here, link):
     ``pack/.agents`` tree). Codex's ``.agents/skills`` and ``.agents/agents``
     mirrors are generated from ``pack/.claude/``.
     """
-    for prefix in (".claude/", ".agents/", ".omp/", ".pi/", ".devin/"):
+    for prefix in (".claude/", ".agents/", ".omp/", ".pi/", ".devin/", ".dsh/"):
         if link.startswith(prefix):
             rest = link[len(prefix):]
             return os.path.normpath(os.path.join(REPO_ROOT, "pack", ".claude", rest))
@@ -149,6 +149,7 @@ HOST_SKILL_PREFIXES = (
     ".pi/skills/",
     ".omp/skills/",
     ".devin/skills/",
+    ".dsh/skills/",
 )
 
 errors = []

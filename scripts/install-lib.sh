@@ -225,11 +225,13 @@ dr_payload_complete() {
     omp/skills omp/agents omp/commands omp/.omp-plugin/plugin.json \
     pi/skills pi/agents pi/prompts pi/AGENTS.md \
     devin/skills devin/agents devin/AGENTS.md \
+    dsh/skills dsh/agents dsh/runtime/cordis.patch.yml dsh/runtime/specialist.mjs dsh/AGENTS.md \
     claude/skills/devrites-lib/reference/standards/agents.md \
     codex/skills/devrites-lib/reference/standards/agents.md \
     omp/skills/devrites-lib/reference/standards/agents.md \
     pi/skills/devrites-lib/reference/standards/agents.md \
-    devin/skills/devrites-lib/reference/standards/agents.md; do
+    devin/skills/devrites-lib/reference/standards/agents.md \
+    dsh/skills/devrites-lib/reference/standards/agents.md; do
     [ -e "$_dr_p/$_dr_rel" ] || return 1
   done
 }
