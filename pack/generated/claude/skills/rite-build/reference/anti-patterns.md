@@ -10,12 +10,12 @@ Pack-wide rationalizations and red flags live in
 
 | Excuse | Rebuttal |
 |---|---|
-| "Slices 1 and 2 are related; let me do both." | HITL needs a later user invocation. Explicit `.devrites/AFK` may let the root chain only after green proof and cap/pause gates; each wright still returns after one. |
+| "Slices 1 and 2 are related; let me do both." | Caller first: [output.md](output.md#caller-owned-continuation). Standalone HITL stops; standalone AFK chains after green proof and cap/pause gates; each wright returns after one. |
 | "It's faster to skip `devrites-doubt` for this small change." | Doubt is cheapest *before* the decision is standing. After is debugging. |
 
 ## Red Flags
 
-- About to start slice N+1 outside explicit AFK or before its green-proof/cap/pause gates.
+- Next slice violates caller/standalone routing or proof/cap/pause gates.
 - Skipping `devrites-doubt` on a branching, boundary, data-model, auth, public-API, or migration decision.
 - Adding a dependency or a second design system without recording rationale in `decisions.md`.
 - Writing a `try/catch` block wider than what you handle.
