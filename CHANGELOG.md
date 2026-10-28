@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v7.1.2...v7.2.0) (2026-10-28)
+
+### Added
+
+* **installer:** add DSH specialist integration ([#184](https://github.com/ViktorsBaikers/DevRites/issues/184)) ([0fe9f07](https://github.com/ViktorsBaikers/DevRites/commit/0fe9f07be170eef1c581b9401b565a8688dc64b4))
+
 ## [7.1.2](https://github.com/ViktorsBaikers/DevRites/compare/v7.1.1...v7.1.2) (2026-10-28)
 
 ### Fixed
