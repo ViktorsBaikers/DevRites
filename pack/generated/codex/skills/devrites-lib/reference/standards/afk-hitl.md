@@ -51,7 +51,7 @@ time. No `state.md` run-mode field can drift out of sync.
 Presence = AFK active. The file body is optional YAML:
 
 ```yaml
-max_slices: 10                       # whole-workspace writer budget; seeds state.md remaining count
+max_slices: 10 # whole-workspace writer budget; seeds state.md remaining count
 max_agents: 32                       # native agent dispatches in one host activation
 max_minutes: 120                     # min; $rite-autocomplete: not a ceiling
 max_review_queue: 8                  # unresolved review/gate items admitted before fan-out stops
@@ -61,7 +61,7 @@ notify: 'curl -fsS -m 10 -d "$DEVRITES_QID: $DEVRITES_QUESTION" ntfy.sh/my-topic
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
 continue_sequence: true              # after Seal GO, open the next recorded continuation
 max_workspaces: 5                    # workspaces one armed sequence may open
-max_parallel: 10                     # unattended default cap; `--parallel N` on this invocation wins and may rewrite only this field
+max_parallel: 10 # unattended default cap; `--parallel N` on this invocation wins and may rewrite only this field
 ```
 
 The file is **read-only config**: never rewritten in place, except `$rite-autocomplete --parallel N` writes or replaces only `max_parallel: N`.
@@ -155,10 +155,10 @@ Numeric limits are nonnegative decimals. Before costly checks, fan-out, or writi
 run cheap readiness and reject overlap. Outside active `$rite-autocomplete`, count
 queue and confirm agent/time headroom; under Autocomplete those ignored limits
 never block admission. In both cases confirm declared token/cost and native safety
-headroom; re-check after every result. Never start one call that can exceed an
-applicable remaining limit. Agent/time/token/cost counters reset only for a new
-native activation. Keep slice/recovery state and recompute the review queue across
-wakes. Persist stops/checkpoints before notification.
+headroom; re-check after every result. Never start a call that can exceed an
+applicable remaining limit. Agent/time/token/cost counters are per native activation and start fresh only
+for a new activation. Slice/recovery state and review queue remain durable/recomputed across wakes.
+Persist stops/checkpoints before notification.
 
 New sentinels omit `expires_at` and notification/token/cost caps. Post-Vet pending
 count may lower standalone slices. Never add missing defaults to existing files.

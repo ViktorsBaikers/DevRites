@@ -106,10 +106,10 @@ internal: continue without `--ship`, leaving milestones sealed/unshipped. Only t
 final milestone, explicit `continue_sequence: false`, or exhausted sequence cap
 ends green sequence continuation.
 
-At that boundary, `--ship`/`--yolo` requires [Ship preflight](../../rite-ship/reference/git-ship.md#before-type-go):
-disclose the exact plan and stop for fresh literal `GO` plus native approval.
-Without a flag, stop at Seal GO with `/rite-ship`. Seal GO, AFK, prior approval,
-and flags never authorize Git or satisfy Ship approval.
+There, `--ship`/`--yolo` requires [Ship preflight](../../rite-ship/reference/git-ship.md#before-type-go):
+disclose exact plan; stop for fresh literal `GO` plus native approval.
+Without flags, stop at Seal GO with `/rite-ship`. Seal GO never authorizes Git
+or satisfies Ship approval; neither do AFK, prior approval, or flags.
 
 Record cold-resumable `state.md` stops: status, exact reason, one resume action
 (human-owned or `/rite-autocomplete` to reopen parked fingerprints). Explain in

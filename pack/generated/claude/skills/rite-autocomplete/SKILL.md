@@ -146,7 +146,7 @@ next sequence continuation through Vet in a second session, then stop.
    unless `continue_sequence: false`, the sequence budget is spent, or no entry
    remains. At that boundary without a ship flag, stop at Seal GO with `/rite-ship`.
    Report sequence position at every stop. Only at that boundary, with a ship flag, perform Ship preflight,
-   disclose the exact Git plan, and stop for fresh literal `GO` plus native approval. **Completion:** no Git action before fresh literal `GO` plus native approval.
+   disclose the exact Git plan, and stop for fresh literal `GO` plus native approval. **Completion:** performed no Git action before fresh literal `GO` plus native approval.
 
 ## Reply and resume
 
@@ -154,7 +154,7 @@ HITL Build returns after one slice; Autocomplete ignores `--max-slices`, chainin
 pending slices. Each Autocomplete invocation owns internal backtracking. Context pressure, compaction, or a nested completion footer does
 not create a stop; persist and resume the cursor.
 
-Reply only at final state, never mid-run: text-only turns end the run. Keep
+Reply only at final state: text-only turns end the run. Keep
 calling tools after compaction or phase changes. Use one line:
 
 ```text
