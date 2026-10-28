@@ -29,3 +29,23 @@ reason = "undici@6.29.0 is bundled in npm@11.21.1; npm@12.2.1 also bundles 6.29.
 id = "GHSA-xjj6-f33q-929c"
 ignoreUntil = 2026-11-07
 reason = "undici@6.29.0 is bundled in npm@11.21.1; npm@12.2.1 also bundles 6.29.0, and supported nested overrides plus npm audit fix leave it unchanged after clean install. The sole bundled importer is node-gyp header-download fetch: crafted response encodings could cause denial of service if that path is invoked. Current release commands do not invoke node-gyp explicitly; this is temporary acceptance of that tooling risk, not proof of unreachability. Remove when npm bundles undici >=6.29.1."
+
+# 2026-10-28: three advisories landed against the undici npm vendors (6.29.0);
+# npm@12.2.1, verified from its published tarball, still vendors 6.29.0 even
+# though 6.29.1 is patched, and the copy sits inside npm's own package tarball
+# where neither an override nor npm audit fix reaches it. Owner:
+# release-maintainers. Mirrors scripts/npm-audit-exceptions.json.
+[[IgnoredVulns]]
+id = "GHSA-2m5v-pch6-74hx"
+ignoreUntil = 2026-11-29
+reason = "undici@6.29.0 bundled in npm; patched 6.29.1 not yet vendored by any npm release. Reachable only through the node-gyp header-download fetch over TLS to the registry; the bypass needs an active MITM of that connection. Temporary acceptance, not proof of unreachability. Remove when npm bundles undici >=6.29.1."
+
+[[IgnoredVulns]]
+id = "GHSA-qrxm-fqhp-jwvm"
+ignoreUntil = 2026-11-29
+reason = "undici@6.29.0 bundled in npm; patched 6.29.1 not yet vendored by any npm release. Same node-gyp registry-fetch path as GHSA-2m5v-pch6-74hx: TLS 1.2 renegotiation can stall that download; no untrusted peer drives it. Remove when npm bundles undici >=6.29.1."
+
+[[IgnoredVulns]]
+id = "GHSA-9fm3-97px-rjf6"
+ignoreUntil = 2026-11-29
+reason = "undici@6.29.0 bundled in npm; the PONG-buffering path needs the bundled WebSocket client, which no DevRites tooling imports. Remove when npm bundles undici >=6.29.1."
