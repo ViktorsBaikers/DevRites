@@ -2,6 +2,17 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.17...v7.1.0) (2026-10-28)
+
+### Added
+
+* **devrites:** measure slice parallelism and ship the plan-width guard ([#179](https://github.com/ViktorsBaikers/DevRites/issues/179)) ([1b8defe](https://github.com/ViktorsBaikers/DevRites/commit/1b8defe92ecd3bc5feb4757f3ecf5e9d611467cc))
+
+### Fixed
+
+* **ci:** mirror the new undici exceptions in osv-scanner.toml ([9a916a1](https://github.com/ViktorsBaikers/DevRites/commit/9a916a1cb2215e0d8382655c88e93f5adbea04fd))
+* **no-release:** preserve autocomplete rolling parallelism ([#178](https://github.com/ViktorsBaikers/DevRites/issues/178)) ([604c705](https://github.com/ViktorsBaikers/DevRites/commit/604c705d4a470ca992bd9050651bfc64145ced97))
+
 ## [7.0.17](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.16...v7.0.17) (2026-10-27)
 
 ### Fixed
