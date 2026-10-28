@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.1.1](https://github.com/ViktorsBaikers/DevRites/compare/v7.1.0...v7.1.1) (2026-10-28)
+
+### Fixed
+
+* **skills:** preserve autocomplete continuation ([#180](https://github.com/ViktorsBaikers/DevRites/issues/180)) ([5d685e8](https://github.com/ViktorsBaikers/DevRites/commit/5d685e85e21c59acee2ac8903f5cc584772ad937))
+
 ## [7.1.0](https://github.com/ViktorsBaikers/DevRites/compare/v7.0.17...v7.1.0) (2026-10-28)
 
 ### Added
