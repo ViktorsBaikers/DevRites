@@ -53,6 +53,21 @@ has no clear next move. Optional slug selects the active workspace; defaults to
    gone, hypothesis recorded. Classify the failure.
    See [cleanup-and-classify.md](reference/cleanup-and-classify.md).
 
+## Caller-owned records and routing
+
+The controlling root accepts and persists all recovery records in `decisions.md`,
+`evidence.md`, and `## Dead ends` before the next admission/attempt. This rule governs
+all loaded recovery steps, including cleanup and regression instructions. A leaf
+returns the complete class/rationale, proposed routing, hypothesis/probe, baseline,
+exact failure/evidence, causal fingerprint, attempt number and failed idea/dead ends,
+and human predicate in its existing result fields (`gates`, `dead_ends`,
+`follow_ups`, or `Escalation` as applicable); no new result schema is required.
+A leaf never writes `.devrites/**`, changes phase, invokes agents, or commits through
+recovery. Only the controlling root routes to owning rites and supplies later attempts
+with accepted records. Product/test edits remain inside the caller's exact allowed
+paths; recovery never widens them. Commit/PR wording is a returned proposal for the
+authorized owner, not authority to commit.
+
 ## Hard rules
 
 - Quote exact signal-bearing error text with typed redactions (not paraphrase); apply
@@ -79,8 +94,9 @@ has no clear next move. Optional slug selects the active workspace; defaults to
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"durable active failure or ambiguous admitted state","action":"OFFLINE_RECOVERY; correct offline, re-preflight, narrow Vet, retry only under cap","return":"saved caller or exact Plan/Vet route"} -->
 - **Classify before routing** with
   [cleanup-and-classify.md](reference/cleanup-and-classify.md).
-- **Durably record class and rationale** in `decisions.md` and the applicable
-  `evidence.md` or `## Dead ends` entry.
+- **Durably record class and rationale** through [Caller-owned records and routing](#caller-owned-records-and-routing):
+  root persists `decisions.md` and the applicable `evidence.md` or `## Dead ends`
+  entry; leaves return the full payload for root acceptance.
 - **One causal fingerprint, counted by the caller.** Normalize the root cause as
   `<affected boundary>: <failed invariant/failure mechanism>` and bind its minimal
   reproduction plus decisive signal rather than hashing symptom text.
@@ -98,5 +114,6 @@ has no clear next move. Optional slug selects the active workspace; defaults to
   human-only access becomes a human gate; otherwise return the spent strategy and
   reproduction to the caller, which escalates or parks per the
   [retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve);
-  never request attempt four of the same strategy. While budget remains, coupled failure requiring behavior change routes
-  `$rite-plan repair` inline; behavior-neutral rerouting uses `unblock` inline.
+  never request attempt four of the same strategy. While budget remains, the controlling
+  root routes coupled failure requiring behavior change to `$rite-plan repair` inline;
+  behavior-neutral rerouting uses `unblock` inline. Leaves return proposed routes only.

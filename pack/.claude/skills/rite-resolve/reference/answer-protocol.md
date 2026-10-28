@@ -87,12 +87,23 @@ writes one block at a time and pauses. When `/rite-resolve` matches the block's 
 
 If `state.md`'s `Status` is `awaiting_human` but no `Awaiting human` block matches the
 qid (drift between the two files), `/rite-resolve` flags the inconsistency and refuses
-to silently fix it. Use `/rite-plan repair` to reconcile.
+to silently fix it. Report it to the current phase owner; once a plan exists,
+reconciliation uses `/rite-plan repair`.
+
+## Phase-aware handoff and slice context
+
+Read `tasks.md` and update `Slice mode` only for an actual `SLICE-###` question,
+never for `slice: spec | plan`; the update is allowed only after the writer exits zero.
+Before planning artifacts exist, recommend the current phase owner's action emitted
+by `state resolve` (for example, `/rite-spec`), not Plan repair. Never create planning
+artifacts as part of Resolve.
 
 If the answer materially changes spec/plan, **do not** edit `spec.md` or `plan.md` inside
-`/rite-resolve`. That's `/rite-plan repair`'s job. The skill's post-resolve hand-off
-recommends `/rite-plan repair` whenever the answer touches acceptance criteria, scope,
-or architecture.
+`/rite-resolve`. Once a plan exists, material acceptance, behavior, scope, or architecture
+changes route through the Spec Drift Guard (`/rite-plan repair`); otherwise retain the
+emitted phase-native next action. User-invoked resolutions use `state resolve --human`;
+an internal Autocomplete caller uses the same writer without `--human` and continues.
+Resolve itself never auto-runs the recommended phase owner.
 
 ## Multi-question awaiting
 
@@ -109,8 +120,9 @@ This shape is reserved: current `/rite-build` writes one question per pause.
 
 The user types the next command explicitly. Reasons:
 
-1. The answer may need a `/rite-plan repair` first; auto-continuing would build against
-   a stale plan.
+1. Before planning artifacts exist, the emitted current phase owner must resume;
+   once a plan exists, material changes may need `/rite-plan repair` first.
+   Auto-continuing a build would skip that owner or use a stale plan.
 2. The user may want to `/rite-status` before resuming.
 3. Atomicity: one verb, one mutation. Chaining is a hidden side-effect that hides bugs.
 

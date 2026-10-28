@@ -10,10 +10,13 @@ confidence.
 
 ## No correct seam? That itself is the finding
 
-Note it in `evidence.md` and append a follow-up in the active feature's
-`decisions.md` (or run `/rite-plan repair` if the spec is affected): the
-codebase architecture is preventing this class of failure from being locked
-down. Frame it as a *deepening opportunity* ("this module needs a seam at <X>
+Follow [`SKILL.md` § Caller-owned records and routing](skill://devrites-debug-recovery/SKILL.md#caller-owned-records-and-routing):
+root notes it in `evidence.md` and appends a follow-up in the active feature's
+`decisions.md` (or routes `/rite-plan repair` if the spec is affected). A leaf
+returns the complete finding, evidence, and proposed route for root acceptance and
+persistence; it never writes the workspace or invokes the rite. The codebase
+architecture is preventing this class of failure from being locked down. Frame it as
+a *deepening opportunity* ("this module needs a seam at <X>
 so this failure can be regression-tested") so the next `/rite-plan` repair or
 architecture cleanup pass has a concrete target.
 
