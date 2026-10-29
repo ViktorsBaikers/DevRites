@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.2.1](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.0...v7.2.1) (2026-10-29)
+
+### Fixed
+
+* **agents:** restore DSH code intelligence and skill discovery ([#185](https://github.com/ViktorsBaikers/DevRites/issues/185)) ([ab67651](https://github.com/ViktorsBaikers/DevRites/commit/ab67651aa3a9555fdf68e40859f3451ab20f42e7))
+
 ## [7.2.0](https://github.com/ViktorsBaikers/DevRites/compare/v7.1.2...v7.2.0) (2026-10-28)
 
 ### Added
