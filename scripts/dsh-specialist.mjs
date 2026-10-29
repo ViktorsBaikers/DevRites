@@ -44,7 +44,7 @@ export async function apply(ctx, config) {
     text: instructions,
     interpolate: false,
   }));
-  // Preset-local tools are inherited by the Agent; restrict at that child scope.
+  // Deny only globals so preset-local tools never enter the inherited-tool mask.
   ctx.on('agent/created', ({ agent }) => {
     pinPermission(agent.session);
     let current;
@@ -53,15 +53,15 @@ export async function apply(ctx, config) {
     let disposed = false;
     const refresh = () => {
       if (refreshing || disposed) return;
-      const names = allowedTools.filter(tool => ctx.tools.get(tool) !== undefined
-        || agent.ctx.tools.get(tool, agent) !== undefined);
+      const names = ctx.tools.schemas().map(tool => tool.name)
+        .filter(tool => tool !== 'run_code' && !allowed.has(tool));
       const key = JSON.stringify(names);
       if (key === current) return;
       refreshing = true;
       try {
         current = key;
         release?.();
-        release = agent.ctx.tools.restrict({ allow: names });
+        release = agent.ctx.tools.restrict({ deny: names });
       } finally {
         refreshing = false;
       }
