@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.2.3](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.2...v7.2.3) (2026-10-29)
+
+### Fixed
+
+* **agents:** honor DSH orchestrator permission selection ([#187](https://github.com/ViktorsBaikers/DevRites/issues/187)) ([1030093](https://github.com/ViktorsBaikers/DevRites/commit/10300933ac688c0e06217026c89c3ed657b58ec0))
+
 ## [7.2.2](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.1...v7.2.2) (2026-10-29)
 
 ### Fixed
