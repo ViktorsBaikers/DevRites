@@ -12,19 +12,22 @@ function runtime(mode = 'danger-full-access') {
   let restriction;
   let section;
   let restrictionChanges = 0;
-  const catalog = new Set(['read', 'bash', 'write', 'subagent', 'subagent_fork']);
+  const catalog = new Set(['read', 'bash', 'write', 'subagent', 'subagent_fork', 'run_code']);
+  const inheritedTools = new Set();
   const ownTools = new Set();
   const filters = new Set();
   const listeners = new Set();
   const disposers = [];
   const changed = () => { for (const listener of [...listeners]) listener(); };
-  const visible = () => [...catalog].filter(name => [...filters].every(filter => filter.allow.includes(name)));
+  const visible = () => [...new Set([...catalog, ...inheritedTools])]
+    .filter(name => [...filters].every(filter => !filter.deny.includes(name)));
   const ctx = {
     effect(fn) { fn(); },
     on(event, fn) { assert.equal(event, 'agent/created'); created = fn; },
     shell: { sandboxMode: 'workspace-write' }, fs: { sandboxMode: 'workspace-write' },
     sandboxPolicy: { resolve: () => ({ mode }) },
-    tools: { guard(fn) { guard = fn; }, get: name => catalog.has(name) ? { name } : undefined },
+    tools: { guard(fn) { guard = fn; }, get: name => catalog.has(name) ? { name } : undefined,
+      schemas: () => [...catalog].map(name => ({ name })) },
     systemPrompt: { section(value) { section = value; }, getSectionOrder: () => 10 },
   };
   agent.ctx = {
@@ -38,7 +41,8 @@ function runtime(mode = 'danger-full-access') {
     tools: {
       get: name => ownTools.has(name) || visible().includes(name) ? { name } : undefined,
       restrict(value) {
-        assert.ok(value.allow.every(name => catalog.has(name)), 'native restrictions require known inherited tools');
+        assert.ok(value.deny.every(name => catalog.has(name) || inheritedTools.has(name)), 'native restrictions require known inherited tools');
+        assert.ok(!value.deny.includes('run_code'), 'native restrictions cannot name the presentation transport');
         restriction = value;
         filters.add(value);
         restrictionChanges++;
@@ -51,7 +55,7 @@ function runtime(mode = 'danger-full-access') {
   return { ctx, agent, events, call: (name, args = {}) => guard({ name, arguments: args, agent }),
     mode: () => mode, create() { created({ agent }); }, restriction: () => restriction, section: () => section,
     register(name) { catalog.add(name); changed(); }, unregister(name) { catalog.delete(name); changed(); },
-    addOwn(name) { ownTools.add(name); changed(); }, visible, changed,
+    addOwn(name) { ownTools.add(name); changed(); }, addInherited(name) { inheritedTools.add(name); changed(); }, visible, changed,
     listeners: () => listeners.size, restrictionChanges: () => restrictionChanges,
     dispose() { for (const dispose of disposers.reverse()) dispose(); },
   };
@@ -61,7 +65,11 @@ for (const [permission, expected] of [['read-only', 'read-only'], ['workspace-wr
   const r = runtime();
   await apply(r.ctx, { role: 'test-role', permission, allowedTools: ['read', 'bash'], instructions: 'literal {{template}}' });
   r.create();
-  assert.deepEqual(r.restriction(), { allow: ['read', 'bash'] });
+  assert.deepEqual(r.restriction(), { deny: ['write', 'subagent', 'subagent_fork'] });
+  assert.ok(r.visible().includes('read'));
+  assert.ok(r.visible().includes('bash'));
+  assert.ok(!r.visible().includes('write'));
+  assert.ok(r.visible().includes('run_code'));
   assert.equal(r.section().text, 'literal {{template}}');
   assert.equal(r.section().interpolate, false);
   assert.equal(r.call('bash'), undefined);
@@ -85,13 +93,20 @@ await assert.rejects(() => apply(runtime().ctx, { role: 'reviewer', permission: 
 const noFs = runtime();
 delete noFs.ctx.fs.sandboxMode;
 await assert.rejects(() => apply(noFs.ctx, { role: 'reviewer', permission: 'read-only', allowedTools: ['read'], instructions: 'review' }), /sandbox/);
-const orchestrator = runtime();
-await apply(orchestrator.ctx, { role: 'devrites-orchestrator', permission: 'workspace-write',
-  allowedTools: ['subagent'], allowedAgentPresets: ['devrites-code-reviewer'], instructions: 'orchestrate' });
-assert.match(orchestrator.call('subagent', { prompt: 'review' }), /exact named specialist/);
-assert.match(orchestrator.call('subagent', { agent_preset: 'generic' }), /exact named specialist/);
-assert.match(orchestrator.call('subagent_fork', { agent_preset: 'devrites-code-reviewer' }), /not allowed/);
-assert.equal(orchestrator.call('subagent', { agent_preset: 'devrites-code-reviewer', prompt: 'review', description: 'review feature diff' }), undefined);
+for (const placement of ['addOwn', 'addInherited']) {
+  const orchestrator = runtime();
+  orchestrator.unregister('subagent');
+  orchestrator[placement]('subagent');
+  await apply(orchestrator.ctx, { role: 'devrites-orchestrator', permission: 'workspace-write',
+    allowedTools: ['read', 'subagent'], allowedAgentPresets: ['devrites-code-reviewer'], instructions: 'orchestrate' });
+  assert.doesNotThrow(() => orchestrator.create());
+  assert.deepEqual(orchestrator.restriction(), { deny: ['bash', 'write', 'subagent_fork'] });
+  assert.deepEqual(orchestrator.agent.ctx.tools.get('subagent', orchestrator.agent), { name: 'subagent' });
+  assert.match(orchestrator.call('subagent', { prompt: 'review' }), /exact named specialist/);
+  assert.match(orchestrator.call('subagent', { agent_preset: 'generic' }), /exact named specialist/);
+  assert.match(orchestrator.call('subagent_fork', { agent_preset: 'devrites-code-reviewer' }), /not allowed/);
+  assert.equal(orchestrator.call('subagent', { agent_preset: 'devrites-code-reviewer', prompt: 'review', description: 'review feature diff' }), undefined);
+}
 
 const artifactRoot = process.env.DEVRITES_HOST_ARTIFACT_DIR || fileURLToPath(new URL('../pack/generated', import.meta.url));
 const presets = JSON.parse(readFileSync(resolve(artifactRoot, 'dsh/runtime/cordis.patch.yml'), 'utf8'))[0].insert[0].config.presets;
@@ -140,12 +155,13 @@ reviewer.register(query);
 assert.ok(reviewer.visible().includes(query), 'late MCP registration becomes visible');
 assert.equal(reviewer.call(query), undefined);
 assert.equal(reviewer.mode(), 'read-only');
-assert.equal(reviewer.restrictionChanges(), initialChanges + 1);
+assert.equal(reviewer.restrictionChanges(), initialChanges, 'allowed global tools need no deny-mask refresh');
 for (const tool of [...denied, index]) {
   reviewer.register(tool);
   assert.ok(!reviewer.visible().includes(tool));
   assert.match(reviewer.call(tool), /not allowed/);
 }
+assert.equal(reviewer.restrictionChanges(), initialChanges + denied.length + 1);
 reviewer.addOwn(denied[0]);
 assert.ok(reviewer.agent.ctx.tools.get(denied[0], reviewer.agent));
 assert.match(reviewer.call(denied[0]), /not allowed/, 'guard also denies scope-owned tools');
