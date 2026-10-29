@@ -90,6 +90,7 @@ const unsafe = runtime();
 delete unsafe.ctx.shell.sandboxMode;
 await assert.rejects(() => apply(unsafe.ctx, { role: 'reviewer', permission: 'read-only', allowedTools: ['bash'], instructions: 'review' }), /sandbox/);
 await assert.rejects(() => apply(runtime().ctx, { role: 'reviewer', permission: 'danger-full-access', allowedTools: ['bash'], instructions: 'review' }), /permission/);
+await assert.rejects(() => apply(runtime().ctx, { role: 'reviewer', permission: 'inherit', allowedTools: ['bash'], instructions: 'review' }), /permission/);
 const noFs = runtime();
 delete noFs.ctx.fs.sandboxMode;
 await assert.rejects(() => apply(noFs.ctx, { role: 'reviewer', permission: 'read-only', allowedTools: ['read'], instructions: 'review' }), /sandbox/);
@@ -97,7 +98,7 @@ for (const placement of ['addOwn', 'addInherited']) {
   const orchestrator = runtime();
   orchestrator.unregister('subagent');
   orchestrator[placement]('subagent');
-  await apply(orchestrator.ctx, { role: 'devrites-orchestrator', permission: 'workspace-write',
+  await apply(orchestrator.ctx, { role: 'devrites-orchestrator', permission: 'inherit',
     allowedTools: ['read', 'subagent'], allowedAgentPresets: ['devrites-code-reviewer'], instructions: 'orchestrate' });
   assert.doesNotThrow(() => orchestrator.create());
   assert.deepEqual(orchestrator.restriction(), { deny: ['bash', 'write', 'subagent_fork'] });
@@ -111,6 +112,27 @@ for (const placement of ['addOwn', 'addInherited']) {
 const artifactRoot = process.env.DEVRITES_HOST_ARTIFACT_DIR || fileURLToPath(new URL('../pack/generated', import.meta.url));
 const presets = JSON.parse(readFileSync(resolve(artifactRoot, 'dsh/runtime/cordis.patch.yml'), 'utf8'))[0].insert[0].config.presets;
 const configs = presets.map(preset => preset.plugins.find(plugin => plugin.name === 'devrites:role').config);
+const orchestratorConfig = configs.find(config => config.role === 'devrites-orchestrator');
+for (const mode of ['read-only', 'workspace-write', 'danger-full-access']) {
+  const host = runtime(mode);
+  await apply(host.ctx, orchestratorConfig);
+  host.create();
+  assert.equal(host.mode(), mode);
+  assert.deepEqual(host.events, []);
+  assert.match(host.call('bash', { sandbox_permissions: 'danger-full-access' }), /escalation/);
+  for (const selected of ['danger-full-access', 'workspace-write', 'read-only']) {
+    host.agent.session.append('sandbox/mode', { mode: selected });
+    const selectedEvents = host.events.length;
+    assert.equal(host.call('bash'), undefined);
+    assert.equal(host.call('read'), undefined);
+    assert.equal(host.mode(), selected);
+    assert.equal(host.events.length, selectedEvents, 'root must not overwrite the selected host permission');
+  }
+  host.dispose();
+}
+const unknownMode = runtime('unknown');
+await apply(unknownMode.ctx, orchestratorConfig);
+assert.throws(() => unknownMode.create(), /unknown sandbox permission/);
 const prefix = 'mcp__codebase-memory-mcp__';
 const query = prefix + 'search_graph';
 const index = prefix + 'index_repository';
@@ -125,7 +147,7 @@ for (const config of configs) {
   else assert.match(role.call(query), /not allowed/, config.role);
 }
 const root = runtime();
-await apply(root.ctx, configs.find(config => config.role === 'devrites-orchestrator'));
+await apply(root.ctx, orchestratorConfig);
 assert.equal(root.call(index), undefined);
 assert.equal(root.call(index, { persistence: false }), undefined);
 for (const persistence of [true, 'false', null, 0]) {
@@ -134,6 +156,15 @@ for (const persistence of [true, 'false', null, 0]) {
 root.register(query);
 root.register(index);
 root.create();
+assert.equal(root.mode(), 'danger-full-access');
+for (const permission of ['read-only', 'workspace-write']) {
+  const child = runtime(root.mode());
+  await apply(child.ctx, configs.find(config => config.permission === permission));
+  child.create();
+  assert.equal(child.mode(), permission, 'specialists retain their ceiling under a Full access parent');
+  assert.equal(root.mode(), 'danger-full-access');
+  child.dispose();
+}
 assert.ok(root.visible().includes(query));
 assert.ok(root.visible().includes(index));
 const ungranted = runtime();

@@ -144,7 +144,7 @@ def generate(source, target):
     presets.insert(0, {"id": "devrites-orchestrator", "name": "DevRites", "description": "DevRites workflow orchestrator with named fresh specialists.",
                        "plugins": tool_plugins(root_tools) + [
                            {"id": "devrites-role", "name": "devrites:role", "config": {
-                               "role": "devrites-orchestrator", "permission": "workspace-write",
+                               "role": "devrites-orchestrator", "permission": "inherit",
                                 "allowedTools": root_tools, "allowedAgentPresets": roles,
                                 "indexTool": MCP_INDEX_TOOL, "instructions": BRIDGE}},
                            {"id": "devrites-subagent", "name": "@deepseek-ai/dsh-tool-subagent", "config": {
