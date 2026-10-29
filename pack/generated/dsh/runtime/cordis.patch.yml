@@ -27,6 +27,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -63,6 +67,21 @@
                       "job_list",
                       "job_output",
                       "list_agents",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_repository",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image",
                       "send_message",
@@ -103,7 +122,8 @@
                       "overhaul-specialist",
                       "overhaul-verifier"
                     ],
-                    "instructions": "# DevRites for DSH\n\nUse the installed skills under `.dsh/skills` and invoke `/rite` or `/rite-<verb>`.\nRead `.dsh/skills/devrites-lib/reference/standards/core.md` before a workflow.\nDispatch means call `subagent` with `agent_preset` set to the exact named specialist,\na self-contained `prompt`, and a short `description`. Every dispatch uses the native\n`spawn` provider, a fresh Session with zero parent conversation. Never use a generic\nagent, inherit the orchestrator preset, or use `subagent_fork` as a substitute.\nInclude the exact project-relative allowed paths and required evidence in the prompt.\nThe child id returned by `subagent` is an admission receipt, not a completed result.\nCollect the native parent settlement notice for each id, including final text and\nterminal status. `list_agents` activity `inactive` does not prove success. Reconcile\nevery result and compare returned paths with the contract before continuing.\nMissing preset, failed activation, interrupted execution, or missing result blocks\nthe dependent work. Report the failure; never impersonate the specialist inline.\nThe orchestrator writes workspace bookkeeping; only the named writer writes source\nand tests within its path contract. No skill or result authorizes commits, pushes,\npublishing, deployment, or other irreversible actions without explicit approval.\n"
+                    "indexTool": "mcp__codebase-memory-mcp__index_repository",
+                    "instructions": "# DevRites for DSH\n\nUse the installed skills under `.dsh/skills` and invoke `/rite` or `/rite-<verb>`.\nRead `.dsh/skills/devrites-lib/reference/standards/core.md` before a workflow.\nDispatch means call `subagent` with `agent_preset` set to the exact named specialist,\na self-contained `prompt`, and a short `description`. Every dispatch uses the native\n`spawn` provider, a fresh Session with zero parent conversation. Never use a generic\nagent, inherit the orchestrator preset, or use `subagent_fork` as a substitute.\nInclude the exact project-relative allowed paths and required evidence in the prompt.\nThe child id returned by `subagent` is an admission receipt, not a completed result.\nCollect the native parent settlement notice for each id, including final text and\nterminal status. `list_agents` activity `inactive` does not prove success. Reconcile\nevery result and compare returned paths with the contract before continuing.\nMissing preset, failed activation, interrupted execution, or missing result blocks\nthe dependent work. Report the failure; never impersonate the specialist inline.\nThe orchestrator writes workspace bookkeeping; only the named writer writes source\nand tests within its path contract. No skill or result authorizes commits, pushes,\npublishing, deployment, or other irreversible actions without explicit approval.\nUse configured Codebase Memory MCP queries first for structural code questions.\nCheck index status, freshness, and coverage before relying on graph results; verify\nmaterial findings in source. Only the orchestrator may index, using cache-only\n`index_repository` with persistence omitted or false. Children never index: hand\nmissing or stale coverage to the parent, or use grep/glob/read for source fallback.\nIf the MCP server or index is unavailable, continue with grep/glob/read. Keep\ngrep/glob for literal searches. MCP permissions are separate from the file sandbox.\n"
                   }
                 },
                 {
@@ -184,6 +204,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -217,6 +251,20 @@
                     "allowedTools": [
                       "glob",
                       "grep",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -262,6 +310,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -311,6 +373,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image",
                       "web_fetch",
@@ -358,6 +434,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -391,6 +481,20 @@
                     "allowedTools": [
                       "glob",
                       "grep",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -436,6 +540,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -469,6 +587,20 @@
                     "allowedTools": [
                       "glob",
                       "grep",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -592,6 +724,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -637,6 +783,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -666,6 +826,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -687,6 +851,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image",
                       "skill",
@@ -734,6 +912,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -767,6 +959,20 @@
                     "allowedTools": [
                       "glob",
                       "grep",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -812,6 +1018,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -874,6 +1094,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -895,6 +1119,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image",
                       "skill",
@@ -942,6 +1180,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -987,6 +1239,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -1032,6 +1298,20 @@
                       "job_kill",
                       "job_list",
                       "job_output",
+                      "mcp__codebase-memory-mcp__check_index_coverage",
+                      "mcp__codebase-memory-mcp__compare_graphs",
+                      "mcp__codebase-memory-mcp__detect_changes",
+                      "mcp__codebase-memory-mcp__get_architecture",
+                      "mcp__codebase-memory-mcp__get_code_snippet",
+                      "mcp__codebase-memory-mcp__get_file_outline",
+                      "mcp__codebase-memory-mcp__get_graph_schema",
+                      "mcp__codebase-memory-mcp__index_status",
+                      "mcp__codebase-memory-mcp__list_projects",
+                      "mcp__codebase-memory-mcp__query_graph",
+                      "mcp__codebase-memory-mcp__search_code",
+                      "mcp__codebase-memory-mcp__search_graph",
+                      "mcp__codebase-memory-mcp__trace_call_path",
+                      "mcp__codebase-memory-mcp__trace_path",
                       "read",
                       "read_image"
                     ],
@@ -1059,6 +1339,10 @@
                 {
                   "id": "tool-bash",
                   "name": "@deepseek-ai/dsh-tool-bash"
+                },
+                {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
                 },
                 {
                   "id": "tool-skill",
@@ -1111,6 +1395,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1159,6 +1447,10 @@
                 {
                   "id": "tool-bash",
                   "name": "@deepseek-ai/dsh-tool-bash"
+                },
+                {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
                 },
                 {
                   "id": "tool-skill",
@@ -1211,6 +1503,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1259,6 +1555,10 @@
                 {
                   "id": "tool-bash",
                   "name": "@deepseek-ai/dsh-tool-bash"
+                },
+                {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
                 },
                 {
                   "id": "tool-skill",
@@ -1313,6 +1613,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1363,6 +1667,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1411,6 +1719,10 @@
                 {
                   "id": "tool-bash",
                   "name": "@deepseek-ai/dsh-tool-bash"
+                },
+                {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
                 },
                 {
                   "id": "tool-skill",

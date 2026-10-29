@@ -17,4 +17,11 @@ the dependent work. Report the failure; never impersonate the specialist inline.
 The orchestrator writes workspace bookkeeping; only the named writer writes source
 and tests within its path contract. No skill or result authorizes commits, pushes,
 publishing, deployment, or other irreversible actions without explicit approval.
+Use configured Codebase Memory MCP queries first for structural code questions.
+Check index status, freshness, and coverage before relying on graph results; verify
+material findings in source. Only the orchestrator may index, using cache-only
+`index_repository` with persistence omitted or false. Children never index: hand
+missing or stale coverage to the parent, or use grep/glob/read for source fallback.
+If the MCP server or index is unavailable, continue with grep/glob/read. Keep
+grep/glob for literal searches. MCP permissions are separate from the file sandbox.
 <!-- END DEVRITES DSH -->

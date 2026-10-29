@@ -1,0 +1,16 @@
+[
+  {
+    "insert": [
+      {
+        "id": "devrites-codebase-memory",
+        "name": "@deepseek-ai/dsh-mcp-client",
+        "config": {
+          "serverName": "codebase-memory-mcp",
+          "transport": "stdio",
+          "command": "codebase-memory-mcp",
+          "args": []
+        }
+      }
+    ]
+  }
+]

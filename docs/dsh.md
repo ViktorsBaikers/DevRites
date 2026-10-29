@@ -13,7 +13,9 @@ your DSH profile; the installer does not edit your global DSH configuration.
 Use `--no-dsh` with DevRites install/update to omit this host. Updates and
 uninstall manage the same files through the existing hashed manifest.
 
-Skills live under `.dsh/skills`, with native invocation flags preserved. The
+Skills live under `.dsh/skills`, with native invocation flags preserved. Presets
+with skill access mount DSH's filesystem skill provider before the skill tool
+so installed skills are discovered in that preset's scope. The
 `.dsh/agents` files retain the expanded canonical specialist instructions.
 `.dsh/cordis.patch.yml` and `.dsh/specialist.mjs` register those exact identities
 as native DSH presets and enforce their tool and permission boundaries.
@@ -37,8 +39,45 @@ DSH's inherited parent override before each allowed call, preserves an existing
 read-only parent boundary, and denies explicit sandbox escalation. Confining
 shell and filesystem providers are required; an unconfined composition fails
 closed. Tool access derives from canonical agent frontmatter; unsupported
-Claude-specific tools and MCP grants are omitted. The writer's exact file list
+Claude-specific tools are omitted. The writer's exact file list
 remains a task contract checked by the orchestrator, as on the other hosts.
+
+Codebase Memory MCP is optional. Install `codebase-memory-mcp` separately and
+make the binary available on `PATH`, then load the supplied connection overlay:
+
+```sh
+dsh web --patch .dsh/codebase-memory.patch.yml --patch .dsh/cordis.patch.yml
+```
+
+The optional overlay registers one global `@deepseek-ai/dsh-mcp-client` stdio
+connection named `codebase-memory-mcp`. If your DSH configuration already provides
+that global connection, use only `.dsh/cordis.patch.yml`. Installation does not
+install the MCP binary, start a server, or change global configuration. Without
+the overlay or a configured connection, grep/glob/read remain available.
+
+For a browser served on a local interface, keep launcher flags before app flags:
+
+```sh
+dsh web --patch .dsh/codebase-memory.patch.yml --patch .dsh/cordis.patch.yml --no-open --host <local-interface-ip> --port 3080
+```
+
+Canonical `mcp__codebase-memory-mcp__*` grants expand to a finite set of query
+tools: index status, projects, schema, architecture, graph and code search, call
+paths, snippets, file outlines, graph queries, change detection, coverage, and
+graph comparisons. Individual supported query grants are also preserved. Roles
+without a canonical grant receive none. Other MCP namespaces, unknown tools,
+`delete_project`, `manage_adr`, and `ingest_traces` are denied. Only the root
+orchestrator may use `index_repository`, with `persistence` omitted or `false`
+for cache-only indexing; all specialists, including writers, cannot index.
+
+Use graph queries first for structural questions, checking index status,
+freshness, and coverage and verifying material findings in source. Use
+grep/glob for literal searches. An unavailable server or missing index falls
+back to grep/glob/read; a specialist may hand indexing to the parent. The tool
+catalog refreshes when DSH registers or removes tools, including later successful
+connections. DSH may retain registrations during a temporary connection loss.
+MCP calls use the external server's permissions, outside DSH's shell/filesystem
+sandbox. LSP integration is outside this adapter's scope.
 
 The adapter targets the published DSH `0.2.1-rc.2` plugin interfaces, checked
 against [DeepSeek Harness source](https://github.com/deepseek-ai/deepseek-harness)
