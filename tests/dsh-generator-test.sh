@@ -62,6 +62,7 @@ for role in canonical:
         assert {"job_output", "job_kill", "job_list"} <= set(config["allowedTools"])
         assert any(row["name"] == "@deepseek-ai/dsh-tool-jobs" for row in by_id[role]["plugins"])
 orchestrator = [row for row in by_id["devrites-orchestrator"]["plugins"] if row["id"].startswith("devrites-")]
+assert orchestrator[0]["config"]["permission"] == "inherit"
 assert orchestrator[1]["config"]["provider"] == "spawn"
 assert set(orchestrator[1]["config"]["allowedAgentPresets"]) == canonical
 assert set(orchestrator[0]["config"]["allowedAgentPresets"]) == canonical

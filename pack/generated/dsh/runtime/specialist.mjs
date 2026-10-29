@@ -22,7 +22,8 @@ export async function apply(ctx, config) {
   }
   const { role, permission, allowedTools, instructions } = config;
   if (typeof role !== 'string' || !role || typeof instructions !== 'string'
-    || !['read-only', 'workspace-write'].includes(permission)
+    || (!['read-only', 'workspace-write'].includes(permission)
+      && !(role === 'devrites-orchestrator' && permission === 'inherit'))
     || !Array.isArray(allowedTools) || allowedTools.some(tool => typeof tool !== 'string')) {
     throw new Error('DSH DevRites role requires identity, instructions, tools, and a supported permission ceiling');
   }
@@ -33,6 +34,7 @@ export async function apply(ctx, config) {
     if (!['read-only', 'workspace-write', 'danger-full-access'].includes(mode)) {
       throw new Error(`${role}: unknown sandbox permission`);
     }
+    if (permission === 'inherit') return;
     // Native spawn inherits the parent's override; preserve a narrower parent.
     if (mode === 'danger-full-access' || (mode === 'workspace-write' && permission === 'read-only')) {
       session.append('sandbox/mode', { mode: permission });

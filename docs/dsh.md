@@ -32,10 +32,16 @@ settlement notice. A returned child id means dispatch was admitted; `inactive`
 activity alone does not prove successful completion. The orchestrator collects
 and reconciles every terminal result, including failures, before dependent work.
 
+The DevRites orchestrator honors DSH's selected permission mode, including
+**Full access**, without changing approval settings or enabling Full access
+automatically. After updating an older installation and restarting DSH, select
+your desired permission preset again if the session already shows **Custom**.
+
 Read-only roles retain only their mapped tools and run shell commands under the
 read-only sandbox. Shell-capable roles also receive native job tools to collect
-background command output and stop their jobs. Writers have a workspace-write ceiling. The guard narrows
-DSH's inherited parent override before each allowed call, preserves an existing
+background command output and stop their jobs. Specialist writers have a
+workspace-write ceiling. For specialists, the guard narrows DSH's inherited
+parent override before each allowed call, preserves an existing
 read-only parent boundary, and denies explicit sandbox escalation. Confining
 shell and filesystem providers are required; an unconfined composition fails
 closed. Tool access derives from canonical agent frontmatter; unsupported

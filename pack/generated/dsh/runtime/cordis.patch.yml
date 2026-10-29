@@ -55,7 +55,7 @@
                   "name": "devrites:role",
                   "config": {
                     "role": "devrites-orchestrator",
-                    "permission": "workspace-write",
+                    "permission": "inherit",
                     "allowedTools": [
                       "ask_user_question",
                       "bash",
