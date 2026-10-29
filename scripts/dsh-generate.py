@@ -71,7 +71,8 @@ def tool_plugins(tools):
     packages = []
     for group, package in [({"read", "read_image", "edit", "write"}, "tool-fs"),
                            ({"glob", "grep"}, "tool-fs-search"),
-                           ({"bash"}, "tool-bash"), ({"skill"}, "tool-skill"),
+                           ({"bash"}, "tool-bash"), ({"skill"}, "skill-filesystem"),
+                           ({"skill"}, "tool-skill"),
                            ({"job_output", "job_kill", "job_list"}, "tool-jobs"),
                            ({"web_fetch", "web_search"}, "tool-web"),
                            ({"list_agents", "send_message", "interrupt_agent"}, "tool-subagent-control"),

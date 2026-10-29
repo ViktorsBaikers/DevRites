@@ -27,6 +27,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -822,6 +826,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1086,6 +1094,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1329,6 +1341,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1377,6 +1393,10 @@
                 {
                   "id": "tool-bash",
                   "name": "@deepseek-ai/dsh-tool-bash"
+                },
+                {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
                 },
                 {
                   "id": "tool-skill",
@@ -1429,6 +1449,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1479,6 +1503,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1527,6 +1555,10 @@
                 {
                   "id": "tool-bash",
                   "name": "@deepseek-ai/dsh-tool-bash"
+                },
+                {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
                 },
                 {
                   "id": "tool-skill",
@@ -1581,6 +1613,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1631,6 +1667,10 @@
                   "name": "@deepseek-ai/dsh-tool-bash"
                 },
                 {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
+                },
+                {
                   "id": "tool-skill",
                   "name": "@deepseek-ai/dsh-tool-skill"
                 },
@@ -1679,6 +1719,10 @@
                 {
                   "id": "tool-bash",
                   "name": "@deepseek-ai/dsh-tool-bash"
+                },
+                {
+                  "id": "skill-filesystem",
+                  "name": "@deepseek-ai/dsh-skill-filesystem"
                 },
                 {
                   "id": "tool-skill",

@@ -13,7 +13,9 @@ your DSH profile; the installer does not edit your global DSH configuration.
 Use `--no-dsh` with DevRites install/update to omit this host. Updates and
 uninstall manage the same files through the existing hashed manifest.
 
-Skills live under `.dsh/skills`, with native invocation flags preserved. The
+Skills live under `.dsh/skills`, with native invocation flags preserved. Presets
+with skill access mount DSH's filesystem skill provider before the skill tool
+so installed skills are discovered in that preset's scope. The
 `.dsh/agents` files retain the expanded canonical specialist instructions.
 `.dsh/cordis.patch.yml` and `.dsh/specialist.mjs` register those exact identities
 as native DSH presets and enforce their tool and permission boundaries.

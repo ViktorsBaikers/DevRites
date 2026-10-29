@@ -34,6 +34,12 @@ by_id = {preset["id"]: preset for preset in presets}
 canonical = {p.stem for p in (out / "claude/agents").glob("*.md")}
 assert set(by_id) == canonical | {"devrites-orchestrator"}
 assert len(by_id) == len(presets)
+for preset in presets:
+    config = next(row["config"] for row in preset["plugins"] if row["name"] == "devrites:role")
+    skill_plugins = [row["name"] for row in preset["plugins"] if row["name"] in (
+        "@deepseek-ai/dsh-skill-filesystem", "@deepseek-ai/dsh-tool-skill")]
+    expected = ["@deepseek-ai/dsh-skill-filesystem", "@deepseek-ai/dsh-tool-skill"] if "skill" in config["allowedTools"] else []
+    assert skill_plugins == expected, preset["id"]
 for role in canonical:
     config = next(row["config"] for row in by_id[role]["plugins"] if row["name"] == "devrites:role")
     canonical_text = (out / "claude/agents" / (role + ".md")).read_text()
