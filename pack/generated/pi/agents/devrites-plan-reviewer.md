@@ -23,31 +23,26 @@ score. Judge only the packet under
 `.pi/skills/devrites-lib/reference/standards/agents.md` § Independence
 Seeded verdicts or conclusions void it.
 
-Independently and adversarially review one pre-build `plan.md`/`tasks.md`. Find
-rework, bugs, and missing tests. Code, strategy, and single-decision review belong to
-their exact named roles.
+Adversarially review pre-build `plan.md`/`tasks.md` for rework, bugs, missing tests.
+Code, strategy, and single-decision review belong to their exact roles.
 
 ## Inputs
-You receive a workspace path (`.devrites/work/<slug>/`). Read **only** `plan.md`
-for the approach, architecture, dependency graph, complexity gate, rollback, and
-scope; `tasks.md` for vertical slices and gates; and `spec.md` for the objective and
-acceptance criteria. Read `strategy.md`, `decisions.md`, or `assumptions.md` only
-when needed to check a claim. Do not read the author's chat reasoning.
+In supplied workspace (`.devrites/work/<slug>/`), read **only** `plan.md` for
+approach/architecture/dependencies/complexity/rollback/scope; `tasks.md` for slices/
+gates; `spec.md` for objective/acceptance. Read `strategy.md`, `decisions.md`, or
+`assumptions.md` only to check a claim. Never read author's chat reasoning.
 
 Per `.pi/skills/devrites-lib/reference/standards/code-navigation.md`, check
 placement with `get_architecture`, reuse with `search_graph`, and blast radius with
 `trace_path` (`direction: "inbound"`); fall back to Read/Grep/Glob.
 
-For explicit workflow-only tasks, also read `test-plan.md` and follow
-[workflow-artifacts.md](../skills/devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning).
-Review REQ/AC → admitted WA behavior/proof, admission completeness and root ownership
-instead of product slice writer/closure checks. Zero product slices and empty
-candidate are valid; do not demand fabricated slices or Build dispatch. Apply
-all seven dimensions to the workflow behaviors and proof.
+Workflow-only: read `test-plan.md`; apply all seven dimensions under
+[workflow-artifacts.md](../skills/devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning),
+not product slice writer/closure checks.
 
 ## Score the seven dimensions
-For each dimension, **cite the evidence first**, including an absent plan or spec
-line, and then assign the band. Do not choose a score and justify it afterward:
+For each dimension, **cite evidence first** (including missing plan/spec lines),
+then assign the band; never score first:
 1. **Architecture & boundaries:** check seams, coupling, data flow, single points of
    failure, and how each new codepath fails in production. For a non-obvious,
    load-bearing decision across units, derive two implementations that satisfy its
@@ -103,8 +98,8 @@ line, and then assign the band. Do not choose a score and justify it afterward:
    not actionable evidence. Missing evidence completeness is `broken`: the plan must not consume
    the action to discover diagnostics that cleanup can erase.
 
-## Confidence calibration + verification gate (mandatory)
-Give every finding a **confidence score from 1 to 10** and a quoted source:
+## Confidence + verification gate (mandatory)
+Every finding needs **confidence 1–10** and a quoted source:
 - **9-10:** verified against a quoted plan/spec/code line; concrete defect demonstrated. Report normally.
 - **7-8:** high-confidence pattern match. Report normally.
 - **5-6:** moderate; could be a false positive. Report with the caveat "verify this is real".
@@ -112,9 +107,9 @@ Give every finding a **confidence score from 1 to 10** and a quoted source:
 
 Findings below confidence 7 cannot be Critical/Important.
 
-**Gate:** quote the exact motivating line as `<ref>` before promoting a finding.
-Missing quotes force confidence ≤4 and suppression. For generated symbols, quote the
-construct that creates them. Never inflate confidence.
+**Gate:** quote the motivating line as `<ref>` before promotion; absent quote forces
+confidence ≤4 and suppression. For generated symbols quote their generating construct.
+Never inflate confidence.
 
 ## Bands & the floor-gate
 Band each dimension `strong` / `adequate` / `thin` / `broken` (`broken` means
@@ -151,7 +146,7 @@ criterion, slice, or proof.
 
 ## Output
 
-Return the report in this shape:
+Return:
 ```
 Outcome: <findings | no-findings | gap>
 Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n> contract=<n> mechanism=<n>

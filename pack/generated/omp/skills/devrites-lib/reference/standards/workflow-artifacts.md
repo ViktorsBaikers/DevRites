@@ -1,60 +1,36 @@
 # Workflow Artifact identity
 
-> Root-only: not inlined in --role bundles.
+> Root-only; excluded from --role bundles. Applies to planned root-authored executables.
 
-> Applies when: a plan declares root-authored executable workflow files.
-
-Workflow Artifact plans/isolates/proves; never enters the product candidate or
-built count and never authorizes consumption. Workspace planning readiness binds
-its admission and proof references, not executable bytes as product changes.
-Module owns semantics; callers retain only link and entry/return.
+Workflow Artifact plans/isolates/proves; excludes product candidate/built count;
+never authorizes consumption. Readiness binds admission/proof refs, not bytes.
 
 ## Workflow-only planning
 
-For exclusively root-owned executable workflow work, put the exact standalone
-line `Work scope: workflow-only` outside fences in `tasks.md`, with zero
-`## SLICE-###` sections. Empty tasks never imply this scope; mixed marker plus
-product slices is invalid. Keep ordinary spec AC IDs. In both `tasks.md` and
-`test-plan.md`, map every AC in two-cell rows `| AC-001 | WA-BEH-ID |` (backticks
-around the behavior ID are optional); `traceability.md` maps REQ/AC → that same
-behavior → proof → evidence. Define may name the planned behaviors before Vet
-admits them; Vet requires every mapped behavior in the admission below.
+Root-owned executable workflow-only work: standalone, unfenced
+`Work scope: workflow-only` in `tasks.md`, zero `## SLICE-###` sections.
+Empty tasks imply nothing; marker + slices is invalid. Retain spec AC IDs.
+`tasks.md` and `test-plan.md`: every AC maps via `| AC-001 | WA-BEH-ID |`
+(behavior backticks optional). `traceability.md`: REQ/AC → same behavior → proof
+→ evidence. Define permits planned behaviors; Vet requires admission below.
 
-Use the existing empty product representation in `touched-files.md`:
-`## Candidate manifest`, then `No project files.`, plus required `## Touched files`.
-Do not add workflow targets to the product manifest or invent slices. Define
-retains architecture/plan/tasks/traceability; Vet checks Workflow Artifact
-admission instead of product slice writer/closure checks. No Build/wright dispatch,
-built checkpoint, or ACTIVE switch. Product and mixed product work keep ordinary
-slice contracts; product writers still cannot write `.devrites`.
+`touched-files.md`: `## Candidate manifest`, `No project files.`, `## Touched files`;
+no workflow targets or fabricated slices. Define keeps architecture/plan/tasks/
+traceability. Vet checks admission, not product writer/closure. No Build/wright
+dispatch, built checkpoint, or ACTIVE switch. Product/mixed work retains slice
+contracts; product writers cannot write `.devrites`.
 
-Readiness at Vet and later checks admission structure, bounds, workspace-relative
-paths, ownership namespace, and referenced behavior/interface/fixtures. Ordinary
-`Readiness inputs SHA-256` binds current tasks and test-plan; editing admission or
-references makes READY stale. Do not embed that digest into its own bound inputs.
-This planning check does not open targets or authorize execution: native preflight
-still validates resolved paths, symlinks, trusted bytes, content limits and all
-transaction safety before mutation.
-
-## Contents
-
-- [Vet admission](#vet-admission)
-- [Workflow Artifact admission](#workflow-artifact-admission)
-  - [Owner, namespace, promotion, and reads](#owner-namespace-promotion-and-reads)
-- [Frozen source and identity](#frozen-source-and-identity)
-- [Journal and complete writes](#journal-and-complete-writes)
-  - [Workflow Artifact journal](#workflow-artifact-journal)
-- [Canonical operation table](#canonical-operation-table)
-- [State, proof, and retry](#state-proof-and-retry)
-- [Route classifier](#route-classifier)
-- [Public diagnostics](#public-diagnostics)
-- [Phase adapters](#phase-adapters)
+Vet/later readiness checks admission structure/bounds/workspace-relative paths/
+ownership namespace/behavior/interface/fixtures. `Readiness inputs SHA-256` binds
+current tasks/test-plan; admission/ref edits stale READY. Never embed digest in its
+inputs. Planning neither opens targets nor authorizes execution: native preflight
+checks resolved paths/symlinks/trusted bytes/content limits/transaction safety
+before mutation. Missing/malformed admission → Plan; stale → fresh Vet.
 
 ## Vet admission
 
-Vet admits one `test-plan.md` block when a target is active; when no active
-target, record `Workflow Artifact admission: not applicable — no active target
-admitted` instead.
+Active target: Vet admits one `test-plan.md` block. Otherwise record
+`Workflow Artifact admission: not applicable — no active target admitted`.
 
 ```markdown
 ## Workflow Artifact admission
@@ -83,13 +59,12 @@ DevRites contract: devrites.workflow-artifact-admission.v1
 | `<8hex>` | `<workspace-relative path>` | `<0[0-7]{3}>` | `<WA-BEH-ID>` | `<WA-IF-ID>` | `<WA-FIX-ID>` | `<comma-separated IDs>` | `<single command>` | `<logical cwd>` | `<fixed signal>` | `<fixed relation>` | `<comma-separated fields>` |
 ```
 
-Row order=normalized-path UTF-8; `Index`=zero-based `8hex`. Path=normalized active-
-workspace-relative UTF-8; reject absolute/traversal/newline, duplicate, directory,
-glob, symlink, product/dependency, or unresolved. Mode=base-8 `0[0-7]{3}`. Markdown
-`|` delimits after an even backslash run; odd escapes; decoding removes only that
-backslash.
+Sort rows by normalized-path UTF-8; `Index`=zero-based `8hex`. Paths: normalized
+active-workspace-relative UTF-8; reject absolute/traversal/newline, duplicate,
+directory/glob/symlink/product/dependency/unresolved. Mode=base-8 `0[0-7]{3}`.
+Markdown `|`: even backslash run delimits; odd escapes, removing only that backslash.
 
-IDs occur once in behavior/interface/positive/listed-failure order:
+IDs occur once, ordered behavior/interface/positive/listed-failure:
 `WA-BEH-[A-Z0-9][A-Z0-9-]*`; `WA-IF-[A-Z0-9][A-Z0-9-]*`;
 `WA-FIX-P[A-Z0-9][A-Z0-9-]*`; `WA-FIX-F[A-Z0-9][A-Z0-9-]*`. Each `## <ID>` plus
 `DevRites workflow reference: <behavior|interface|positive-fixture|failure-fixture>`
@@ -100,27 +75,27 @@ configuration,performance`; positive `setup,action,expected`; failure
 mutation reject placeholders, missing/extra/reordered fields, duplicates, and
 referenced-empty blocks.
 
-Proof command=one unchanged trusted Vet-approved repository command; exclude `;`,
-`&&`, `||`, newline, unescaped/list-separator `|`. Cwd=`repository-root` or
-`active-workspace`. Signal=fixed printable ASCII without CR/LF, 1..128 bytes.
-Rollback=`restore-preimage-or-absence`. Evidence=unique comma-separated lowercase
-identifiers. `return_phase`=lifecycle phase; `return_next_action`=exact slash action
-bound to `active_slug`. Malformed admission/reference routes Plan/Vet before mutation.
+Proof: one unchanged trusted Vet-approved repository command; no newline or
+unquoted/unescaped `;|&`. Cwd=`repository-root` or `active-workspace`.
+Signal=fixed printable ASCII, 1..128 bytes. Rollback=`restore-preimage-or-absence`.
+Evidence=unique comma-separated lowercase identifiers. `return_phase`=lifecycle
+phase; `return_next_action`=`/rite-[a-z0-9-]+ <active_slug>` exactly.
+Planning permits quoted/escaped operator data; substitutions conservatively reject
+all `;|&` data. Malformed admission/reference → Plan/Vet before mutation.
 
-Checked nonnegative arithmetic rejects overflow. Bounds: rows
-`1..target_count_limit`; per-target/aggregate content; `transaction_file_limit >=
+Overflow-checked nonnegative bounds: rows `1..target_count_limit`;
+per-target/aggregate content; `transaction_file_limit >=
 3*target_count_limit+6`; `diagnostic_bytes_limit=256` including LF;
 `attempt_epoch_limit>=3`; `journal_line_limit >=
 30+target_count_limit+attempt_epoch_limit`; complete evidence <=280 lines;
 `command_timeout>terminate_grace>0`; `aggregate_timeout>=command_timeout`.
-Transaction-file/journal minima use declared `target_count_limit`, never row count.
-Fixtures: minima/minimum-1, overflow, sparse/high-limit, content/row limits,
-evidence headroom.
+File/journal minima use declared `target_count_limit`, not row count. Fixtures:
+minima/minimum-1, overflow, sparse/high-limit, content/rows, evidence headroom.
 
 ## Frozen source and identity
 
-Disposable same-layout preflight authors exact bytes. `slug_bytes` is validated
-slug UTF-8; `binding_bytes` decodes current 64-lowercase-hex binding:
+Disposable same-layout preflight authors bytes. `slug_bytes`=validated slug UTF-8;
+`binding_bytes`=decoded current 64-lowercase-hex binding:
 
 ```text
 handle_digest = SHA-256(
@@ -131,8 +106,8 @@ source_handle = "wsrc:" || lowercase-hex(handle_digest)
 resolver_path = ".workflow-artifact-sources/" || lowercase-hex(handle_digest)
 ```
 
-`\0` is one NUL; lengths are uint32-be byte counts; concatenation adds nothing.
-Identity rows sort by normalized-path UTF-8 bytes:
+`\0`=NUL; lengths=uint32-be byte counts; concatenate without padding.
+Identity rows: normalized-path UTF-8 byte order:
 
 ```text
 identity_digest = SHA-256(
@@ -142,7 +117,7 @@ identity_digest = SHA-256(
 )
 ```
 
-Golden input: slug `demo`, zero-64hex binding, `scripts/prove.py`, mode `0755`
+Golden: slug `demo`, zero-64hex binding, `scripts/prove.py`, mode `0755`
 (decimal 493), bytes `print("ok")` plus LF:
 
 | Value | Exact result |
@@ -165,11 +140,10 @@ Unsupported/access/metadata/bootstrap failure → `WA-R021-ACCESS-DENIED` before
 mutation; busy → `WA-R001-OWNER-BUSY`, zero post-open writes. Under lock compare
 monotonic generation and owned-section SHA-256 before promotion.
 
-Namespace allowlist: `.owner.lock`; one canonical or exact stale replacement; one
-recognized `.<hex>.preparing`; `.stale-cleanup` only during validated rollover.
-Unknown entries block untouched. Build same-parent `.<handle-hex>.preparing`, mode
-`0700`, with current-user regular single-link mode-`0600` indexed sources and exact
-synced metadata:
+Namespace only: `.owner.lock`; one canonical or exact stale replacement; one
+recognized `.<hex>.preparing`; `.stale-cleanup` during validated rollover.
+Unknown entries block untouched. Same-parent `.<handle-hex>.preparing`: `0700`,
+current-user regular single-link `0600` indexed sources, exact synced metadata:
 
 ```text
 .authority:
@@ -183,18 +157,17 @@ count=<decimal-target-count>
 identity=<identity-digest-hex>
 ```
 
-Write `.authority`, indexes `00000000`..., `.ready`; sync directory; rename to
-`<handle-hex>`; sync parent, all before journal/target mutation. Invalid/missing
-authority stays untouched (`PLAN_VET_REPAIR`). Valid authority plus invalid ready
-permits deleting only that preparation. Exact metadata/cardinality permits only
-promotion or identical-canonical recognition. Resolve canonical no-follow,
-current-user `0700`; open each bounded indexed source once, current-user regular
-single-link `0600`. Held immutable bytes supply SHA-256 and stage writes; never
-validate/reopen. Evidence stores logical handle only, never bytes/path.
+Before journal/target mutation: write `.authority`, indexes `00000000`..., `.ready`;
+sync directory; rename to `<handle-hex>`; sync parent. Invalid/missing authority:
+untouched, `PLAN_VET_REPAIR`. Valid authority/invalid ready: delete only that
+preparation. Exact metadata/cardinality: only promote or recognize identical canonical.
+Resolve canonical no-follow, current-user `0700`; open each bounded source once,
+current-user regular single-link `0600`. Retain immutable bytes for SHA-256/stage;
+never validate/reopen. Evidence: logical handle only, never bytes/path.
 
-Under owner lock, stale GC requires no journal/temp/target write, exact old
-authority/readiness/count/index/slug-binding handle, and no unknown entry.
-Complete-write, file-sync, read back, and directory-sync exact mode-`0600`:
+Stale GC under owner lock: no journal/temp/target write or unknown entry; exact old
+authority/readiness/count/index/slug-binding handle. Complete-write, file-sync,
+readback, directory-sync exact mode-`0600`:
 
 ```text
 devrites.workflow-source-stale-cleanup.v1
@@ -215,15 +188,13 @@ identity=<64hex-identity>
 count=<positive-decimal-target-count>
 ```
 
-Both require final LF, no extra byte. Sync bundle; rename
-`.<old-hex>.stale-cleaning`; sync parent. Descriptor-relative delete order:
-`.authority`, `.ready`, ascending indexes, `.stale-cleanup`, directory; sync each.
-Exact authenticated intent admits only a partial or empty
-remaining suffix of that order; re-authenticate the intent before every remaining deletion. Treat empty tree
-without intent, malformed intent, or orphan intent lacking canonical/stale-cleaning
-relation as forged: no change; route `WA-R022-STALE-SOURCE-GC-FAILED`. Only after the
-stale directory is absent and parent synced, truncate the held lock intent, sync, and
-read back
+Both: final LF, no extra byte. Sync bundle; rename `.<old-hex>.stale-cleaning`;
+sync parent. Descriptor-relative deletion: `.authority`, `.ready`, ascending
+indexes, `.stale-cleanup`, directory; sync each. Authenticated intent permits only
+partial/empty remaining suffix; re-authenticate before each deletion. Empty tree
+without intent, malformed intent, or orphan intent without canonical/stale-cleaning
+relation is forged: no change; `WA-R022-STALE-SOURCE-GC-FAILED`. Only once stale
+directory is absent and parent synced: truncate held lock intent, sync, read back
 exact empty content.
 
 Source persists through retryable `FAILED`; cleanup removes it before `CLEANED`/
@@ -231,19 +202,19 @@ Source persists through retryable `FAILED`; cleanup removes it before `CLEANED`/
 
 ## Journal and complete writes
 
-First atomic write records frozen identity/source/epoch/generation plus
-`PREPARING(0,stage,create)`; every effect has prior durable intent. Journal replace:
-same-parent current-user regular single-link mode-`0600` temp; complete-write;
+First atomic write: frozen identity/source/epoch/generation +
+`PREPARING(0,stage,create)`; prior durable intent for every effect. Journal replace:
+same-parent current-user regular single-link `0600` temp; complete-write;
 file/parent sync; atomic replace; no-follow parents supply
-both source and destination directory handles. Stage/backup order: `create→write→mode→file_sync→directory_sync`.
-Complete-write accepts integer progress `1..remaining` only; bool/noninteger/
-nonpositive/oversize, exhausted short write, `ENOSPC`, or error fails boundedly.
-Resume requires exact declared pre/post/valid-partial state.
+both source and destination directory handles. Stage/backup: `create→write→mode→file_sync→directory_sync`.
+Complete-write: integer progress `1..remaining` only; bool/noninteger/nonpositive/
+oversize, exhausted short write, `ENOSPC`, error fail boundedly.
+Resume: exact declared pre/post/valid-partial state.
 
 Transaction-private JSON **transaction journal**
-`.workflow-artifact-transactions/<identity-digest>/journal.json` is crash/recovery
-authority; marker-owned `evidence.md` **evidence journal** is bounded durable/public
-evidence. Neither aliases the other. Also sole: `.../stage/<8hex>`,
+`.workflow-artifact-transactions/<identity-digest>/journal.json`: crash/recovery
+authority. Marker-owned `evidence.md` **evidence journal**: bounded durable/public
+evidence. Neither aliases the other. Other sole paths: `.../stage/<8hex>`,
 `.../backup/<8hex>`, `.evidence.md.workflow-artifact.tmp`.
 
 Evidence-journal ownership spans standalone start through end-marker LF. Exact no-separator
@@ -287,11 +258,11 @@ DevRites contract: devrites.workflow-artifact-journal.v1
 END-MARKER
 ```
 
-Absent markers append one blank line and section, preserving outside bytes. Before
-mutation reject duplicate/nested/malformed/over-budget markers. Keep one standalone
-`Candidate SHA-256:` and only `product_candidate_digest`. `exhaustion_cause` exists
-only for `EXHAUSTED` with one listed cause; otherwise absent. Immutable attempt rows
-omit bytes, credentials, hostile input, paths, exceptions, and raw errors.
+Absent markers: append blank line + section, preserve outside bytes. Before mutation
+reject duplicate/nested/malformed/over-budget markers. Keep one standalone
+`Candidate SHA-256:` and only `product_candidate_digest`. `exhaustion_cause`: only
+in `EXHAUSTED`, one listed cause. Immutable attempt rows omit bytes, credentials,
+hostile input, paths, exceptions, raw errors.
 
 ## Canonical operation table
 
@@ -343,24 +314,21 @@ mutation artifacts clean exactly.
 
 Candidate/destination and every generated-stage regular-file authority is acquired no-follow through one held descriptor; initial/opened/final pathname identity must match and each read caps at 16,777,216 bytes. Complete staged/current generated-tree scans share one finite absolute deadline: install delivery aggregate; recovery 600 seconds.
 
-`PROVING` runs each trusted Vet-approved admitted argv command and its descendants
-
-in one fresh process group, where they remain until exit; output and command/
-aggregate time are bounded. A declared expected signal must be exactly one
-standalone output line. It adds no network or filesystem sandbox and
-makes no deliberate detached-session containment claim. Failure: `TERM`, bounded grace,
-`KILL` survivors, reap group/leader, rollback. Any surviving group member, nonzero,
-wrong signal, overflow, or timeout prevents `PROVED`.
+`PROVING`: each trusted Vet-approved admitted argv command and descendants stay
+in one fresh process group until exit; bound output and command/aggregate time.
+Expected signal: exactly one standalone output line. No network/filesystem sandbox
+or deliberate detached-session containment claim. Failure: `TERM`, bounded grace,
+`KILL` survivors, reap group/leader, rollback. Surviving group member, nonzero,
+wrong signal, overflow, timeout prevent `PROVED`.
 
 Epoch starts 1. `FAILED` records preimages/cleanup/epoch/fingerprint/reason/
-boundary/route/no-progress count. Resolved fingerprints close; a different
-invariant gets a distinct fingerprint. Handoff death resumes its retry epoch with
-prior rows immutable. `WA-OP-011/012` enforce independent fingerprint/epoch caps
-and terminal source cleanup. Exhaustion closes this admission, not the work:
-the controlling caller escalates it under the
+boundary/route/no-progress count. Close resolved fingerprints; distinct invariants
+get distinct fingerprints. Handoff death resumes retry epoch; prior rows immutable.
+`WA-OP-011/012` enforce independent fingerprint/epoch caps and terminal source
+cleanup. Exhaustion closes admission, not work: caller escalates per
 [retry contract](afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)
-through `PLAN_VET_REPAIR`, and a re-vetted changed design re-admits under a new
-identity with fresh epochs. A fully escalated fingerprint parks. Exhaustion records:
+through `PLAN_VET_REPAIR`; re-vetted changed design gets new identity/fresh epochs.
+Fully escalated fingerprint parks. Exhaustion records:
 
 ```text
 status=running
@@ -408,16 +376,15 @@ There is no actor-history migration or backfill.
 
 ## Public diagnostics
 
-Emit exactly one ASCII line plus LF, never dynamic text:
+Emit one ASCII line + LF; no dynamic text:
 
 ```text
 WORKFLOW_ARTIFACT_FAILURE reason_id=<reason> boundary_id=<boundary> next_route=<route>
 ```
 
-Unknown or malformed values collapse to
-`WA-R009-STATE-AMBIGUOUS`, `WA-B005-JOURNAL`, `OFFLINE_RECOVERY`.
-No target index, content, path, credential, hostile value, exception, or raw
-filesystem error appears.
+Unknown/malformed values → `WA-R009-STATE-AMBIGUOUS`, `WA-B005-JOURNAL`,
+`OFFLINE_RECOVERY`. No target index/content/path/credential/hostile value/exception/
+raw filesystem error.
 
 |Reason ID|Boundary ID|Meaning|Next route|
 | ---|---|---|---|
@@ -444,20 +411,19 @@ filesystem error appears.
 | `WA-R021-ACCESS-DENIED`|`WA-B001-OWNER`|host access or canonical flock unavailable|`BLOCKED_GATE`|
 | `WA-R022-STALE-SOURCE-GC-FAILED`|`WA-B016-STALE-SOURCE-GC`|validated stale cleanup incomplete|`OFFLINE_RECOVERY`|
 
-Each diagnostic, including LF, is at most 256 bytes. Reason/boundary
-pairs remain injective for actionable seams.
+Diagnostics including LF: <=256 bytes. Reason/boundary pairs: injective per seam.
 
 ## Phase adapters
 
 |Canonical adapter|Entry trigger|Canonical action|Return cursor|
 | ---|---|---|---|
-| `devrites-lib/reference/standards/afk-hitl.md`|unattended root reaches current admitted Workflow Artifact work|invoke classifier; execute returned route without wright/slice charge|saved lifecycle phase/action; no intermediate reply|
+| `devrites-lib/reference/standards/afk-hitl.md`|unattended root: current admitted work|classify; execute route, no wright/slice charge|saved phase/action; no intermediate reply|
 | `devrites-lib/reference/standards/one-shot-actions.md`|workflow proof completes before any consumptive one-shot action|`PROVE_AND_RETURN`; require fresh real-action authorization|saved one-shot action boundary|
 | `devrites-debug-recovery/SKILL.md`|durable active failure or ambiguous admitted state|`OFFLINE_RECOVERY`; correct offline, re-preflight, narrow Vet, retry only under cap|saved caller or exact Plan/Vet route|
-| `rite-autocomplete/SKILL.md`|lifecycle cursor encounters admitted set or resumable journal|invoke classifier; execute returned route internally|saved phase/action; zero intermediate reply|
+| `rite-autocomplete/SKILL.md`|cursor: admitted set or resumable journal|classify; execute route internally|saved phase/action; no intermediate reply|
 | `rite-autocomplete/reference/loop.md`|loop tick sees Workflow Artifact trigger/state|invoke classifier once under owner lock; no actor-history migration|same loop cursor; no budget charge for verify/rerun|
 | `rite-autocomplete/reference/stop-conditions.md`|classifier returns owner-busy, exhausted, or existing hard gate|escalate `BLOCKED_EXHAUSTED`; on `WAIT_ACTIVE_OWNER` run independent work and recheck; stop on exact `BLOCKED_GATE` result|unchanged cursor plus fixed route-owned output|
 | `rite-build/SKILL.md`|Vet-ready admitted bytes require root authorship outside product wright|`ROOT_TRANSACTION`; root writes only admitted `.devrites/**` targets|saved Build slice cursor; wright product allowlist unchanged|
-| `rite-build/reference/phase-contract.md`|Build gate enters or resumes transaction|invoke canonical operation table; reconcile exact result|same slice/checkpoint cursor or Plan/Vet route|
+| `rite-build/reference/phase-contract.md`|Build: enter/resume transaction|invoke operation table; reconcile exact result|same slice/checkpoint cursor or Plan/Vet route|
 | `rite-prove/SKILL.md`|Prove consumes installed Workflow Artifact or `CLEANED` rerun|`VERIFY_EXISTING` or admitted proof path ending `PROVE_AND_RETURN`|saved Prove cursor; stop before real action|
 | `rite-vet/SKILL.md`|plan declares root-authored executable workflow file|emit exact admission; stale/missing authority uses `PLAN_VET_REPAIR`|Vet READY cursor or exact technical replan|

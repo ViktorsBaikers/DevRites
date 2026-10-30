@@ -46,6 +46,23 @@ func TestWorkflowAdmissionStructure(t *testing.T) {
 	if _, err := workflowAdmission([]byte(reviewed), "diagnostic"); err != nil {
 		t.Fatalf("reviewed identity rejected: %v", err)
 	}
+	for _, tc := range []struct{ name, old, replacement string }{
+		{"comparison", "`Concrete fixture assertion`", "`count > 0`"},
+		{"less than comparison", "`Concrete fixture assertion`", "`count < 10`"},
+		{"single quoted pipe", "`sh proof/check.sh`", "`printf 'PASS\\|CHECK\\n'`"},
+		{"double quoted pipe", "`sh proof/check.sh`", "`printf \"PASS\\|CHECK\\n\"`"},
+		{"escaped list data", "`sh proof/check.sh`", "`printf PASS\\;\\&CHECK`"},
+		{"quoted list data", "`sh proof/check.sh`", "`printf '; && \\|\\|'`"},
+		{"simple substitution", "`sh proof/check.sh`", "`printf \"$(pwd)\"`"},
+		{"literal substitution", "`sh proof/check.sh`", "`printf '$(printf x \\| cat)'`"},
+		{"return action", "`/rite-vet diagnostic`", "`/rite-plan diagnostic`"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := workflowAdmission([]byte(strings.Replace(good, tc.old, tc.replacement, 1)), "diagnostic"); err != nil {
+				t.Fatalf("valid admission rejected: %v", err)
+			}
+		})
+	}
 	_, cells, ok := workflowTableCells(`| one\|two | three\\| four |`)
 	if !ok || len(cells) != 3 || cells[0] != " one|two " || cells[1] != ` three\\` {
 		t.Fatalf("admission escaping: %q %v", cells, ok)
@@ -60,8 +77,29 @@ func TestWorkflowAdmissionStructure(t *testing.T) {
 		{"file minimum", "`9`", "`8`"},
 		{"journal minimum", "`34`", "`33`"},
 		{"missing reference", "## WA-IF-CHECK", "## WA-IF-OTHER"},
-		{"placeholder", "`Concrete fixture assertion`", "`TODO`"},
+		{"todo", "`Concrete fixture assertion`", "`TODO`"},
+		{"tbd", "`Concrete fixture assertion`", "`tBd`"},
+		{"placeholder", "`Concrete fixture assertion`", "`PlAcEhOlDeR`"},
+		{"angle placeholder", "`Concrete fixture assertion`", "`<assertion>`"},
+		{"empty cell", "`Concrete fixture assertion`", "` `"},
+		{"nested backticks", "`Concrete fixture assertion`", "``assertion``"},
+		{"multiline cell", "`Concrete fixture assertion`", "`first\nsecond`"},
 		{"shell list", "`sh proof/check.sh`", "`sh proof/check.sh; true`"},
+		{"pipeline", "`sh proof/check.sh`", "`sh proof/check.sh \\| cat`"},
+		{"escaped backslash then pipeline", "`sh proof/check.sh`", "`printf PASS\\\\\\| cat`"},
+		{"or list", "`sh proof/check.sh`", "`sh proof/check.sh \\|\\| true`"},
+		{"and list", "`sh proof/check.sh`", "`sh proof/check.sh && true`"},
+		{"background list", "`sh proof/check.sh`", "`sh proof/check.sh &`"},
+		{"substitution pipeline", "`sh proof/check.sh`", "`printf \"$(printf x \\| cat)\"`"},
+		{"substitution literal operator", "`sh proof/check.sh`", "`printf \"$(pwd)\\|CHECK\"`"},
+		{"quoted argument then pipeline", "`sh proof/check.sh`", "`printf 'PASS\\|CHECK' \\| cat`"},
+		{"unclosed quote", "`sh proof/check.sh`", "`printf 'PASS\\|CHECK`"},
+		{"trailing escape", "`sh proof/check.sh`", "`printf PASS\\`"},
+		{"missing action verb", "`/rite-vet diagnostic`", "`/ anything diagnostic`"},
+		{"unsupported action shape", "`/rite-vet diagnostic`", "`/other diagnostic`"},
+		{"extra action argument", "`/rite-vet diagnostic`", "`/rite-vet extra diagnostic`"},
+		{"wrong action slug", "`/rite-vet diagnostic`", "`/rite-vet other`"},
+		{"action extra space", "`/rite-vet diagnostic`", "`/rite-vet  diagnostic`"},
 		{"cwd", "`active-workspace`", "`../other`"},
 		{"mode", "`0700`", "`777`"},
 		{"index", "`00000000`", "`00000001`"},

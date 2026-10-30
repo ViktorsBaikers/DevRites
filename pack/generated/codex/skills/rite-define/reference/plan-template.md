@@ -1,14 +1,13 @@
 # `plan.md` template
 
-Build plan for `spec.md`; tech choices live here, not in spec. `$rite-plan` revises on
-new evidence.
+Plan for `spec.md`; tech choices here. `$rite-plan` revises on evidence.
 
 ```markdown
 # Plan: <Feature>
 Spec: ./spec.md   Decision coverage: ./decision-coverage.md   Date: <date>
 
 ## Summary
-<primary requirement + chosen approach, 1–2 sentences>
+<requirement + chosen approach, 1–2 sentences>
 
 ## Technical context
 - Language/runtime/version: <...>
@@ -33,18 +32,16 @@ Record feature owner, failure/recovery, slice, and evidence. Changed `not applic
 uses Spec Drift Guard.
 
 ## Global constraints
-Exact `spec.md` requirements inherited by every slice.
+Slices inherit exact `spec.md` requirements.
 
 ## Approach
-State strategy and rationale. For costly/hard-to-reverse boundaries, models, contracts,
-or dependencies compare ≥2 `Option · Drivers · Trade-offs · Consequence`.
+State strategy/rationale; for costly/hard-to-reverse boundaries/models/contracts/
+dependencies compare ≥2 `Option · Drivers · Trade-offs · Consequence`.
 
 ## Slice strategy
-For explicit workflow-only scope, use zero product slices and the existing empty
-candidate manifest (`No project files.` plus `## Touched files`). Map AC/REQ to
-Workflow Artifact behaviors and proof, not invented slices; follow
-[`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning).
-The following slice strategy applies to product work.
+Workflow-only: use
+[`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning),
+not product slice rules.
 
 List vertical `SLICE-###` increments, AC coverage, and risk-first order within dependency
 tiers. Wide refactors use expand → green migrate batches → contract, or an integration
@@ -52,13 +49,13 @@ branch + final verify slice.
 
 ## Architecture admission
 
-Promote to ADR only **irreversible cross-boundary** choices (public contract,
-security invariant, migration that cannot roll back). Reversible config, helper
-placement, library version, or env default stays in `plan.md` / `decisions.md` as
-implementation-local or planning-owned — not architecture.
+ADR only for **irreversible cross-boundary** choices (public contract, security
+invariant, non-rollback migration). Reversible config/helper placement/library
+version/env default stays implementation-local or planning-owned in `plan.md` /
+`decisions.md`, not architecture.
 
-**Failing case:** "Use env `FOO=bar` as default" recorded under Architecture decisions
-→ Vet requests downgrade to implementation-local horizon with observable trigger.
+**Failing case:** env `FOO=bar` default under Architecture decisions → Vet downgrades
+to implementation-local horizon with observable trigger.
 
 ## Architecture decisions
 Decisions + rationale (mirror to `decisions.md`). Prefer reuse and invariants over
@@ -67,8 +64,8 @@ ordering/idempotency, errors, versioning, config, and budgets.
 
 ## Decision horizons
 
-Classify every known unresolved/action item. Keep `HZN-###` across replans; never delete
-silently. Resolution/supersession needs evidence.
+Classify every unresolved/action item. Retain `HZN-###` across replans;
+resolution/supersession needs evidence, never silent deletion.
 
 | Horizon | Includes | Required disposition |
 |---|---|---|
@@ -109,16 +106,15 @@ shippable prefix. Every acceptance criterion above it is proven there, with no d
 below it.
 
 ## Validation strategy
-Name test/build/browser proof points. UI uses `design-brief.md` targets. Each proof names
-portable command/cwd/signal, prerequisites, and mutable provenance inputs.
+Name test/build/browser proof; UI uses `design-brief.md`. Each proof names portable
+command/cwd/signal, prerequisites, mutable provenance inputs.
 
 **Key links** — assembled wiring, one row each:
 `<from> → <to> via <mechanism>`. List wiring no slice test catches; `$rite-prove` walks it.
 `Key links: none` is deliberate.
 
 ## Complexity & deviations gate
-Justify deviations from reuse, simplicity, scope, dependency/design-system rules;
-otherwise simplify.
+Justify reuse/simplicity/scope/dependency/design-system deviations or simplify.
 | Deviation | Why needed | Simpler option rejected because |
 |-----------|-----------|---------------------------------|
 | <e.g. new dependency X> | <reason> | <why the in-repo option won't work> |
@@ -132,8 +128,8 @@ off / revert / restore), and **rollback-verification proof** (command + observed
 ## Scope boundaries
 Untouched scope; copy spec “Ask first”/“Never do.”
 
-## Source docs needed
-Framework/library sources (triggers source-driven).
+## Source docs
+Framework/library sources (source-driven trigger).
 
 ## Readiness gate  *(must pass before $rite-build)*
 - [ ] `decision-coverage.md` says `Decision coverage: CLEAR`

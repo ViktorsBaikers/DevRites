@@ -11,10 +11,9 @@ user-invocable: true
 
 # /rite-vet: review the plan before build
 
-Vet each plan: scope, architecture, quality, proof, performance, failures, writer
-safety. Fold cited technical findings; design Build tests. Temper owns product,
-Vet implementation. Current `$ARGUMENTS` (`--full`) feeds `reference/depth.md`
-triggers; profiles never remove the exact plan-reviewer gate
+Vet scope/architecture/quality/proof/performance/failures/writer safety. Fold cited
+findings; design Build tests. Temper owns product, Vet implementation.
+`$ARGUMENTS` (`--full`) feeds `reference/depth.md`; profiles never remove exact plan-reviewer gate
 ([orchestration-profiles.md](../devrites-lib/reference/orchestration-profiles.md)).
 
 ## Rules
@@ -29,8 +28,7 @@ platform/tenant/source of truth, a newly optional field, a constant turned param
 confirm the [`assumption-checkpoints.md`](../devrites-lib/reference/standards/assumption-checkpoints.md) question (trigger `assumption-delta`)
 was answered and recorded, not skipped-as-negative.
 Before classifying any Reslice, read `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
-When a
-plan declares a root-authored executable workflow file, read
+For root-authored executable workflow files, read
 [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md).
 
 <!-- BEGIN RESLICE ROUTE-TO-ACTION -->
@@ -140,14 +138,9 @@ plan declares a root-authored executable workflow file, read
    `devrites-engine check preconditions <slug>` (rows with `Run at` `vet`, including each
    `dependency-dry-run` and preserve-baseline row). A failure folds into Plan repair; only an
    owner-owned decision becomes a question, batched under the afk-hitl decision-chain rule.
-4. **Audit readiness.** For explicit workflow-only tasks, follow
-   [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning):
-   check AC/REQ → admitted WA behavior and executable proof, all admission fields,
-   fixtures, bounds and root ownership, not product slice writer/closure checks.
-   Keep empty product candidate and zero built slices; no Build/wright dispatch.
-   Missing/malformed admission routes Plan; stale admission requires fresh Vet and
-   ordinary readiness SHA binding. Never switch ACTIVE for a named workspace.
-   Otherwise goal-backward map every requirement, criterion, NFR,
+4. **Audit readiness.** Workflow-only uses
+   [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning),
+   not product slice writer/closure checks. Otherwise map every requirement, criterion, NFR,
    interaction, edge/prohibition, and decision row to one slice and executable
    proof. Verify UX/spec/architecture alignment, contracts, dependency order,
    slice independence/wiring, prerequisites, failure/observability/rollback, and
@@ -205,20 +198,21 @@ plan declares a root-authored executable workflow file, read
    (dep-graph and traceability lookup), not only fingerprint closure. Within one correction, no broad
    third loop. If it changes plan, fold again. A closed input plus a distinct Critical/Important invariant returns
    that new fingerprint as progress. Then close matrix and rerun ID/meaning audit.
-8. **Build readback and readiness.** Add a cited five-line readback to
-   `eng-review.md` (artifacts.md §7 rows 1–5): outcome/ACs; IN/OUT/must-NOT; UI direction and architecture/
-   critical flow; slice order/first slice; decisive proof/action-time gates. No implementer should need to invent product, architecture, or proof.
-   Contradiction, ownerlessness, or material ambiguity blocks via Clarify or Plan.
+8. **Build readback and readiness.** Cite five lines in `eng-review.md` (artifacts.md
+   §7 rows 1–5): outcome/ACs; IN/OUT/must-NOT; UI/architecture/critical flow;
+   slice order/first; decisive proof/action-time gates. Never leave product,
+   architecture or proof to invention. Contradiction, ownerlessness or material
+   ambiguity blocks via Clarify or Plan.
 
-   Write exactly one `Implementation readiness: READY`, `NEEDS CLARIFICATION`,
-   or `NEEDS REPLAN`. Root sets READY after every account, checklist,
-   preflight, and sweep is green, including the
+   Write one `Implementation readiness: READY`, `NEEDS CLARIFICATION`, or
+   `NEEDS REPLAN`. Root sets READY only with all accounts/checklists/preflight/
+   sweeps green, including the
    [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) marker sweep whose
    `marker sweep:` line is recorded in `eng-review.md`; a kept hit blocks READY. Write phase/next step and emit one
    `Readiness inputs SHA-256` with
    `devrites-engine check readiness --emit-binding <slug>`; normal readiness check
-   must pass; workflow-only checks admission instead. For product work it replays Build-entry `check slice` on every unbuilt slice, so
-   READY needs each to pass (fix failures in `/rite-plan`). READY also needs every
+   must pass. Workflow-only checks admission; product work replays Build-entry
+   `check slice` on every unbuilt slice; all must pass (fix in `/rite-plan`). READY also needs every
    unbuilt slice's write set closed against the live tree (plan-reviewer
    dimension 6), so frontier gaps fold in one Plan repair, not one per slice; an
    affected recheck also closes every unbuilt slice and never defers a closure row. A `sequence_lookahead: yes` workspace also records one
@@ -230,12 +224,10 @@ plan declares a root-authored executable workflow file, read
    `Proves` spec line to `Deferred hardening` before READY, never deepen them. Technical failure records reproduction, not qid. Human gap awaits
    Clarify. Optional cross-model follows `reference/cross-model.md` (trigger `cross-model`).
 
-   With READY, no pending remediation, and a valid technical return cursor,
-   restore and consume the return cursor instead of defaulting to Build. Preserve
-   it through admitted remediation. Only a real stop reaches the human.
-9. **Stop at the Vet boundary.** Show Build readback, scope verdict, lowest axis,
-   closed gaps, preflight, action checkpoints, and critical failures. Recommend
-   Build only when READY.
+   READY + no remediation + valid technical return cursor: restore/consume it,
+   never default to Build. Preserve it through remediation. Only real stops reach humans.
+9. **Stop at Vet.** Show Build readback, scope verdict, lowest axis, closed gaps,
+   preflight, action checkpoints, critical failures. Recommend Build only when READY.
 
 > Do not replace interactive review with artifacts, change acceptance through
 > hardening, score without source evidence, or ignore unexplained complexity.

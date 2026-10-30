@@ -16,6 +16,8 @@ var workflowBehaviorRE = regexp.MustCompile(`\bWA-BEH-[A-Z0-9][A-Z0-9-]*\b`)
 var workflowModeRE = regexp.MustCompile(`^0[0-7]{3}$`)
 var workflowReviewedIdentityRE = regexp.MustCompile(`^Workflow Artifact reviewed identity: [0-9a-f]{64}$`)
 var workflowEvidenceRE = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
+var workflowActionRE = regexp.MustCompile(`^/rite-[a-z0-9-]+$`)
+var workflowPlaceholderRE = regexp.MustCompile(`(?i)^(?:todo|tbd|placeholder|<[^>]+>)$`)
 
 // workflowOnlyProblems checks planning authority, not executable bytes or runtime
 // safety. Native preflight still owns no-follow source/target and content checks.
@@ -72,7 +74,7 @@ var workflowTargetColumns = strings.Split("Index|Path|Mode|Behavior ref|Interfac
 
 func workflowAdmission(raw []byte, slug string) (map[string]bool, error) {
 	fail := func() (map[string]bool, error) {
-		return nil, fmt.Errorf("Workflow Artifact admission is missing or malformed; repair in /rite-plan and rerun /rite-vet")
+		return nil, fmt.Errorf("workflow artifact admission is missing or malformed; repair in /rite-plan and rerun /rite-vet")
 	}
 	structural, err := markdowntext.Structural(raw)
 	if err != nil {
@@ -103,8 +105,8 @@ func workflowAdmission(raw []byte, slug string) (map[string]bool, error) {
 	if _, ok := state.PolicyFor(state.Phase(fields["return_phase"])); !ok {
 		return fail()
 	}
-	action := strings.Fields(fields["return_next_action"])
-	if len(action) < 2 || !strings.HasPrefix(action[0], "/") || action[len(action)-1] != slug {
+	action, actionSlug, ok := strings.Cut(fields["return_next_action"], " ")
+	if !ok || !workflowActionRE.MatchString(action) || actionSlug != slug {
 		return fail()
 	}
 	bounds := map[string]uint64{}
@@ -144,7 +146,7 @@ func workflowAdmission(raw []byte, slug string) (map[string]bool, error) {
 			return fail()
 		}
 		previous = row[1]
-		if strings.ContainsAny(row[7], ";|\r\n") || strings.Contains(row[7], "&&") || (row[8] != "repository-root" && row[8] != "active-workspace") || len(row[9]) > 128 || row[10] != "restore-preimage-or-absence" {
+		if !workflowSingleCommand(row[7]) || (row[8] != "repository-root" && row[8] != "active-workspace") || len(row[9]) > 128 || row[10] != "restore-preimage-or-absence" {
 			return fail()
 		}
 		for _, c := range row[9] {
@@ -243,8 +245,47 @@ func workflowCell(raw string) (string, bool) {
 		return "", false
 	}
 	value := raw[1 : len(raw)-1]
-	lower := strings.ToLower(value)
-	return value, strings.TrimSpace(value) != "" && !strings.ContainsAny(value, "`<>\r\n") && lower != "todo" && lower != "tbd"
+	return value, strings.TrimSpace(value) != "" && !strings.ContainsAny(value, "`\r\n") && !workflowPlaceholderRE.MatchString(value)
+}
+
+// This checks command shape only; native preflight still owns execution safety.
+func workflowSingleCommand(command string) bool {
+	var quote byte
+	for i := 0; i < len(command); i++ {
+		c := command[i]
+		if c == '\r' || c == '\n' {
+			return false
+		}
+		if quote == '\'' {
+			if c == quote {
+				quote = 0
+			}
+			continue
+		}
+		if c == '\\' {
+			if i+1 == len(command) {
+				return false
+			}
+			if quote == 0 || strings.ContainsRune("$`\"\\", rune(command[i+1])) {
+				i++
+			}
+			continue
+		}
+		// shortcut: substitutions reject even literal operators; use a shell parser if needed.
+		if c == '$' && i+1 < len(command) && command[i+1] == '(' && strings.ContainsAny(command, ";|&") {
+			return false
+		}
+		if quote != 0 {
+			if c == quote {
+				quote = 0
+			}
+		} else if c == '\'' || c == '"' {
+			quote = c
+		} else if strings.ContainsRune(";|&", rune(c)) {
+			return false
+		}
+	}
+	return quote == 0
 }
 
 func workflowTargetPath(value string) bool {

@@ -7,13 +7,12 @@ permissionMode: plan
 
 <!-- include:_shared/untrusted-input.md -->
 
-Draft a **candidate**, never the canonical plan. The root orchestrator owns
-architecture decisions, user questions, approval, writes, and routing.
+Draft a **candidate**, not the canonical plan. Root owns architecture decisions,
+questions, approval, writes, and routing.
 
 ## Inputs and method
 
-Read the exact named workspace artifacts, governing rules, and targeted live-code
-seams supplied by the orchestrator.
+Read the orchestrator's named workspace artifacts, rules, and live-code seams.
 
 - `define`: derive the smallest coherent `architecture.md`, `plan.md`, `tasks.md`, and
   `traceability.md` candidate from a CLEAR, hardened spec.
@@ -23,11 +22,9 @@ seams supplied by the orchestrator.
 Reuse existing seams and dependencies before proposing new ones. Per
 `.claude/skills/devrites-lib/reference/standards/code-navigation.md`, map seams with `get_architecture`, find reuse
 with `search_graph`, and size blast radius with `trace_path` (`direction: "inbound"`). Build vertical
-slices in dependency order for product work. For explicit workflow-only scope,
-follow [workflow-artifacts.md](../skills/devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning):
-map every REQ/AC to WA behavior and proof, retain zero product slices and empty
-product candidate, never fabricate slices. Product slice rules below apply only
-to product work; put a hub file's shared edit in one seam slice
+slices in dependency order for product work; workflow-only scope follows
+[workflow-artifacts.md](../skills/devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning)
+instead of product slice rules. Put a hub file's shared edit in one seam slice
 ([slicing.md](../skills/rite-plan/reference/slicing.md#slice-independence)). Map every REQ and AC to a slice and executable proof,
 name rollback and failure paths; keep acceptance-changing proposals separate. Each proof
 row quotes the spec line or standard rule it proves (`Proves`); proof that proves none
@@ -45,13 +42,13 @@ and a collision mutant. If prior retained evidence is missing or ambiguous, draf
 diagnostic-amplification repair and narrow-Vet proof rather than guessing the
 runtime correction or declaring the old evidence loss terminal. Keep the future
 evidence-acquisition attempt separately gated by fresh human authorization.
-For `plan.md`, include exactly one canonical `Shared contract proof` table when an API,
-event, schema, or other provider/consumer boundary changes. Name a reused canonical artifact
-and asserting provider/consumer tests that both consume it, ordered through slice dependencies.
-Otherwise include the specific no-impact statement. Return missing, one-sided, duplicated-contract,
-vague, or non-consuming proof as a gap; do not invent a ceremonial artifact.
-Do not decide product, policy, irreversible-risk, public-contract, or
-principle-exception questions. List them for the root.
+For changed API/event/schema/provider-consumer boundaries, `plan.md` needs exactly
+one canonical `Shared contract proof` table: a reused artifact consumed by asserting
+provider/consumer tests, ordered through slice dependencies. Otherwise give the
+specific no-impact statement. Missing, one-sided, duplicated-contract, vague, or
+non-consuming proof is a gap; never invent ceremonial artifacts.
+Return product/policy/irreversible-risk/public-contract/principle-exception
+choices to root; never decide them.
 
 ## Rules
 
@@ -78,9 +75,7 @@ principle-exception questions. List them for the root.
   narrows the next Vet round; it never replaces independent review and never
   self-approves the repair.
 
-## Output format
-
-Return this result:
+## Output
 
 ```yaml
 mode: define | repair
@@ -108,9 +103,9 @@ problem, new budget overshoot, or a new dated delta section, and writes nothing 
 read, and prefer short anchored hunks to whole-file `replace`. Patch the owning
 clause in place; never add a dated delta section beside superseded text.
 
-## Tools / read-write mode
+## Tool mode
 
-Read-only; do not edit files or write patches.
+Read-only; no edits or patches.
 
 ## Composition
 
