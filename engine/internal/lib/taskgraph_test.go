@@ -647,3 +647,34 @@ func TestPrecheckSliceSkipsLaterSliceWriterGates(t *testing.T) {
 		t.Fatalf("malformed slice id = %d, want usage", code)
 	}
 }
+
+func TestWorkflowOnlyHasNoProductDispatchContracts(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	workspace := filepath.Join(root, "work", "workflow")
+	if err := os.MkdirAll(workspace, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range map[string]string{
+		"tasks.md": "# Tasks\n\nWork scope: workflow-only\n",
+		"state.md": "| phase | vet |\n| schema | 4 |\n",
+		"spec.md":  "# Spec\n",
+	} {
+		if err := os.WriteFile(filepath.Join(workspace, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	graph, err := CheckTaskGraph(root, "workflow")
+	if err != nil || !graph.WorkflowOnly || len(graph.Problems) > 0 || len(graph.Slices) != 0 {
+		t.Fatalf("graph=%+v err=%v", graph, err)
+	}
+	if got := UnbuiltSliceProblems(root, "workflow"); len(got) > 0 {
+		t.Fatalf("workflow routed to product contract: %v", got)
+	}
+	out, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunCheckSlice(root, []string{"workflow", "SLICE-001"}, out, stderr); code != 3 {
+		t.Fatalf("workflow dispatched nonexistent slice: %d %s %s", code, out, stderr)
+	}
+	if got := checkAllowlistPaths([]string{".devrites/work/workflow/proof/check.sh"}); len(got) == 0 {
+		t.Fatal("product writer admitted workflow path")
+	}
+}

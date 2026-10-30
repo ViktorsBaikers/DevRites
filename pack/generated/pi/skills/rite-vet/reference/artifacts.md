@@ -11,6 +11,13 @@ Authority: `.pi/skills/devrites-lib/reference/standards/acceptance-preserving-re
 - `BLOCKED_INPUT` → no planning writes; exact diagnostic; recover input; reclassify.
 <!-- END RESLICE ROUTE-TO-ACTION -->
 
+For explicit workflow-only tasks, use
+[`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning):
+AC → admitted WA behavior rows in tasks/test-plan; root-owned admission/proof
+instead of product writer/slice rows. Keep readiness SHA binding, empty product
+candidate and built counts unchanged. No Build dispatch. Product templates below
+remain unchanged for product work.
+
 ## `eng-review.md`: the record
 
 Write/update `.devrites/work/<slug>/eng-review.md`; never clobber.

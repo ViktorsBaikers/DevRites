@@ -32,6 +32,13 @@ Per `.claude/skills/devrites-lib/reference/standards/code-navigation.md`, check
 placement with `get_architecture`, reuse with `search_graph`, and blast radius with
 `trace_path` (`direction: "inbound"`); fall back to Read/Grep/Glob.
 
+For explicit workflow-only tasks, also read `test-plan.md` and follow
+[workflow-artifacts.md](../skills/devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning).
+Review REQ/AC → admitted WA behavior/proof, admission completeness and root ownership
+instead of product slice writer/closure checks. Zero product slices and empty
+candidate are valid; do not demand fabricated slices or Build dispatch. Apply
+all seven dimensions to the workflow behaviors and proof.
+
 ## Score the seven dimensions
 For each dimension, **cite the evidence first**, including an absent plan or spec
 line, and then assign the band. Do not choose a score and justify it afterward:

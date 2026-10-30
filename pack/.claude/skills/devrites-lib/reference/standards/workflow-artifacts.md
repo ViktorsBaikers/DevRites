@@ -4,9 +4,37 @@
 
 > Applies when: a plan declares root-authored executable workflow files.
 
-Workflow Artifact plans/isolates/proves; never enters product candidate/readiness/
-built count or authorizes consumption. Module owns semantics; callers retain only
-link and entry/return.
+Workflow Artifact plans/isolates/proves; never enters the product candidate or
+built count and never authorizes consumption. Workspace planning readiness binds
+its admission and proof references, not executable bytes as product changes.
+Module owns semantics; callers retain only link and entry/return.
+
+## Workflow-only planning
+
+For exclusively root-owned executable workflow work, put the exact standalone
+line `Work scope: workflow-only` outside fences in `tasks.md`, with zero
+`## SLICE-###` sections. Empty tasks never imply this scope; mixed marker plus
+product slices is invalid. Keep ordinary spec AC IDs. In both `tasks.md` and
+`test-plan.md`, map every AC in two-cell rows `| AC-001 | WA-BEH-ID |` (backticks
+around the behavior ID are optional); `traceability.md` maps REQ/AC → that same
+behavior → proof → evidence. Define may name the planned behaviors before Vet
+admits them; Vet requires every mapped behavior in the admission below.
+
+Use the existing empty product representation in `touched-files.md`:
+`## Candidate manifest`, then `No project files.`, plus required `## Touched files`.
+Do not add workflow targets to the product manifest or invent slices. Define
+retains architecture/plan/tasks/traceability; Vet checks Workflow Artifact
+admission instead of product slice writer/closure checks. No Build/wright dispatch,
+built checkpoint, or ACTIVE switch. Product and mixed product work keep ordinary
+slice contracts; product writers still cannot write `.devrites`.
+
+Readiness at Vet and later checks admission structure, bounds, workspace-relative
+paths, ownership namespace, and referenced behavior/interface/fixtures. Ordinary
+`Readiness inputs SHA-256` binds current tasks and test-plan; editing admission or
+references makes READY stale. Do not embed that digest into its own bound inputs.
+This planning check does not open targets or authorize execution: native preflight
+still validates resolved paths, symlinks, trusted bytes, content limits and all
+transaction safety before mutation.
 
 ## Contents
 

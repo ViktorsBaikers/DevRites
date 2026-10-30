@@ -26,7 +26,11 @@ seams supplied by the orchestrator.
 Reuse existing seams and dependencies before proposing new ones. Per
 `.devin/skills/devrites-lib/reference/standards/code-navigation.md`, map seams with `get_architecture`, find reuse
 with `search_graph`, and size blast radius with `trace_path` (`direction: "inbound"`). Build vertical
-slices in dependency order; put a hub file's shared edit in one seam slice
+slices in dependency order for product work. For explicit workflow-only scope,
+follow [workflow-artifacts.md](../skills/devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning):
+map every REQ/AC to WA behavior and proof, retain zero product slices and empty
+product candidate, never fabricate slices. Product slice rules below apply only
+to product work; put a hub file's shared edit in one seam slice
 ([slicing.md](../skills/rite-plan/reference/slicing.md#slice-independence)). Map every REQ and AC to a slice and executable proof,
 name rollback and failure paths; keep acceptance-changing proposals separate. Each proof
 row quotes the spec line or standard rule it proves (`Proves`); proof that proves none
