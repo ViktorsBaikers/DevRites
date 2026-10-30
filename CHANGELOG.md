@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.2.5](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.4...v7.2.5) (2026-10-30)
+
+### Fixed
+
+* **devrites:** block autocomplete handoff of an internal phase edge ([#189](https://github.com/ViktorsBaikers/DevRites/issues/189)) ([5655fa7](https://github.com/ViktorsBaikers/DevRites/commit/5655fa7efdb8cbbbb0612fb603b170a4affa7fbf))
+
 ## [7.2.4](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.3...v7.2.4) (2026-10-30)
 
 ### Fixed

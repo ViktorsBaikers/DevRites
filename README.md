@@ -31,7 +31,7 @@ history can't lose it. After you clear the conversation, switch hosts, or hand
 the feature to another engineer, the next session reads the same plan,
 decisions, and evidence before it continues.
 
-**Status:** [`v7.2.4`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v7.2.4): see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
+**Status:** [`v7.2.5`](https://github.com/ViktorsBaikers/DevRites/releases/tag/v7.2.5): see [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 
 This is the latest published release; `main` may contain unreleased work.
 
