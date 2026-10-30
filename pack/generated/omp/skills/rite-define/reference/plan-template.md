@@ -40,6 +40,12 @@ State strategy and rationale. For costly/hard-to-reverse boundaries, models, con
 or dependencies compare ≥2 `Option · Drivers · Trade-offs · Consequence`.
 
 ## Slice strategy
+For explicit workflow-only scope, use zero product slices and the existing empty
+candidate manifest (`No project files.` plus `## Touched files`). Map AC/REQ to
+Workflow Artifact behaviors and proof, not invented slices; follow
+[`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning).
+The following slice strategy applies to product work.
+
 List vertical `SLICE-###` increments, AC coverage, and risk-first order within dependency
 tiers. Wide refactors use expand → green migrate batches → contract, or an integration
 branch + final verify slice.

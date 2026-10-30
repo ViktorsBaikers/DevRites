@@ -21,10 +21,11 @@ type TaskSlice struct {
 
 // TaskGraphResult is the deterministic outcome of parsing a tasks.md slice graph.
 type TaskGraphResult struct {
-	Slices   []TaskSlice
-	Cycle    []string // empty when acyclic
-	Unknown  []string // dependency ids with no defining slice
-	Problems []string // human-readable blockers
+	WorkflowOnly bool // explicit work scope, never inferred from an empty graph
+	Slices       []TaskSlice
+	Cycle        []string // empty when acyclic
+	Unknown      []string // dependency ids with no defining slice
+	Problems     []string // human-readable blockers
 }
 
 var (
@@ -72,6 +73,20 @@ func ParseTaskGraph(tasksMarkdown []byte) TaskGraphResult {
 	}
 
 	headers := sliceHeaderRE.FindAllStringSubmatchIndex(text, -1)
+	markers := 0
+	for _, line := range strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n") {
+		if line == "Work scope: workflow-only" {
+			markers++
+		}
+	}
+	if markers > 0 {
+		if markers != 1 || len(headers) != 0 {
+			result.Problems = append(result.Problems, "workflow-only scope requires exactly one marker and zero SLICE-### sections")
+			return result
+		}
+		result.WorkflowOnly = true
+		return result
+	}
 	if len(headers) == 0 {
 		result.Problems = append(result.Problems, "no SLICE-### sections found")
 		return result

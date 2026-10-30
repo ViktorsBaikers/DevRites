@@ -34,6 +34,13 @@ Pull these via `Read` when shaping the plan:
 - Author one `architecture.md`/`plan.md` section at a time. Before slicing, use
   [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) Tournament for open
   designs and Delphi for uncertain estimates.
+- **Workflow-only exception.** Follow
+  [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning)
+  before applying product slice rules below: explicit scope, zero product slices,
+  existing empty candidate, AC/REQ → WA behavior/proof mapping in tasks, traceability
+  and test-plan. Keep every AC; never fabricate a slice or dispatch Build for
+  root-owned workflow artifacts. Slice-count, slice-format, writer and cross-slice
+  requirements below apply only when product slices exist.
 - **Derive the slice count from the work.**
   One per independently-shippable increment, sized by [`slicing.md`](../rite-plan/reference/slicing.md); map every acceptance
   criterion. User counts are hints: explain honest differences, never pad/compress.

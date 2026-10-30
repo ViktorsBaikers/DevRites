@@ -139,7 +139,14 @@ plan declares a root-authored executable workflow file, read
    `devrites-engine check preconditions <slug>` (rows with `Run at` `vet`, including each
    `dependency-dry-run` and preserve-baseline row). A failure folds into Plan repair; only an
    owner-owned decision becomes a question, batched under the afk-hitl decision-chain rule.
-4. **Audit readiness.** Goal-backward map every requirement, criterion, NFR,
+4. **Audit readiness.** For explicit workflow-only tasks, follow
+   [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning):
+   check AC/REQ → admitted WA behavior and executable proof, all admission fields,
+   fixtures, bounds and root ownership, not product slice writer/closure checks.
+   Keep empty product candidate and zero built slices; no Build/wright dispatch.
+   Missing/malformed admission routes Plan; stale admission requires fresh Vet and
+   ordinary readiness SHA binding. Never switch ACTIVE for a named workspace.
+   Otherwise goal-backward map every requirement, criterion, NFR,
    interaction, edge/prohibition, and decision row to one slice and executable
    proof. Verify UX/spec/architecture alignment, contracts, dependency order,
    slice independence/wiring, prerequisites, failure/observability/rollback, and
@@ -209,7 +216,7 @@ plan declares a root-authored executable workflow file, read
    `marker sweep:` line is recorded in `eng-review.md`; a kept hit blocks READY. Write phase/next step and emit one
    `Readiness inputs SHA-256` with
    `devrites-engine check readiness --emit-binding <slug>`; normal readiness check
-   must pass, and it replays Build-entry `check slice` on every unbuilt slice, so
+   must pass; workflow-only checks admission instead. For product work it replays Build-entry `check slice` on every unbuilt slice, so
    READY needs each to pass (fix failures in `/rite-plan`). READY also needs every
    unbuilt slice's write set closed against the live tree (plan-reviewer
    dimension 6), so frontier gaps fold in one Plan repair, not one per slice; an

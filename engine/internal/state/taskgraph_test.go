@@ -92,3 +92,25 @@ func TestParseTaskGraphRejectsMalformedVia(t *testing.T) {
 		}
 	}
 }
+
+func TestParseTaskGraphWorkflowOnlyRequiresExplicitUnmixedScope(t *testing.T) {
+	for _, tc := range []struct {
+		name, body        string
+		workflow, blocked bool
+	}{
+		{"explicit", "Work scope: workflow-only\n", true, false},
+		{"CRLF", "Work scope: workflow-only\r\n", true, false},
+		{"empty", "# Tasks\n", false, true},
+		{"fenced", "```\nWork scope: workflow-only\n```\n", false, true},
+		{"mixed", "Work scope: workflow-only\n## SLICE-001\nDependencies: none\n", false, true},
+		{"duplicate", "Work scope: workflow-only\nWork scope: workflow-only\n", false, true},
+		{"product", "## SLICE-001\nDependencies: none\n", false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ParseTaskGraph([]byte(tc.body))
+			if got.WorkflowOnly != tc.workflow || (len(got.Problems) > 0) != tc.blocked {
+				t.Fatalf("got %+v", got)
+			}
+		})
+	}
+}

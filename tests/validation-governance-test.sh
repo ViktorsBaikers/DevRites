@@ -101,6 +101,37 @@ printf 'unreviewed growth that must trip the ratchet\n' >> "$T/size/pack/.claude
 run_fail_contains "instruction baseline catches reference growth" "reference/details.md grew" node "$ROOT/scripts/check-instruction-size-baseline.mjs" --root "$T/size" --baseline "$T/size/tests/baseline.json"
 run_fail_contains "reference file budget is blocking" "reference/details.md" env DEVRITES_REFERENCE_FILE_BUDGET=20 node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/size/pack/.claude/skills"
 
+# Only the exact workflow-artifacts reference gets the reviewed default increase.
+python3 - "$T/reference budgets" <<'PY'
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+for tree, name, size in (
+    ("valid", "devrites-lib/reference/standards/workflow-artifacts.md", 33624),
+    ("grown", "devrites-lib/reference/standards/workflow-artifacts.md", 33625),
+    ("ordinary", "demo/reference/details.md", 32001),
+    ("wrong-path", "demo/reference/workflow-artifacts.md", 32001),
+):
+    path = root / tree / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"x" * size)
+PY
+run_ok "workflow artifacts accepts the exact reviewed size under a custom spaced base" \
+  node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/reference budgets/valid"
+run_fail_contains "workflow artifacts rejects growth past the reviewed size" "workflow-artifacts.md is 33625 bytes (max 33624)" \
+  node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/reference budgets/grown"
+run_fail_contains "ordinary reference keeps the default budget" "details.md is 32001 bytes (max 32000)" \
+  node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/reference budgets/ordinary"
+run_fail_contains "same basename at a different path keeps the default budget" "workflow-artifacts.md is 32001 bytes (max 32000)" \
+  node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/reference budgets/wrong-path"
+for budget in 32000 20; do
+  run_fail_contains "reference override $budget still limits workflow artifacts" "workflow-artifacts.md is 33624 bytes (max $budget)" \
+    env DEVRITES_REFERENCE_FILE_BUDGET="$budget" node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/reference budgets/valid"
+done
+run_fail_contains "total override still limits valid workflow artifacts" "markdown payload is 33624 bytes (max 33623)" \
+  env DEVRITES_SKILL_TOTAL_BUDGET=33623 node "$ROOT/scripts/check-generated-skill-budget.mjs" "$T/reference budgets/valid"
+
 # Model-visible routing metadata has its own aggregate budget.
 mkdir -p "$T/routing/demo"
 cat > "$T/routing/demo/SKILL.md" <<'MD'

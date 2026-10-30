@@ -124,9 +124,9 @@ EXPECTED_NORMAL_GENERATED_DELTA = {
 }
 EXPECTED_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "20bccf86a4fc8238961c7cf94a914c0711298423f6d4f7580d8cc72452ea2659",
+        "c19708cb47b52b67b428f054c0bba946b23571cc88b6098689b540b831605070",
     "codex/skills/devrites-lib/reference/standards/workflow-artifacts.md":
-        "415ef99af7666b7f35a592cbc349b2a92905b1f786aaf0008b26f48fcf021a6b",
+        "e9b2040e84758064dd77378cfbb6f64bee91d6c9a0d35f9a9d8bb0b41dccac07",
 }
 PRECHANGE_NORMAL_GENERATED_SHA256 = {
     "claude/skills/devrites-lib/reference/standards/workflow-artifacts.md":

@@ -155,6 +155,12 @@ func checkObservation(kind Kind, observation *state.WorkspaceObservation) (*Resu
 		}
 	}
 	if len(missingFiles) == 0 {
+		for _, problem := range workflowOnlyProblems(observation, policy) {
+			stateProblems = append(stateProblems, "workflow-only: "+problem)
+			blocked = true
+		}
+	}
+	if len(missingFiles) == 0 {
 		for _, problem := range acceptanceMapProblems(observation, policy) {
 			stateProblems = append(stateProblems, "acceptance-map: "+problem)
 			blocked = true
