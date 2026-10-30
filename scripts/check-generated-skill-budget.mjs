@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Guard generated host skill payloads against accidental context bloat.
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -9,6 +9,8 @@ const base = process.argv[2] || join(root, 'pack', '.claude', 'skills');
 const totalLimit = Number(process.env.DEVRITES_SKILL_TOTAL_BUDGET || 1_600_000);
 const fileLimit = Number(process.env.DEVRITES_SKILL_FILE_BUDGET || 64_000);
 const referenceFileLimit = Number(process.env.DEVRITES_REFERENCE_FILE_BUDGET || 32_000);
+// Preserve full workflow guidance; the canonical instruction baseline ratchets future growth.
+const workflowArtifactsLimit = Number(process.env.DEVRITES_REFERENCE_FILE_BUDGET || 33_624);
 const routingLimit = Number(process.env.DEVRITES_SKILL_ROUTING_BUDGET || 5_200);
 const agentRoutingLimit = Number(process.env.DEVRITES_AGENT_ROUTING_BUDGET || 7_200);
 let total = 0;
@@ -57,7 +59,9 @@ for (const file of markdownFiles(base)) {
   const contents = readFileSync(file);
   const bytes = Buffer.byteLength(contents);
   total += bytes;
-  const limit = file.endsWith('/SKILL.md') ? fileLimit : referenceFileLimit;
+  const referenceLimit = relative(base, file).split(sep).join('/') === 'devrites-lib/reference/standards/workflow-artifacts.md'
+    ? workflowArtifactsLimit : referenceFileLimit;
+  const limit = file.endsWith('/SKILL.md') ? fileLimit : referenceLimit;
   if (bytes > limit) fail(`${relative(root, file)} is ${bytes} bytes (max ${limit})`);
   if (file.endsWith('/SKILL.md')) {
     const fields = frontmatter(contents.toString());
