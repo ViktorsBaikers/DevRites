@@ -389,7 +389,9 @@ Autocomplete discloses the exact Git plan, then still stops for a fresh literal
 `GO` and native host approval. It also pauses for irreversible risk, human-only access/actions, escalating
 gates, unanswered blocking with no recommended option, a remaining NO-GO, or low confidence — not for recommended-option blocking questions, temper expand, validating
 gates, `--max-slices`, or default slice/agent/time/review-queue caps.
-Objective red checks use bounded recovery instead. Args:
+Objective red checks use bounded recovery instead. A not-READY vet under AFK is
+not a pause: `devrites-engine check continuation` prints `continuation: required`
+and the phase command to invoke; `clear` is the only time autocomplete may reply. Args:
 `[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] [--cross-model] [--lookahead]`.
 Optional flags are inactive unless their exact token occurs in the invocation;
 `--max-slices` requires one positive base-10 integer and does not cap this run.

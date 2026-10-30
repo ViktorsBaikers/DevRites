@@ -24,6 +24,7 @@ func TestRootModeForCoversReadAndWriteSurfaces(t *testing.T) {
 		{name: "check preconditions", command: "check", args: []string{"preconditions"}, want: rootStrictUsage},
 		{name: "check anchors", command: "check", args: []string{"anchors"}, want: rootStrictUsage},
 		{name: "check perturb", command: "check", args: []string{"perturb"}, want: rootStrictUsage},
+		{name: "check continuation", command: "check", args: []string{"continuation"}, want: rootStrictUsage},
 		{name: "candidate freeze", command: "candidate", args: []string{"freeze"}, want: rootStrictUsage},
 		{name: "candidate without freeze", command: "candidate", args: []string{"other"}, want: rootUnused},
 		{name: "packet", command: "packet", want: rootStrictUsage},
@@ -196,7 +197,7 @@ func TestNestedCommandFamilyUsageListsOnlyRetainedCommands(t *testing.T) {
 		want    string
 		removed []string
 	}{
-		{args: []string{"check"}, want: "check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|affected|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup|anchors|perturb>"},
+		{args: []string{"check"}, want: "check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|affected|slice|diff-scope|skill-trust|indexes|regression|continuation|drift|windows|dup|anchors|perturb>"},
 		{args: []string{"state"}, want: "state <resolve|merge-manifest|apply-bundle|set|append|close>", removed: []string{"clarify", "tick-afk", "recovery"}},
 	} {
 		t.Run(test.args[0], func(t *testing.T) {

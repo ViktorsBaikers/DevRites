@@ -41,6 +41,8 @@ Usage:
   devrites-engine check skill-trust <path> Scan one skill/agent Markdown for trust violations
   devrites-engine check regression <slug> [--update]
                                          Compare workspace progress against the recorded baseline; --update ratchets it
+  devrites-engine check continuation [slug]
+                                         AFK + running internal phase edge must be invoked, not replied to
   devrites-engine check drift <slug> [--record]
                                          Attribute readiness-input changes to the exact artifact since the Vet baseline
   devrites-engine check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>]
@@ -241,6 +243,8 @@ func cmdCheck(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 		return lib.RunEnvironmentCheck(root, rest, stdout, stderr)
 	case "regression":
 		return lib.RunCheckRegression(root, rest, stdout, stderr)
+	case "continuation":
+		return lib.RunCheckContinuation(root, rest, stdout, stderr)
 	case "windows":
 		return lib.RunCheckWindows(root, rest, stdout, stderr)
 	case "dup":

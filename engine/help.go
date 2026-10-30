@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	checkUsage = `usage: devrites-engine check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|affected|slice|diff-scope|skill-trust|indexes|regression|drift|windows|dup|anchors|perturb> ...
+	checkUsage = `usage: devrites-engine check <candidate|readiness|preconditions|seal|path-disjoint|task-graph|affected|slice|diff-scope|skill-trust|indexes|regression|continuation|drift|windows|dup|anchors|perturb> ...
 
   check candidate <slug>
   check readiness <slug>
@@ -29,6 +29,7 @@ const (
   check skill-trust <path>
   check indexes [--root <dir>]
   check regression <slug> [--update]
+  check continuation [slug]
   check drift <slug> [--record]
   check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>] [--cwd <dir>]
   check dup [slug] [--all|--worktree|--staged|--base <ref>]
@@ -90,6 +91,7 @@ const (
 	skillTrustUsage     = "usage: devrites-engine check skill-trust <path>"
 	indexesUsage        = "usage: devrites-engine check indexes [--root <dir>]"
 	regressionUsageLine = "usage: devrites-engine check regression <slug> [--update]"
+	continuationUsage   = "usage: devrites-engine check continuation [slug]"
 	driftUsageLine      = "usage: devrites-engine check drift <slug> [--record]"
 	detectUsageLine     = "usage: devrites-engine detect commands [--root <dir>] [--json]"
 	windowsUsageLine    = "usage: devrites-engine check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>] [--cwd <dir>]"
@@ -292,6 +294,8 @@ func helpCheck(rest []string) string {
 		return indexesUsage
 	case "regression":
 		return regressionUsageLine
+	case "continuation":
+		return continuationUsage
 	case "drift":
 		return driftUsageLine
 	case "windows":
