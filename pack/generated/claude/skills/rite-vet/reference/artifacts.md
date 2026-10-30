@@ -1,7 +1,7 @@
 # `eng-review.md` + `test-plan.md` templates + fold-back rules
 
-`eng-review.md` records review; `test-plan.md` drives Build. Fold findings into
-`plan.md`/`tasks.md`; prose alone never changes Build.
+`eng-review.md` records review; `test-plan.md` drives Build. Fold accepted findings
+into `plan.md`/`tasks.md`; prose alone never changes Build.
 
 Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md`.
 
@@ -11,9 +11,12 @@ Authority: `.claude/skills/devrites-lib/reference/standards/acceptance-preservin
 - `BLOCKED_INPUT` → no planning writes; exact diagnostic; recover input; reclassify.
 <!-- END RESLICE ROUTE-TO-ACTION -->
 
-Workflow-only scope follows
-[`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning)
-instead of product writer/slice rows below.
+For explicit workflow-only tasks, use
+[`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning):
+AC → admitted WA behavior rows in tasks/test-plan; root-owned admission/proof
+instead of product writer/slice rows. Keep readiness SHA binding, empty product
+candidate and built counts unchanged. No Build dispatch. Product templates below
+remain unchanged for product work.
 
 ## `eng-review.md`: the record
 
@@ -91,8 +94,9 @@ Suppressed (confidence ≤4, unverified): <count — one line each>
 
 ## `test-plan.md`: the build-readable coverage target
 
-Write/update `.devrites/work/<slug>/test-plan.md`: slice-wright writes tests from
-it; `/rite-prove` checks against `evidence.md`. Specify *what/where*, not implementation.
+Write/update `.devrites/work/<slug>/test-plan.md`. `/rite-build`'s slice-wright
+writes tests from it; `/rite-prove` walks it against `evidence.md`. Specify
+*what/where* to test, not implementation.
 
 ```markdown
 # Test plan: <slug>
@@ -119,16 +123,18 @@ Prove recaptures the observed command, candidate identity, and result.
 Whole-repository rows only: Build runs them per landing
 ([tiers](../../rite-build/reference/phase-contract.md#proof-tiers)), Prove on the final candidate.
 
-Use portable repository commands: no RTK/local aliases, user-specific absolute paths,
-or temporary proof trees. Evidence records the executed command.
+Commands in this durable artifact are portable repository commands: no RTK or local shell
+aliases, user-specific absolute paths, or temporary proof trees. Evidence records
+the command actually executed.
 
 ## Consumptive action gates
 | Action | Why one-shot/consumptive | Retained artifact | Bounds + sanitization | Boundary map + collision proof | Terminal-path fixtures | Cleanup survival | Retry authority |
 |---|---|---|---|---|---|---|---|
 | <exact approved action or n/a> | <one attempt/quota/state/evidence deletion> | <durable operator-controlled path/schema> | <size/cardinality + known/unknown/malformed handling> | <every emit seam -> stable boundary ID; per-seam injection + alias mutant rejected> | <success/known/unknown/hostile> | <assertion> | <none/fresh human authorization> |
 
-Every behavioral row names a positive, discriminating assertion and decisive output.
-Command/exit zero alone is not behavioral proof; static gates prove only their named criterion.
+Every behavioral row names a positive, discriminating assertion and the decisive output it
+produces. A command or expected exit zero alone is not a behavioral assertion; static gates
+prove only their named static criterion.
 
 ## Coverage diagram
 <the ASCII code-paths + user-flows diagram from review-axes.md, with COVERAGE / GAPS / REGRESSIONS line>
@@ -168,9 +174,9 @@ Omit the whole section only for a slice with **no** interactive surface (pure ba
 
 - <spec acceptance criterion> → <T1, T3>   # every criterion maps to ≥1 test
 
-Per-gap requirements reference each plan `Shared contract proof` row, naming
-provider/consumer asserting tests and how both consume its canonical artifact;
-never duplicate the contract table.
+For every row in `plan.md`'s `Shared contract proof`, the per-gap requirements name both
+provider- and consumer-side asserting tests and state how each consumes the same canonical
+artifact. Reference the plan row; do not reproduce its contract table here.
 
 ## `gates.md`: the acceptance ledger
 

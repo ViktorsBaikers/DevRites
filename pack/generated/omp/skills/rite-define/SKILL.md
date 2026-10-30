@@ -11,12 +11,12 @@ user-invocable: true
 
 # /rite-define: plan from the spec
 
-Turn `spec.md` into architecture, slices, traceability, state. Spec owns what/why;
-Define owns how. **Do not write code.**
+Turn `spec.md` into architecture, vertical slices, traceability, and state. Spec owns
+what/why; Define owns how. **Do not write code.**
 
 ## Rules consulted (read on demand from `.omp/skills/devrites-lib/reference/standards/`)
 
-Read when planning:
+Pull these via `Read` when shaping the plan:
 
 - [`development-workflow.md`](skill://devrites-lib/reference/standards/development-workflow.md): small batches, trunk-always-green, definition of done.
 - [`principles.md`](skill://devrites-lib/reference/standards/principles.md): the project invariants (`.devrites/principles.md`) the chosen approach must conform to.
@@ -34,9 +34,13 @@ Read when planning:
 - Author one `architecture.md`/`plan.md` section at a time. Before slicing, use
   [`elicitation.md`](skill://devrites-lib/reference/standards/elicitation.md) Tournament for open
   designs and Delphi for uncertain estimates.
-- **Workflow-only:** use
+- **Workflow-only exception.** Follow
   [`workflow-artifacts.md`](skill://devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning)
-  instead of product slice rules below.
+  before applying product slice rules below: explicit scope, zero product slices,
+  existing empty candidate, AC/REQ → WA behavior/proof mapping in tasks, traceability
+  and test-plan. Keep every AC; never fabricate a slice or dispatch Build for
+  root-owned workflow artifacts. Slice-count, slice-format, writer and cross-slice
+  requirements below apply only when product slices exist.
 - **Derive the slice count from the work.**
   One per independently-shippable increment, sized by [`slicing.md`](skill://rite-plan/reference/slicing.md); map every acceptance
   criterion. User counts are hints: explain honest differences, never pad/compress.
@@ -104,13 +108,14 @@ Read when planning:
    `Shared contract proof` table with one reused contract artifact and provider- and
    consumer-side asserting tests that both consume it. Otherwise record the exact justified
    no-impact statement. Missing, one-sided, duplicated-contract, vague, or non-consuming proof blocks.
-   **Deep-module check:** small stable interfaces hide meaningful testable behavior.
-   Deepen/delete modules whose interface matches implementation complexity;
-   `Tests/proof` names independent behavior for `/rite-vet`.
-2a. **Decision-horizon sweep.** Classify every question, assumption, architecture/
-   dependency/proof choice and checkpoint per `reference/plan-template.md` §Decision
-   horizons. Resolve planning items from source; spike only necessary executable
-   evidence with discriminating criteria/fallback branches. Human blockers → `/rite-clarify`.
+   **Deep-module check:** prefer small, stable interfaces hiding meaningful, testable
+   behavior. Deepen/delete shallow modules whose interface matches implementation
+   complexity. Put their independent behavior in `Tests/proof`; `/rite-vet` confirms.
+2a. **Decision-horizon sweep.** Apply `reference/plan-template.md`'s classification to every
+   question, assumption, architecture/dependency/proof choice, and checkpoint. Resolve
+   planning items from source; only necessary executable evidence warrants a risk spike with
+   discriminating criteria/fallback branches. Human blockers route to `/rite-clarify`.
+   dispositions per `reference/plan-template.md` §Decision horizons.
 3. **Create vertical tasks:** each delivers one independently verifiable, observable
    capability end to end; first is the thinnest useful path, ordered by dependency then
    risk. Apply the slice-count and broad-refactor rules above plus
@@ -194,11 +199,11 @@ Read when planning:
    root writes autonomous approval to existing `Plan approved: <iso>` cursor and records Autocomplete provenance and rationale in `decisions.md`;
    never claim human approval. Return internally for `/rite-vet`. Plan approval grants no protected-path, Git, or safety authority.
 
-## tasks.md format
+## tasks.md slice format
 
 Use the canonical slice grammar in
 [`workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar).
-Every slice needs the complete field set; phase-specific gates live in
+Every slice must satisfy that complete field set; phase-specific gate details live in
 [`reference/gates.md`](reference/gates.md).
 
 > **Mid-flight discipline.** Do not skip vertical slicing, coverage mapping, or
