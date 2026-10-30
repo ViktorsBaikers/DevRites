@@ -223,7 +223,7 @@ For root-authored executable workflow files, read
    `Proves` spec line to `Deferred hardening` before READY, never deepen them. Technical failure records reproduction, not qid. Human gap awaits
    Clarify. Optional cross-model follows `reference/cross-model.md` (trigger `cross-model`).
 
-   READY + no remediation + valid technical return cursor: restore/consume it,
+   READY + no remediation + valid technical return cursor: restore and consume the return cursor,
    never default to Build. Preserve it through remediation. Only real stops reach humans.
 9. **Stop at Vet.** Show Build readback, scope verdict, lowest axis, closed gaps,
    preflight, action checkpoints, critical failures. Recommend Build only when READY.
