@@ -117,6 +117,54 @@ func TestPlanReadyFromTasksAndCheckpoints(t *testing.T) {
 	}
 }
 
+func TestPlanBatchExistingDepsStayParallel(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	feature := filepath.Join(root, "work", "feat")
+	writeFile(t, filepath.Join(project, "go.mod"), "module example\n")
+	writeFile(t, filepath.Join(project, "go.sum"), "\n")
+	writeFile(t, filepath.Join(feature, "state.md"), "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | build |\n| status | running |\n")
+	writeFile(t, filepath.Join(feature, "tasks.md"), `# Tasks
+
+## SLICE-001 List
+Dependencies: none
+Writer allowlist: internal/library/list.go
+External dependencies: existing SQLite/goose only; no new module.
+
+## SLICE-002 Tool
+Dependencies: none
+Writer allowlist: scripts/s5-toolchain.sh
+External dependencies: exact isolated x/perf tool and its verified compiled closure; no product go.mod/go.sum or web lock edits.
+
+## SLICE-003 Redact
+Dependencies: none
+Writer allowlist: scripts/dev-run.sh
+External dependencies: stdlib and existing host/redactor tools only.
+`)
+	paths := []string{"internal/library/list.go"}
+	for _, ext := range []string{
+		"already-admitted benchstat; existing modules only.",
+		"existing make/Docker/Bun/Go tools only.",
+		"none new (stdlib crypto/aes, crypto/cipher)",
+	} {
+		if got := withManifests(project, paths, ext); !slices.Equal(got, paths) {
+			t.Fatalf("%q reserved a manifest: %v", ext, got)
+		}
+	}
+	if got := withManifests(project, paths, "existing modules plus github.com/foo/bar v1.2.3"); !slices.Equal(got, []string{"internal/library/list.go", "go.mod", "go.sum"}) {
+		t.Fatalf("named module must still reserve go.mod: %v", got)
+	}
+
+	eligible, batch, err := planBatch(root, "feat", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"SLICE-001", "SLICE-002", "SLICE-003"}
+	if !slices.Equal(eligible, want) || !slices.Equal(batch, want) {
+		t.Fatalf("eligible=%v batch=%v", eligible, batch)
+	}
+}
+
 func TestPlanReadyNearestManifestAndMissingPaths(t *testing.T) {
 	root, featureDir := planWorkspace(t)
 	project := filepath.Dir(root)

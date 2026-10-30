@@ -241,14 +241,63 @@ func builtSlices(root, slug string) (map[string]bool, error) {
 	return built, nil
 }
 
-// withManifests adds, when external names dependencies (not empty or none),
-// the manifest and lockfiles of the nearest directory above each write path
-// that holds one, so two dependency-adding slices never share a round. A lone
-// lockfile is always claimed (adding a dependency writes it); of several, only
-// those present are.
-func withManifests(project string, paths []string, external string) []string {
+// manifestDenialRe is prose that says the slice adds no dependency.
+var manifestDenialRe = regexp.MustCompile(`(?i)\b(?:no new|no product|existing|already-admitted|already admitted|stdlib)\b`)
+
+// A backtick name, module path, npm scope, or x.y.z pin. go.mod/go.sum is not a module path.
+var (
+	backtickPkgRe  = regexp.MustCompile("`([^`]+)`")
+	modulePathRe   = regexp.MustCompile(`(?i)(?:[a-z0-9-]+\.)+[a-z]{2,}/[a-z0-9._@~+-]+`)
+	npmScopeRe     = regexp.MustCompile(`(?i)@[a-z0-9._-]+/[a-z0-9._-]+`)
+	versionPinRe   = regexp.MustCompile(`(?i)\bv?\d+\.\d+\.\d+\b`)
+	manifestHostRe = regexp.MustCompile(`(?i)\.(?:mod|sum|json|toml|yaml|yml|lock|lockb)$`)
+)
+
+// externalClaimsManifest reports whether External dependencies names a package
+// add, so parallel select reserves the nearest manifest. A none prefix does
+// not. shortcut: existing/no-new prose with no package coordinate does not
+// either; name the module, version, scope, or `package` when the slice edits one.
+func externalClaimsManifest(external string) bool {
 	ext := strings.ToLower(strings.Trim(strings.TrimSpace(external), "`"))
 	if ext == "" || ext == "-" || ext == "n/a" || strings.HasPrefix(ext, "none") {
+		return false
+	}
+	raw := strings.TrimSpace(external)
+	if manifestDenialRe.MatchString(raw) && !namesPackage(raw) {
+		return false
+	}
+	return true
+}
+
+// namesPackage reports a module path, version pin, npm scope, or `package`
+// name. Manifest filenames mentioned only to deny an edit do not count.
+func namesPackage(raw string) bool {
+	for _, m := range backtickPkgRe.FindAllStringSubmatch(raw, -1) {
+		base := path.Base(strings.TrimSpace(m[1]))
+		if base != "" && base != "." && !manifestHostRe.MatchString(base) {
+			return true
+		}
+	}
+	if npmScopeRe.MatchString(raw) || versionPinRe.MatchString(raw) {
+		return true
+	}
+	for _, loc := range modulePathRe.FindAllStringIndex(raw, -1) {
+		token := raw[loc[0]:loc[1]]
+		host := token[:strings.IndexByte(token, '/')]
+		if !manifestHostRe.MatchString(host) {
+			return true
+		}
+	}
+	return false
+}
+
+// withManifests adds, when external names a package add, the manifest and
+// lockfiles of the nearest directory above each write path that holds one,
+// so two dependency-adding slices never share a round. A lone lockfile is
+// always claimed (adding a dependency writes it); of several, only those
+// present are.
+func withManifests(project string, paths []string, external string) []string {
+	if !externalClaimsManifest(external) {
 		return paths
 	}
 	isFile := func(rel string) bool {

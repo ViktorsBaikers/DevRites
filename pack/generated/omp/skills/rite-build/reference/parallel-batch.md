@@ -33,10 +33,10 @@ N_eff = min(
 ```
 
 Select **greedily in plan order** with
-`devrites-engine parallel select --slug <slug> --cap N --from-plan`: the engine
-reads the ready set (tasks.md dependencies checked `built` in `state.md`, minus
-running-lease slices) and each slice's Writer allowlist (else `Files likely
-touched`), plus its manifest/lockfile when `External dependencies:` is not none;
+`devrites-engine parallel select --slug <slug> --cap N --from-plan`: ready set
+(dependencies `built`, minus running-lease slices), Writer allowlist
+(else Files likely touched), plus manifest/lockfile when `External dependencies:`
+names a package (`none*`, existing, or no-new prose without a coordinate);
 `next` prints `eligible_now:`/`batch:`. `n_eff` counts new picks only.
 With a running lease, a single new pick still uses `parallel add`;
 `n_eff=0` with a running lease waits for siblings, not Prove. Without one:
@@ -73,7 +73,7 @@ Before `parallel select`, add each slice's hidden write surfaces (list owner:
 [repository-topology.md § Ownership rules](skill://devrites-lib/reference/standards/repository-topology.md#ownership-rules))
 — lockfile/manifest, the generated target of an edited source, migration chain,
 snapshot directory, formatter sweep — and compare paths case-folded
-(`src/Api.ts` = `src/api.ts`); `--from-plan` adds the manifest/lockfile itself.
+(`src/Api.ts` = `src/api.ts`); `--from-plan` adds the manifest/lockfile for a package.
 Slices colliding on either run serially; the rest
 stay eligible. Record `serial: <ids> — <surface>` in `evidence.md`. Under AFK
 with `max_parallel ≥ 2`, `dispatch open` refuses a first-round build wright wave
