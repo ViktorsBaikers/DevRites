@@ -147,6 +147,7 @@ and park it after three escalations while independent work continues.
 
 Green slice/phase checkpoints consume their recorded `next_action` internally;
 only the caller replies finally at completion or a genuine stop.
+Before a reply, `devrites-engine check continuation` must print `continuation: clear`; `required` means invoke `invoke:` now.
 No user-facing reply is permitted while durable state contains agent-owned
 `NEEDS_REPLAN`, an intermediate Plan/Vet action, a distinct retained
 Critical/Important fingerprint below its cap or with an escalation left, runnable

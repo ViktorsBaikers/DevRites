@@ -46,7 +46,7 @@
     "floor": 40154
   },
   "rite": {
-    "root": 44145,
+    "root": 44385,
     "floor": 12888
   },
   "rite-adopt": {
@@ -54,8 +54,8 @@
     "floor": 17870
   },
   "rite-autocomplete": {
-    "root": 113254,
-    "floor": 76735
+    "root": 113635,
+    "floor": 77116
   },
   "rite-build": {
     "root": 257828,
@@ -90,8 +90,8 @@
     "floor": 12975
   },
   "rite-dogfood": {
-    "root": 102117,
-    "floor": 39794
+    "root": 102357,
+    "floor": 40034
   },
   "rite-explain": {
     "root": 39364,
@@ -106,12 +106,12 @@
     "floor": 18544
   },
   "rite-handoff": {
-    "root": 28579,
-    "floor": 20920
+    "root": 28819,
+    "floor": 21160
   },
   "rite-harness": {
-    "root": 54276,
-    "floor": 21454
+    "root": 54516,
+    "floor": 21694
   },
   "rite-learn": {
     "root": 45257,

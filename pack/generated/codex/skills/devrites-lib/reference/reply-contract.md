@@ -26,6 +26,9 @@ individually or in one named group, so reviewers can `git diff` those paths.
 
 Active `$rite-autocomplete` consumes green checkpoints/`next_action` internally.
 Continue execution or tool progress; never end with a text-only final reply between green phases.
+Before that reply, `devrites-engine check continuation` must say `continuation: clear`.
+`required` means invoke `invoke:` now; exit 0 is not a pause. **Failing case:**
+`vet stopped` plus `Resume: $rite-vet` while the check says `required`.
 
 Standalone HITL mid-flight replies follow the same economy:
 

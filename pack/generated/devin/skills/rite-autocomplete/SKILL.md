@@ -154,13 +154,17 @@ pending slices. Each Autocomplete invocation owns internal backtracking. Context
 not create a stop; persist and resume the cursor.
 
 Reply only at final state: text-only turns end the run. Keep
-calling tools after compaction or phase changes. Use one line:
+calling tools after compaction or phase changes. Before any user-visible reply,
+`devrites-engine check continuation` must print `continuation: clear`
+(`handoff` prints the same lines). `required` means invoke `invoke:` now.
+`stopped` is not a phase token. Print this card only after `clear`:
 
 ```text
 Autocomplete: <slug>
-spec <done|stopped> · clarify <clear|stopped> · temper <done|stopped> · define <done|stopped> · vet <ready|stopped> · build <n/N|stopped> · prove <done|stopped> · polish <done|stopped> · review <done|stopped> · seal <GO|NO-GO|stopped>
+spec done · clarify clear · temper done · define done · vet ready · build n/N · prove — · polish — · review — · seal —
 ```
 
-Final state: `Shipped`, `Stopped`, `Awaiting human`, `NO-GO`, or `GO`; no narrative
-recap. Require clean or accepted baseline; land local unpushed checkpoints after
-each green check; never auto-pass red gates.
+Final state, only after `clear`: `Shipped`, `Stopped`, `Awaiting human`,
+`NO-GO`, or `GO`; no narrative recap. Require clean or accepted baseline; land
+local unpushed checkpoints after each green check; never auto-pass red gates.
+**Failing case:** `vet stopped` plus `Resume: /rite-vet` while the check says `required`.

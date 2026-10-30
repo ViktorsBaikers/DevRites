@@ -29,6 +29,7 @@ devrites-engine check diff-scope <slug> --allow <csv>|--allow-file <path> [--wor
 devrites-engine check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N] [--worktree <path> --slice <SLICE-ID>]
 devrites-engine check task-graph <slug>
 devrites-engine check regression <slug> [--update]
+devrites-engine check continuation [slug]
 devrites-engine check drift <slug> [--record]
 devrites-engine check windows <slug> [--worktree|--staged|--base <ref>|--since-dispatch <wave>]
 devrites-engine check dup [slug] [--all|--worktree|--staged|--base <ref>]
@@ -147,6 +148,13 @@ self-contained updater.
   scheduled wake before acting on durable state, ratchet after a landed slice
   checkpoint or phase advance, and treat `BLOCKED` at Seal as NO-GO; `--update`
   never excuses an unreconciled regression.
+- `check continuation [slug]` prints `continuation: required` and
+  `invoke: <next_action>` when `.devrites/AFK` is present, `status` is
+  `running`, no question cursor is set, no blocking or escalating question is
+  open, and `next_action` is an internal phase command (`/rite-vet`,
+  `/rite-build`, not `/rite-ship`). Otherwise it prints `continuation: clear`.
+  Exit `0` either way: `required` means invoke that command, not pause for a
+  human. `handoff` prints the same lines.
 - `check drift <slug>` attributes readiness-input drift to the exact artifact.
   `--record` snapshots per-input SHA-256 digests into `readiness-inputs.json`
   under the feature lock after Vet records the aggregate binding; a later

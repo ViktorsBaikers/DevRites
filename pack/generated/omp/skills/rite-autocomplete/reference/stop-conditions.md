@@ -28,6 +28,8 @@ Fully escalated fingerprints park unless remaining owner is human.
 
 ## Not stops: internal technical routing
 
+AFK + `status=running` + an internal phase `next_action` is not a stop. `devrites-engine check continuation` prints `required` for that cursor and `clear` for `/rite-ship`, `awaiting_human`, a question cursor, or an open blocking or escalating question.
+
 `NEEDS_REPLAN` is not a stop condition under active Autocomplete. It blocks
 forward work, persists the return cursor, and invokes Plan repair plus Recovery
 Vet inline. The same applies to nested `STOP`/`Next step` when its decision is

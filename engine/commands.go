@@ -42,7 +42,7 @@ func rootModeFor(command string, args []string) rootMode {
 		return rootStrictUsage
 	case "check":
 		switch subcommand {
-		case "candidate", "readiness", "preconditions", "seal", "task-graph", "diff-scope", "slice", "regression", "windows", "drift", "anchors", "perturb":
+		case "candidate", "readiness", "preconditions", "seal", "task-graph", "diff-scope", "slice", "regression", "continuation", "windows", "drift", "anchors", "perturb":
 			return rootStrictUsage
 		case "indexes", "dup":
 			return rootLenient
