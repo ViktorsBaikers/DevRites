@@ -592,6 +592,39 @@ func TestTaskGraphCheckChainSerialRationaleSilences(t *testing.T) {
 	}
 }
 
+func TestTaskGraphScheduleReservesSharedManifest(t *testing.T) {
+	const tasks = `# Tasks
+
+## SLICE-001 A
+Dependencies: none
+Writer allowlist: src/a.go
+External dependencies: github.com/example/fetch
+
+## SLICE-002 B
+Dependencies: none
+Writer allowlist: src/b.go
+External dependencies: github.com/example/other
+`
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	feature := filepath.Join(root, "work", "feat")
+	writeFile(t, filepath.Join(feature, "state.md"), "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | build |\n| status | running |\n")
+	writeFile(t, filepath.Join(feature, "tasks.md"), tasks)
+	writeFile(t, filepath.Join(project, "go.mod"), "module example\n")
+	writeFile(t, filepath.Join(project, "go.sum"), "\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 {
+		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "task-graph: schedule: 2 slices in 2 build rounds at cap 10, width 1, idle-eligible 1") {
+		t.Fatalf("shared manifest must serialize the schedule:\n%s", out)
+	}
+	if strings.Contains(out, "ADVISORY chain") {
+		t.Fatalf("lockfile contention is not a dependency chain:\n%s", out)
+	}
+}
+
 func TestScheduleRoundsSkipsSliceWithoutPaths(t *testing.T) {
 	graph := ParseTaskGraph([]byte(edgeTasks))
 	paths, _ := sliceWritePaths([]byte(edgeTasks), graph)

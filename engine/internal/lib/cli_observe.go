@@ -49,7 +49,7 @@ func runTaskGraphCheck(root, slug string, strict bool, stdout, stderr io.Writer)
 		if over > 0 {
 			recordMetric(root, slug, "define", "size-advisory", "", int64(over))
 		}
-		paths, serial := sliceWritePaths(raw, graph)
+		paths, serial := schedulePaths(raw, graph, root)
 		if plan, idle, maxReady := schedulePlan(graph, paths, root); len(plan) > 0 {
 			fmt.Fprintf(stdout, "task-graph: schedule: %d slices in %d build rounds at cap %d, width %d, idle-eligible %d\n", len(graph.Slices), len(plan), parallel.MaxParallelSlices, scheduleWidth(plan), idle)
 			if chain := chainAdvisories(graph, serial, len(plan), maxReady); len(chain) > 0 {

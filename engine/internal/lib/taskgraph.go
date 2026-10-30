@@ -66,6 +66,21 @@ func sliceWritePaths(tasksMarkdown []byte, graph TaskGraphResult) (map[string][]
 	return paths, serial
 }
 
+// schedulePaths is the write set the task-graph schedule and hub check use.
+// It adds the manifest withManifests reserves so printed rounds match
+// `parallel select --from-plan`, not the allowlist alone. devritesRoot is the
+// .devrites directory.
+func schedulePaths(tasksMarkdown []byte, graph TaskGraphResult, devritesRoot string) (map[string][]string, map[string]bool) {
+	paths, serial := sliceWritePaths(tasksMarkdown, graph)
+	project := filepath.Dir(devritesRoot)
+	for _, s := range graph.Slices {
+		block, _ := state.ExtractTaskSlice(tasksMarkdown, s.ID)
+		external, _ := fieldValue(sliceFields(block), "external dependencies")
+		paths[s.ID] = withManifests(project, paths[s.ID], external)
+	}
+	return paths, serial
+}
+
 // pathTokens keeps the list entries that can be paths; prose and Markdown links
 // (anything with whitespace) are not write paths.
 func pathTokens(raw string) []string {
