@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1556890,
+  "total_bytes": 1557021,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -160,7 +160,7 @@
     "pack/.claude/skills/rite-adopt/reference/adoption.md": 1367,
     "pack/.claude/skills/rite-adopt/reference/anti-patterns.md": 1582,
     "pack/.claude/skills/rite-adopt/SKILL.md": 4114,
-    "pack/.claude/skills/rite-autocomplete/reference/decision-policy.md": 2338,
+    "pack/.claude/skills/rite-autocomplete/reference/decision-policy.md": 2465,
     "pack/.claude/skills/rite-autocomplete/reference/lookahead.md": 2628,
     "pack/.claude/skills/rite-autocomplete/reference/loop.md": 10302,
     "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md": 7517,
