@@ -2,6 +2,14 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.2.8](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.7...v7.2.8) (2026-10-31)
+
+### Fixed
+
+* **no-release:** close installer evidence and recovery integrity gaps ([#200](https://github.com/ViktorsBaikers/DevRites/issues/200)) ([edb8754](https://github.com/ViktorsBaikers/DevRites/commit/edb8754ecf80d4a0dd83590c5b346787c3647244))
+* **no-release:** select exact OMP specialists and preserve reviewer roles ([#199](https://github.com/ViktorsBaikers/DevRites/issues/199)) ([b31814a](https://github.com/ViktorsBaikers/DevRites/commit/b31814a37d80c45a27d5470ab5464cd93c91f76a))
+* **release:** publish pending installer fixes ([dfd2192](https://github.com/ViktorsBaikers/DevRites/commit/dfd2192d1b7d9da1b0111603760c5eb8f246b9a4))
+
 ## [7.2.7](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.6...v7.2.7) (2026-10-31)
 
 ### Fixed
