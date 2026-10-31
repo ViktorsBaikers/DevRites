@@ -49,3 +49,19 @@ reason = "undici@6.29.0 bundled in npm; patched 6.29.1 not yet vendored by any n
 id = "GHSA-9fm3-97px-rjf6"
 ignoreUntil = 2026-11-29
 reason = "undici@6.29.0 bundled in npm; the PONG-buffering path needs the bundled WebSocket client, which no DevRites tooling imports. Remove when npm bundles undici >=6.29.1."
+
+# 2026-10-31: glob and minimatch advisories are inside npm's own tarball.
+# npm@12.2.1 (latest; verified from the published tarball) still bundles
+# glob@13.0.6 and minimatch@10.2.5. The fixes are glob 14.0.2 and minimatch
+# 11.0.1, and npm's own ranges stay ^13.0.6 and ^10.2.5. inBundle copies
+# cannot be replaced by an override. npm audit does not report these IDs.
+# Owner: release-maintainers. Remove when npm bundles the patched majors.
+[[IgnoredVulns]]
+id = "GHSA-3g3m-2fjr-6pw4"
+ignoreUntil = 2026-11-29
+reason = "glob@13.0.6 is bundled in npm@11.21.1; npm@12.2.1's published tarball still bundles 13.0.6, and npm depends on ^13.0.6 so it will not take the fixed 14.0.2. The copy is inBundle, so an override cannot replace it. Advisory is an AbortSignal cancellation bypass that can walk the filesystem after a timeout. Temporary acceptance, not proof of unreachability. Remove when npm bundles glob >=14.0.2."
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2026-11-29
+reason = "minimatch@10.2.5 is bundled in npm@11.21.1; npm@12.2.1's published tarball still bundles 10.2.5, and npm depends on ^10.2.5 so it will not take the fixed 11.0.1. The copy is inBundle, so an override cannot replace it. Advisory is a globparts amplification denial of service. Temporary acceptance, not proof of unreachability. Remove when npm bundles minimatch >=11.0.1."
