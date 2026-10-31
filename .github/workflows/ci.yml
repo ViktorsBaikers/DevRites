@@ -160,8 +160,10 @@ jobs:
   # install/uninstall smokes) run on separate runners in parallel, and
   # self-provisions the host artifacts + engine CLI. The Go cache restored
   # below keeps that engine build warm (see the caching notes on `engine`).
+  # Eleven shards plus the engine/validation jobs, CodeQL and commitlint fit
+  # the standard 20-job concurrency limit instead of queueing the last shards.
   tests:
-    name: shell test suite (shard ${{ matrix.shard }}/14)
+    name: shell test suite (shard ${{ matrix.shard }}/11)
     needs: detect-changes
     # Docs-only PRs skip the shards via run_tests; `validate` still runs for
     # README/CHANGELOG/CONTRIBUTING/docs/ edits. A job-level skip reports
@@ -177,7 +179,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -226,7 +228,7 @@ jobs:
           DEVRITES_WAI_PARALLEL_WORKERS: '4'
           DEVRITES_WAI_BOUNDARY_SHARDS: '6'
           DEVRITES_WAI_CORE_SHARDS: '8'
-        run: node scripts/run-tests.mjs --shard ${{ matrix.shard }}/14
+        run: node scripts/run-tests.mjs --shard ${{ matrix.shard }}/11
 
   # Go caching, for every engine job below and the shell shards:
   # - One cache per OS/arch/job, keyed by run so each save is fresh (a fixed
@@ -341,11 +343,9 @@ jobs:
   # but Windows, where it is historically flaky under load (the scheduled
   # engine-windows-race workflow covers it).
   #
-  # Pushes to main run every test and seed PR result caches, except Windows:
-  # its test-input hashing can take longer than running the entire suite
-  # (golang/go#72992), so Windows always uses -count=1. Build caching stays on.
-  # Other PR platforms reuse results until code, dependencies, testdata, or
-  # environment inputs change.
+  # Run every test on every selected platform. Test-input cache bookkeeping
+  # can exceed execution time (golang/go#72992); -count=1 avoids that work.
+  # Compiled packages and executables still use the main-seeded build cache.
   engine-test:
     name: engine (go test, ${{ matrix.name }})
     needs: detect-changes
@@ -380,6 +380,18 @@ jobs:
           env-mapping: |
             GOCACHE,{{ DEV_DRIVE }}/go-build
 
+      - name: Use runner NTFS temporary storage (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $drive = (Split-Path -Qualifier $env:RUNNER_TEMP).TrimEnd(':')
+          if ((Get-Volume -DriveLetter $drive).FileSystem -ne 'NTFS') {
+            throw 'Windows filesystem tests require NTFS temporary storage'
+          }
+          foreach ($name in 'TMP', 'TEMP', 'GOTMPDIR') {
+            "$name=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
+          }
+
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -403,13 +415,7 @@ jobs:
         working-directory: engine
         env:
           RACE: ${{ matrix.race }}
-        run: |
-          if [ "$RUNNER_OS" = Windows ]; then
-            go test -count=1 ./...
-          else
-            if [ "$GITHUB_REF" = refs/heads/main ]; then go clean -testcache; fi
-            go test ${RACE:+"$RACE"} ./...
-          fi
+        run: go test ${RACE:+"$RACE"} -count=1 ./...
 
       # Order-dependence check: shuffled, uncached, on the reference runner.
       - name: go test -shuffle=on (linux amd64)
