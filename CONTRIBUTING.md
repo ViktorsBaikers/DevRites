@@ -119,12 +119,14 @@ npm run audit          # known dependency vulnerabilities (moderate+ blocks)
 npm test               # install + uninstall smoke + fixture install + pack validation
 ```
 
-`npm run audit` still blocks every moderate-or-higher advisory by default.
-When an upstream tool bundles a vulnerable dependency and no patched ancestor
-release exists, `scripts/npm-audit-exceptions.json` may carry one exact,
-owner-bound, reasoned exception with an expiry date. Unknown, mismatched, stale,
-expired, or inside-the-7-day-refresh-horizon exceptions fail the gate. Prefer
-an `overrides` pin of the patched ancestor over extending an expiry.
+`npm run audit` blocks every moderate-or-higher advisory except copies that
+exist only inside the npm CLI tarball (`node_modules/npm/node_modules/`).
+Overrides cannot replace those copies. The same advisory installed anywhere
+else still blocks. For any other unfixed advisory,
+`scripts/npm-audit-exceptions.json` may carry one exact, owner-bound, reasoned
+exception with an expiry date. Unknown, mismatched, stale, expired, or
+inside-the-7-day-refresh-horizon exceptions fail the gate. Prefer an
+`overrides` pin of the patched ancestor over extending an expiry.
 
 You do not need Claude Code for most development work. The validators and tests
 run as plain shell scripts. Running `scripts/validate.sh` locally needs PyYAML:

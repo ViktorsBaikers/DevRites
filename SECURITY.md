@@ -218,13 +218,17 @@ hosts or their makers. codebase-memory-mcp, ego-lite, browser-harness, and
 Playwright MCP are optional user-selected tools that DevRites calls through
 their documented interfaces rather than bundling them.
 
-Repository npm-audit exceptions are temporary trust records, not claims that an
-upstream issue is fixed. Each entry in `scripts/npm-audit-exceptions.json` is
-restricted to an exact advisory, package range, installed node path, owner,
-reason, source, and near-term expiry; validation re-audits the live dependency
-graph and fails stale, broadened, unmatched, expired, or inside-the-7-day
-refresh-horizon entries. Prefer pinning a patched ancestor (see
-`package.json` `overrides`) over extending an expiry.
+Advisories whose only installed copy is inside the npm CLI tarball
+(`node_modules/npm/node_modules/`) are not blocking. Overrides cannot replace
+those copies, and the publish plugin cannot take a newer npm that still bundles
+them. The same advisory installed anywhere else still blocks. Any other
+npm-audit exception is a temporary trust record, not a claim that an upstream
+issue is fixed. Each entry in `scripts/npm-audit-exceptions.json` is restricted
+to an exact advisory, package range, installed node path, owner, reason, source,
+and near-term expiry; validation re-audits the live dependency graph and fails
+stale, broadened, unmatched, expired, or inside-the-7-day-refresh-horizon
+entries. Prefer pinning a patched ancestor (see `package.json` `overrides`)
+over extending an expiry.
 
 ### Agentic trust boundaries
 

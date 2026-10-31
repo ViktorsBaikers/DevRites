@@ -128,8 +128,9 @@ jobs:
         run: npm run audit
 
       # OSV.dev data source: broader than the npm advisory DB npm audit uses,
-      # and covers the engine module. Allowlist lives in osv-scanner.toml and
-      # mirrors scripts/npm-audit-exceptions.json policy.
+      # and covers the engine module. osv-scanner.toml ignores the packages
+      # bundled inside the npm CLI. Per-advisory exceptions stay in
+      # scripts/npm-audit-exceptions.json.
       - name: "OSV.dev dependency scan (lockfile + engine module: BLOCKING)"
         if: github.event_name != 'pull_request' || needs.detect-changes.outputs.run_deps == 'true'
         run: osv-scanner scan --config osv-scanner.toml --lockfile package-lock.json --lockfile engine/go.mod
