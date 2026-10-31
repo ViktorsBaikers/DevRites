@@ -37,6 +37,15 @@ Skills name the exact role and bounded task in normal language. The host owns
 internal spawn fields, scheduling, waiting, follow-ups, and result delivery.
 DevRites does not parse rollout logs or maintain dispatch receipts.
 
+On OMP, each `task` item selects its specialist through `agent`, including every
+item in a `tasks[]` batch: `devrites-code-reviewer`, `devrites-test-analyst`, or
+`devrites-slice-wright` for those roles. Writing “you are…” in a task or naming it
+after a specialist does not select that profile. Lane suffixes stay on engine
+role labels, not native profile names. Check the actual host selector before
+admitting results: the engine records declared roles and host handles, not
+authenticated native profile identity. A missing profile remains a gap, not
+permission to select a generic/default child.
+
 Quick, Standard, and Full select evidence/review depth only; they are not agent
 API versions or execution tiers. The shared contract lives in
 [`orchestration-profiles.md`](../pack/.claude/skills/devrites-lib/reference/orchestration-profiles.md).

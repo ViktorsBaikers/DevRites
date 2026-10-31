@@ -883,10 +883,10 @@
     {
       "item": 3,
       "claim": "gate consolidation: survey zero-finding gates per slice class, then merge near-duplicate dispatches",
-      "status": "delivered: survey plus the bounded merge the data supports",
-      "count": "survey: 1087 returns, 7 gate classes; findings rates 35-56%, no zero-finding gate and no clean slice class. merge: 161 recheck returns in 50 groups, 8 groups with 2+ checklist types, 12 dispatches saved by one dispatch per surface",
-      "evidence": "gate_findings_survey and recheck_merge above; guidance in reference/parallel-batch.md step 4",
-      "reason": "the zero-finding merge target does not exist, so the merge implemented is the one the packets support (same diff, three checklists); no checklist is dropped"
+      "status": "survey retained; cross-role merge withdrawn",
+      "count": "survey: 1087 returns, 7 gate classes; findings rates 35-56%, no zero-finding gate and no clean slice class. 161 recheck returns in 50 groups, 8 groups with 2+ checklist types; no measured dispatch saving",
+      "evidence": "gate_findings_survey and recheck_merge below; guidance in reference/parallel-batch.md step 4",
+      "reason": "same-diff code, test and doubt accounts belong to separate specialists; consolidate only within one owning role, with no saving claimed without a new measurement"
     },
     {
       "item": 4,
@@ -1134,11 +1134,11 @@
       }
     },
     "finding": "No verdict-emitting gate is zero-finding. Findings rates: code-review 10/19 (53%), doubt-review 7/15 (47%), vet-recheck 5/9 (56%), test-analysis 10/26 (38%), feature-review 344/990 (35%). slices-wright (21) and plan-review (7) returns carry no Outcome line and are excluded rather than counted as no-findings. No slice class is a clean sweep either: the per-slice cut tops out at 2/3 (code, slice-005) and single 1/1 observations, which are not a class.",
-    "disposition": "Because no zero-finding class exists, the merge was not aimed at deleting a gate. It was aimed at the duplication the packets do show: the same diff reviewed as three separate recheck dispatches. See recheck_merge - one dispatch per changed surface carrying all open checklists, 12 dispatches saved, no checklist dropped.",
+    "disposition": "No zero-finding class justifies deleting a gate. Cross-role recheck merging is withdrawn: each exact owning role rechecks its own fingerprints, even on the same diff. The earlier 12-dispatch projection was not an observed saving.",
     "verdict": "Every review gate returns findings at 29-50% (doubt 49%, test 50%, code 45%, vet 45%, plan 37%, generic review 29%). The only zero-finding roles are non-review: wright, drafter, runner, scout, guard - roles that produce work rather than verdicts. No return in the corpus reports an empty result, so there is no clean-slice class to delete and item 3 drops as a deletion target; the duplication that does exist is the same diff rechecked under scalar checklists."
   },
   "recheck_merge": {
-    "why": "item 3's merge step, grounded in the recheck packets rather than in a zero-finding assumption",
+    "why": "historical recheck survey; the cross-role merge projection is rejected because it substitutes one specialist for others",
     "measured": {
       "recheck_returns": 161,
       "plans_with_recheck_rounds": [
@@ -1146,11 +1146,9 @@
         "boxset-m00a-access (120)"
       ],
       "groups": 50,
-      "groups_with_two_or_more_checklist_types": 8,
-      "dispatches_saved_by_one_dispatch_per_surface": 12,
-      "share_of_all_classified_packets": "12 / 1087 (about 1%)"
+      "groups_with_two_or_more_checklist_types": 8
     },
-    "shipped": "pack/.claude/skills/rite-build/reference/parallel-batch.md step 4: a recheck round is one dispatch per changed surface, not one per checklist; the agent carries every open checklist and answers each by name.",
-    "honesty": "The saving is small - 12 dispatches, about 1% of classified packets. It is recorded at that size rather than presented as the dispatch reduction the raw churn numbers (median 4-7 wright dispatches per slice, max 36) would invite, because that churn is rework, not duplicated checklists."
+    "shipped": "pack/.claude/skills/rite-build/reference/parallel-batch.md step 4: consolidate by owning role and changed surface; code, test and doubt remain separate dispatches.",
+    "honesty": "The historical 12-dispatch (about 1%) projection assumed cross-role substitution and is withdrawn. No runtime dispatch saving has been measured for the owning-role grouping."
   }
 }

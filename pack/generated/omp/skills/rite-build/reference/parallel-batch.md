@@ -128,9 +128,9 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    proof in the same window as that review. Gap or Critical/Important → `gap`;
    else proof → `green|red|gap`.
 
-   A recheck round is one dispatch per changed surface, not one per checklist: the
-   recheck agent carries every open checklist (code, test, doubt) for that diff and
-   answers each by name. Merging cuts dispatches; dropping a checklist does not.
+   Group recheck findings by owning role and changed surface. Each exact
+   specialist rechecks its own fingerprints and the correction diff; code, test,
+   and doubt remain separate dispatches, even on the same diff.
    Reviewer fan-out does not shrink the writer batch. Reviewers queue at the
    same cap as writers (10; see
    [`parallel-dispatch.md`](skill://devrites-lib/reference/parallel-dispatch.md#scale-limits)).
