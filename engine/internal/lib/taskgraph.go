@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -195,10 +196,10 @@ func PrecheckSkips(root, slug, slice string, gateIDs []string) (map[string]strin
 	return skips, nil
 }
 
-// planReady lists, in plan order, the tasks.md slices state.md does not check
-// built whose dependencies it all checks built, each with its sliceWritePaths
-// plus its dependency manifest and lockfile when it declares external
-// dependencies. root is the .devrites directory.
+// planReady lists, in plan order, the tasks.md slices that are not built whose
+// dependencies are all built, each with its sliceWritePaths plus its dependency
+// manifest and lockfile when it declares external dependencies. root is the
+// .devrites directory.
 func planReady(root, slug string) ([]parallel.SlicePaths, error) {
 	raw, err := readWorkspaceArtifact(root, slug, "tasks.md")
 	if err != nil {
@@ -233,8 +234,11 @@ func planReady(root, slug string) ([]parallel.SlicePaths, error) {
 // builtWordRe marks a checked state.md item as a built checkpoint.
 var builtWordRe = regexp.MustCompile(`(?i)\bbuilt\b`)
 
-// builtSlices returns the slice numbers state.md checks built (`- [x] SLICE-004
-// built — <sha>`, or `- [x] Slice 4: <name> — built`), outside fenced examples.
+// builtSlices returns the slice numbers that are built, outside fenced examples.
+// A state.md checkbox (`- [x] SLICE-004 built — <sha>`, or `- [x] Slice 4:
+// <name> — built`) counts. So does an evidence.md heading that says that slice
+// was checkpointed and whose section has a `Checkpoint: <sha>` line — a missed
+// checkbox must not keep dependents out of the ready set.
 func builtSlices(root, slug string) (map[string]bool, error) {
 	raw, err := readWorkspaceArtifact(root, slug, "state.md")
 	if err != nil {
@@ -251,6 +255,61 @@ func builtSlices(root, slug string) (map[string]bool, error) {
 		}
 		for _, m := range regressSliceIDRe.FindAllStringSubmatch(item, -1) {
 			built[strings.TrimLeft(m[1], "0")] = true
+		}
+	}
+	extra, err := evidenceBuilt(root, slug)
+	if err != nil {
+		return nil, err
+	}
+	for id := range extra {
+		built[id] = true
+	}
+	return built, nil
+}
+
+var (
+	checkpointedHeadingRe = regexp.MustCompile(`(?i)\bcheckpointed\b`)
+	notCheckpointedRe     = regexp.MustCompile(`(?i)\bnot checkpointed\b|\bcheckpoint (?:refused|reverted|failed)\b`)
+	checkpointSHARe       = regexp.MustCompile(`(?m)^[ \t]*Checkpoint: [0-9a-fA-F]{7,40}\b`)
+)
+
+// evidenceBuilt reads evidence.md checkpoint sections. A missing file is none.
+func evidenceBuilt(root, slug string) (map[string]bool, error) {
+	raw, err := readWorkspaceArtifact(root, slug, "evidence.md")
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return map[string]bool{}, nil
+		}
+		return nil, err
+	}
+	masked, err := markdowntext.Structural(raw)
+	if err != nil {
+		return nil, fmt.Errorf("evidence.md: %w", err)
+	}
+	text := string(masked)
+	if strings.HasPrefix(text, "## ") {
+		text = "\n" + text
+	}
+	built := map[string]bool{}
+	for part := range strings.SplitSeq(text, "\n## ") {
+		heading, body, _ := strings.Cut(part, "\n")
+		var ids []string
+		for _, id := range sliceTokenRe.FindAllString(heading, -1) {
+			ids = append(ids, sliceNumber(id))
+		}
+		if len(ids) == 0 {
+			continue
+		}
+		if notCheckpointedRe.MatchString(heading) {
+			for _, id := range ids {
+				delete(built, id)
+			}
+			continue
+		}
+		if checkpointedHeadingRe.MatchString(heading) && checkpointSHARe.MatchString(body) {
+			for _, id := range ids {
+				built[id] = true
+			}
 		}
 	}
 	return built, nil

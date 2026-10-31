@@ -36,7 +36,7 @@ N_eff = min(
 
 Select **greedily in plan order** with
 `devrites-engine parallel select --slug <slug> --cap N --from-plan`: ready set
-(dependencies `built`, minus running-lease slices), Writer allowlist
+(dependencies built — state.md checkbox, or an evidence.md heading that says that slice was checkpointed plus a `Checkpoint: <sha>` line — minus running-lease slices), Writer allowlist
 (else Files likely touched), plus manifest/lockfile when `External dependencies:`
 names a package (module path, npm scope, backticked name, or a non-toolchain version).
 `context --phase build` with no `--slice` stays on `active_slice` unless AFK
@@ -84,7 +84,8 @@ stay eligible. Record `serial: <ids> — <surface>` in `evidence.md`. Under AFK
 with `max_parallel ≥ 2`, `dispatch open` refuses a build wright wave narrower
 than the from-plan batch until that wave holds the other picks or `serial:`
 names each skipped one. Repairing a slice, or a slice already in the lease,
-does not waive them. HITL is never refused. **Failing
+does not waive them. A `serial:` reason that only says the skipped slice is
+repairing, already started, or in a wave does not count. HITL is never refused. **Failing
 case:** two slices each add a dependency, run in parallel, and integrate fails or
 lands a broken lockfile.
 

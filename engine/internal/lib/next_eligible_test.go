@@ -94,7 +94,7 @@ func TestParallelPlanVisible(t *testing.T) {
 }
 
 func TestPlanReadyFromTasksAndCheckpoints(t *testing.T) {
-	root, _ := planWorkspace(t)
+	root, featureDir := planWorkspace(t)
 	ready, err := planReady(root, "feat")
 	if err != nil {
 		t.Fatal(err)
@@ -115,6 +115,45 @@ func TestPlanReadyFromTasksAndCheckpoints(t *testing.T) {
 	}
 	if !slices.Equal(got["SLICE-003"], []string{"src/c.go", "go.mod", "go.sum"}) {
 		t.Fatalf("external dependency must claim go.mod and go.sum: %v", got["SLICE-003"])
+	}
+
+	// An evidence.md checkpoint counts as built when state.md forgot the checkbox.
+	// A fenced example and a heading with no sha do not.
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "```markdown\n## EVID-000: SLICE-002 repaired and checkpointed\nCheckpoint: aaaaaaa `WIP(feat): example only`\n```\n## EVID-030: SLICE-002 repair rechecks\nNo landing yet.\n")
+	ready, err = planReady(root, "feat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	order = nil
+	for _, s := range ready {
+		order = append(order, s.ID)
+	}
+	if !slices.Equal(order, []string{"SLICE-002", "SLICE-003", "SLICE-004"}) {
+		t.Fatalf("fence or sha-less heading must not count built: %v", order)
+	}
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "## EVID-031: SLICE-002 repaired, rechecked and checkpointed\nCheckpoint: bdba8c4 `WIP(feat): admit the pinned tool`\n")
+	ready, err = planReady(root, "feat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	order = nil
+	for _, s := range ready {
+		order = append(order, s.ID)
+	}
+	if !slices.Equal(order, []string{"SLICE-003", "SLICE-004", "SLICE-005"}) {
+		t.Fatalf("checkpointed SLICE-002 must drop out and unblock SLICE-005: %v", order)
+	}
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "## EVID-031: SLICE-002 repaired, rechecked and checkpointed\nCheckpoint: bdba8c4 `WIP(feat): admit the pinned tool`\n\n## EVID-032: SLICE-002 not checkpointed\nCheckpoint: bdba8c4 `WIP(feat): reverted`\n")
+	ready, err = planReady(root, "feat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	order = nil
+	for _, s := range ready {
+		order = append(order, s.ID)
+	}
+	if !slices.Equal(order, []string{"SLICE-002", "SLICE-003", "SLICE-004"}) {
+		t.Fatalf("a later not-checkpointed heading must put SLICE-002 back: %v", order)
 	}
 
 	// A disjoint ready pair is batched; SLICE-004's go.sum collides with

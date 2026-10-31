@@ -581,6 +581,14 @@ func TestDispatchRefusesNarrowFirstRoundUnderAFK(t *testing.T) {
 			t.Fatalf("serialRecordRe(%q)=%v, want %v", line, got, want)
 		}
 	}
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "- serial: SLICE-003 — already in its own repair round\n")
+	if code, out := open("w-repair-excuse", "SLICE-002"); code != 3 || !strings.Contains(out, "SLICE-003") {
+		t.Fatalf("a repair excuse must not waive the other pick: code=%d\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "- serial: SLICE-003 — repair on shared `go.sum`\n")
+	if code, out := open("w-surface", "SLICE-002"); code != 0 {
+		t.Fatalf("a repair note that names the shared file must still waive: code=%d\n%s", code, out)
+	}
 	writeFile(t, filepath.Join(featureDir, "evidence.md"), "- serial: SLICE-003 — `go.sum` shared with SLICE-004\n")
 	if code, out := open("w1", "SLICE-002"); code != 0 {
 		t.Fatalf("a serial record naming the skipped pick must clear: code=%d\n%s", code, out)

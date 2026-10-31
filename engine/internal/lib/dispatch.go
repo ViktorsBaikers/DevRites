@@ -820,8 +820,21 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 }
 
 // serialRecordRe matches an evidence.md `serial: <ids> — <reason>` record
-// (the reason may open with a code span, never be empty); group 1 holds the ids.
-var serialRecordRe = regexp.MustCompile("(?mi)^[ \\t]*(?:[-*][ \\t]+)?`?serial:([^\\n]*?)(?:[ \\t]*[—–]|[ \\t]+--?[ \\t])[ \\t]*(?:[^\\s`]|`[^\\s`])")
+// (the reason may open with a code span, never be empty). Group 1 holds the
+// ids; group 2 holds the reason.
+var serialRecordRe = regexp.MustCompile("(?mi)^[ \\t]*(?:[-*][ \\t]+)?`?serial:([^\\n]*?)(?:[ \\t]*[—–]|[ \\t]+--?[ \\t])[ \\t]*([^\\s`][^\\n]*|`[^\\s`][^\\n]*)")
+
+// A repair, an open wave, or "already started" is not a shared surface.
+// Those reasons do not waive a pick unless they also name a path.
+var transientSerialReasonRe = regexp.MustCompile(`(?i)\b(?:repairs?|repairing|repaired|already started|in flight|open wave|sealed wave|running lease|in the lease)\b`)
+var serialSurfaceRe = regexp.MustCompile("`[^`\\n]*\\.[^`\\n]+`|(?i)\\b[\\w./-]+\\.[a-z0-9]+\\b")
+
+func serialReasonWaives(reason string) bool {
+	if transientSerialReasonRe.MatchString(reason) && !serialSurfaceRe.MatchString(reason) {
+		return false
+	}
+	return true
+}
 
 var sliceTokenRe = regexp.MustCompile(`(?i)\bSLICE-\d+\b`)
 
@@ -886,6 +899,9 @@ func widerBatchRefusal(root, slug string, wave []string) string {
 			raw = visible
 		}
 		for _, m := range serialRecordRe.FindAllStringSubmatch(string(raw), -1) {
+			if len(m) < 3 || !serialReasonWaives(m[2]) {
+				continue
+			}
 			recorded = append(recorded, sliceTokenRe.FindAllString(m[1], -1)...)
 		}
 	}
