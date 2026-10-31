@@ -98,7 +98,7 @@ jobs:
               echo ''
               echo '- `type` ∈ feat, fix, remove, docs, style, refactor, perf, test, build, ci, chore, revert'
               echo '- `scope` ∈ skills, rite, devrites, agents, rules, installer, uninstall, scripts, docs, tests, deps, deps-dev, release, repo, ci, no-release, readme'
-              echo '- `subject` imperative, lower-case, no trailing period; header 12-72 chars'
+              echo '- `subject` imperative, lower-case, no trailing period; header 12-72 chars, or up to 200 when the scope is no-release'
               echo '- body lines ≤ 100 chars, leading blank line'
               echo ''
               echo '#### Rewrite locally'

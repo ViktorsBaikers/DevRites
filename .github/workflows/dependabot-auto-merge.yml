@@ -1,15 +1,9 @@
 name: dependabot-auto-merge
 
-# Auto-approve and auto-merge Dependabot PRs once CI passes, but ONLY for
-# patch updates. Minor and major version bumps, including security updates,
-# stay open for a human to review: this repo publishes to npm from main on
-# every push, and the 2025–2026 npm waves shipped compromised code in fresh
-# minor releases, so an unreviewed minor auto-merge is a publish path.
-#
-# Note: GitHub does not allow bypassing pull requests entirely: Dependabot
-# always opens one. This workflow gets as close to "straight to main" as
-# possible for patches: PR is opened, CI runs, workflow approves + enables
-# auto-merge, GitHub merges it the instant required checks are green.
+# Dependabot cannot push straight to main. Approve the PR and enable
+# auto-merge; GitHub squashes once required checks are green. Subjects are
+# ci(no-release), so semantic-release does not publish. dependabot.yml still
+# waits 7 days before proposing a freshly published version.
 
 on:
   # Dependabot-triggered pull_request workflows receive a read-only token.
@@ -36,27 +30,11 @@ jobs:
     timeout-minutes: 5
     if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
     steps:
-      - name: Fetch Dependabot metadata
-        id: meta
-        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Approve and auto-merge patch PRs
-        if: steps.meta.outputs.update-type == 'version-update:semver-patch'
+      - name: Approve and auto-merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          gh pr review --approve "$PR_URL"
+          # A re-run already has this bot's approval. Do not block the merge on that.
+          gh pr review --approve "$PR_URL" || true
           gh pr merge --auto --squash "$PR_URL"
-
-      - name: Comment + label for minor / major bumps
-        if: steps.meta.outputs.update-type != 'version-update:semver-patch'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
-        run: |
-          gh pr comment "$PR_URL" --body "${UPDATE_TYPE}: auto-merge skipped. A human needs to review the changelog before merging."
-          gh pr edit "$PR_URL" --add-label "needs-review"

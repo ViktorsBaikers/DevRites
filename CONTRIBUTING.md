@@ -210,7 +210,7 @@ commit. There is no bypass.
 - **scope** (required, lower-case): one of
   `skills | rite | devrites | agents | rules | installer | uninstall | scripts | docs | tests | deps | deps-dev | release | repo | ci | no-release | readme`
 - **subject:** imperative mood, no leading capital, no trailing period.
-- **Header length:** 12 to 72 chars total.
+- **Header length:** 12 to 72 chars total. A `type(no-release)` header may be up to 200 chars so a Dependabot title can name the package.
 - **Body:** blank line after header; lines ≤ 100 chars.
 
 **Valid examples:**
