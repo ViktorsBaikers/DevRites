@@ -257,8 +257,9 @@ Full policy: [`commitlint.config.js`](commitlint.config.js).
      and `osv-scanner` run on PRs only when dependency inputs change (path-scoped), and the
      trigger, outcome and behavioral evals plus the gating-eval ledger run on PRs only when
      the pack, evals or their validators change (path-scoped).
-     Structure, invocation-integrity and pack-security checks run concurrently
-     with isolated temporary outputs; a failure in any check still blocks the job.
+     Structure and invocation-integrity checks run concurrently with isolated
+     temporary outputs; either failure blocks the job. Pack security retains its
+     own unconditional blocking step.
    - `shell test suite` (path-scoped): every `tests/*.sh` via `node scripts/run-tests.mjs`,
      sharded. Skipped only for docs-only PRs; `docs/engine/` changes are not docs-only.
    - `engine (lint + cross-compile)` (path-scoped): golangci-lint, govulncheck, the

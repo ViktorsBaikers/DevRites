@@ -100,7 +100,7 @@ jobs:
         run: bash scripts/ci-install-validate-tools.sh
 
 
-      - name: "Pack structure, invocation integrity and security (BLOCKING)"
+      - name: "Pack structure and invocation integrity (BLOCKING)"
         env:
           DEVRITES_REQUIRE_WORKFLOW_LINT: "1"
         run: |
@@ -108,13 +108,15 @@ jobs:
           pids=()
           bash scripts/validate.sh & pids+=("$!")
           python3 scripts/check-invocation-integrity.py & pids+=("$!")
-          python3 scripts/scan-pack-security.py pack/.claude pack/generated & pids+=("$!")
           status=0
           for pid in "${pids[@]}"; do wait "$pid" || status=1; done
           exit "$status"
 
       - name: Check cross-references (no dead pointers)
         run: python3 scripts/check-cross-refs.py
+
+      - name: "Pack security scan (injection + hidden unicode: BLOCKING)"
+        run: python3 scripts/scan-pack-security.py pack/.claude pack/generated
 
       - name: "Workflow security (SHA-pinned actions + scoped permissions: BLOCKING)"
         run: python3 scripts/validate-workflow-security.py
