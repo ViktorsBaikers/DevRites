@@ -45,8 +45,12 @@ Files own briefs; [`parallel-dispatch.md`](../parallel-dispatch.md) owns rosters
 <!-- root-only -->
 ## Native invocation
 
-Skills name exact fresh roles, omit native fields;
-hosts spawn/wait/deliver. Root MUST NOT advance/claim completion before admitting required results;
+Skills name exact fresh roles; hosts select matching native profiles and
+spawn/wait/deliver. Task prose and display names do not select profiles.
+Dispatch labels may add `devrites-` or `.lane`; the native profile stays
+`devrites-<base-role>`. Verify the host selector before recording a start or
+admitting a result; a ledger role and handle alone do not prove profile identity.
+Root MUST NOT advance/claim completion before admitting required results;
 running/orphaned/unavailable = `gap` — no root/generic substitute.
 Where a feature workspace exists, every fresh dispatch to a named `devrites-*`
 role — wave or solo — builds its read-set with `devrites-engine context <slug>

@@ -50,6 +50,7 @@ For a reviewer role, return --result <file> stores the return verbatim as
 packets/<wave>-<role>.return.md (never overwritten), derives the outcome
 from its Outcome/Counts head (malformed records gap), refuses an --outcome
 that disagrees, and records its Finding: keys for metrics summary.
+Reviewer returns require --result or --outcome; omitting both leaves the role pending.
 
 A build wave with a wright role must name its slice(s) with --slice; a vet
 wave may (slice-bound recheck), and so may a reviewer-only wave (uncapped),
@@ -454,6 +455,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		}
 		if r.Returned {
 			return fail("role %q already returned", role)
+		}
+		if isReviewerRole(role) && result == "" && outcome == "" {
+			return fail("reviewer %q needs --result <file> or --outcome <findings|no-findings|gap>", role)
 		}
 		if outcome != "" && !slices.Contains([]string{"findings", "no-findings", "gap"}, outcome) {
 			return fail("--outcome %q is not findings, no-findings, or gap", outcome)
