@@ -278,6 +278,8 @@ Full policy: [`commitlint.config.js`](commitlint.config.js).
    bookkeeping can exceed the test runtime
    ([golang/go#72992](https://github.com/golang/go/issues/72992)).
    Compiled packages and executables still use the main-seeded build cache.
+   Measured slow packages start first; native `./...` discovery still includes
+   every package exactly once.
    Windows scratch and build cache stay on the runner's NTFS volume; a drive
    alias preserves existing cache paths without provisioning a ReFS VHD.
    Cache pruning treats cached executable directories as whole entries,

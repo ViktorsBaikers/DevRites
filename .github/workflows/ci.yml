@@ -417,7 +417,8 @@ jobs:
         working-directory: engine
         env:
           RACE: ${{ matrix.race }}
-        run: go test ${RACE:+"$RACE"} -count=1 ./...
+        # Start measured slow packages first; ./... still runs every package once.
+        run: go test ${RACE:+"$RACE"} -count=1 ./internal/parallel ./internal/lib ./internal/install ./...
 
       # Order-dependence check: shuffled, uncached, on the reference runner.
       - name: go test -shuffle=on (linux amd64)
