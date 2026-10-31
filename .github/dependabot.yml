@@ -15,10 +15,12 @@ updates:
     # propagation window) wait a week before Dependabot proposes them.
     cooldown:
       default-days: 7
+    # Scope is always no-release. include: scope would append (deps) or
+    # (deps-dev) and the header would not parse. ci does not publish, and
+    # the no-release scope is what semantic-release matches.
     commit-message:
-      prefix: "build"
-      prefix-development: "build"
-      include: "scope"
+      prefix: "ci(no-release)"
+      prefix-development: "ci(no-release)"
     labels:
       - "dependencies"
       - "automerge"
@@ -36,7 +38,8 @@ updates:
           - "minor"
           - "patch"
           - "major"
-    # Majors stay individual + un-grouped so the auto-merge workflow can skip them.
+    # Majors stay ungrouped so a failing major does not block the patch group.
+    # Auto-merge still merges a major when that PR's checks are green.
 
   # GitHub Actions used across .github/workflows/.
   - package-ecosystem: "github-actions"
@@ -50,9 +53,11 @@ updates:
     # Same release-age cooldown as the npm ecosystem.
     cooldown:
       default-days: 7
+    # Same no-release subject as npm. Actions updates are production deps,
+    # so prefix (not prefix-development) is what Dependabot uses.
     commit-message:
-      prefix: "ci"
-      include: "scope"
+      prefix: "ci(no-release)"
+      prefix-development: "ci(no-release)"
     labels:
       - "dependencies"
       - "automerge"

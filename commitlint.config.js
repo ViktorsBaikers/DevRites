@@ -5,7 +5,8 @@
  *   - type:    one of the allowed types (lower-case, required)
  *   - scope:   one of the allowed DevRites areas (lower-case, required)
  *   - subject: imperative, no leading capital, no trailing period
- *   - header:  12-72 chars
+ *   - header:  12-72 chars, or up to 200 when the scope is no-release
+ *              (Dependabot titles carry the package name and cannot fit in 72)
  *   - body:    separated by a blank line; lines <= 100 chars
  *
  * Examples (valid):
@@ -19,8 +20,27 @@
  *
  * Refs: https://www.conventionalcommits.org  ·  https://commitlint.js.org
  */
+const HEADER_MAX = 72;
+// Longest current Dependabot title is about 154 chars: ci(no-release),
+// the [security] infix, and one package name inside a group title.
+const NO_RELEASE_HEADER_MAX = 200;
+
 module.exports = {
   extends: ['@commitlint/config-conventional'],
+  plugins: [
+    {
+      rules: {
+        'devrites-header-max-length': (parsed) => {
+          const header = parsed.header || '';
+          const max = /^\w+\(no-release\): /.test(header) ? NO_RELEASE_HEADER_MAX : HEADER_MAX;
+          return [
+            header.length <= max,
+            `header must not be longer than ${max} characters, current length is ${header.length}`,
+          ];
+        },
+      },
+    },
+  ],
   // Skip lint for semantic-release auto-commits: their bodies embed
   // changelog markdown links that exceed body-max-line-length.
   ignores: [(message) => /^chore\(release\):\s+\d+\.\d+\.\d+/.test(message)],
@@ -44,7 +64,8 @@ module.exports = {
     // but still allows acronyms like API/OWASP mid-subject)
 
     // header / body / footer shape
-    'header-max-length': [2, 'always', 72],
+    'header-max-length': [0],
+    'devrites-header-max-length': [2, 'always'],
     'header-min-length': [2, 'always', 12],
     'body-leading-blank': [2, 'always'],
     'footer-leading-blank': [2, 'always'],
