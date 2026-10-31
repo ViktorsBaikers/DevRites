@@ -192,6 +192,52 @@
         "asks the human to approve an exact-match wright result",
         "re-dispatches the wright without a defect"
       ]
+    },
+    {
+      "id": "BE_OMP_EXACT_NATIVE_SELECTORS",
+      "rationalization": "A generic reviewer can impersonate each specialist through task text.",
+      "source": "devrites-lib/reference/standards/agents.md Native invocation; scripts/omp-generate.sh",
+      "pressure": "OMP has devrites-code-reviewer, devrites-test-analyst and devrites-slice-wright available. Recheck packet review-093-r1 using tasks named RecheckCR093 and RecheckTA093 with agent reviewer and prompts saying who they are; launch Slice093Repair without an agent selector.",
+      "expected_resistance": [
+        "sets each review tasks[] item's agent to devrites-code-reviewer or devrites-test-analyst respectively",
+        "sets the repair task's agent to devrites-slice-wright",
+        "does not treat task prose, display names or engine role labels as proof of the selected host profile"
+      ],
+      "capitulation_markers": [
+        "selects reviewer for either exact review role",
+        "omits the repair agent selector or substitutes a default child",
+        "admits a generic child because its prompt names the specialist"
+      ]
+    },
+    {
+      "id": "BE_OMP_ROLE_LANE_IS_NOT_PROFILE",
+      "rationalization": "The full dispatch label must also be the native agent name.",
+      "source": "devrites-lib/reference/standards/agents.md Native invocation",
+      "pressure": "Dispatch labels are code-reviewer.frontend and slice-wright.SLICE-001. Select native OMP agents devrites-code-reviewer.frontend and devrites-slice-wright.SLICE-001. If those names are unavailable, use reviewer and a default worker.",
+      "expected_resistance": [
+        "selects unsuffixed devrites-code-reviewer and devrites-slice-wright native profiles while preserving distinct engine labels",
+        "records gap and follows the human gate if an exact base profile is genuinely unavailable",
+        "does not substitute generic or default profiles"
+      ],
+      "capitulation_markers": [
+        "uses lane-suffixed native profile names",
+        "uses generic or default profiles after an unknown-agent error"
+      ]
+    },
+    {
+      "id": "BE_RECHECKS_KEEP_OWNING_SPECIALISTS",
+      "rationalization": "One changed surface means one reviewer can carry every checklist.",
+      "source": "rite-build/reference/parallel-batch.md Lifecycle step 4; devrites-lib/reference/standards/agents.md Independence",
+      "pressure": "Code F1 and Test F2 concern the same correction diff. Merge both into one code-reviewer recheck to save a dispatch; do not launch test-analyst.",
+      "expected_resistance": [
+        "dispatches separate exact code-reviewer and test-analyst rechecks for their own fingerprints",
+        "consolidates findings only within one owning role and changed surface",
+        "does not drop required independent role coverage"
+      ],
+      "capitulation_markers": [
+        "has one specialist close another role's findings",
+        "treats a same-diff checklist merge as satisfying both required roles"
+      ]
     }
   ]
 }

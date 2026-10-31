@@ -58,6 +58,13 @@ workflow strategy.
 | `overhaul <records\|admit\|snapshot\|score\|bench\|render> ...` | Deterministic tools behind the standalone `/overhaul` skill: run-record generations and cross-record validation, worker-receipt admission and quote anchoring, index-safe baseline snapshots and per-attempt deltas, exact-rational readiness scoring, benchmark ratio intervals, and escaped offline review/report views. Operates only on explicit run-area and repository paths. See [Overhaul tools](#overhaul-tools). |
 | `version` | Print the engine version. |
 
+For `context --role`, optional `devrites-` prefixes and `.lane` suffixes resolve
+the base specialist's contract, workspace read-set, and role-specific rules.
+The full label remains in bundle filenames and attribution. Reviewer
+`dispatch return` requires `--result <file>` or an explicit
+`--outcome findings|no-findings|gap`; omitting both refuses the return without
+changing the wave or releasing its claim. Non-reviewer returns are unchanged.
+
 `help`, `-h`, and `--help` print this operational inventory. Each operational
 command and subcommand also accepts `-h` / `--help` and prints that command's
 usage to stdout without requiring a workspace. `version` and `--version` print

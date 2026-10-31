@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1557021,
+  "total_bytes": 1557292,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -69,7 +69,7 @@
     "pack/.claude/skills/devrites-lib/reference/reply-contract.md": 5706,
     "pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md": 3792,
     "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 29401,
-    "pack/.claude/skills/devrites-lib/reference/standards/agents.md": 17033,
+    "pack/.claude/skills/devrites-lib/reference/standards/agents.md": 17329,
     "pack/.claude/skills/devrites-lib/reference/standards/anti-patterns.md": 4116,
     "pack/.claude/skills/devrites-lib/reference/standards/architecture-health.md": 3407,
     "pack/.claude/skills/devrites-lib/reference/standards/assumption-checkpoints.md": 2201,

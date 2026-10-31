@@ -44,6 +44,7 @@ gen_omp_markdown_file() {
     -e '/Rules in scope/{N;s#;\n[[:space:]]*`[^`]+` mirror on Codex##;}' \
     -e '/On Codex, use the/{N;s# On Codex, use the mirrors under\n`[^`]+`\.##;s# On Codex, use the\nmirrors under `[^`]+`\.##;s# On Codex, use the\nmirror under `[^`]+`\.##;}' \
     -e 's#Host mapping: Claude Code uses `Agent` \(`Task` is its legacy alias\); Codex uses#Host mapping: omp fresh-context dispatch uses the `task` tool (`tasks[]` batch); hosts use#g' \
+    -e 's#Skills name exact fresh roles; hosts select matching native profiles and#On omp, every `task` item (each `tasks[]` member) sets `agent` to the exact native profile;\nuse `agent: "devrites-code-reviewer"`, `agent: "devrites-test-analyst"`, or\n`agent: "devrites-slice-wright"` for those roles, including rechecks and repairs.\nKeep `.frontend`, `.backend`, and `.SLICE-001` on dispatch labels, not `agent`.\nAn omitted `agent` selects the default worker; `agent: "reviewer"` is generic. Hosts#' \
     -e 's#`Agent` call#`task` call#g' \
     -e 's#Claude: N concurrent Task wrights \(`acceptEdits`, cwd=worktree\)\.#omp: one `tasks[]` batch of N wrights; `task` has no `cwd` or `acceptEdits`, so each task names its absolute worktree path and the wright works only there.#g' \
     -e 's#^Claude grants only the exact wright `acceptEdits`;#omp has no permission modes: only the wright'"'"'s `tools` allowlist has `edit`/`write`, and the root stays source-read-only by instruction. Claude grants only the exact wright `acceptEdits`;#' \

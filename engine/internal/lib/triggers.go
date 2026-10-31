@@ -52,7 +52,7 @@ var (
 // corpus (minus the template's AI-SPEC annex) names a model, agent, RAG, or
 // tool surface.
 func keepModelSurface(role string, facts triggerFacts) bool {
-	return role == "security-auditor" || facts.aiSpec || strings.TrimSpace(facts.corpus) == "" ||
+	return roleBase(role) == "security-auditor" || facts.aiSpec || strings.TrimSpace(facts.corpus) == "" ||
 		aiSignalRe.MatchString(aiAnnexRe.ReplaceAllString(facts.corpus, "$1"))
 }
 
@@ -102,7 +102,7 @@ func suggestTriggers(manifest loadsManifest, root, featureDir string, opts conte
 }
 
 func gatherTriggerFacts(root, featureDir, role string) triggerFacts {
-	facts := triggerFacts{role: role}
+	facts := triggerFacts{role: roleBase(role)}
 	if root != "" {
 		afkPath := filepath.Join(root, "AFK")
 		if info, err := os.Stat(afkPath); err == nil && info.Mode().IsRegular() {

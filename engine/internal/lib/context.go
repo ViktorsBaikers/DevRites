@@ -80,7 +80,7 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	// A Build reviewer judges one slice; an unscoped bundle inlines whole
 	// plan/tasks/architecture into every dispatch.
-	if opts.phase == "build" && opts.role != "" && opts.role != "slice-wright" && opts.slice == "" {
+	if opts.phase == "build" && opts.role != "" && roleBase(opts.role) != "slice-wright" && opts.slice == "" {
 		fmt.Fprintf(stderr, "context: BLOCKED: unscoped build reviewer bundle: --role %s in phase build needs --slice <SLICE-ID>\n", opts.role)
 		return 3
 	}
@@ -455,7 +455,7 @@ func workspaceReadSet(manifest loadsManifest, role string) ([]string, bool) {
 	if role == "" {
 		return manifest.Workspace, false
 	}
-	if list, ok := manifest.WorkspaceByRole[role]; ok {
+	if list, ok := manifest.WorkspaceByRole[roleBase(role)]; ok {
 		return list, true
 	}
 	return manifest.Workspace, false
@@ -915,6 +915,7 @@ func parseLoadsManifest(text string) (loadsManifest, bool, error) {
 }
 
 func roleAgentPath(manifest loadsManifest, role string) string {
+	role = roleBase(role)
 	if manifest.Agents != nil {
 		if rel, ok := manifest.Agents[role]; ok {
 			return rel
