@@ -221,9 +221,20 @@ for phrase in (
     "not gate `access`",
     "predecessor is still Build",
     "No Vet `READY` until those roles are admitted",
+    "Do not report a stop from chat",
+    "fold resolved decisions into the spec",
+    "change the spec and resolve it",
 ):
     if phrase not in lookahead:
         raise SystemExit(f"lookahead contract missing {phrase!r}")
+for name, phrase in (
+    ("skills/devrites-lib/reference/standards/principles.md", "Comply by changing the spec."),
+    ("skills/rite-spec/SKILL.md", "complies by changing the spec"),
+    ("skills/rite-autocomplete/reference/decision-policy.md", "A principle conflict complies by changing the spec."),
+    ("skills/rite-autocomplete/reference/stop-conditions.md", "Do not report a stop from chat."),
+):
+    if phrase not in " ".join((canonical / name).read_text().split()):
+        raise SystemExit(f"{name} still treats an avoidable principle conflict as a human stop")
 temper = (canonical / "skills/rite-temper/SKILL.md").read_text()
 if "Except `sequence_lookahead: yes` and no spawn tool" not in temper:
     raise SystemExit("temper still stops lookahead when the strategy reviewer cannot spawn")

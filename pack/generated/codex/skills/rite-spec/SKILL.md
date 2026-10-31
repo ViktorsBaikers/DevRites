@@ -117,8 +117,8 @@ load a routed standard to discover required behavior, not to prescribe implement
    and [`interview-patterns.md`](reference/interview-patterns.md) for a vague ask. Every
    material dimension is resolved by a human pick or explicitly deferred as non-blocking;
    only genuinely reversible, low-impact details go to `assumptions.md`. A paper-only
-   uncertainty may take one scoped `$rite-prototype` detour. A declared-principle conflict
-   remains blocking until the human approves a recorded, scoped exception.
+   uncertainty may take one scoped `$rite-prototype` detour. A principle conflict
+   complies by changing the spec. Only an unavoidable violation blocks for a human.
 4a. **Build-interruption forecast.** Search first, then list and close foreseeable human needs:
    product/acceptance ambiguity, irreversible/external approval, or human-only access. Record
    owned prerequisites. Keep a build checkpoint only for unavailable pre-code evidence or a
