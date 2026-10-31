@@ -100,6 +100,35 @@ func TestApplyBundleCombinesDisjointClusters(t *testing.T) {
 	}
 }
 
+func TestApplyBundleCombinesPathAliases(t *testing.T) {
+	for _, alias := range []string{"./plan.md", "refs/../plan.md", ".devrites/work/feat/./plan.md"} {
+		t.Run(alias, func(t *testing.T) {
+			root, dir := bundleWorkspace(t)
+			if err := os.Mkdir(filepath.Join(dir, "refs"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			pin := pinOf(t, dir, "plan.md")
+			first := writeBundle(t, dir, []candidateFile{
+				patch("plan.md", candidateHunk{OldText: "AC-001", NewText: "AC-001 first"}),
+			}, map[string]string{"plan.md": pin})
+			second := writeBundle(t, dir, []candidateFile{
+				patch(alias, candidateHunk{OldText: "AC-002", NewText: "AC-002 next"}),
+			}, map[string]string{alias: pin})
+			var stdout, stderr bytes.Buffer
+			if code := RunApplyBundle(root, []string{"feat", first, second}, &stdout, &stderr); code != 0 {
+				t.Fatalf("code=%d stderr=%s", code, stderr.String())
+			}
+			got, err := os.ReadFile(filepath.Join(dir, "plan.md"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if want := "# Plan\n\nAC-001 first and AC-002 next ship in order.\n"; string(got) != want {
+				t.Fatalf("combined bundle lost an edit: %q", got)
+			}
+		})
+	}
+}
+
 func TestApplyBundleRefusesAndWritesNothing(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -110,6 +139,18 @@ func TestApplyBundleRefusesAndWritesNothing(t *testing.T) {
 			return []candidateFile{patch("plan.md", candidateHunk{OldText: "ship", NewText: "land"})},
 				map[string]string{"plan.md": strings.Repeat("0", 64)}, nil
 		}, "stale base"},
+		{"aliased replacements", func(dir string) ([]candidateFile, map[string]string, []string) {
+			content := "# Plan\n\nAC-001 and AC-002 land.\n"
+			pin := pinOf(t, dir, "plan.md")
+			return []candidateFile{
+				{Path: "plan.md", Operation: "replace", Content: &content},
+				{Path: "./plan.md", Operation: "replace", Content: &content},
+			}, map[string]string{"plan.md": pin, "./plan.md": pin}, nil
+		}, "conflicts with another candidate"},
+		{"conflicting aliased pins", func(dir string) ([]candidateFile, map[string]string, []string) {
+			return []candidateFile{patch("plan.md", candidateHunk{OldText: "ship", NewText: "land"})},
+				map[string]string{"plan.md": pinOf(t, dir, "plan.md"), "./plan.md": strings.Repeat("0", 64)}, nil
+		}, "conflicting base hashes"},
 		{"non-unique anchor", func(dir string) ([]candidateFile, map[string]string, []string) {
 			return []candidateFile{patch("tasks.md", candidateHunk{ID: "T1", OldText: "Dependencies:", NewText: "Deps:"})},
 				map[string]string{"tasks.md": pinOf(t, dir, "tasks.md")}, nil

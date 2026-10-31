@@ -35,18 +35,12 @@ func (r *runner) uninstall() error {
 		return err
 	}
 
-	// Per-path would-be content for a dry run; a nil value means the file
-	// would be removed.
-	dryTree := map[string][]byte{}
 	for _, rel := range entries {
 		merge, ok := hostpack.ManagedMergeForMarker(rel)
 		if !ok {
 			continue
 		}
 		if r.opts.DryRun {
-			if err := dryRunStripMarker(dryTree, r.target, merge); err != nil {
-				return err
-			}
 			fmt.Fprintf(r.opts.Stdout, "  [merge-remove] %s\n", merge.DryRun)
 			continue
 		}
@@ -142,11 +136,16 @@ func (r *runner) uninstall() error {
 // dryRunStripMarker runs the real marker strip against an in-memory view of
 // the target (tree), so a dry run follows the same sequence as the real
 // uninstall and reports the same errors without writing anything.
-func dryRunStripMarker(tree map[string][]byte, target string, merge hostpack.ManagedMerge) error {
-	if merge.MarkerRel == hostpack.LegacyCodexHooksMerge.MarkerRel || merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
-		return nil
+func (r *runner) dryRunStripMarker(tree map[string][]byte, merge hostpack.ManagedMerge) error {
+	path := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
+	write := func(data []byte) error { tree[path] = data; return nil }
+	remove := func() error { tree[path] = nil; return nil }
+	if merge.MarkerRel == hostpack.LegacyCodexHooksMerge.MarkerRel {
+		return stripHooksWith(path, write, remove)
 	}
-	path := filepath.Join(target, filepath.FromSlash(merge.TargetRel))
+	if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
+		return r.stripClaudeSettingsWith(path, write, remove)
+	}
 	data, seen := tree[path]
 	if !seen {
 		var err error

@@ -160,12 +160,12 @@ func cmdStatus(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "gates status: %v\n", err)
 		return ExitBlocked
 	}
-	return reportStatus(slug, ledgerPath, testPlanPath, stdout, stderr)
+	return reportStatus(slug, ledgerPath, testPlanPath, false, stdout, stderr)
 }
 
 // reportStatus prints the stable greppable reduction. It returns ExitOK only
-// for a parse-clean ledger with every gate met and none abandoned.
-func reportStatus(slug, ledgerPath, testPlanPath string, stdout, stderr io.Writer) int {
+// for a parse-clean ledger with every gate met, none abandoned and no failed attempt.
+func reportStatus(slug, ledgerPath, testPlanPath string, attemptFailed bool, stdout, stderr io.Writer) int {
 	text, err := ReadLedgerFile(ledgerPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "gates status: %v\n", err)
@@ -191,7 +191,7 @@ func reportStatus(slug, ledgerPath, testPlanPath string, stdout, stderr io.Write
 	case reduction.HandoffRequired():
 		fmt.Fprintln(stdout, "result: handoff")
 		return ExitBlocked
-	case !reduction.AllMet():
+	case attemptFailed || !reduction.AllMet():
 		fmt.Fprintln(stdout, "result: not-met")
 		return ExitBlocked
 	default:
@@ -269,6 +269,7 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 	}
 	var ran []GateResult
 	var ranDoc *Document
+	attemptFailed := false
 
 	// The gates lock serializes check execution; the feature lock is held only
 	// to read inputs and per writeback, so dispatch and other workspace writers
@@ -294,6 +295,9 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 		}
 		ran, ranDoc = RunGates(context.Background(), project, ledgerPath, doc, approved, reverify, timeout, featureLock), doc
 		for _, result := range ran {
+			if result.Ran && !result.Passed || result.Discarded || result.WriteErr != nil {
+				attemptFailed = true
+			}
 			switch {
 			case !result.Ran:
 				fmt.Fprintf(stdout, "gate %s: skipped (%s)\n", result.ID, result.Detail)
@@ -320,7 +324,7 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 		}
 	}
 	fmt.Fprintln(stdout, "---")
-	return reportStatus(slug, ledgerPath, testPlanPath, stdout, stderr)
+	return reportStatus(slug, ledgerPath, testPlanPath, attemptFailed, stdout, stderr)
 }
 
 func cmdLint(root string, args []string, stdout, stderr io.Writer) int {

@@ -40,6 +40,31 @@ func TestCursorFieldReadsCanonicalTableAndLegacyLines(t *testing.T) {
 	}
 }
 
+func TestCanonicalCursorKeyMatchesReaderAliases(t *testing.T) {
+	for _, tc := range []struct {
+		key  string
+		want string
+	}{
+		{"s_chema", CursorSchema},
+		{"p_hase", CursorPhase},
+		{"returnphase", CursorReturnPhase},
+		{"returnnextaction", CursorReturnNextAction},
+		{"Next step", CursorNextAction},
+		{"q_id", CursorQuestionID},
+	} {
+		got, ok := CanonicalCursorKey(tc.key)
+		if !ok || got != tc.want {
+			t.Fatalf("CanonicalCursorKey(%q) = %q, %v; want %q", tc.key, got, ok, tc.want)
+		}
+		if value, ok := CursorField([]string{"| " + tc.want + " | saved |"}, tc.key); !ok || value != "saved" {
+			t.Fatalf("canonical resolution differs from CursorField for %q", tc.key)
+		}
+	}
+	if got, ok := CanonicalCursorKey("custom_key"); ok || got != "" {
+		t.Fatalf("unknown extension classified as canonical: %q, %v", got, ok)
+	}
+}
+
 func TestSetCursorFieldPreservesCanonicalAndLegacyFormats(t *testing.T) {
 	for _, tc := range []struct {
 		name  string

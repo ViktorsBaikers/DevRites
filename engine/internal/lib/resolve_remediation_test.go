@@ -51,6 +51,47 @@ func TestResolveAcceptsCanonicalUppercaseQuestionID(t *testing.T) {
 	}
 }
 
+func TestResolveIgnoresFencedAwaitingHumanExamples(t *testing.T) {
+	for _, wait := range []string{"cursor", "section"} {
+		for _, qid := range []string{"Q-001", "Q-002"} {
+			t.Run(wait+"/"+qid, func(t *testing.T) {
+				root := resolveWorkspace(t, "## Q-001\nstatus: open\n\n## Q-002\nstatus: open\n")
+				example := "## Notes\n```md\n## Awaiting human\n- qid: Q-001\n## Log\nexample log\n```\n"
+				text := "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | build |\n| status | awaiting_human |\n| next_action | wait |\n| schema | 4 |\n"
+				if wait == "cursor" {
+					text += "| question_id | Q-002 |\n"
+				}
+				text += "\n" + example
+				if wait == "section" {
+					text += "\n## Awaiting human\n- qid: Q-002\n"
+				}
+				text += "\n## Log\n- kept\n"
+				path := filepath.Join(root, "work", "feat", "state.md")
+				testutil.WriteFile(t, path, text)
+				var out, errOut bytes.Buffer
+				if code := Resolve(root, []string{qid, "answer"}, &out, &errOut); code != 0 {
+					t.Fatalf("exit %d: %s", code, errOut.String())
+				}
+				raw, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got := string(raw)
+				if qid == "Q-001" {
+					if got != text {
+						t.Fatalf("resolving other question changed live wait:\n%s", got)
+					}
+				} else if !strings.Contains(got, "| status | running |") || strings.Contains(got, "| question_id |") || strings.Contains(got, "- qid: Q-002") || !strings.Contains(got, "resolved Q-002") {
+					t.Fatalf("genuine wait did not resume:\n%s", got)
+				}
+				if !strings.Contains(got, example) {
+					t.Fatalf("fenced example changed:\n%s", got)
+				}
+			})
+		}
+	}
+}
+
 func resolveWorkspace(t *testing.T, questions string) string {
 	t.Helper()
 	root := t.TempDir()

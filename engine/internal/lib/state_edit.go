@@ -58,10 +58,17 @@ func RunStateSet(root string, args []string, stdout, stderr io.Writer) int {
 				return fail(stderr, stateSetUsage, 2)
 			}
 		}
-		if !cursorKeyPattern.MatchString(key) || seen[key] {
+		if !cursorKeyPattern.MatchString(key) {
 			return fail(stderr, fmt.Sprintf("state set: key %q is not a snake_case cursor key or repeats", key), 2)
 		}
-		seen[key] = true
+		if canonical, ok := state.CanonicalCursorKey(key); ok {
+			key = canonical
+		}
+		identity := strings.ReplaceAll(key, "_", "")
+		if seen[identity] {
+			return fail(stderr, fmt.Sprintf("state set: key %q is not a snake_case cursor key or repeats", key), 2)
+		}
+		seen[identity] = true
 		changes = append(changes, change{key, value})
 	}
 	sfile, code := stateEditWorkspace(root, slug, "state.md", stderr)

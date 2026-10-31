@@ -28,7 +28,7 @@ type GateResult struct {
 	Ran       bool
 	Passed    bool
 	Detail    string // exit/match/timeout/approval diagnostic
-	Discarded bool   // result dropped: ledger changed under the run
+	Discarded bool   // result dropped: bound oracle or inputs changed during the run
 	WriteErr  error  // evidence writeback failed for a reason other than drift
 	Reused    bool   // met gate kept because its INPUTS are unchanged
 	Inputs    string // INPUTS content digest at run time, when declared
@@ -77,13 +77,24 @@ func ReadLedgerFile(ledgerPath string) (string, error) {
 // execute; writeResult re-verifies the gate's oracle before it writes.
 func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, approved []ApprovedCommand, reverify bool, timeout time.Duration, writeLock func(func() error) error) []GateResult {
 	var results []GateResult
-	outcomes := map[string]RunOutcome{}
-	spans := map[string][2]time.Time{}
-	write := func(gate *Gate, evidence string, checked bool) error {
-		if writeLock == nil {
-			return writeResult(ledgerPath, gate, evidence, checked)
+	executions := map[string]struct {
+		ran     bool
+		outcome RunOutcome
+		span    [2]time.Time
+		inputs  map[string]string
+	}{}
+	// Collect every dependent INPUTS spec before any shared command can run.
+	for _, gate := range doc.Gates {
+		if gate.Check == "" || gate.Inputs == "" {
+			continue
 		}
-		return writeLock(func() error { return writeResult(ledgerPath, gate, evidence, checked) })
+		key := gate.Check + "\x00" + filepath.Join(root, filepath.FromSlash(gate.Cwd))
+		execution := executions[key]
+		if execution.inputs == nil {
+			execution.inputs = map[string]string{}
+		}
+		execution.inputs[gate.Inputs] = ""
+		executions[key] = execution
 	}
 	for _, gate := range doc.Gates {
 		if _, abandoned := doc.Abandoned[gate.ID]; abandoned {
@@ -95,14 +106,14 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 			continue
 		}
 		inputs := ""
-		if gate.Inputs != "" {
-			// An unreadable or unmatched spec yields "", which never matches, so the gate re-executes.
-			inputs, _ = InputsDigest(root, gate.Inputs)
-		}
 		if GateState(gate, doc) == StateMet {
 			if gate.Inputs == "" && !reverify {
 				results = append(results, GateResult{ID: gate.ID, Passed: true, Detail: "already met"})
 				continue
+			}
+			if gate.Inputs != "" {
+				// An unreadable or unmatched spec never matches recorded evidence.
+				inputs, _ = InputsDigest(root, gate.Inputs)
 			}
 			// A gate that declares INPUTS is reused, under run and reverify alike,
 			// exactly while the files it depends on are byte-identical; any change re-executes it.
@@ -120,36 +131,84 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 			results = append(results, GateResult{ID: gate.ID, Detail: err.Error()})
 			continue
 		}
-		cwd := root
-		if gate.Cwd != "" {
-			cwd = filepath.Join(root, filepath.FromSlash(gate.Cwd))
-		}
+		cwd := filepath.Join(root, filepath.FromSlash(gate.Cwd))
 		key := gate.Check + "\x00" + cwd
-		outcome, ran := outcomes[key]
-		if !ran {
+		execution := executions[key]
+		if !execution.ran {
+			for spec := range execution.inputs {
+				execution.inputs[spec], _ = InputsDigest(root, spec)
+			}
 			started := time.Now().UTC()
-			outcome = Execute(ctx, gate.Check, cwd, timeout)
-			outcomes[key] = outcome
-			spans[key] = [2]time.Time{started, time.Now().UTC()}
+			execution.outcome = Execute(ctx, gate.Check, cwd, timeout)
+			execution.span = [2]time.Time{started, time.Now().UTC()}
+			for spec, before := range execution.inputs {
+				after, _ := InputsDigest(root, spec)
+				if after != before {
+					execution.inputs[spec] = ""
+				}
+			}
+			execution.ran = true
+			executions[key] = execution
 		}
-		span := spans[key]
-		if outcome.Err == nil && outcome.ExitCode == 0 && expectation.Matches(outcome.Output) {
-			evidence := withInputs(FormatEvidence(gate, OutputDigest(outcome.Output), outcome.OutputBytes, time.Now().UTC().Format(time.RFC3339)), inputs)
-			writeErr := write(gate, evidence, true)
-			results = append(results, GateResult{
-				ID: gate.ID, Ran: true, Passed: true,
-				Discarded: errors.Is(writeErr, ErrOracleMoved), WriteErr: writeErr,
-				Detail: resultDetail(writeErr, "pass"),
-				Inputs: inputs, Outcome: outcome, Started: span[0], Ended: span[1],
-			})
+		outcome := execution.outcome
+		inputs = execution.inputs[gate.Inputs]
+		passed := outcome.Err == nil && outcome.ExitCode == 0 && expectation.Matches(outcome.Output)
+		detail := "pass"
+		if !passed {
+			detail = failDetail(outcome, expectation)
+		}
+		write := func() error {
+			if passed && gate.Inputs != "" {
+				// Earlier writebacks may have moved files since execution.
+				current, _ := InputsDigest(root, gate.Inputs)
+				if inputs == "" || current != inputs {
+					passed = false
+					detail = "INPUTS changed or could not be read during the run"
+				}
+			}
+			evidence := "pending"
+			if passed {
+				evidence = withInputs(FormatEvidence(gate, OutputDigest(outcome.Output), outcome.OutputBytes, time.Now().UTC().Format(time.RFC3339)), inputs)
+			}
+			return writeResult(ledgerPath, gate, evidence, passed)
+		}
+		var writeErr error
+		if writeLock == nil {
+			writeErr = write()
 		} else {
-			writeErr := write(gate, "pending", false)
-			results = append(results, GateResult{
-				ID: gate.ID, Ran: true,
-				Discarded: errors.Is(writeErr, ErrOracleMoved), WriteErr: writeErr,
-				Detail: resultDetail(writeErr, failDetail(outcome, expectation)),
-				Inputs: inputs, Outcome: outcome, Started: span[0], Ended: span[1],
-			})
+			writeErr = writeLock(write)
+		}
+		results = append(results, GateResult{
+			ID: gate.ID, Ran: true, Passed: passed,
+			Discarded: errors.Is(writeErr, ErrOracleMoved), WriteErr: writeErr,
+			Detail: resultDetail(writeErr, detail),
+			Inputs: inputs, Outcome: outcome, Started: execution.span[0], Ended: execution.span[1],
+		})
+	}
+	// Later checks may invalidate an earlier execution or reused pass.
+	for i, gate := range doc.Gates {
+		result := &results[i]
+		if !result.Passed || result.Discarded || result.WriteErr != nil || gate.Inputs == "" {
+			continue
+		}
+		validate := func() error {
+			current, _ := InputsDigest(root, gate.Inputs)
+			if current != "" && current == result.Inputs {
+				return nil
+			}
+			result.Passed, result.Reused, result.Discarded = false, false, true
+			result.Detail = "INPUTS changed or could not be read after a later check"
+			return writeResult(ledgerPath, gate, "pending", false)
+		}
+		var err error
+		if writeLock == nil {
+			err = validate()
+		} else {
+			err = writeLock(validate)
+		}
+		if err != nil {
+			result.WriteErr = err
+			result.Detail = resultDetail(err, result.Detail)
 		}
 	}
 	return results

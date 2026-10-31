@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -22,6 +23,7 @@ func (r *runner) preflightInstall() error {
 		return fmt.Errorf("preflight install paths: %w", err)
 	}
 	var conflicts []string
+	dryTree := map[string][]byte{}
 	for rel := range desired {
 		snapshot, err := r.rememberPath(rel)
 		if err != nil {
@@ -34,7 +36,8 @@ func (r *runner) preflightInstall() error {
 			}
 		}
 	}
-	for rel, record := range r.prev {
+	for _, rel := range slices.Sorted(maps.Keys(r.prev)) {
+		record := r.prev[rel]
 		if desired[rel] || hostpack.PreserveOnPrune(rel) {
 			continue
 		}
@@ -58,7 +61,7 @@ func (r *runner) preflightInstall() error {
 			if _, err := r.rememberPath(merge.TargetRel); err != nil {
 				return err
 			}
-			if err := dryRunStripMarker(map[string][]byte{}, r.target, merge); err != nil {
+			if err := r.dryRunStripMarker(dryTree, merge); err != nil {
 				return err
 			}
 		}
@@ -104,17 +107,32 @@ func (r *runner) preflightMerges() error {
 			return fmt.Errorf("merge %s: %w", hostpack.CodexConfigMerge.TargetRel, err)
 		}
 	}
-	if _, _, err := r.claudeSettingsNext(); err != nil {
+	_, settings, err := r.claudeSettingsNext()
+	if err != nil {
 		return fmt.Errorf("seed claude settings: %w", err)
+	}
+	marker := hostpack.ClaudeSettingsMerge.MarkerRel
+	if snapshot := r.preflight[marker]; !snapshot.missing && !r.opts.Force {
+		if _, managed := r.prev[marker]; !managed {
+			text := claudeSettingsMarkerText(r.pendingClaudeSettingsOwnership(settings)) + "\n"
+			sum := sha256.Sum256([]byte(text))
+			if snapshot.hash != fmt.Sprintf("sha256:%x", sum[:]) {
+				return fmt.Errorf("cannot merge %s without owning %s; use --force to replace the marker", hostpack.ClaudeSettingsMerge.TargetRel, marker)
+			}
+		}
 	}
 	return nil
 }
 
 func (r *runner) preflightUninstall(entries []string) error {
 	var conflicts []string
+	dryTree := map[string][]byte{}
 	for _, rel := range entries {
 		if merge, ok := hostpack.ManagedMergeForMarker(rel); ok {
 			if _, err := r.rememberPath(merge.TargetRel); err != nil {
+				return err
+			}
+			if err := r.dryRunStripMarker(dryTree, merge); err != nil {
 				return err
 			}
 		}

@@ -91,6 +91,36 @@ func TestCloseOutRejectsArchiveSymlinkEscape(t *testing.T) {
 	}
 }
 
+func TestCloseOutPreservesPhysicalActiveWithWorkspaceOverride(t *testing.T) {
+	for _, active := range []string{"other\n", "feat\n"} {
+		t.Run(strings.TrimSpace(active), func(t *testing.T) {
+			root := t.TempDir()
+			work := filepath.Join(root, "work", "feat")
+			writeFile(t, filepath.Join(work, "state.md"), "feature\n- Schema: 4\n")
+			writeFile(t, filepath.Join(root, "work", "other", "state.md"), "other\n- Schema: 4\n")
+			writeFile(t, filepath.Join(root, "ACTIVE"), active)
+			t.Setenv("DEVRITES_WORKSPACE", work)
+			code, out := runCloseOut(t, root, "feat")
+			if code != 0 {
+				t.Fatalf("close-out = %d:\n%s", code, out)
+			}
+			wantActive := active
+			if active == "feat\n" {
+				wantActive = ""
+			}
+			if data, err := os.ReadFile(filepath.Join(root, "ACTIVE")); err != nil || string(data) != wantActive {
+				t.Fatalf("ACTIVE = %q, %v; want %q", data, err, wantActive)
+			}
+			if data, err := os.ReadFile(filepath.Join(root, "work", "other", "state.md")); err != nil || string(data) != "other\n- Schema: 4\n" {
+				t.Fatalf("foreign workspace changed: %q, %v", data, err)
+			}
+			if !isFile(filepath.Join(root, "archive", "feat", "state.md")) || isDir(work) {
+				t.Fatal("requested workspace not archived")
+			}
+		})
+	}
+}
+
 func TestCloseOutRollsBackArchiveWhenActiveCannotBeCleared(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("permission model differs on Windows")
@@ -139,7 +169,7 @@ func TestCloseOutRollsBackArchiveWhenActiveCannotBeCleared(t *testing.T) {
 func TestCloseOutSerializesRenameBehindFeatureLock(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "inside\n- Schema: 4\n")
-	writeFile(t, filepath.Join(root, "ACTIVE"), "feat\n")
+	writeFile(t, filepath.Join(root, "ACTIVE"), "other\n")
 
 	// dispatch.json is what a concurrent `dispatch` mid-save writes; it is
 	// written the way saveDispatch writes it, MkdirAll included, so the
@@ -153,6 +183,11 @@ func TestCloseOutSerializesRenameBehindFeatureLock(t *testing.T) {
 		writerDone <- state.WithFeatureLock(root, "feat", func() error {
 			close(locked)
 			<-release
+			// Close-out must read ACTIVE after acquiring the lock, not before waiting.
+			if err := state.AtomicWrite(filepath.Join(root, "ACTIVE"), []byte("feat\n"), 0o644); err != nil {
+				wrote <- err
+				return err
+			}
 			// Still holding the lock, as dispatch does across its load-modify-save.
 			if err := os.MkdirAll(filepath.Dir(dispatchPath), 0o755); err != nil {
 				wrote <- err

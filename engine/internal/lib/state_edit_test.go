@@ -98,6 +98,60 @@ func TestStateSetNeverOverwritesReturnCursor(t *testing.T) {
 	}
 }
 
+func TestStateSetCanonicalizesAliasesBeforeValidation(t *testing.T) {
+	for _, tc := range []struct {
+		args []string
+		code int
+	}{
+		{[]string{"status=blocked", "s_chema=999"}, 3},
+		{[]string{"--unset", "s_chema"}, 3},
+		{[]string{"status=blocked", "p_hase=nowhere"}, 3},
+		{[]string{"--unset", "p_hase"}, 3},
+		{[]string{"status=blocked", "returnphase=prove"}, 3},
+		{[]string{"status=blocked", "returnnextaction=/rite-prove"}, 3},
+		{[]string{"phase=build", "p_hase=plan"}, 2},
+		{[]string{"question_id=Q-001", "qid=Q-002"}, 2},
+		{[]string{"next_action=first", "nextstep=second"}, 2},
+		{[]string{"return_phase=build", "--unset", "returnphase"}, 2},
+		{[]string{"custom_key=first", "customkey=second"}, 2},
+	} {
+		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {
+			root, dir := editWorkspace(t)
+			before := editState + "| return_next_action | /rite-build |\n"
+			writeFile(t, filepath.Join(dir, "state.md"), before)
+			var out, errOut bytes.Buffer
+			if code := RunStateSet(root, append([]string{"feat"}, tc.args...), &out, &errOut); code != tc.code {
+				t.Fatalf("exit %d, want %d: %s", code, tc.code, errOut.String())
+			}
+			if got := readEdit(t, dir, "state.md"); got != before {
+				t.Fatalf("refused aliases changed state.md:\n%s", got)
+			}
+		})
+	}
+}
+
+func TestStateSetAcceptsAliasesAndPreservesExtensions(t *testing.T) {
+	root, dir := editWorkspace(t)
+	var out, errOut bytes.Buffer
+	args := []string{"feat", "p_hase=vet", "nextstep=/rite-build", "qid=Q-001", "returnphase=build", "custom_key=kept"}
+	if code := RunStateSet(root, args, &out, &errOut); code != 0 {
+		t.Fatalf("exit %d: %s", code, errOut.String())
+	}
+	got := readEdit(t, dir, "state.md")
+	for _, want := range []string{"| phase | vet |", "| next_action | /rite-build |", "| question_id | Q-001 |", "| custom_key | kept |"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("state.md lacks %q:\n%s", want, got)
+		}
+	}
+	if code := RunStateSet(root, []string{"feat", "--unset", "returnphase", "--unset", "q_id"}, &out, &errOut); code != 0 {
+		t.Fatalf("unset aliases: exit %d: %s", code, errOut.String())
+	}
+	got = readEdit(t, dir, "state.md")
+	if strings.Contains(got, "return_phase") || strings.Contains(got, "question_id") || !strings.Contains(got, "| custom_key | kept |") {
+		t.Fatalf("unset aliases damaged unrelated extension:\n%s", got)
+	}
+}
+
 func TestStateSetAwaitingHumanNamesAFKAutoPicks(t *testing.T) {
 	root, dir := editWorkspace(t)
 	questions := "# Questions\n\n## q-2026-10-19-001\nstatus: open\ngate: validating\nproposed: Approve saved plan\n\n" +
