@@ -71,6 +71,28 @@ func writePlanLease(t *testing.T, root string) {
 	}
 }
 
+func TestParallelPlanVisible(t *testing.T) {
+	root, _ := planWorkspace(t)
+	if parallelPlanVisible(root, "feat") {
+		t.Fatal("serial default must stay scoped")
+	}
+	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 5\n")
+	if !parallelPlanVisible(root, "feat") {
+		t.Fatal("cap above 1 must show every slice")
+	}
+	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 1\n")
+	if parallelPlanVisible(root, "feat") {
+		t.Fatal("cap 1 must stay scoped")
+	}
+	if err := os.Remove(filepath.Join(root, "AFK")); err != nil {
+		t.Fatal(err)
+	}
+	writePlanLease(t, root)
+	if !parallelPlanVisible(root, "feat") {
+		t.Fatal("running lease must show every slice")
+	}
+}
+
 func TestPlanReadyFromTasksAndCheckpoints(t *testing.T) {
 	root, _ := planWorkspace(t)
 	ready, err := planReady(root, "feat")
@@ -146,6 +168,9 @@ External dependencies: stdlib and existing host/redactor tools only.
 		"already-admitted benchstat; existing modules only.",
 		"existing make/Docker/Bun/Go tools only.",
 		"none new (stdlib crypto/aes, crypto/cipher)",
+		"Go 1.22.0 toolchain only",
+		"standard library",
+		"node 20.11.1 already in the image",
 	} {
 		if got := withManifests(project, paths, ext); !slices.Equal(got, paths) {
 			t.Fatalf("%q reserved a manifest: %v", ext, got)
@@ -153,6 +178,9 @@ External dependencies: stdlib and existing host/redactor tools only.
 	}
 	if got := withManifests(project, paths, "existing modules plus github.com/foo/bar v1.2.3"); !slices.Equal(got, []string{"internal/library/list.go", "go.mod", "go.sum"}) {
 		t.Fatalf("named module must still reserve go.mod: %v", got)
+	}
+	if got := withManifests(project, paths, "left-pad 1.2.3"); !slices.Equal(got, []string{"internal/library/list.go", "go.mod", "go.sum"}) {
+		t.Fatalf("versioned package must still reserve go.mod: %v", got)
 	}
 
 	eligible, batch, err := planBatch(root, "feat", 5)

@@ -59,7 +59,9 @@ next open is blocked until --reslice-review names a drift.md
 "## <DRIFT-ID>" heading for that slice. Under .devrites/AFK max_parallel >= 2,
 a build wright wave that leaves parallel select --from-plan picks unstarted is
 blocked until evidence.md records "serial: <skipped ids> — <reason>". A repair
-round or a running lease slice does not waive those picks. HITL is never blocked.
+round or a running lease slice does not waive those picks. A wave naming two
+or more slices needs one slice-wright.<SLICE-ID> role per slice; one shared
+role has one handle, so the other slices never start. HITL is never width-blocked.
 
 Root-edit tripwire (ADR-0038): the first open records tree-baseline.json
 (dirty product paths outside .devrites/ and .scratch/, accepted as user work);
@@ -779,6 +781,10 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 			return nil, 2
 		}
 		if kind == "wright" {
+			if refusal := wrightFanoutRefusal(w); refusal != "" {
+				fmt.Fprintln(stderr, refusal)
+				return nil, 3
+			}
 			if refusal := widerBatchRefusal(root, slug, w.Slices); refusal != "" {
 				fmt.Fprintln(stderr, refusal)
 				return nil, 3
@@ -818,6 +824,46 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 var serialRecordRe = regexp.MustCompile("(?mi)^[ \\t]*(?:[-*][ \\t]+)?`?serial:([^\\n]*?)(?:[ \\t]*[—–]|[ \\t]+--?[ \\t])[ \\t]*(?:[^\\s`]|`[^\\s`])")
 
 var sliceTokenRe = regexp.MustCompile(`(?i)\bSLICE-\d+\b`)
+
+// wrightFanoutRefusal refuses a build wright wave that names several slices
+// but not one slice-wright role per slice. One role has one host handle, so
+// the other slices would never start.
+func wrightFanoutRefusal(w *dispatchWave) string {
+	if len(w.Slices) < 2 {
+		return ""
+	}
+	lanes := map[string]bool{}
+	bare := 0
+	for role := range w.Roles {
+		if roleBase(role) != "slice-wright" {
+			continue
+		}
+		lane, ok := wrightLane(role)
+		if !ok {
+			bare++
+			continue
+		}
+		lanes[sliceNumber(lane)] = true
+	}
+	if bare > 0 || len(lanes) != len(w.Slices) {
+		return fmt.Sprintf("dispatch: BLOCKED: %d slices need one `--role slice-wright.<SLICE-ID>` each so every writer gets a handle; one shared slice-wright role starts only one agent", len(w.Slices))
+	}
+	for _, id := range w.Slices {
+		if !lanes[sliceNumber(id)] {
+			return fmt.Sprintf("dispatch: BLOCKED: %s has no `--role slice-wright.%s`", id, id)
+		}
+	}
+	return ""
+}
+
+// wrightLane is the SLICE-### suffix of a slice-wright.<SLICE-ID> role.
+func wrightLane(role string) (string, bool) {
+	base, lane, ok := strings.Cut(strings.TrimPrefix(role, "devrites-"), ".")
+	if !ok || base != "slice-wright" || !state.ValidSliceID(lane) {
+		return "", false
+	}
+	return lane, true
+}
 
 // widerBatchRefusal refuses an AFK build wright wave when
 // `parallel select --from-plan` still picks slices this wave does not start

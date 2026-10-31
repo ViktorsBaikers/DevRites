@@ -615,9 +615,13 @@ func TestDispatchRefusesNarrowFirstRoundUnderAFK(t *testing.T) {
 func TestDispatchNeverRefusesFullBatchWave(t *testing.T) {
 	root, _ := planWorkspace(t)
 	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")
-	code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "both", "--role", "slice-wright", "--slice", "SLICE-002", "--slice", "SLICE-003", "--contract", wrightContractPath(t))
+	code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "one-role", "--role", "slice-wright", "--slice", "SLICE-002", "--slice", "SLICE-003", "--contract", wrightContractPath(t))
+	if code != 3 || !strings.Contains(out, "slice-wright.<SLICE-ID>") {
+		t.Fatalf("one role for two slices must be refused: code=%d\n%s", code, out)
+	}
+	code, out = runDispatchT(t, root, "open", "--phase", "build", "--wave", "both", "--role", "slice-wright.SLICE-002", "--role", "slice-wright.SLICE-003", "--slice", "SLICE-002", "--slice", "SLICE-003", "--contract", wrightContractPath(t))
 	if code != 0 {
-		t.Fatalf("a wave holding the whole batch must never be refused: code=%d\n%s", code, out)
+		t.Fatalf("a wave with one wright role per slice must open: code=%d\n%s", code, out)
 	}
 }
 
@@ -637,7 +641,7 @@ func TestDispatchRefusesRepairWhileNewPicksRemain(t *testing.T) {
 	if code != 3 || !strings.Contains(out, "SLICE-003,SLICE-004") || !strings.Contains(out, "parallel add") {
 		t.Fatalf("repair of the running slice must start the other picks: code=%d\n%s", code, out)
 	}
-	code, out = runDispatchT(t, root, "open", "--phase", "build", "--wave", "next", "--role", "slice-wright", "--slice", "SLICE-003", "--slice", "SLICE-004", "--contract", wrightContractPath(t))
+	code, out = runDispatchT(t, root, "open", "--phase", "build", "--wave", "next", "--role", "slice-wright.SLICE-003", "--role", "slice-wright.SLICE-004", "--slice", "SLICE-003", "--slice", "SLICE-004", "--contract", wrightContractPath(t))
 	if code != 0 {
 		t.Fatalf("wave holding the new picks must open: code=%d\n%s", code, out)
 	}

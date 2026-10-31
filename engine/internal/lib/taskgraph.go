@@ -256,32 +256,28 @@ func builtSlices(root, slug string) (map[string]bool, error) {
 	return built, nil
 }
 
-// manifestDenialRe is prose that says the slice adds no dependency.
-var manifestDenialRe = regexp.MustCompile(`(?i)\b(?:no new|no product|existing|already-admitted|already admitted|stdlib)\b`)
-
 // A backtick name, module path, npm scope, or x.y.z pin. go.mod/go.sum is not a module path.
+// A toolchain version (Go 1.22.0) is not a package add.
 var (
-	backtickPkgRe  = regexp.MustCompile("`([^`]+)`")
-	modulePathRe   = regexp.MustCompile(`(?i)(?:[a-z0-9-]+\.)+[a-z]{2,}/[a-z0-9._@~+-]+`)
-	npmScopeRe     = regexp.MustCompile(`(?i)@[a-z0-9._-]+/[a-z0-9._-]+`)
-	versionPinRe   = regexp.MustCompile(`(?i)\bv?\d+\.\d+\.\d+\b`)
-	manifestHostRe = regexp.MustCompile(`(?i)\.(?:mod|sum|json|toml|yaml|yml|lock|lockb)$`)
+	backtickPkgRe      = regexp.MustCompile("`([^`]+)`")
+	modulePathRe       = regexp.MustCompile(`(?i)(?:[a-z0-9-]+\.)+[a-z]{2,}/[a-z0-9._@~+-]+`)
+	npmScopeRe         = regexp.MustCompile(`(?i)@[a-z0-9._-]+/[a-z0-9._-]+`)
+	versionPinRe       = regexp.MustCompile(`(?i)\bv?\d+\.\d+\.\d+\b`)
+	toolchainVersionRe = regexp.MustCompile(`(?i)\b(?:go|golang|node|bun|npm|pnpm|yarn|rustc|python|ruby|java)\s+v?\d+\.\d+\.\d+\b`)
+	manifestHostRe     = regexp.MustCompile(`(?i)\.(?:mod|sum|json|toml|yaml|yml|lock|lockb)$`)
 )
 
 // externalClaimsManifest reports whether External dependencies names a package
 // add, so parallel select reserves the nearest manifest. A none prefix does
-// not. shortcut: existing/no-new prose with no package coordinate does not
-// either; name the module, version, scope, or `package` when the slice edits one.
+// not. Prose with no module path, npm scope, `package`, or non-toolchain
+// version pin does not either. shortcut: name the package when the slice
+// edits a manifest; "Go 1.22.0" or "standard library" is not a package add.
 func externalClaimsManifest(external string) bool {
 	ext := strings.ToLower(strings.Trim(strings.TrimSpace(external), "`"))
 	if ext == "" || ext == "-" || ext == "n/a" || strings.HasPrefix(ext, "none") {
 		return false
 	}
-	raw := strings.TrimSpace(external)
-	if manifestDenialRe.MatchString(raw) && !namesPackage(raw) {
-		return false
-	}
-	return true
+	return namesPackage(strings.TrimSpace(external))
 }
 
 // namesPackage reports a module path, version pin, npm scope, or `package`
@@ -293,7 +289,7 @@ func namesPackage(raw string) bool {
 			return true
 		}
 	}
-	if npmScopeRe.MatchString(raw) || versionPinRe.MatchString(raw) {
+	if npmScopeRe.MatchString(raw) || versionPinRe.MatchString(toolchainVersionRe.ReplaceAllString(raw, " ")) {
 		return true
 	}
 	for _, loc := range modulePathRe.FindAllStringIndex(raw, -1) {
@@ -394,6 +390,24 @@ func afkMaxParallel(root string) int {
 	}
 	n, _ := strconv.Atoi(m[1])
 	return n
+}
+
+// parallelPlanVisible reports that the root must see every slice. An
+// unattended cap above 1, or a running parallel lease, is a batch: scoping
+// the bundle to active_slice hides the siblings that batch is supposed to start.
+func parallelPlanVisible(devritesRoot, slug string) bool {
+	if afkMaxParallel(devritesRoot) >= 2 {
+		return true
+	}
+	if slug == "" {
+		return false
+	}
+	path, err := parallel.LeasePath(filepath.Dir(devritesRoot), slug)
+	if err != nil {
+		return false
+	}
+	lease, err := parallel.ReadLease(path)
+	return err == nil && lease.Status == parallel.StatusRunning
 }
 
 func allDone(ids []string, done map[string]bool) bool {

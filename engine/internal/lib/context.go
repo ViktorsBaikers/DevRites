@@ -57,7 +57,9 @@ every ID the block cites).
 Repeat --slice for a recheck that spans several slices. In phase build a
 --role bundle other than slice-wright requires --slice (exit 3). A root
 build or autocomplete bundle (no --role, no --slice) defaults to --slice
-<active_slice> when state.md names one present in tasks.md; --whole opts out.
+<active_slice> when state.md names one present in tasks.md, unless
+.devrites/AFK max_parallel is 2 or more or a parallel lease is running
+(the bundle stays whole so the other slices stay visible); --whole opts out.
 --recheck <inventory> (phase build, with --role and --slice) builds a
 bounded recheck bundle: the inventory file (relative to the workspace)
 and core.md are inlined; every other pack file becomes a by-reference
@@ -91,10 +93,11 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 			return 2
 		}
 	}
-	// The root's own build/autocomplete bundle holds one slice at a time;
-	// whole tasks/plan/decisions ride every later turn otherwise.
+	// One active slice per bundle, except a parallel batch: the root has to
+	// see the other slices to start them. Whole tasks/plan/decisions ride
+	// that batch's turns; serial runs stay scoped.
 	autoScope := false
-	if featureDir != "" && opts.role == "" && opts.slice == "" && !opts.whole && (opts.phase == "build" || opts.phase == "autocomplete") {
+	if featureDir != "" && opts.role == "" && opts.slice == "" && !opts.whole && (opts.phase == "build" || opts.phase == "autocomplete") && !parallelPlanVisible(root, opts.slug) {
 		if id := activeSliceScope(featureDir); id != "" {
 			opts.slices, opts.slice, autoScope = []string{id}, id, true
 		}
