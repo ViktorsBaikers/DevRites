@@ -48,6 +48,71 @@ expect fixed A1=pass A2=pass D1=pass D2=pass D3=pass S1=pass S2=pass
 variant naive "$BENCH/reference/naive/stock.go"
 expect naive A1=pass A2=pass D1=fail D2=fail
 
+# Real executables must isolate crashes/state, keep package cwd and secrets out,
+# reject missing tests, and scope build failures to the affected race mode.
+python3 -I - "$GRADER" "$T/fixed" "$T/probe paths" <<'PY'
+import importlib.util, os, pathlib, shutil, sys, tempfile
+
+spec = importlib.util.spec_from_file_location("grader", sys.argv[1])
+grader = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(grader)
+run, root = map(pathlib.Path, sys.argv[2:])
+before = {p.relative_to(run): p.read_bytes() for p in run.rglob("*") if p.is_file()}
+(root / "probes").mkdir(parents=True)
+# Exercise compiler and executable paths containing spaces.
+tempfile.tempdir = str(root)
+(root / "probes/probe_test.go").write_text('''package stock
+
+import (
+    "os"
+    "testing"
+)
+
+var probeCalls int
+
+func TestProbePanic(t *testing.T) { panic("isolated probe panic") }
+
+func TestProbeFreshProcess(t *testing.T) {
+    probeCalls++
+    if probeCalls != 1 { t.Fatal("probe process reused") }
+    if os.Getenv("LIFECYCLE_PROBE_SECRET") != "" { t.Fatal("grader secret leaked") }
+    if _, err := os.ReadFile("stock.go"); err != nil { t.Fatal(err) }
+}
+
+func TestProbeFreshProcessExtra(t *testing.T) { panic("probe name was not anchored") }
+''')
+bench = {"_dir": root, "probe_package": "stock", "probe_file": "probe_test.go"}
+probes = [
+    {"id": "panic", "test": "TestProbePanic"},
+    {"id": "first", "test": "TestProbeFreshProcess"},
+    {"id": "second", "test": "TestProbeFreshProcess"},
+    {"id": "missing", "test": "TestProbeMissing"},
+]
+os.environ["LIFECYCLE_PROBE_SECRET"] = "must-not-leak"
+results = grader.run_probes(bench, run, probes)
+assert results["panic"].startswith("fail: panic: isolated probe panic"), results
+assert results["first"] == results["second"] == "pass", results
+assert results["missing"].startswith("fail:") and "no tests to run" in results["missing"], results
+
+if shutil.which("cc") or shutil.which("gcc"):
+    build_probes = probes[1:3] + [{"id": "race", "test": "TestProbeFreshProcess", "race": True}]
+    for tag in ("race", "!race"):
+        broken = root / ("race-build" if tag == "race" else "normal-build")
+        shutil.copytree(run, broken)
+        (broken / "stock/build_failure_test.go").write_text(
+            f"//go:build {tag}\n\npackage stock\n\nvar _ = probeBuildFailure\n"
+        )
+        results = grader.run_probes(bench, broken, build_probes)
+        for probe in build_probes:
+            outcome = results[probe["id"]]
+            if bool(probe.get("race")) == (tag == "race"):
+                assert outcome.startswith("fail:") and "undefined: probeBuildFailure" in outcome, (tag, results)
+            else:
+                assert outcome == "pass", (tag, results)
+
+assert before == {p.relative_to(run): p.read_bytes() for p in run.rglob("*") if p.is_file()}
+PY
+
 # Each seeded probe fails alone when only its defect returns.
 variant boundary "$BENCH/reference/fixed/stock.go"
 sed -i.bak 's/if s.available\[item\] < qty {/if s.available[item] <= qty {/' "$T/boundary/stock/stock.go"

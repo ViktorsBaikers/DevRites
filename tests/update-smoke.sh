@@ -88,14 +88,26 @@ case_customized() {
 }
 
 case_partial_payload() {
-  local d="$T/partial" rel p; mkdir -p "$d"; fail=0
+  local d="$T/partial" rel p target pid; mkdir -p "$d"; fail=0
+  local pids=()
   bash "$ROOT/install.sh" --target "$d" >/dev/null 2>&1 || no "partial: install failed"
   for rel in omp pi claude/workflows; do
-    p="$T/partial-payload-${rel//\//-}"
-    mkdir -p "$p" && cp -R "$DEVRITES_HOST_ARTIFACT_DIR"/. "$p"/ && rm -rf "${p:?}/$rel"
-    DEVRITES_HOST_ARTIFACT_DIR="$p" bash "$ROOT/update.sh" --target "$d" --force >/dev/null 2>&1 \
-      && ok "partial: payload without $rel regenerates and updates" || no "partial: update failed without $rel"
-    [ -e "$p/$rel" ] && ok "partial: payload without $rel restored" || no "partial: payload without $rel not regenerated"
+    (
+      fail=0
+      p="$T/partial-payload-${rel//\//-}"
+      target="$T/partial-target-${rel//\//-}"
+      mkdir -p "$p" "$target" && cp -R "$DEVRITES_HOST_ARTIFACT_DIR"/. "$p"/ \
+        && cp -R "$d"/. "$target"/ && rm -rf "${p:?}/$rel" \
+        || { no "partial: fixture setup failed without $rel"; exit "$fail"; }
+      DEVRITES_HOST_ARTIFACT_DIR="$p" bash "$ROOT/update.sh" --target "$target" --force >/dev/null 2>&1 \
+        && ok "partial: payload without $rel regenerates and updates" || no "partial: update failed without $rel"
+      [ -e "$p/$rel" ] && ok "partial: payload without $rel restored" || no "partial: payload without $rel not regenerated"
+      exit "$fail"
+    ) &
+    pids+=("$!")
+  done
+  for pid in "${pids[@]}"; do
+    wait "$pid" || fail=1
   done
   exit "$fail"
 }

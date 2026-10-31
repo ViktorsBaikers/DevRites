@@ -25,7 +25,7 @@ now > "$log/$1.end"
 STUB
 }
 
-# Both share the install chain; the heavier one is scheduled first.
+# Both share the install chain; either may be scheduled first as weights change.
 stub install-smoke.sh 5
 stub install-shared-file-merge-smoke.sh 1
 for n in a b c d; do stub "free-$n-test.sh" 1; done
@@ -39,14 +39,24 @@ ts() { cat "$log/$1"; }
 
 [ "$rc" -eq 0 ] || fail "run should pass"
 
-holder_end="$(ts install-smoke.sh.end)"
-waiter_start="$(ts install-shared-file-merge-smoke.sh.start)"
+holder=install-smoke.sh
+waiter=install-shared-file-merge-smoke.sh
+if [ "$(ts "$waiter.start")" -lt "$(ts "$holder.start")" ]; then
+  holder=install-shared-file-merge-smoke.sh
+  waiter=install-smoke.sh
+fi
+holder_start="$(ts "$holder.start")"
+holder_end="$(ts "$holder.end")"
+waiter_start="$(ts "$waiter.start")"
 
 [ "$waiter_start" -ge "$holder_end" ] || fail "chain tests overlapped (waiter started ${waiter_start}, holder ended ${holder_end})"
 
 overlap=0
 for n in a b c d; do
-  [ "$(ts "free-$n-test.sh.start")" -lt "$holder_end" ] && overlap=$((overlap + 1))
+  if [ "$(ts "free-$n-test.sh.start")" -lt "$holder_end" ] &&
+     [ "$(ts "free-$n-test.sh.end")" -gt "$holder_start" ]; then
+    overlap=$((overlap + 1))
+  fi
 done
 [ "$overlap" -ge 1 ] || fail "no free test ran while the chain holder ran: the waiting test held a worker slot"
 echo "run-tests scheduler test passed ($overlap free test(s) overlapped the busy chain)"
