@@ -382,7 +382,16 @@ for (let i = 0; i < 150 && !enginePid; i += 1) {
 }
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
 process.kill(mode === 'group' ? -child.pid : child.pid, sig);
-const result = await Promise.race([exited, sleep(5000).then(() => 'hung hung')]);
+let deadline;
+let result;
+try {
+  result = await Promise.race([
+    exited,
+    new Promise((resolve) => { deadline = setTimeout(() => resolve('hung hung'), 5000); }),
+  ]);
+} finally {
+  clearTimeout(deadline);
+}
 console.log(`${result} ${enginePid && alive(enginePid) ? 'orphan' : 'clean'}`);
 for (const target of [-child.pid, enginePid]) if (target) try { process.kill(target, 'SIGKILL'); } catch {}
 JS

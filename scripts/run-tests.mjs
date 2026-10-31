@@ -158,6 +158,7 @@ const integrationTests = new Set([
 
 // Weights from CI wall times (seconds, rounded) for balanced shard assignment.
 // Refreshed 2026-09-01 from per-test PASS durations on the 8-shard CI run.
+// Update/npx: full CI runtimes 79.10s/75.03s, rounded up (2026-10-31).
 const testWeights = new Map([
   // Core checks split round-robin into 8 pieces (~117s of checks in total).
   ['workflow-artifact-identity-test.sh#core', 15],
@@ -175,7 +176,7 @@ const testWeights = new Map([
   ['outcome-evals-test.sh', 31],
   ['release-tarball-test.sh', 51],
   ['validate-path-spaces-test.sh', 42],
-  ['npx-pack-smoke.sh', 19],
+  ['npx-pack-smoke.sh', 76],
   ['install-smoke.sh', 167],
   ['bootstrap-security-test.sh', 12],
   ['acceptance-preserving-reslice-policy-test.sh', 219],
@@ -184,7 +185,7 @@ const testWeights = new Map([
   ['install-shared-file-merge-smoke.sh', 116],
   ['cli-smoke.sh', 2],
   ['engine-observation-contract-test.sh', 3],
-  ['update-smoke.sh', 3],
+  ['update-smoke.sh', 80],
   ['install-flag-parser-smoke.sh', 1],
   ['install-flag-parser-legacy-smoke.sh', 1],
   ['install-option-matrix-smoke.sh', 1],

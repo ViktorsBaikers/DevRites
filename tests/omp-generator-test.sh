@@ -148,15 +148,35 @@ grep -q '^omp has no permission modes' "$prose_out" && ok "host gate names the o
 grep -qF 'Load it with' "$prose_out" && grep -qF '`read skill://devrites-api-interface`. Follow' "$prose_out" &&
   ok "wright skill invocation uses read skill://" || no "wright skill invocation uses read skill://"
 
-links_src="$TMP_GEN_DIR/loop.md"
+links_root="$TMP_GEN_DIR/skills"
+mkdir -p "$links_root/rite-autocomplete/reference" "$links_root/devrites-lib/reference/standards"
+links_src="$links_root/rite-autocomplete/reference/loop.md"
 cat >"$links_src" <<'LINKS'
 Read [`afk-hitl.md`](../../devrites-lib/reference/standards/afk-hitl.md#sentinel) and `../SKILL.md`.
 Keep [local](policy.md).
 LINKS
-omp_rewrite_skill_refs "$links_src" rite-autocomplete/reference/loop.md
+nested_links_src="$links_root/devrites-lib/reference/standards/afk-hitl.md"
+cat >"$nested_links_src" <<'LINKS'
+Read [loop](../../../rite-autocomplete/reference/loop.md#sentinel) and `../../SKILL.md`.
+Keep [local](policy.md), [outside](../../../../outside.md), and `skill://rite-build/SKILL.md`.
+LINKS
+printf '%s\n' 'Keep [parent](../SKILL.md).' >"$links_root/rite-autocomplete/reference/notes.txt"
+printf '%s\n' 'Keep [parent](../SKILL.md).' >"$TMP_GEN_DIR/linked-target.md"
+ln -s "$TMP_GEN_DIR/linked-target.md" "$links_root/rite-autocomplete/reference/linked.md"
+omp_rewrite_skill_refs "$links_root"
 grep -qF '](skill://devrites-lib/reference/standards/afk-hitl.md#sentinel)' "$links_src" &&
   grep -qF '`skill://rite-autocomplete/SKILL.md`' "$links_src" && grep -qF '[local](policy.md)' "$links_src" &&
   ok "parent-relative links become skill:// URLs" || no "parent-relative links become skill:// URLs"
+grep -qF '](skill://rite-autocomplete/reference/loop.md#sentinel)' "$nested_links_src" &&
+  grep -qF '`skill://devrites-lib/SKILL.md`' "$nested_links_src" &&
+  grep -qF '[local](policy.md)' "$nested_links_src" &&
+  grep -qF '[outside](../../../../outside.md)' "$nested_links_src" &&
+  grep -qF '`skill://rite-build/SKILL.md`' "$nested_links_src" &&
+  grep -qxF 'Keep [parent](../SKILL.md).' "$links_root/rite-autocomplete/reference/notes.txt" &&
+  ok "nested skills preserve local, outside-root, and existing URLs" ||
+  no "nested skills preserve local, outside-root, and existing URLs"
+grep -qxF 'Keep [parent](../SKILL.md).' "$TMP_GEN_DIR/linked-target.md" &&
+  ok "symlink Markdown targets stay unchanged" || no "symlink Markdown targets stay unchanged"
 
 skill_src="$TMP_GEN_DIR/SKILL.md"
 cat >"$skill_src" <<'SKILL'

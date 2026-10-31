@@ -62,24 +62,33 @@ gen_omp_markdown_file() {
     "$_src" > "$_out"
 }
 
-# Rewrite one installed omp skill file in place. $2 is its path under the skills
-# root (<skill>/<path>).
+# Rewrite installed omp skill Markdown in place. $1 is the complete skills root.
 # - omp loads skill files as skill://<skill>/<path> and cannot climb above a
 #   skill root, so each `../` link target or backtick path becomes an absolute
 #   skill:// URL.
 omp_rewrite_skill_refs() {
-  python3 - "$1" "$2" <<'PY'
-import posixpath, re, sys
-path, rel = sys.argv[1], sys.argv[2]
-here = posixpath.dirname(rel)
-def fix(m):
-    target = posixpath.normpath(posixpath.join(here, m.group(2)))
-    return m.group(0) if target.startswith("..") else m.group(1) + "skill://" + target
-with open(path, encoding="utf-8") as fh:
-    text = fh.read()
-text = re.sub(r"(\]\(|`)((?:\.\./)+[A-Za-z0-9._/-]+)", fix, text)
-with open(path, "w", encoding="utf-8") as fh:
-    fh.write(text)
+  python3 - "$1" <<'PY'
+import os, posixpath, re, sys
+root = sys.argv[1]
+def fail(error):
+    raise error
+for directory, _, names in os.walk(root, onerror=fail):
+    for name in names:
+        if not name.endswith(".md"):
+            continue
+        path = os.path.join(directory, name)
+        if os.path.islink(path):
+            continue
+        rel = os.path.relpath(path, root).replace(os.sep, "/")
+        here = posixpath.dirname(rel)
+        def fix(m):
+            target = posixpath.normpath(posixpath.join(here, m.group(2)))
+            return m.group(0) if target.startswith("..") else m.group(1) + "skill://" + target
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+        text = re.sub(r"(\]\(|`)((?:\.\./)+[A-Za-z0-9._/-]+)", fix, text)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
 PY
 }
 
