@@ -100,7 +100,6 @@ render_codex_skill_tree() {
       ;;
     esac
   done < <(find "$_sd" -type f)
-  pin_context_skills_root "$_dest" .agents/skills
 }
 
 render_omp_skill_tree() {
@@ -114,18 +113,15 @@ render_omp_skill_tree() {
     case "$_r" in
     SKILL.md)
       gen_omp_skill_file "$f" "$_out"
-      omp_rewrite_skill_refs "$_out" "$(basename "$_dest")/$_r"
       ;;
     *.md)
       gen_omp_markdown_file "$f" "$_out"
-      omp_rewrite_skill_refs "$_out" "$(basename "$_dest")/$_r"
       ;;
     *)
       cp "$f" "$_out"
       ;;
     esac
   done < <(find "$_sd" -type f)
-  pin_context_skills_root "$_dest" .omp/skills
 }
 
 render_pi_skill_tree() {
@@ -148,7 +144,6 @@ render_pi_skill_tree() {
       ;;
     esac
   done < <(find "$_sd" -type f)
-  pin_context_skills_root "$_dest" .pi/skills
 }
 
 render_devin_skill_tree() {
@@ -171,7 +166,6 @@ render_devin_skill_tree() {
       ;;
     esac
   done < <(find "$_sd" -type f)
-  pin_context_skills_root "$_dest" .devin/skills
 }
 
 mkdir -p "$OUT_ROOT/claude" "$OUT_ROOT/codex" "$OUT_ROOT/omp" "$OUT_ROOT/pi" "$OUT_ROOT/devin"
@@ -204,6 +198,7 @@ while IFS= read -r d; do
   [ "$name" = ".impeccable" ] && continue
   render_codex_skill_tree "$d" "$OUT_ROOT/codex/skills/$name"
 done < <(find "$PACK_SRC/skills" -mindepth 1 -maxdepth 1 -type d)
+pin_context_skills_root "$OUT_ROOT/codex/skills" .agents/skills
 
 while IFS= read -r f; do
   name="$(basename "$f" .md)"
@@ -225,6 +220,8 @@ while IFS= read -r d; do
     ;;
   esac
 done < <(find "$PACK_SRC/skills" -mindepth 1 -maxdepth 1 -type d)
+omp_rewrite_skill_refs "$OUT_ROOT/omp/skills"
+pin_context_skills_root "$OUT_ROOT/omp/skills" .omp/skills
 
 while IFS= read -r f; do
   name="$(basename "$f" .md)"
@@ -248,6 +245,7 @@ while IFS= read -r d; do
     ;;
   esac
 done < <(find "$PACK_SRC/skills" -mindepth 1 -maxdepth 1 -type d)
+pin_context_skills_root "$OUT_ROOT/pi/skills" .pi/skills
 
 while IFS= read -r f; do
   name="$(basename "$f" .md)"
@@ -265,6 +263,7 @@ while IFS= read -r d; do
   [ "$name" = ".impeccable" ] && continue
   render_devin_skill_tree "$d" "$OUT_ROOT/devin/skills/$name"
 done < <(find "$PACK_SRC/skills" -mindepth 1 -maxdepth 1 -type d)
+pin_context_skills_root "$OUT_ROOT/devin/skills" .devin/skills
 
 while IFS= read -r f; do
   name="$(basename "$f" .md)"
