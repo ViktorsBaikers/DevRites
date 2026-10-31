@@ -55,7 +55,8 @@ reason = "undici@6.29.0 bundled in npm; the PONG-buffering path needs the bundle
 # npm@12.2.1 (latest; verified from the published tarball) still bundles
 # glob@13.0.6 and minimatch@10.2.5. The fixes are glob 14.0.2 and minimatch
 # 11.0.1, and npm's own ranges stay ^13.0.6 and ^10.2.5. inBundle copies
-# cannot be replaced by an override. npm audit does not report these IDs.
+# cannot be replaced by an override. npm audit reports both IDs; matching
+# records live in scripts/npm-audit-exceptions.json.
 # Owner: release-maintainers. Remove when npm bundles the patched majors.
 [[IgnoredVulns]]
 id = "GHSA-3g3m-2fjr-6pw4"

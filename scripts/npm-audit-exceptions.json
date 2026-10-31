@@ -70,5 +70,29 @@
     "owner": "release-maintainers",
     "reason": "npm vendors undici 6.29.0; the patched 6.29.1 exists, but npm@12.2.1 (verified from its published tarball) still vendors 6.29.0, and the copy lives inside npm's own package tarball so neither an override nor npm audit fix can replace it. No DevRites tooling imports the bundled WebSocket client, so the PONG-buffering path is not exercised. Remove when npm vendors undici >=6.29.1.",
     "expires": "2026-11-29"
+  },
+  {
+    "id": "GHSA-3g3m-2fjr-6pw4",
+    "package": "glob",
+    "range": ">=9.0.0 <=14.0.1",
+    "nodes": [
+      "node_modules/npm/node_modules/glob"
+    ],
+    "source": "https://github.com/advisories/GHSA-3g3m-2fjr-6pw4",
+    "owner": "release-maintainers",
+    "reason": "glob@13.0.6 is bundled in npm@11.21.1; npm@12.2.1's published tarball still bundles 13.0.6, and npm depends on ^13.0.6 so it will not take the fixed 14.0.2. The copy is inBundle, so an override cannot replace it. Advisory is an AbortSignal cancellation bypass that can walk the filesystem after a timeout. Temporary acceptance, not proof of unreachability. Remove when npm bundles glob >=14.0.2.",
+    "expires": "2026-11-29"
+  },
+  {
+    "id": "GHSA-g3hv-75wg-m249",
+    "package": "minimatch",
+    "range": "<11.0.1",
+    "nodes": [
+      "node_modules/npm/node_modules/minimatch"
+    ],
+    "source": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+    "owner": "release-maintainers",
+    "reason": "minimatch@10.2.5 is bundled in npm@11.21.1; npm@12.2.1's published tarball still bundles 10.2.5, and npm depends on ^10.2.5 so it will not take the fixed 11.0.1. The copy is inBundle, so an override cannot replace it. Advisory is a globparts amplification denial of service. Temporary acceptance, not proof of unreachability. Remove when npm bundles minimatch >=11.0.1.",
+    "expires": "2026-11-29"
   }
 ]
