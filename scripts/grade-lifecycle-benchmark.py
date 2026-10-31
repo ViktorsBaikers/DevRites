@@ -28,6 +28,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import time
 
 PROBE_TIMEOUT_S = 180
 MIN_RUNS = 3
@@ -58,21 +59,40 @@ def run_probes(bench, run, probes):
         keep = ("PATH", "HOME", "TMPDIR", "GOCACHE", "GOPATH", "GOMODCACHE", "GOROOT", "GOTOOLCHAIN")
         env = {k: os.environ[k] for k in keep if k in os.environ}
         env.update(GOWORK="off", CGO_ENABLED="1" if race else "0")
-        results = {}
-        for probe in probes:
-            cmd = ["go", "test", "-count=1"] + (["-race"] if race and probe.get("race") else [])
-            cmd += ["-run", f"^{probe['test']}$", "./" + bench["probe_package"]]
+
+        def execute(cmd, cwd, timeout=PROBE_TIMEOUT_S):
+            if timeout <= 0:
+                return "fail: timeout"
             try:
-                done = subprocess.run(cmd, cwd=module, env=env, capture_output=True, text=True, timeout=PROBE_TIMEOUT_S)
+                done = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
             except subprocess.TimeoutExpired:
-                results[probe["id"]] = "fail: timeout"
-                continue
-            if done.returncode == 0 and "no tests to run" not in done.stdout:
-                results[probe["id"]] = "pass"
-            else:
-                lines = (done.stdout + done.stderr).strip().splitlines()
-                decisive = [l for l in lines if "DATA RACE" in l or "panic:" in l or "_test.go:" in l]
-                results[probe["id"]] = "fail: " + ((decisive or lines or ["no output"])[0].strip()[:160])
+                return "fail: timeout"
+            output = done.stdout + done.stderr
+            if done.returncode == 0 and "no tests to run" not in output:
+                return "pass"
+            lines = output.strip().splitlines()
+            decisive = [l for l in lines if "DATA RACE" in l or "panic:" in l or "_test.go:" in l or "no tests to run" in l]
+            return "fail: " + ((decisive or lines or ["no output"])[0].strip()[:160])
+
+        builds, results = {}, {}
+        for probe in probes:
+            use_race = bool(race and probe.get("race"))
+            binary = pathlib.Path(tmp) / ("probes-race.test" if use_race else "probes.test")
+            if os.name == "nt":
+                binary = binary.with_suffix(binary.suffix + ".exe")
+            if use_race not in builds:
+                cmd = ["go", "test", "-c", "-o", str(binary)] + (["-race"] if use_race else [])
+                started = time.monotonic()
+                outcome = execute(cmd + ["./" + bench["probe_package"]], module)
+                builds[use_race] = (outcome, time.monotonic() - started)
+            outcome, build_seconds = builds[use_race]
+            if outcome == "pass":
+                # go test runs its executable in the package directory, not the module root.
+                outcome = execute(
+                    [str(binary), "-test.run", f"^{probe['test']}$", "-test.count=1"],
+                    package, timeout=PROBE_TIMEOUT_S - build_seconds,
+                )
+            results[probe["id"]] = outcome
         return results
 
 
