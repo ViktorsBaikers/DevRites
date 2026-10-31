@@ -215,6 +215,21 @@ for index, match in enumerate(steps):
     if "**Completion:**" not in workflow[match.start():end]:
         raise SystemExit(f"rite-autocomplete step {match.group(1)} has no completion criterion")
 
+lookahead = (canonical / "skills/rite-autocomplete/reference/lookahead.md").read_text()
+for phrase in (
+    "does not skip Define, Plan, or Vet",
+    "not gate `access`",
+    "predecessor is still Build",
+    "No Vet `READY` until those roles are admitted",
+):
+    if phrase not in lookahead:
+        raise SystemExit(f"lookahead contract missing {phrase!r}")
+temper = (canonical / "skills/rite-temper/SKILL.md").read_text()
+if "Except `sequence_lookahead: yes` and no spawn tool" not in temper:
+    raise SystemExit("temper still stops lookahead when the strategy reviewer cannot spawn")
+if "with no spawn tool defers the role" not in (canonical / "skills/devrites-lib/reference/standards/agents.md").read_text():
+    raise SystemExit("agents.md still treats a lookahead spawn gap as HITL")
+
 for path in (canonical / "skills").rglob("*.md"):
     if "bash scripts/validate.sh" in path.read_text():
         raise SystemExit(f"installed skill assumes DevRites source scripts exist: {path}")

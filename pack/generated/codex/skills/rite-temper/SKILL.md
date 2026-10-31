@@ -123,12 +123,11 @@ the spec applicability map triggers that risk family.
    [`devrites-strategy-reviewer`](../../../.codex/agents/devrites-strategy-reviewer.toml)
    through the native fresh-context contract in
    [`agents.md`](../devrites-lib/reference/standards/agents.md), with **only** its `--role strategy-reviewer` read-set
-   (hardened spec, `strategy.md`, claim-check artifacts) + rubric, no authoring reasoning. Fold technical findings into one correction;
-   exact strategy reviewer rechecks open findings and affected coverage/regressions under
+   (hardened spec, `strategy.md`, claim-check artifacts) + rubric, no authoring reasoning. Fold findings once and recheck them under
    [the canonical retry contract](../devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve):
-   Product/scope choices and unapproved irreversible risk remain human gates;
-   technical exhaustion preserves blocker/reproduction.
-   If the named agent is unavailable, stop for HITL. After an accepted edit to a
+   Product/scope and unapproved irreversible risk stay human gates;
+   exhaustion keeps the blocker.
+   If the named agent is unavailable, stop for HITL. Except `sequence_lookahead: yes` and no spawn tool: record the review pending, stay `running`, continue Define. Not access. After an accepted edit to a
    coverage-bound input, repeat step 6's native coverage revalidation before handoff.
 8. **STOP.** Report the mode, the scope deltas, and the floor verdict; recommend `$rite-define`.
 

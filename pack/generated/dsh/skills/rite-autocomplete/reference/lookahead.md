@@ -2,49 +2,34 @@
 
 > Root-only: not inlined in --role bundles.
 
-A second session plans the next sequence continuation while the active
-workspace builds, so the child's Spec → Vet overlaps its predecessor's
-Build → Seal. The main loop later resumes the planned child instead of
-specifying it again.
+A second session plans the next continuation while the active workspace
+builds. Spec → Vet overlaps the predecessor's Build → Seal. The main loop
+resumes that child.
 
 ## Start and target
 
-The operator starts the second host session with `/rite-autocomplete
---lookahead` once the `.devrites/ACTIVE` workspace is in Build or later. The
-agent never launches a session itself. The target is the next recorded
-continuation after the active workspace: the entry
+Start `/rite-autocomplete --lookahead` once `.devrites/ACTIVE` is in Build or later. The agent never launches a session. The target is the next recorded continuation: the entry
 [sequence continuation](loop.md#sequence-continuation) would open. Stop with
-nothing to do when the active workspace is before Build, no entry remains,
+nothing to do when that workspace is before Build, no entry remains,
 `continue_sequence: false`, or the sequence budget is spent.
 
 ## Lease
 
-Before any write, take the workspace lease:
+Before any write:
 `devrites-engine claim add --session lookahead-<target> --ttl 240 --workspace <target> --reason lookahead`.
-Exit 3 means another session holds the target: stop. Re-add the lease with the
-same session at each phase start, and release it with `devrites-engine claim
-release` on every stop. A crashed session's lease reads `dead` and frees itself.
+Exit 3: the target is held, stop. Re-add the same session each phase. Release with `devrites-engine claim release` on every stop. A `dead` lease frees itself.
 
 ## Rules
 
-- Never read or write `.devrites/ACTIVE`. Pass the target slug explicitly to every
-  skill and engine command, including `/rite-spec <target> "<objective>"` and
-  `devrites-engine handoff <target> --resume`.
+- Never read or write `.devrites/ACTIVE`. Pass the target slug on every command, including `/rite-spec <target> "<objective>"` and `devrites-engine handoff <target> --resume`.
 - After the workspace exists, run `devrites-engine state set <target> sequence_lookahead=yes`.
-- Run Spec → Clarify → Temper → Define → Plan → Vet as the main loop does.
-  Define and Plan read the predecessor's current tree and plan. Record an
-  assumption for each predecessor interface the plan relies on.
-- At Vet, beside the readiness binding, record exactly one line
-  `Predecessor readiness: <active-slug> <digest>` in `eng-review.md`. `<digest>`
-  is the hex that `devrites-engine check readiness --emit-binding <active-slug>`
-  prints. When the predecessor later changes its planning inputs, the child's
-  readiness check blocks with `DRV-GATE-READINESS-STALE` and the main loop
-  re-vets the child before Build.
-- Never Build, never write product source or tests, never commit, and never
-  arm or rewrite `.devrites/AFK`. Owner questions go to the target's
-  `questions.md` and stop the lookahead.
+- Run Spec → Clarify → Temper → Define → Plan → Vet. Define and Plan read the predecessor tree and plan. Record an assumption per predecessor interface the plan uses.
+- At Vet record one `Predecessor readiness: <active-slug> <digest>` line in `eng-review.md`. `<digest>` is the hex from `devrites-engine check readiness --emit-binding <active-slug>`. A later predecessor planning change blocks with `DRV-GATE-READINESS-STALE`; the main loop re-vets before Build.
+- Predecessor still in Build or later forbids only Build, product source, tests, commits, and `.devrites/AFK`. It does not skip Define, Plan, or Vet, and is not `awaiting_human`. Acceptance, scope, or irreversible-risk questions still stop via `questions.md`.
+- No spawn tool is not gate `access` or `awaiting_human`. Record owed roles pending in `state.md`. Root writes Define and Plan. No Vet `READY` until those roles are admitted. Reviewers still owed: stop `running`, `next_action: /rite-vet`.
 - Stop at Vet `READY` with `next_action: build after predecessor Seal GO`, at a
-  human gate, or when the target's lease is lost.
+  real human gate, or when the target's lease is lost.
 
-**Failing case:** the lookahead passes Vet and starts Build while the
-predecessor is still sealing, so two root sessions write one tree.
+**Failing case:** lookahead passes Vet and starts Build while the predecessor is still sealing, so two sessions write one tree.
+
+**Failing case:** Define, Plan, and Vet skipped because the predecessor is still Build, or a missing strategy-reviewer spawn recorded as gate `access`.
