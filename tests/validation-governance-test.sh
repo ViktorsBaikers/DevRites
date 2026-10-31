@@ -234,10 +234,10 @@ run_ok "reference governance allows two-hops through core.md as an index" node "
 
 # Dependency audit exceptions are exact, owner-bound, expiring, and stale-intolerant.
 cat > "$T/npm-audit.json" <<'JSON'
-{"auditReportVersion":2,"vulnerabilities":{"npm":{"severity":"moderate","via":["tar"],"nodes":["node_modules/npm"]},"tar":{"severity":"moderate","via":[{"name":"tar","url":"https://github.com/advisories/GHSA-r292-9mhp-454m","severity":"moderate","range":"<=7.5.20"}],"nodes":["node_modules/npm/node_modules/tar"]}}}
+{"auditReportVersion":2,"vulnerabilities":{"npm":{"severity":"moderate","via":["tar"],"nodes":["node_modules/npm"]},"tar":{"severity":"moderate","via":[{"name":"tar","url":"https://github.com/advisories/GHSA-r292-9mhp-454m","severity":"moderate","range":"<=7.5.20"}],"nodes":["node_modules/tar"]}}}
 JSON
 cat > "$T/npm-audit-exceptions.json" <<'JSON'
-[{"id":"GHSA-r292-9mhp-454m","package":"tar","range":"<=7.5.20","nodes":["node_modules/npm/node_modules/tar"],"source":"https://github.com/advisories/GHSA-r292-9mhp-454m","owner":"security","reason":"fixture","expires":"2099-01-01"}]
+[{"id":"GHSA-r292-9mhp-454m","package":"tar","range":"<=7.5.20","nodes":["node_modules/tar"],"source":"https://github.com/advisories/GHSA-r292-9mhp-454m","owner":"security","reason":"fixture","expires":"2099-01-01"}]
 JSON
 run_ok "npm audit accepts one exact temporary exception" env DEVRITES_TEST_TODAY=2026-09-04 node "$ROOT/scripts/check-npm-audit.mjs" --test --input "$T/npm-audit.json" --exceptions "$T/npm-audit-exceptions.json"
 node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p[0].expires="2000-01-01";fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit-exceptions.json" "$T/npm-audit-expired.json"
@@ -252,15 +252,23 @@ printf '{"auditReportVersion":2,"vulnerabilities":{}}\n' > "$T/npm-audit-clean.j
 run_ok "npm audit accepts an empty exception list on a clean graph" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit-clean.json" --exceptions "$T/npm-audit-empty.json"
 node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p.vulnerabilities.other={severity:"moderate",via:[{name:"other",url:"https://github.com/advisories/GHSA-aaaa-bbbb-cccc",severity:"moderate",range:"<2"}],nodes:["node_modules/other"]};fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit.json" "$T/npm-audit-extra.json"
 run_fail_contains "npm audit rejects an unexcepted advisory" "not excepted" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit-extra.json" --exceptions "$T/npm-audit-exceptions.json"
+cat > "$T/npm-audit-bundle.json" <<'JSON'
+{"auditReportVersion":2,"vulnerabilities":{"semantic-release":{"severity":"moderate","via":["npm"],"nodes":["node_modules/semantic-release"]},"npm":{"severity":"moderate","via":["glob"],"nodes":["node_modules/npm"]},"glob":{"severity":"moderate","via":[{"name":"glob","url":"https://github.com/advisories/GHSA-3g3m-2fjr-6pw4","severity":"moderate","range":">=9.0.0 <=14.0.1"}],"nodes":["node_modules/npm/node_modules/glob"]}}}
+JSON
+run_ok "npm audit ignores an advisory that exists only inside the npm bundle" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit-bundle.json" --exceptions "$T/npm-audit-empty.json"
+node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync(process.argv[1]));p.vulnerabilities.glob.nodes.push("node_modules/glob");fs.writeFileSync(process.argv[2],JSON.stringify(p))' "$T/npm-audit-bundle.json" "$T/npm-audit-bundle-direct.json"
+run_fail_contains "npm audit still blocks a bundled advisory that is also installed elsewhere" "not excepted" node "$ROOT/scripts/check-npm-audit.mjs" --input "$T/npm-audit-bundle-direct.json" --exceptions "$T/npm-audit-empty.json"
 
 # Every npm-audit exception ID must appear in osv-scanner.toml with a matching
-# ignoreUntil. Extra OSV ignores (below the npm moderate+ gate) must still expire.
+# ignoreUntil. The npm CLI bundle is a package-name override, not an expiry.
 python3 - "$ROOT" <<'PY'
 import json, re, sys
 from pathlib import Path
 root = Path(sys.argv[1])
 exceptions = json.loads((root / "scripts/npm-audit-exceptions.json").read_text())
 text = (root / "osv-scanner.toml").read_text()
+if 'name = "glob|minimatch|undici|ip-address"' not in text or "vulnerability.ignore = true" not in text:
+    raise SystemExit("osv-scanner.toml must ignore npm's bundled glob, minimatch, undici, and ip-address")
 blocks = re.findall(r"(?m)^\[\[IgnoredVulns\]\](.*?)(?=\n\[\[|\Z)", text, re.S)
 osv = {}
 for block in blocks:

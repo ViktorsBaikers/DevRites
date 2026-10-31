@@ -2,8 +2,8 @@ name: deps-scan
 
 # Daily full dependency advisory scan. PR CI runs npm audit and OSV only when a
 # PR changes dependency inputs, so this job surfaces advisories published
-# against unchanged dependencies. A red run is the cue for a dedicated
-# chore(deps) fix or exception PR; Dependabot covers patchable advisories.
+# against unchanged dependencies. Copies bundled inside the npm CLI are
+# ignored. Any other red run is a chore(deps) fix or an exception PR.
 
 on:
   schedule:

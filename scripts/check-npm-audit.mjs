@@ -35,26 +35,33 @@ if (input) {
   }
 }
 
+// npm ships these copies inside its own tarball. Overrides cannot replace them.
+const npmBundle = 'node_modules/npm/node_modules/';
 const concrete = new Map();
 let affected = 0;
 for (const [packageName, vulnerability] of Object.entries(report.vulnerabilities || {})) {
   if (!blocking.has(vulnerability.severity)) continue;
+  const nodes = (vulnerability.nodes || []).filter((node) => !String(node).startsWith(npmBundle));
+  if (nodes.length === 0) continue;
+  const via = vulnerability.via || [];
+  const advisories = via.filter((item) => item && typeof item === 'object' && blocking.has(item.severity));
+  // A via list of only package names is a rollup of other records in this report.
+  if (advisories.length === 0 && via.length > 0 && via.every((item) => typeof item === 'string')) continue;
   affected++;
-  for (const via of vulnerability.via || []) {
-    if (!via || typeof via !== 'object' || !blocking.has(via.severity)) continue;
-    const id = via.url?.match(/GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}/i)?.[0];
+  for (const advisory of advisories) {
+    const id = advisory.url?.match(/GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}/i)?.[0];
     if (!id) {
       fail(`${packageName}: blocking advisory has no GHSA identifier`);
       continue;
     }
     const finding = concrete.get(id) || {
       id,
-      package: via.name || packageName,
-      range: via.range || vulnerability.range,
-      source: via.url,
+      package: advisory.name || packageName,
+      range: advisory.range || vulnerability.range,
+      source: advisory.url,
       nodes: [],
     };
-    finding.nodes = [...new Set([...finding.nodes, ...(vulnerability.nodes || [])])].sort();
+    finding.nodes = [...new Set([...finding.nodes, ...nodes])].sort();
     concrete.set(id, finding);
   }
 }
