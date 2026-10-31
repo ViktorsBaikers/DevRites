@@ -2,6 +2,13 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.2.6](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.5...v7.2.6) (2026-10-31)
+
+### Fixed
+
+* **devrites:** count reserved manifests in task-graph schedule ([#191](https://github.com/ViktorsBaikers/DevRites/issues/191)) ([499014b](https://github.com/ViktorsBaikers/DevRites/commit/499014b00d3313fd6f8722715e9cdf8b155dabf5))
+* **no-release:** stop reserving go.mod for existing-only deps ([#190](https://github.com/ViktorsBaikers/DevRites/issues/190)) ([4a8844c](https://github.com/ViktorsBaikers/DevRites/commit/4a8844cb8eaa53c29e46b5122b40827e9522c56a))
+
 ## [7.2.5](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.4...v7.2.5) (2026-10-30)
 
 ### Fixed
