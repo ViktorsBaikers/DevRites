@@ -33,13 +33,24 @@ else
   no "partial payload accepted without shared agent standard"
 fi
 # A payload missing a whole host tree the engine requires must also rebuild.
-mkdir -p "$T/partial-target"
+mkdir -p "$T/partial-target" || no "could not create partial payload target"
+# Dry runs only read the target; each repair owns its copied payload.
+partial_pids=()
 for rel in omp pi claude/workflows; do
-  P="$T/partial-${rel//\//-}"
-  mkdir -p "$P" && cp -R "$GEN"/. "$P"/ && rm -rf "${P:?}/$rel"
-  DEVRITES_HOST_ARTIFACT_DIR="$P" bash "$ROOT/install.sh" --target "$T/partial-target" --dry-run >/dev/null 2>&1 \
-    && ok "payload without $rel: install regenerates and exits 0" || no "payload without $rel: install failed"
-  [ -e "$P/$rel" ] && ok "payload without $rel: restored" || no "payload without $rel: not regenerated"
+  (
+    fail=0
+    P="$T/partial-${rel//\//-}"
+    mkdir -p "$P" && cp -R "$GEN"/. "$P"/ && rm -rf "${P:?}/$rel" \
+      || { no "payload without $rel: setup failed"; exit 1; }
+    DEVRITES_HOST_ARTIFACT_DIR="$P" bash "$ROOT/install.sh" --target "$T/partial-target" --dry-run >/dev/null 2>&1 \
+      && ok "payload without $rel: install regenerates and exits 0" || no "payload without $rel: install failed"
+    [ -e "$P/$rel" ] && ok "payload without $rel: restored" || no "payload without $rel: not regenerated"
+    exit "$fail"
+  ) &
+  partial_pids+=("$!")
+done
+for pid in "${partial_pids[@]}"; do
+  wait "$pid" || fail=1
 done
 
 # The shell completeness predicate must demand exactly the engine's required
