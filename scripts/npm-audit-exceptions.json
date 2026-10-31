@@ -21,7 +21,7 @@
     "source": "https://github.com/advisories/GHSA-4qv8-2p9j-2685",
     "owner": "release-maintainers",
     "reason": "undici@6.29.0 is bundled in npm@11.21.1; npm@12.2.1 also bundles 6.29.0, and supported nested overrides plus npm audit fix leave it unchanged after clean install. The bundled copy is imported only by node-gyp header downloads (Agent/fetch); it is not used as EventSource by npm tooling. Remove when npm bundles undici >=6.29.1.",
-    "expires": "2026-11-07"
+    "expires": "2026-11-29"
   },
   {
     "id": "GHSA-xjj6-f33q-929c",
@@ -33,7 +33,7 @@
     "source": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
     "owner": "release-maintainers",
     "reason": "undici@6.29.0 is bundled in npm@11.21.1; npm@12.2.1 also bundles 6.29.0, and supported nested overrides plus npm audit fix leave it unchanged after clean install. The sole bundled importer is node-gyp header-download fetch: crafted response encodings could cause denial of service if that path is invoked. Current release commands do not invoke node-gyp explicitly; this is temporary acceptance of that tooling risk, not proof of unreachability. Remove when npm bundles undici >=6.29.1.",
-    "expires": "2026-11-07"
+    "expires": "2026-11-29"
   },
   {
     "id": "GHSA-2m5v-pch6-74hx",
