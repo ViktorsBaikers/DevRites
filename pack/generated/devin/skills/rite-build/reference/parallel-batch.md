@@ -76,10 +76,10 @@ snapshot directory, formatter sweep — and compare paths case-folded
 (`src/Api.ts` = `src/api.ts`); `--from-plan` adds the manifest/lockfile for a package.
 Slices colliding on either run serially; the rest
 stay eligible. Record `serial: <ids> — <surface>` in `evidence.md`. Under AFK
-with `max_parallel ≥ 2`, `dispatch open` refuses a first-round build wright wave
-narrower than the from-plan batch (printing batch and command) until the wave
-holds that batch or `serial:` names every skipped pick; repair rounds, lease
-siblings, and HITL runs are never refused. **Failing
+with `max_parallel ≥ 2`, `dispatch open` refuses a build wright wave narrower
+than the from-plan batch until that wave holds the other picks or `serial:`
+names each skipped one. Repairing a slice, or a slice already in the lease,
+does not waive them. HITL is never refused. **Failing
 case:** two slices each add a dependency, run in parallel, and integrate fails or
 lands a broken lockfile.
 
