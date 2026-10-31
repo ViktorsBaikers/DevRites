@@ -59,14 +59,13 @@ Without a safe seam, escalate or park; only a real human/risk/scope gate stops f
 ## Other stop classes
 
 - **Gate severity:** escalating always stops. Blocking with a ranked recommended
-  option (`proposed` or option 1 labelled Recommended): auto-pick via
-  `devrites-engine state resolve`, then continue internally (including Spec Drift
-  Guard when the answer changes ownership or acceptance). Exception: a question whose answer
-  would add acceptance or product scope is never auto-picked, even with a
-  recommended option; it stops for a human. Blocking with no
-  recommended option still stops. Validating: auto-pick the recommended option,
-  close the question, continue — except Seal's judgment-only acceptance question
-  (`slice: seal`), which only a human answers; it stops.
+  option (`proposed` or option 1 labelled Recommended) auto-picks via
+  `devrites-engine state resolve` and continues, Spec Drift Guard included when
+  the answer changes ownership or acceptance. Added acceptance or scope is never
+  auto-picked. No recommended option still stops. An avoidable principle conflict
+  complies: change the spec and resolve it. Re-read on entry. `continuation: clear`
+  with `awaiting_human` still folds resolved decisions. Do not report a stop from chat.
+  Validating auto-picks, except Seal `slice: seal`, which a human answers.
 - **Temper:** `expand` and extra acceptance stop: ask through `AskUserQuestion`, hold the
   fold, and continue only after a human resolves the qid (an ADR is not that answer).
   Irreversible-risk still pauses. `hold-rigor`, `reduce-to-MVP`, and a skip do not pause.

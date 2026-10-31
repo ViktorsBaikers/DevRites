@@ -168,9 +168,9 @@ named in the re-dispatch contract; changes outside task paths stop for the human
 
 ## Scale limits
 
-The role table bounds rosters. Use roughly four concurrent read-only reviewers,
-counting children any leaf spawned; eight only with disjoint paths/resources.
-Refuse unbounded swarms and role substitution: sharpen scope or use a bounded second pass when coverage is missing.
+The role table bounds rosters. Use up to ten concurrent read-only reviewers,
+the same cap as a writer batch, counting children any leaf spawned.
+Refuse a larger swarm and role substitution: sharpen scope or use a bounded second pass when coverage is missing.
 Overlapping reviewers increase duplicate findings and reconciliation work.
 
 ## Children are tools, not peers

@@ -918,6 +918,17 @@ func TestContextRootBundleDefaultsToActiveSlice(t *testing.T) {
 	}
 
 	setActive("SLICE-002")
+	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 5\n")
+	for _, phase := range []string{"build", "autocomplete"} {
+		if out := run(0, "--phase", phase); strings.Contains(out, "scope: slice") {
+			t.Fatalf("%s: parallel batch must keep every slice visible:\n%s", phase, out)
+		}
+		text := read(phase + ".bundle.md")
+		if !strings.Contains(text, "Goal: first body") || !strings.Contains(text, "Goal: second body") {
+			t.Fatalf("%s: parallel bundle dropped a slice:\n%s", phase, text)
+		}
+	}
+	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 1\n")
 	for _, phase := range []string{"build", "autocomplete"} {
 		if out := run(0, "--phase", phase); !strings.Contains(out, "scope: slice SLICE-002 (auto from state.md) (") {
 			t.Fatalf("%s: auto scope line missing:\n%s", phase, out)

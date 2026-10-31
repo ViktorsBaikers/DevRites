@@ -41,4 +41,6 @@ recommended option stay human. A blocking question that already names option 1
 `(Recommended)` or `proposed:` is autocomplete's to resolve: pick that option
 via `devrites-engine state resolve` and continue. Recommended temper
 `expand` and extra acceptance are never auto-picked: they stop for a human through
-`AskUserQuestion`; do not invent product intent.
+`AskUserQuestion`; do not invent product intent. A principle
+conflict complies by changing the spec. Except a principle when the
+objective cannot be met without the violation.

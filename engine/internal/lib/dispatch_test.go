@@ -552,9 +552,9 @@ func TestDispatchWaveClaim(t *testing.T) {
 	})
 }
 
-// An AFK first-round build wright wave narrower than the from-plan batch is
-// refused until evidence.md records why the skipped picks run serially;
-// repair rounds, lease siblings, and HITL runs are never refused.
+// An AFK build wright wave narrower than the from-plan batch is refused
+// until evidence.md records why the skipped picks run serially. A repair
+// round does not waive the other picks. HITL runs are never refused.
 func TestDispatchRefusesNarrowFirstRoundUnderAFK(t *testing.T) {
 	root, featureDir := planWorkspace(t)
 	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")
@@ -581,17 +581,30 @@ func TestDispatchRefusesNarrowFirstRoundUnderAFK(t *testing.T) {
 			t.Fatalf("serialRecordRe(%q)=%v, want %v", line, got, want)
 		}
 	}
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "- serial: SLICE-003 — already in its own repair round\n")
+	if code, out := open("w-repair-excuse", "SLICE-002"); code != 3 || !strings.Contains(out, "SLICE-003") {
+		t.Fatalf("a repair excuse must not waive the other pick: code=%d\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "- serial: SLICE-003 — repair on shared `go.sum`\n")
+	if code, out := open("w-surface", "SLICE-002"); code != 0 {
+		t.Fatalf("a repair note that names the shared file must still waive: code=%d\n%s", code, out)
+	}
 	writeFile(t, filepath.Join(featureDir, "evidence.md"), "- serial: SLICE-003 — `go.sum` shared with SLICE-004\n")
 	if code, out := open("w1", "SLICE-002"); code != 0 {
 		t.Fatalf("a serial record naming the skipped pick must clear: code=%d\n%s", code, out)
 	}
 
-	// Repair round: SLICE-002 already has rounds, so no record is needed.
+	// A later repair of SLICE-002 still has to start SLICE-003. The serial
+	// record was the only reason the first wave could leave it out.
 	if err := os.Remove(filepath.Join(featureDir, "evidence.md")); err != nil {
 		t.Fatal(err)
 	}
+	if code, out := open("w2", "SLICE-002"); code != 3 || !strings.Contains(out, "SLICE-003") {
+		t.Fatalf("repair must not drop the other picks: code=%d\n%s", code, out)
+	}
+	writeFile(t, filepath.Join(featureDir, "evidence.md"), "- serial: SLICE-003 — `go.sum` shared with SLICE-004\n")
 	if code, out := open("w2", "SLICE-002"); code != 0 {
-		t.Fatalf("repair round must never be refused: code=%d\n%s", code, out)
+		t.Fatalf("repair may open once the other picks are serial: code=%d\n%s", code, out)
 	}
 
 	// SLICE-004 is first-round and narrower than the batch, but HITL (no AFK)
@@ -610,27 +623,35 @@ func TestDispatchRefusesNarrowFirstRoundUnderAFK(t *testing.T) {
 func TestDispatchNeverRefusesFullBatchWave(t *testing.T) {
 	root, _ := planWorkspace(t)
 	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")
-	code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "both", "--role", "slice-wright", "--slice", "SLICE-002", "--slice", "SLICE-003", "--contract", wrightContractPath(t))
+	code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "one-role", "--role", "slice-wright", "--slice", "SLICE-002", "--slice", "SLICE-003", "--contract", wrightContractPath(t))
+	if code != 3 || !strings.Contains(out, "slice-wright.<SLICE-ID>") {
+		t.Fatalf("one role for two slices must be refused: code=%d\n%s", code, out)
+	}
+	code, out = runDispatchT(t, root, "open", "--phase", "build", "--wave", "both", "--role", "slice-wright.SLICE-002", "--role", "slice-wright.SLICE-003", "--slice", "SLICE-002", "--slice", "SLICE-003", "--contract", wrightContractPath(t))
 	if code != 0 {
-		t.Fatalf("a wave holding the whole batch must never be refused: code=%d\n%s", code, out)
+		t.Fatalf("a wave with one wright role per slice must open: code=%d\n%s", code, out)
 	}
 }
 
-func TestDispatchNeverRefusesLeaseSibling(t *testing.T) {
+func TestDispatchRefusesRepairWhileNewPicksRemain(t *testing.T) {
 	root, _ := planWorkspace(t)
 	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")
 	writePlanLease(t, root)
 	// Without go.mod, SLICE-003 and SLICE-004 are both pickable beside the
-	// running SLICE-002, so only the lease-sibling rule admits this wave.
+	// running SLICE-002. Repairing 002 must not be the only job.
 	if err := os.Remove(filepath.Join(filepath.Dir(root), "go.mod")); err != nil {
 		t.Fatal(err)
 	}
 	if _, batch, _ := planBatch(root, "feat", 3); !slices.Equal(batch, []string{"SLICE-003", "SLICE-004"}) {
 		t.Fatalf("premise: batch=%v", batch)
 	}
-	code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "w1", "--role", "slice-wright", "--slice", "SLICE-002", "--contract", wrightContractPath(t))
+	code, out := runDispatchT(t, root, "open", "--phase", "build", "--wave", "repair", "--role", "slice-wright", "--slice", "SLICE-002", "--contract", wrightContractPath(t))
+	if code != 3 || !strings.Contains(out, "SLICE-003,SLICE-004") || !strings.Contains(out, "parallel add") {
+		t.Fatalf("repair of the running slice must start the other picks: code=%d\n%s", code, out)
+	}
+	code, out = runDispatchT(t, root, "open", "--phase", "build", "--wave", "next", "--role", "slice-wright.SLICE-003", "--role", "slice-wright.SLICE-004", "--slice", "SLICE-003", "--slice", "SLICE-004", "--contract", wrightContractPath(t))
 	if code != 0 {
-		t.Fatalf("lease sibling must never be refused: code=%d\n%s", code, out)
+		t.Fatalf("wave holding the new picks must open: code=%d\n%s", code, out)
 	}
 }
 

@@ -47,10 +47,9 @@ unaudited.
 
 ## Gate
 
-At plan, build, review, and seal, compare the proposed or actual change with each
-in-scope principle. An unexcepted violation is a Critical finding and blocks the
-phase. A missing or empty principles file passes silently.
+At plan, build, review, and seal, compare the change with each in-scope principle.
+An unexcepted violation is Critical and blocks. A missing or empty file passes.
 
-Adding, changing, retiring, or excepting a principle is a deliberate human-owned
-decision recorded in the file's governance history. Agents may propose wording;
-they do not ratify it.
+Adding, changing, retiring, or excepting a principle is human-owned. Date it in
+the governance history. Agents do not ratify it. Comply by changing the spec.
+Ask for an exception only when the objective cannot be met without the violation.

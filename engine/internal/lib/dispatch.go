@@ -57,9 +57,11 @@ which keys its --result findings on that slice. A --result file may already
 be the packets/ path; it is then kept as the stored return. Every 5 rounds of one kind on one slice, the
 next open is blocked until --reslice-review names a drift.md
 "## <DRIFT-ID>" heading for that slice. Under .devrites/AFK max_parallel >= 2,
-a first-round build wright wave narrower than the parallel select --from-plan
-batch is blocked until evidence.md records "serial: <skipped ids> — <reason>";
-repair rounds and lease siblings are never blocked.
+a build wright wave that leaves parallel select --from-plan picks unstarted is
+blocked until evidence.md records "serial: <skipped ids> — <reason>". A repair
+round or a running lease slice does not waive those picks. A wave naming two
+or more slices needs one slice-wright.<SLICE-ID> role per slice; one shared
+role has one handle, so the other slices never start. HITL is never width-blocked.
 
 Root-edit tripwire (ADR-0038): the first open records tree-baseline.json
 (dirty product paths outside .devrites/ and .scratch/, accepted as user work);
@@ -742,7 +744,6 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 		}
 	}
 	var lines, overCap []string
-	firstRound := true
 	for _, id := range w.Slices {
 		prior, reviews := 0, 0
 		var unreturned []string
@@ -762,7 +763,6 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 			}
 		}
 		round := prior + 1
-		firstRound = firstRound && prior == 0
 		if round > wrightRoundsPerReview*(1+reviews) {
 			overCap = append(overCap, id)
 		}
@@ -780,7 +780,11 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 			fmt.Fprintf(stderr, "dispatch: --reslice-review given but no slice has reached its %d-round cap\n", wrightRoundsPerReview)
 			return nil, 2
 		}
-		if kind == "wright" && firstRound {
+		if kind == "wright" {
+			if refusal := wrightFanoutRefusal(w); refusal != "" {
+				fmt.Fprintln(stderr, refusal)
+				return nil, 3
+			}
 			if refusal := widerBatchRefusal(root, slug, w.Slices); refusal != "" {
 				fmt.Fprintln(stderr, refusal)
 				return nil, 3
@@ -816,29 +820,78 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 }
 
 // serialRecordRe matches an evidence.md `serial: <ids> — <reason>` record
-// (the reason may open with a code span, never be empty); group 1 holds the ids.
-var serialRecordRe = regexp.MustCompile("(?mi)^[ \\t]*(?:[-*][ \\t]+)?`?serial:([^\\n]*?)(?:[ \\t]*[—–]|[ \\t]+--?[ \\t])[ \\t]*(?:[^\\s`]|`[^\\s`])")
+// (the reason may open with a code span, never be empty). Group 1 holds the
+// ids; group 2 holds the reason.
+var serialRecordRe = regexp.MustCompile("(?mi)^[ \\t]*(?:[-*][ \\t]+)?`?serial:([^\\n]*?)(?:[ \\t]*[—–]|[ \\t]+--?[ \\t])[ \\t]*([^\\s`][^\\n]*|`[^\\s`][^\\n]*)")
+
+// A repair, an open wave, or "already started" is not a shared surface.
+// Those reasons do not waive a pick unless they also name a path.
+var transientSerialReasonRe = regexp.MustCompile(`(?i)\b(?:repairs?|repairing|repaired|already started|in flight|open wave|sealed wave|running lease|in the lease)\b`)
+var serialSurfaceRe = regexp.MustCompile("`[^`\\n]*\\.[^`\\n]+`|(?i)\\b[\\w./-]+\\.[a-z0-9]+\\b")
+
+func serialReasonWaives(reason string) bool {
+	if transientSerialReasonRe.MatchString(reason) && !serialSurfaceRe.MatchString(reason) {
+		return false
+	}
+	return true
+}
 
 var sliceTokenRe = regexp.MustCompile(`(?i)\bSLICE-\d+\b`)
 
-// widerBatchRefusal refuses a first-round AFK build wright wave when
-// `parallel select --from-plan` picks more slices than the wave holds and
-// evidence.md has no `serial:` record naming each skipped pick. HITL runs,
-// lease siblings, slices the plan does not list as eligible, and selection
-// errors are never refused: the check widens batches, it never stops a build.
+// wrightFanoutRefusal refuses a build wright wave that names several slices
+// but not one slice-wright role per slice. One role has one host handle, so
+// the other slices would never start.
+func wrightFanoutRefusal(w *dispatchWave) string {
+	if len(w.Slices) < 2 {
+		return ""
+	}
+	lanes := map[string]bool{}
+	bare := 0
+	for role := range w.Roles {
+		if roleBase(role) != "slice-wright" {
+			continue
+		}
+		lane, ok := wrightLane(role)
+		if !ok {
+			bare++
+			continue
+		}
+		lanes[sliceNumber(lane)] = true
+	}
+	if bare > 0 || len(lanes) != len(w.Slices) {
+		return fmt.Sprintf("dispatch: BLOCKED: %d slices need one `--role slice-wright.<SLICE-ID>` each so every writer gets a handle; one shared slice-wright role starts only one agent", len(w.Slices))
+	}
+	for _, id := range w.Slices {
+		if !lanes[sliceNumber(id)] {
+			return fmt.Sprintf("dispatch: BLOCKED: %s has no `--role slice-wright.%s`", id, id)
+		}
+	}
+	return ""
+}
+
+// wrightLane is the SLICE-### suffix of a slice-wright.<SLICE-ID> role.
+func wrightLane(role string) (string, bool) {
+	base, lane, ok := strings.Cut(strings.TrimPrefix(role, "devrites-"), ".")
+	if !ok || base != "slice-wright" || !state.ValidSliceID(lane) {
+		return "", false
+	}
+	return lane, true
+}
+
+// widerBatchRefusal refuses an AFK build wright wave when
+// `parallel select --from-plan` still picks slices this wave does not start
+// and evidence.md has no `serial:` record for each. A repair round or a
+// running lease slice does not waive those picks. HITL runs and selection
+// errors are never refused: the check widens the batch, it never stops a
+// wave that already starts every remaining pick.
 func widerBatchRefusal(root, slug string, wave []string) string {
 	capN := min(afkMaxParallel(root), parallel.MaxParallelSlices)
 	if capN < 2 {
 		return ""
 	}
-	eligible, batch, err := planBatch(root, slug, capN)
-	if err != nil || len(batch) <= len(wave) {
+	_, batch, err := planBatch(root, slug, capN)
+	if err != nil || len(batch) == 0 {
 		return ""
-	}
-	for _, id := range wave {
-		if !containsSlice(eligible, id) {
-			return ""
-		}
 	}
 	var recorded []string
 	if raw, err := readWorkspaceArtifact(root, slug, "evidence.md"); err == nil {
@@ -846,6 +899,9 @@ func widerBatchRefusal(root, slug string, wave []string) string {
 			raw = visible
 		}
 		for _, m := range serialRecordRe.FindAllStringSubmatch(string(raw), -1) {
+			if len(m) < 3 || !serialReasonWaives(m[2]) {
+				continue
+			}
 			recorded = append(recorded, sliceTokenRe.FindAllString(m[1], -1)...)
 		}
 	}
@@ -858,7 +914,7 @@ func widerBatchRefusal(root, slug string, wave []string) string {
 	if len(missing) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("dispatch: BLOCKED: AFK max_parallel %d: `%s` picks %s, wider than this wave (%s); run that batch per rite-build/reference/parallel-batch.md (`parallel create`, then one wave with a --slice per sibling), or record `serial: %s — <shared surface or reason>` in evidence.md",
+	return fmt.Sprintf("dispatch: BLOCKED: AFK max_parallel %d: `%s` picks %s, wider than this wave (%s); start those picks (`parallel create`, or `parallel add` while a lease runs) and dispatch them, or record `serial: %s — <shared surface or reason>` in evidence.md",
 		capN, planSelectCommand(filepath.Dir(root), slug, capN), strings.Join(batch, ","), strings.Join(wave, ","), strings.Join(missing, ","))
 }
 

@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -195,10 +196,10 @@ func PrecheckSkips(root, slug, slice string, gateIDs []string) (map[string]strin
 	return skips, nil
 }
 
-// planReady lists, in plan order, the tasks.md slices state.md does not check
-// built whose dependencies it all checks built, each with its sliceWritePaths
-// plus its dependency manifest and lockfile when it declares external
-// dependencies. root is the .devrites directory.
+// planReady lists, in plan order, the tasks.md slices that are not built whose
+// dependencies are all built, each with its sliceWritePaths plus its dependency
+// manifest and lockfile when it declares external dependencies. root is the
+// .devrites directory.
 func planReady(root, slug string) ([]parallel.SlicePaths, error) {
 	raw, err := readWorkspaceArtifact(root, slug, "tasks.md")
 	if err != nil {
@@ -233,8 +234,11 @@ func planReady(root, slug string) ([]parallel.SlicePaths, error) {
 // builtWordRe marks a checked state.md item as a built checkpoint.
 var builtWordRe = regexp.MustCompile(`(?i)\bbuilt\b`)
 
-// builtSlices returns the slice numbers state.md checks built (`- [x] SLICE-004
-// built — <sha>`, or `- [x] Slice 4: <name> — built`), outside fenced examples.
+// builtSlices returns the slice numbers that are built, outside fenced examples.
+// A state.md checkbox (`- [x] SLICE-004 built — <sha>`, or `- [x] Slice 4:
+// <name> — built`) counts. So does an evidence.md heading that says that slice
+// was checkpointed and whose section has a `Checkpoint: <sha>` line — a missed
+// checkbox must not keep dependents out of the ready set.
 func builtSlices(root, slug string) (map[string]bool, error) {
 	raw, err := readWorkspaceArtifact(root, slug, "state.md")
 	if err != nil {
@@ -253,35 +257,86 @@ func builtSlices(root, slug string) (map[string]bool, error) {
 			built[strings.TrimLeft(m[1], "0")] = true
 		}
 	}
+	extra, err := evidenceBuilt(root, slug)
+	if err != nil {
+		return nil, err
+	}
+	for id := range extra {
+		built[id] = true
+	}
 	return built, nil
 }
 
-// manifestDenialRe is prose that says the slice adds no dependency.
-var manifestDenialRe = regexp.MustCompile(`(?i)\b(?:no new|no product|existing|already-admitted|already admitted|stdlib)\b`)
+var (
+	checkpointedHeadingRe = regexp.MustCompile(`(?i)\bcheckpointed\b`)
+	notCheckpointedRe     = regexp.MustCompile(`(?i)\bnot checkpointed\b|\bcheckpoint (?:refused|reverted|failed)\b`)
+	checkpointSHARe       = regexp.MustCompile(`(?m)^[ \t]*Checkpoint: [0-9a-fA-F]{7,40}\b`)
+)
+
+// evidenceBuilt reads evidence.md checkpoint sections. A missing file is none.
+func evidenceBuilt(root, slug string) (map[string]bool, error) {
+	raw, err := readWorkspaceArtifact(root, slug, "evidence.md")
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return map[string]bool{}, nil
+		}
+		return nil, err
+	}
+	masked, err := markdowntext.Structural(raw)
+	if err != nil {
+		return nil, fmt.Errorf("evidence.md: %w", err)
+	}
+	text := string(masked)
+	if strings.HasPrefix(text, "## ") {
+		text = "\n" + text
+	}
+	built := map[string]bool{}
+	for part := range strings.SplitSeq(text, "\n## ") {
+		heading, body, _ := strings.Cut(part, "\n")
+		var ids []string
+		for _, id := range sliceTokenRe.FindAllString(heading, -1) {
+			ids = append(ids, sliceNumber(id))
+		}
+		if len(ids) == 0 {
+			continue
+		}
+		if notCheckpointedRe.MatchString(heading) {
+			for _, id := range ids {
+				delete(built, id)
+			}
+			continue
+		}
+		if checkpointedHeadingRe.MatchString(heading) && checkpointSHARe.MatchString(body) {
+			for _, id := range ids {
+				built[id] = true
+			}
+		}
+	}
+	return built, nil
+}
 
 // A backtick name, module path, npm scope, or x.y.z pin. go.mod/go.sum is not a module path.
+// A toolchain version (Go 1.22.0) is not a package add.
 var (
-	backtickPkgRe  = regexp.MustCompile("`([^`]+)`")
-	modulePathRe   = regexp.MustCompile(`(?i)(?:[a-z0-9-]+\.)+[a-z]{2,}/[a-z0-9._@~+-]+`)
-	npmScopeRe     = regexp.MustCompile(`(?i)@[a-z0-9._-]+/[a-z0-9._-]+`)
-	versionPinRe   = regexp.MustCompile(`(?i)\bv?\d+\.\d+\.\d+\b`)
-	manifestHostRe = regexp.MustCompile(`(?i)\.(?:mod|sum|json|toml|yaml|yml|lock|lockb)$`)
+	backtickPkgRe      = regexp.MustCompile("`([^`]+)`")
+	modulePathRe       = regexp.MustCompile(`(?i)(?:[a-z0-9-]+\.)+[a-z]{2,}/[a-z0-9._@~+-]+`)
+	npmScopeRe         = regexp.MustCompile(`(?i)@[a-z0-9._-]+/[a-z0-9._-]+`)
+	versionPinRe       = regexp.MustCompile(`(?i)\bv?\d+\.\d+\.\d+\b`)
+	toolchainVersionRe = regexp.MustCompile(`(?i)\b(?:go|golang|node|bun|npm|pnpm|yarn|rustc|python|ruby|java)\s+v?\d+\.\d+\.\d+\b`)
+	manifestHostRe     = regexp.MustCompile(`(?i)\.(?:mod|sum|json|toml|yaml|yml|lock|lockb)$`)
 )
 
 // externalClaimsManifest reports whether External dependencies names a package
 // add, so parallel select reserves the nearest manifest. A none prefix does
-// not. shortcut: existing/no-new prose with no package coordinate does not
-// either; name the module, version, scope, or `package` when the slice edits one.
+// not. Prose with no module path, npm scope, `package`, or non-toolchain
+// version pin does not either. shortcut: name the package when the slice
+// edits a manifest; "Go 1.22.0" or "standard library" is not a package add.
 func externalClaimsManifest(external string) bool {
 	ext := strings.ToLower(strings.Trim(strings.TrimSpace(external), "`"))
 	if ext == "" || ext == "-" || ext == "n/a" || strings.HasPrefix(ext, "none") {
 		return false
 	}
-	raw := strings.TrimSpace(external)
-	if manifestDenialRe.MatchString(raw) && !namesPackage(raw) {
-		return false
-	}
-	return true
+	return namesPackage(strings.TrimSpace(external))
 }
 
 // namesPackage reports a module path, version pin, npm scope, or `package`
@@ -293,7 +348,7 @@ func namesPackage(raw string) bool {
 			return true
 		}
 	}
-	if npmScopeRe.MatchString(raw) || versionPinRe.MatchString(raw) {
+	if npmScopeRe.MatchString(raw) || versionPinRe.MatchString(toolchainVersionRe.ReplaceAllString(raw, " ")) {
 		return true
 	}
 	for _, loc := range modulePathRe.FindAllStringIndex(raw, -1) {
@@ -394,6 +449,24 @@ func afkMaxParallel(root string) int {
 	}
 	n, _ := strconv.Atoi(m[1])
 	return n
+}
+
+// parallelPlanVisible reports that the root must see every slice. An
+// unattended cap above 1, or a running parallel lease, is a batch: scoping
+// the bundle to active_slice hides the siblings that batch is supposed to start.
+func parallelPlanVisible(devritesRoot, slug string) bool {
+	if afkMaxParallel(devritesRoot) >= 2 {
+		return true
+	}
+	if slug == "" {
+		return false
+	}
+	path, err := parallel.LeasePath(filepath.Dir(devritesRoot), slug)
+	if err != nil {
+		return false
+	}
+	lease, err := parallel.ReadLease(path)
+	return err == nil && lease.Status == parallel.StatusRunning
 }
 
 func allDone(ids []string, done map[string]bool) bool {

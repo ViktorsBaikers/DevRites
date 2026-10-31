@@ -54,11 +54,11 @@
     "floor": 17870
   },
   "rite-autocomplete": {
-    "root": 113635,
-    "floor": 77116
+    "root": 113714,
+    "floor": 77203
   },
   "rite-build": {
-    "root": 257828,
+    "root": 258654,
     "role": "code-reviewer",
     "roleFloor": 39550,
     "roleCeiling": 126122

@@ -129,11 +129,11 @@ open findings move to the new slice owning their paths), or record
 `## <DRIFT-ID> — <SLICE-ID> reslice review` with why no smaller split exists and
 a spec trace of the slice's obligations (hardening no AC/INV/PROH requires moves to
 a sibling slice dependents do not need, still gated before Seal), and
-reopen with `--reslice-review <DRIFT-ID>`. Use
-at most one writer across all linked worktrees for this workspace. Never run two
-writers in one worktree, run isolated and same-worktree writers concurrently, or
-substitute a generic agent. Opt-in `/rite-build --parallel N` fans out only under
-[`parallel-batch.md`](parallel-batch.md).
+reopen with `--reslice-review <DRIFT-ID>`. Same-worktree stays one writer.
+Never run two writers in one worktree, mix isolated and same-worktree writers,
+or substitute a generic agent. Opt-in `/rite-build --parallel N` is the
+exception: one wright per worktree, each its own `slice-wright.<SLICE-ID>` role
+on one wave ([`parallel-batch.md`](parallel-batch.md)).
 
 The `return` that completes the wave releases its claim; `dispatch abandon --release`
 releases it on any other host-confirmed terminal path (a stop, a launch refused with no

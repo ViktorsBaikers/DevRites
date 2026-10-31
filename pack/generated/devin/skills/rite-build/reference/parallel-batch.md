@@ -27,16 +27,21 @@ N_eff = min(
   cap                  -- this invocation's --parallel N (wins over leftover sentinel max_parallel)
                        | else sentinel max_parallel | else 10 (autocomplete default)
   eligible set         -- dependency-satisfied pending slices, pairwise path-disjoint
-  AFK headroom         -- remaining max_slices, max_agents, max_minutes, review queue
+  AFK headroom         -- outside /rite-autocomplete only (max_slices, max_agents,
+                          max_minutes, review queue). Autocomplete ignores those;
+                          do not shrink this batch for them
   host capacity        -- concurrent worktree writers + the runtime isolation table
 )
 ```
 
 Select **greedily in plan order** with
 `devrites-engine parallel select --slug <slug> --cap N --from-plan`: ready set
-(dependencies `built`, minus running-lease slices), Writer allowlist
+(dependencies built — state.md checkbox, or an evidence.md heading that says that slice was checkpointed plus a `Checkpoint: <sha>` line — minus running-lease slices), Writer allowlist
 (else Files likely touched), plus manifest/lockfile when `External dependencies:`
-names a package (`none*`, existing, or no-new prose without a coordinate);
+names a package (module path, npm scope, backticked name, or a non-toolchain version).
+`context --phase build` with no `--slice` stays on `active_slice` unless AFK
+`max_parallel` is at least 2 or a lease is running; a HITL `--parallel N` run
+passes `--whole` so the other slices stay visible.
 `next` prints `eligible_now:`/`batch:`. `n_eff` counts new picks only.
 With a running lease, a single new pick still uses `parallel add`;
 `n_eff=0` with a running lease waits for siblings, not Prove. Without one:
@@ -76,10 +81,11 @@ snapshot directory, formatter sweep — and compare paths case-folded
 (`src/Api.ts` = `src/api.ts`); `--from-plan` adds the manifest/lockfile for a package.
 Slices colliding on either run serially; the rest
 stay eligible. Record `serial: <ids> — <surface>` in `evidence.md`. Under AFK
-with `max_parallel ≥ 2`, `dispatch open` refuses a first-round build wright wave
-narrower than the from-plan batch (printing batch and command) until the wave
-holds that batch or `serial:` names every skipped pick; repair rounds, lease
-siblings, and HITL runs are never refused. **Failing
+with `max_parallel ≥ 2`, `dispatch open` refuses a build wright wave narrower
+than the from-plan batch until that wave holds the other picks or `serial:`
+names each skipped one. Repairing a slice, or a slice already in the lease,
+does not waive them. A `serial:` reason that only says the skipped slice is
+repairing, already started, or in a wave does not count. HITL is never refused. **Failing
 case:** two slices each add a dependency, run in parallel, and integrate fails or
 lands a broken lockfile.
 
@@ -106,8 +112,11 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    `pre-dispatch <id>` preflight row; a malformed contract or non-zero
    precondition is dropped from the batch and recorded as a gap, not dispatched.
 2. Write lease; freeze `B=HEAD`; `parallel create` worktrees.
-3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`;
-   one `--slice` per sibling on the wave). A linked worktree has no `.devrites`:
+3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`).
+   One wave, one role per sibling: `--role slice-wright.<SLICE-ID> --slice <SLICE-ID>`
+   for each. `start` every role before waiting on any. One shared `slice-wright`
+   role is refused: it has one handle, so the other slices never start.
+   A linked worktree has no `.devrites`:
    tell each wright to run `gates precheck` with `DEVRITES_ROOT=<control>/.devrites`.
 4. Inspect each returned path list, cumulative diff from `B`, transfer identity,
    and required result fields against the immutable contract. Reject malformed,
@@ -122,10 +131,11 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    A recheck round is one dispatch per changed surface, not one per checklist: the
    recheck agent carries every open checklist (code, test, doubt) for that diff and
    answers each by name. Merging cuts dispatches; dropping a checklist does not.
-   Reviewer fan-out for a batch is itself batched under
-   [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#scale-limits)
-   (≈4 concurrent read-only reviewers, 8 only with disjoint paths), and `max_agents`
-   headroom bounds the batch size — one batch never assumes unbounded reviewers.
+   Reviewer fan-out does not shrink the writer batch. Reviewers queue at the
+   same cap as writers (10; see
+   [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#scale-limits)).
+   `max_agents` does not shrink it under autocomplete. Past that cap, queue a
+   second pass — a batch never assumes unbounded reviewers.
 5. Non-green siblings → **repair round** (below) in the same worktrees; lease
    stays `running` — no abort while repair budget remains. A green sibling →
    `parallel record-green`, then step 6 for it alone.
