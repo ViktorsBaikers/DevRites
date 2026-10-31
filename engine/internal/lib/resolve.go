@@ -361,6 +361,10 @@ func clearAwaiting(sfile, qid string) error {
 		return fmt.Errorf("read state %s: %w", sfile, err)
 	}
 	lines := splitLinesNoTrailing(data)
+	visible, err := structuralLines(data)
+	if err != nil {
+		return fmt.Errorf("read state %s: %w", sfile, err)
+	}
 	resumePolicy, _ := state.PolicyFor(state.PhaseBuild)
 	if rawPhase, ok := state.CursorField(lines, state.CursorPhase); ok {
 		if fields := strings.Fields(strings.ToLower(rawPhase)); len(fields) > 0 {
@@ -373,7 +377,7 @@ func clearAwaiting(sfile, qid string) error {
 	// First check whether the awaiting block references this question at all.
 	inAw := false
 	var awaitingLines []string
-	for _, line := range lines {
+	for _, line := range visible {
 		switch {
 		case awaitingRe.MatchString(line):
 			inAw = true
@@ -400,7 +404,8 @@ func clearAwaiting(sfile, qid string) error {
 	ts := nowUTC()
 	var out []string
 	inAw, inLog, logAppended := false, false, false
-	for _, line := range lines {
+	for i, original := range lines {
+		line := visible[i]
 		if awaitingRe.MatchString(line) {
 			inAw = true
 			continue
@@ -413,7 +418,7 @@ func clearAwaiting(sfile, qid string) error {
 		}
 		switch {
 		case logHdrRe.MatchString(line):
-			out = append(out, line)
+			out = append(out, original)
 			inLog = true
 			continue
 		case inLog && hdrSpaceRe.MatchString(line):
@@ -422,10 +427,10 @@ func clearAwaiting(sfile, qid string) error {
 				logAppended = true
 			}
 			inLog = false
-			out = append(out, line)
+			out = append(out, original)
 			continue
 		}
-		out = append(out, line)
+		out = append(out, original)
 	}
 	if inLog && !logAppended {
 		out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePolicy.Target, qid))

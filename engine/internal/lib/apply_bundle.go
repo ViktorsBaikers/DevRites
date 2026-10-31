@@ -210,7 +210,12 @@ func collectBundleTargets(slug string, bundles []candidateBundle) ([]*bundleTarg
 		}
 		pins := map[string]string{}
 		for path, hash := range bundle.BaseHashes {
-			pins[strings.TrimPrefix(filepath.ToSlash(path), prefix)] = strings.ToLower(strings.TrimPrefix(strings.TrimSpace(hash), "sha256:"))
+			rel := filepath.ToSlash(filepath.Clean(strings.TrimPrefix(filepath.ToSlash(path), prefix)))
+			pin := strings.ToLower(strings.TrimPrefix(strings.TrimSpace(hash), "sha256:"))
+			if previous, ok := pins[rel]; ok && previous != pin {
+				problems = append(problems, fmt.Sprintf("bundle %d %s: conflicting base hashes for the same file", bi+1, path))
+			}
+			pins[rel] = pin
 		}
 		for _, file := range bundle.CandidateFiles {
 			rel := strings.TrimPrefix(filepath.ToSlash(file.Path), prefix)
@@ -219,6 +224,7 @@ func collectBundleTargets(slug string, bundles []candidateBundle) ([]*bundleTarg
 				problems = append(problems, where+": path must be a Markdown file inside the "+slug+" workspace")
 				continue
 			}
+			rel = filepath.ToSlash(filepath.Clean(rel))
 			op := strings.ToLower(strings.TrimSpace(file.Operation))
 			switch op {
 			case "create", "replace":

@@ -17,10 +17,17 @@ import (
 )
 
 func (r *runner) installClaudeSettingsMarker(state claudeSettingsMerge) error {
+	return r.installMarker(hostpack.ClaudeSettingsMerge.MarkerRel, claudeSettingsMarkerText(state))
+}
+
+func claudeSettingsMarkerText(state claudeSettingsMerge) string {
 	var b strings.Builder
 	b.WriteString(hostpack.ClaudeSettingsMerge.MarkerText + "\n" + claudeRulesAddedLine)
 	if state.created {
 		b.WriteString("\n" + claudeSettingsCreatedLine)
+	}
+	if state.defaultModeOwned {
+		b.WriteString("\ndefault-mode=added")
 	}
 	rules := make([]string, 0, len(state.added))
 	for rule := range state.added {
@@ -30,7 +37,7 @@ func (r *runner) installClaudeSettingsMarker(state claudeSettingsMerge) error {
 	for _, rule := range rules {
 		b.WriteString("\nrule:" + rule)
 	}
-	return r.installMarker(hostpack.ClaudeSettingsMerge.MarkerRel, b.String())
+	return b.String()
 }
 
 const (
@@ -364,16 +371,45 @@ func (r *runner) mergeClaudeSettings(merge hostpack.JSONMerge) error {
 		return fmt.Errorf("encode merged Claude settings: %w", err)
 	}
 	data = append(data, '\n')
+	// Publish ownership before grants; keep retired ownership until settings land.
+	pending := r.pendingClaudeSettingsOwnership(state)
+	if err := r.installClaudeSettingsMarker(pending); err != nil {
+		return err
+	}
+	if r.records[merge.MarkerRel] == "" {
+		return fmt.Errorf("cannot merge %s without owning %s; use --force to replace the marker", merge.TargetRel, merge.MarkerRel)
+	}
+	if err := r.recheckPath(merge.TargetRel); err != nil {
+		return err
+	}
 	if err := r.writeConfined(dest, data, 0o644); err != nil {
 		return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 	}
-	return r.installClaudeSettingsMarker(state)
+	if pending.defaultModeOwned || len(pending.added) != len(state.added) {
+		if err := r.refreshPreflight(merge.MarkerRel); err != nil {
+			return err
+		}
+		return r.installClaudeSettingsMarker(state)
+	}
+	return nil
 }
 
 // claudeSettingsMerge is what the settings marker records about a merge.
 type claudeSettingsMerge struct {
-	created bool
-	added   map[string]bool
+	created          bool
+	added            map[string]bool
+	defaultModeOwned bool
+}
+
+func (r *runner) pendingClaudeSettingsOwnership(next claudeSettingsMerge) claudeSettingsMerge {
+	pending := claudeSettingsMerge{
+		created: next.created, added: r.managedClaudePermissionRules(),
+		defaultModeOwned: r.claudeDefaultModeOwned(),
+	}
+	for rule := range next.added {
+		pending.added[rule] = true
+	}
+	return pending
 }
 
 // claudeSettingsNext returns the merged .claude/settings.json without
@@ -433,6 +469,12 @@ func stripHooksWith(path string, write func([]byte) error, remove func() error) 
 }
 
 func (r *runner) stripClaudeSettings(path string) error {
+	return r.stripClaudeSettingsWith(path, func(data []byte) error {
+		return r.writeConfined(path, data, 0o644)
+	}, func() error { return r.removeConfined(path) })
+}
+
+func (r *runner) stripClaudeSettingsWith(path string, write func([]byte) error, remove func() error) error {
 	current, err := readJSON(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -442,14 +484,14 @@ func (r *runner) stripClaudeSettings(path string) error {
 	}
 	next := stripDevritesSettings(current, r.claudeDefaultModeOwned(), r.managedClaudePermissionRules())
 	if len(next) == 0 && r.claudeSettingsCreated() {
-		return r.removeConfined(path)
+		return remove()
 	}
 	data, err := json.MarshalIndent(next, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode Claude settings: %w", err)
 	}
 	data = append(data, '\n')
-	return r.writeConfined(path, data, 0o644)
+	return write(data)
 }
 
 func (r *runner) stripMarkerConfined(path, begin, end string) error {

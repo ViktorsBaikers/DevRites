@@ -66,6 +66,21 @@ engine has no compatibility aliases or tombstones. The `add`/`upgrade`/`remove`
 conveniences belong only to the `npx devrites` adapter, not to the engine
 command namespace.
 
+## State and evidence safety
+
+- `state set` resolves known cursor aliases before checking protected fields
+  and duplicate keys. Underscore variants cannot bypass phase, schema, or
+  saved-return-cursor protections; extension keys retain their spelling.
+- `state resolve` ignores fenced examples when matching and removing an
+  Awaiting-human section. Resolving another question leaves the live wait intact.
+- `state close` reads the physical `ACTIVE` pointer under the feature lock;
+  `DEVRITES_WORKSPACE` cannot make it clear another feature's pointer.
+- `gates run` and `reverify` snapshot every declared `INPUTS` dependency around
+  the actual shared CHECK execution, recheck during locked writeback, and
+  invalidate earlier passes if later checks move their inputs.
+  Missing or changed inputs cannot certify a pass. Execution, discarded-result,
+  or evidence-write failures exit `3`, even if an older ledger still reads met.
+
 ## Check boundary
 
 The candidate gate validates and hashes path/state/type/mode/content identity;

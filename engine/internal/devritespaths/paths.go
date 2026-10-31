@@ -194,14 +194,19 @@ func checkedCanonicalDir(root, candidate, parent, slug string) (string, error) {
 	return filepath.Clean(candidate), nil
 }
 
-// ActiveSlug reads and trims the active-feature pointer. A missing pointer file
-// is not an error; it yields the empty slug.
+// ActiveSlug resolves the workspace override, or reads the active-feature pointer.
+// A missing pointer file is not an error; it yields the empty slug.
 func ActiveSlug(root string) (string, error) {
 	if ws, err := WorkspaceOverrideChecked(root, ""); err != nil {
 		return "", err
 	} else if ws != "" {
 		return filepath.Base(ws), nil
 	}
+	return PhysicalActiveSlug(root)
+}
+
+// PhysicalActiveSlug reads the validated ACTIVE pointer without workspace overrides.
+func PhysicalActiveSlug(root string) (string, error) {
 	activePath := filepath.Join(root, "ACTIVE")
 	if info, err := os.Lstat(activePath); err == nil && info.Mode()&os.ModeSymlink != 0 {
 		return "", fmt.Errorf("DRV-ACTIVE-SYMLINK: ACTIVE is a symlink; run `rm -f %q`", activePath)

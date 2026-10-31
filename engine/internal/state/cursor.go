@@ -265,7 +265,7 @@ func ConvertCursorToTable(lines []string) ([]string, bool) {
 		if strings.Contains(value, "|") {
 			continue
 		}
-		spelling, ok := canonicalCursorSpelling(key)
+		spelling, ok := CanonicalCursorKey(key)
 		if !ok {
 			continue
 		}
@@ -278,14 +278,14 @@ func ConvertCursorToTable(lines []string) ([]string, bool) {
 }
 
 func isMigratableCursorKey(key string) bool {
-	_, ok := canonicalCursorSpelling(key)
+	_, ok := CanonicalCursorKey(key)
 	return ok
 }
 
-// canonicalCursorSpelling maps a cursor key (including aliases) to the
+// CanonicalCursorKey maps a cursor key (including aliases) to the
 // canonical table-row spelling. Matching is normalization-based, so
-// "Next step" resolves to the "next_action" spelling.
-func canonicalCursorSpelling(key string) (string, bool) {
+// "Next step" resolves to the "next_action" spelling. Unknown extensions return false.
+func CanonicalCursorKey(key string) (string, bool) {
 	normalized := normalizeCursorKey(key)
 	canonicals := []string{CursorPhase, CursorStatus, CursorNextAction, CursorQuestionID,
 		CursorActiveSlice, CursorAFKSlicesRemaining, CursorSequenceParent,

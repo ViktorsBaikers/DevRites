@@ -50,6 +50,10 @@ The Go surface is intentionally closed and deterministic:
 | Install/operator | `install`, `update`, `uninstall`, `version` | Direct update acquires latest; npm/bootstrap may supply local candidates; the engine performs manifest-owned local changes. |
 | Native policy | no engine command | Skills/root own spec grammar re-read, qid allocation, Clarify cursor edits, AFK/recovery accounting, and read-only `/rite-doctor`. |
 
+`state apply-bundle` merges workspace-relative path aliases into one target:
+`plan.md`, `./plan.md`, and `refs/../plan.md` share base pins and patch hunks.
+Conflicting replacements or base hashes block the entire bundle without writes.
+
 `devrites-engine help` exhaustively lists the operational engine commands.
 Standard `help`, `-h`, `--help`, `version`, and `--version` forms remain
 available; each operational command and subcommand also accepts `-h` / `--help`.

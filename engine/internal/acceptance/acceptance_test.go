@@ -674,6 +674,92 @@ func TestRunCLIAttestAbandon(t *testing.T) {
 	}
 }
 
+func TestRunCLIRejectsFailedAttemptWithMetLedger(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("requires POSIX directory permissions enforced for a non-root user")
+	}
+	for _, tc := range []struct {
+		name, failure string
+	}{
+		{"command failure", "exit 7"},
+		{"expectation mismatch", "printf 'NO_MATCH\\n'; exit 0"},
+		{"writeback failure", "printf 'PROBE_OK\\n'; exit 0"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			project, ledgerPath := writeWorkspace(t)
+			root := filepath.Join(project, ".devrites")
+			work := filepath.Dir(ledgerPath)
+			t.Cleanup(func() {
+				if err := os.Chmod(work, 0o755); err != nil {
+					t.Error(err)
+				}
+			})
+			check := "if test -f fail.flag; then chmod 0555 .devrites/work/feat; " + tc.failure + "; fi; printf 'PROBE_OK\\n'"
+			writeLedger(t, ledgerPath, "- [ ] G1: probe\n  CHECK: "+check+"\n  EXPECT: PROBE_OK\n  EVIDENCE: pending\n")
+			writeLedger(t, filepath.Join(work, "test-plan.md"),
+				"## Build-entry preflight\n\n| Command | Cwd | Purpose |\n| --- | --- | --- |\n| "+check+" | . | probe |\n")
+			var stdout, stderr strings.Builder
+			if code := Run(root, []string{"run", "feat"}, &stdout, &stderr); code != ExitOK {
+				t.Fatalf("initial run=%d out=%q err=%q", code, stdout.String(), stderr.String())
+			}
+			before := mustRead(t, ledgerPath)
+			if err := os.WriteFile(filepath.Join(project, "fail.flag"), nil, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			stdout.Reset()
+			stderr.Reset()
+			if code := Run(root, []string{"reverify", "feat"}, &stdout, &stderr); code != ExitBlocked {
+				t.Fatalf("failed attempt=%d out=%q err=%q", code, stdout.String(), stderr.String())
+			}
+			if !strings.Contains(stdout.String(), "gate G1: fail (") || !strings.Contains(stdout.String(), "evidence write failed:") ||
+				strings.Contains(stdout.String(), "result: all-met") {
+				t.Fatalf("failed attempt reported success: %q", stdout.String())
+			}
+			if after := mustRead(t, ledgerPath); after != before {
+				t.Fatalf("permission fixture must leave old met ledger readable: %q", after)
+			}
+		})
+	}
+}
+
+func TestRunCLIRejectsDiscardedAttemptWithMetLedger(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses POSIX shell commands")
+	}
+	project, ledgerPath := writeWorkspace(t)
+	root := filepath.Join(project, ".devrites")
+	check := "if test -f replace.flag; then cp replacement.md .devrites/work/feat/gates.md; fi; printf 'PROBE_OK OTHER\\n'"
+	body := "- [ ] G1: probe\n  CHECK: " + check + "\n  EXPECT: PROBE_OK\n  EVIDENCE: pending\n"
+	writeLedger(t, ledgerPath, body)
+	writeLedger(t, filepath.Join(filepath.Dir(ledgerPath), "test-plan.md"),
+		"## Build-entry preflight\n\n| Command | Cwd | Purpose |\n| --- | --- | --- |\n| "+check+" | . | probe |\n")
+	var stdout, stderr strings.Builder
+	for i := range 2 {
+		if code := Run(root, []string{"run", "feat"}, &stdout, &stderr); code != ExitOK {
+			t.Fatalf("setup run %d=%d out=%q err=%q", i, code, stdout.String(), stderr.String())
+		}
+		if i == 0 {
+			writeLedger(t, filepath.Join(project, "replacement.md"), mustRead(t, ledgerPath))
+			writeLedger(t, ledgerPath, strings.Replace(body, "EXPECT: PROBE_OK", "EXPECT: OTHER", 1))
+		}
+	}
+	if err := os.WriteFile(filepath.Join(project, "replace.flag"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := Run(root, []string{"reverify", "feat"}, &stdout, &stderr); code != ExitBlocked {
+		t.Fatalf("discarded attempt=%d out=%q err=%q", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "evidence discarded:") || strings.Contains(stdout.String(), "result: all-met") {
+		t.Fatalf("discarded attempt reported success: %q", stdout.String())
+	}
+	doc := ParseLedger(mustRead(t, ledgerPath))
+	if GateState(doc.Gates[0], doc) != StateMet {
+		t.Fatalf("replacement must retain its valid prior evidence: %+v", doc.Gates[0])
+	}
+}
+
 func mustRead(t *testing.T, path string) string {
 	t.Helper()
 	raw, err := os.ReadFile(path)

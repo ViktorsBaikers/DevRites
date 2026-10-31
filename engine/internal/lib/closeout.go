@@ -62,11 +62,6 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 	archDisplay := filepath.ToSlash(filepath.Join("archive", slug))
 	active := filepath.Join(dv, "ACTIVE")
 
-	activeSlug, err := devritespaths.ActiveSlug(dv)
-	if err != nil {
-		fmt.Fprintf(stderr, "state close: invalid ACTIVE cursor: %v\n", err)
-		return 1
-	}
 	// A broken symlink at the destination still counts as "already there", so use
 	// Lstat rather than Stat to avoid silently overwriting it.
 	if _, err := os.Lstat(arch); err == nil {
@@ -84,7 +79,7 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 	// open file, so there the lock is released just before the rename.
 	code := 1
 	if err := state.WithFeatureLockRelease(dv, slug, func(release func()) error {
-		code = closeOutLocked(release, work, arch, archiveDir, archDisplay, active, activeSlug, slug, stdout, stderr)
+		code = closeOutLocked(release, work, arch, archiveDir, archDisplay, active, slug, stdout, stderr)
 		return nil
 	}); err != nil {
 		fmt.Fprintf(stderr, "state close: cannot lock feature %s: %v\n", slug, err)
@@ -96,7 +91,12 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 // closeOutLocked performs the rename and the conditional ACTIVE clear. It runs
 // under the feature lock held by CloseOut and reports an exit code rather than
 // an error, preserving CloseOut's documented exit codes.
-func closeOutLocked(release func(), work, arch, archiveDir, archDisplay, active, activeSlug, slug string, stdout, stderr io.Writer) int {
+func closeOutLocked(release func(), work, arch, archiveDir, archDisplay, active, slug string, stdout, stderr io.Writer) int {
+	activeSlug, err := devritespaths.PhysicalActiveSlug(filepath.Dir(active))
+	if err != nil {
+		fmt.Fprintf(stderr, "state close: invalid ACTIVE cursor: %v\n", err)
+		return 1
+	}
 	// Fail closed: if the move does not happen, leave the cursor alone and do not
 	// claim success: a lost audit trail must never look like a clean close-out.
 	if err := os.MkdirAll(archiveDir, 0o755); err != nil {

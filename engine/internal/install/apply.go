@@ -231,6 +231,11 @@ func (r *runner) writeConfined(dest string, data []byte, perm fs.FileMode) error
 		return err
 	}
 	defer func() { _ = root.Close() }()
+	if info, err := root.Stat(rel); err == nil {
+		perm = info.Mode().Perm()
+	} else if !os.IsNotExist(err) {
+		return err
+	}
 	return fsutil.WriteFileAtomicIn(root, rel, data, perm)
 }
 

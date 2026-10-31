@@ -382,6 +382,11 @@ with `--force`; legacy manifests without hashes also require `--force`.
 `--force --dry-run` lists the exact destructive actions. Every settings and
 marker merge is checked before the first write, so a rejected merge (such as a
 Codex config that already sets top-level `default_permissions`) leaves the project untouched.
+Unmerges receive the same preflight: malformed settings or legacy hooks JSON
+blocks uninstall and dropped-host pruning, including dry runs, before writes.
+Existing files retain their permission bits. Claude permission ownership is
+recorded before settings replacement, so interrupted merges retain the records
+needed to remove installer-added grants on retry and uninstall.
 Marker-merged files keep user content outside the DevRites block, and
 `.devrites/` runtime state stays in place. `update` reuses the install flags
 recorded in the manifest; flags you pass explicitly win and are recorded. The installer refuses symlinks, junctions, and paths that

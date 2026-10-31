@@ -110,6 +110,38 @@ func TestActiveSlugRejectsPathTraversal(t *testing.T) {
 	}
 }
 
+func TestPhysicalActiveSlugIgnoresOverrideAndValidatesPointer(t *testing.T) {
+	root := filepath.Join(t.TempDir(), DevritesRootName)
+	work := filepath.Join(root, "work", "feature")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DEVRITES_WORKSPACE", work)
+	for _, tc := range []struct {
+		body string
+		want string
+	}{
+		{"other\n", "other"},
+		{"\n", ""},
+		{"../outside\n", ""},
+	} {
+		if err := os.WriteFile(filepath.Join(root, "ACTIVE"), []byte(tc.body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		got, err := PhysicalActiveSlug(root)
+		if tc.body == "../outside\n" {
+			if err == nil || !strings.Contains(err.Error(), "DRV-ACTIVE-INVALID") {
+				t.Fatalf("invalid physical pointer accepted: %q, %v", got, err)
+			}
+		} else if err != nil || got != tc.want {
+			t.Fatalf("physical pointer = %q, %v; want %q", got, err, tc.want)
+		}
+		if got, err := ActiveSlug(root); err != nil || got != "feature" {
+			t.Fatalf("override behavior changed: %q, %v", got, err)
+		}
+	}
+}
+
 func TestExistingFeatureDirCheckedMissingNamesSlugAndMatchesNotExist(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "work"), 0o755); err != nil {
