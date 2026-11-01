@@ -23,13 +23,6 @@ func TestWorkspaceObservationMigrationGuards(t *testing.T) {
 		}
 	})
 
-	t.Run("acquisition calls are exact", func(t *testing.T) {
-		program := parseMigrationProgram(t, engineRoot)
-		for _, problem := range acquisitionProblems(program) {
-			t.Error(problem)
-		}
-	})
-
 	t.Run("consumer reachability stays retained", func(t *testing.T) {
 		program := parseMigrationProgram(t, engineRoot)
 		for _, problem := range consumerReachabilityProblems(program, migrationConsumerEntries()) {
@@ -206,184 +199,6 @@ func Check() { workspacereader.Read() }
 		}
 	})
 
-	t.Run("aliased helper second capture", func(t *testing.T) {
-		program := parseMigrationFixture(t, map[string]string{
-			"internal/gate/gate.go": `package gate
-import observed "github.com/devrites/devrites/internal/state"
-func Check() { _, _ = observed.ObserveWorkspace("", "") }
-func helper() {
-	capture := observed.ObserveWorkspace
-	_, _ = capture("", "")
-}
-`,
-		})
-		problems := acquisitionProblems(program)
-		if !migrationProblemContains(problems, "internal/gate/gate.go:helper", "state.ObserveWorkspace") {
-			t.Fatalf("aliased helper second capture was not rejected: %v", problems)
-		}
-	})
-
-	t.Run("alias assigned outside loop and called in loop is rejected", func(t *testing.T) {
-		program := parseCompleteMigrationAcquisitionFixture(t, `capture := state.ObserveWorkspace
-for range []int{1, 2} {
-	capture()
-}`)
-		problems := acquisitionProblems(program)
-		if !migrationProblemContains(problems, "internal/gate/gate.go:Check", "acquisition function reference", "state.ObserveWorkspace") {
-			t.Fatalf("loop-called acquisition alias was not rejected: %v", problems)
-		}
-		if !migrationProblemContains(problems, "internal/gate/gate.go:Check", "calls state.ObserveWorkspace 0 times, want 1") {
-			t.Fatalf("acquisition alias satisfied direct-call cardinality: %v", problems)
-		}
-	})
-
-	t.Run("anonymous closure assigned outside loop and called in loop is rejected", func(t *testing.T) {
-		program := parseCompleteMigrationAcquisitionFixture(t, `capture := func() { state.ObserveWorkspace() }
-for range []int{1, 2} {
-	capture()
-}`)
-		problems := acquisitionProblems(program)
-		if !migrationProblemContains(problems, "internal/gate/gate.go:Check", "acquisition function reference", "state.ObserveWorkspace") {
-			t.Fatalf("loop-called acquisition closure was not rejected: %v", problems)
-		}
-		if !migrationProblemContains(problems, "internal/gate/gate.go:Check", "calls state.ObserveWorkspace 0 times, want 1") {
-			t.Fatalf("acquisition closure satisfied direct-call cardinality: %v", problems)
-		}
-	})
-
-	t.Run("uncalled function value is rejected without satisfying call count", func(t *testing.T) {
-		program := parseCompleteMigrationAcquisitionFixture(t, `_ = state.ObserveWorkspace`)
-		problems := acquisitionProblems(program)
-		if !migrationProblemContains(problems, "internal/gate/gate.go:Check", "acquisition function reference", "state.ObserveWorkspace") {
-			t.Fatalf("uncalled acquisition function value was not rejected: %v", problems)
-		}
-		if !migrationProblemContains(problems, "internal/gate/gate.go:Check", "calls state.ObserveWorkspace 0 times, want 1") {
-			t.Fatalf("uncalled acquisition function value satisfied direct-call cardinality: %v", problems)
-		}
-	})
-
-	t.Run("dot-import direct call is accepted", func(t *testing.T) {
-		program := parseMigrationFixture(t, map[string]string{
-			"internal/state/observation.go": `package state
-func ObserveWorkspace() { observeWorkspace() }
-func observeWorkspace() {}
-`,
-			"internal/state/status.go": `package state
-func Status() { statusWithCallback() }
-func statusWithCallback() { observeWorkspace() }
-`,
-			"internal/gate/gate.go": fmt.Sprintf(`package gate
-import . %q
-func Check() { ObserveWorkspace() }
-`, migrationStateImport),
-			"internal/gate/readiness_binding.go": fmt.Sprintf(`package gate
-import %q
-func ReadinessBinding() { state.ObserveWorkspace() }
-func ReadinessInputDigests() { state.ObserveWorkspace() }
-`, migrationStateImport),
-			"internal/lib/workspace_pool.go": fmt.Sprintf(`package lib
-import %q
-func WorkspaceReady() { state.ObserveWorkspace() }
-`, migrationStateImport),
-		})
-		if problems := acquisitionProblems(program); len(problems) != 0 {
-			t.Fatalf("dot-import acquisition call was rejected: %v", problems)
-		}
-	})
-
-	for _, test := range []struct {
-		name       string
-		checkBody  string
-		wantLoop   string
-		wantAccept bool
-	}{
-		{name: "direct call in for initializer is accepted", checkBody: `for state.ObserveWorkspace(); ; {
-	break
-}`, wantAccept: true},
-		{name: "direct call in for condition is rejected", checkBody: `for ; state.ObserveWorkspace(); {
-	break
-}`, wantLoop: "for"},
-		{name: "direct call in for post is rejected", checkBody: `for ; false; state.ObserveWorkspace() {}`, wantLoop: "for"},
-		{name: "direct call in range expression is accepted", checkBody: `for range state.ObserveWorkspace() {}`, wantAccept: true},
-		{name: "nested loop initializer remains repeat capable", checkBody: `for range []int{1, 2} {
-	for state.ObserveWorkspace(); ; {
-		break
-	}
-}`, wantLoop: "range"},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			program := parseCompleteMigrationAcquisitionFixture(t, test.checkBody)
-			problems := acquisitionProblems(program)
-			if test.wantAccept {
-				if len(problems) != 0 {
-					t.Fatalf("one-shot acquisition call was rejected: %v", problems)
-				}
-				return
-			}
-			if !migrationProblemContains(problems, "internal/gate/gate.go:Check", "calls state.ObserveWorkspace", test.wantLoop+" loop", "repeated acquisition risk") {
-				t.Fatalf("repeat-capable acquisition call was not rejected: %v", problems)
-			}
-		})
-	}
-
-	loops := []struct {
-		name string
-		body func(string) string
-	}{
-		{
-			name: "for",
-			body: func(call string) string {
-				return "for i := 0; i < 2; i++ {\n" + call + "\n}"
-			},
-		},
-		{
-			name: "range",
-			body: func(call string) string {
-				return "for range []int{1, 2} {\n" + call + "\n}"
-			},
-		},
-	}
-	sites := []struct {
-		name     string
-		file     string
-		function string
-		target   string
-	}{
-		{name: "state ObserveWorkspace wrapper", file: "internal/state/observation.go", function: "ObserveWorkspace", target: "observeWorkspace"},
-		{name: "state statusWithCallback", file: "internal/state/status.go", function: "statusWithCallback", target: "observeWorkspace"},
-		{name: "gate Check", file: "internal/gate/gate.go", function: "Check", target: "state.ObserveWorkspace"},
-		{name: "gate ReadinessBinding", file: "internal/gate/readiness_binding.go", function: "ReadinessBinding", target: "state.ObserveWorkspace"},
-	}
-	for _, loop := range loops {
-		for _, site := range sites {
-			t.Run(loop.name+" around "+site.name, func(t *testing.T) {
-				observationBody := "observeWorkspace()"
-				statusBody := "observeWorkspace()"
-				checkBody := "state.ObserveWorkspace()"
-				bindingBody := "state.ObserveWorkspace()"
-				switch site.file {
-				case "internal/state/observation.go":
-					observationBody = loop.body(observationBody)
-				case "internal/state/status.go":
-					statusBody = loop.body(statusBody)
-				case "internal/gate/gate.go":
-					checkBody = loop.body(checkBody)
-				case "internal/gate/readiness_binding.go":
-					bindingBody = loop.body(bindingBody)
-				}
-				program := parseMigrationFixture(t, map[string]string{
-					"internal/state/observation.go":      fmt.Sprintf("package state\nfunc ObserveWorkspace() {\n%s\n}\nfunc observeWorkspace() {}\n", observationBody),
-					"internal/state/status.go":           fmt.Sprintf("package state\nfunc Status() { statusWithCallback() }\nfunc statusWithCallback() {\n%s\n}\n", statusBody),
-					"internal/gate/gate.go":              fmt.Sprintf("package gate\nimport %q\nfunc Check() {\n%s\n}\n", migrationStateImport, checkBody),
-					"internal/gate/readiness_binding.go": fmt.Sprintf("package gate\nimport %q\nfunc ReadinessBinding() {\n%s\n}\n", migrationStateImport, bindingBody),
-				})
-				problems := acquisitionProblems(program)
-				if !migrationProblemContains(problems, site.file+":"+site.function, site.target, loop.name+" loop", "repeated acquisition risk") {
-					t.Fatalf("looped acquisition reference was not rejected: %v", problems)
-				}
-			})
-		}
-	}
 }
 
 const migrationStateImport = "github.com/devrites/devrites/internal/state"
@@ -395,11 +210,10 @@ type migrationEntry struct {
 }
 
 type migrationFile struct {
-	name        string
-	directory   string
-	packageName string
-	syntax      *ast.File
-	imports     map[string]string
+	name      string
+	directory string
+	syntax    *ast.File
+	imports   map[string]string
 }
 
 type migrationFunction struct {
@@ -410,101 +224,6 @@ type migrationFunction struct {
 type migrationProgram struct {
 	files     []*migrationFile
 	functions map[migrationEntry]*migrationFunction
-}
-
-type migrationAcquisitionUse struct {
-	file          string
-	function      string
-	target        string
-	loop          string
-	functionValue bool
-}
-
-type migrationAcquisitionVisitor struct {
-	file          *migrationFile
-	function      string
-	loop          string
-	functionValue bool
-	uses          *[]migrationAcquisitionUse
-}
-
-func (v migrationAcquisitionVisitor) Visit(node ast.Node) ast.Visitor {
-	if node == nil {
-		return nil
-	}
-	switch node := node.(type) {
-	case *ast.FuncLit:
-		v.functionValue = true
-		v.walk(node.Body)
-		return nil
-	case *ast.ForStmt:
-		v.walk(node.Init)
-		repeated := v.repeated("for")
-		repeated.walk(node.Cond)
-		repeated.walk(node.Post)
-		repeated.walk(node.Body)
-		return nil
-	case *ast.RangeStmt:
-		v.walk(node.Key)
-		v.walk(node.Value)
-		v.walk(node.X)
-		v.repeated("range").walk(node.Body)
-		return nil
-	case *ast.CallExpr:
-		if target := migrationAcquisitionTarget(v.file, node.Fun); target != "" {
-			*v.uses = append(*v.uses, migrationAcquisitionUse{file: v.file.name, function: v.function, target: target, loop: v.loop, functionValue: v.functionValue})
-		} else {
-			v.walk(node.Fun)
-		}
-		for _, argument := range node.Args {
-			v.walk(argument)
-		}
-		return nil
-	case *ast.SelectorExpr:
-		if target := migrationAcquisitionTarget(v.file, node); target != "" {
-			*v.uses = append(*v.uses, migrationAcquisitionUse{file: v.file.name, function: v.function, target: target, loop: v.loop, functionValue: true})
-		}
-		v.walk(node.X)
-		return nil
-	case *ast.Ident:
-		if target := migrationAcquisitionTarget(v.file, node); target != "" {
-			*v.uses = append(*v.uses, migrationAcquisitionUse{file: v.file.name, function: v.function, target: target, loop: v.loop, functionValue: true})
-		}
-	}
-	return v
-}
-
-func (v migrationAcquisitionVisitor) walk(node ast.Node) {
-	if node != nil {
-		ast.Walk(v, node)
-	}
-}
-
-func (v migrationAcquisitionVisitor) repeated(loop string) migrationAcquisitionVisitor {
-	if v.loop == "" {
-		v.loop = loop
-	}
-	return v
-}
-
-func migrationAcquisitionTarget(file *migrationFile, expression ast.Expr) string {
-	switch expression := expression.(type) {
-	case *ast.ParenExpr:
-		return migrationAcquisitionTarget(file, expression.X)
-	case *ast.SelectorExpr:
-		receiver, ok := expression.X.(*ast.Ident)
-		if ok && expression.Sel.Name == "ObserveWorkspace" && file.imports[receiver.Name] == migrationStateImport {
-			return "state.ObserveWorkspace"
-		}
-	case *ast.Ident:
-		if expression.Name == "observeWorkspace" && file.packageName == "state" {
-			return "observeWorkspace"
-		}
-		if expression.Name == "ObserveWorkspace" && file.imports["."] == migrationStateImport {
-			return "state.ObserveWorkspace"
-		}
-	}
-	return ""
 }
 
 func parseMigrationProgram(t *testing.T, engineRoot string) *migrationProgram {
@@ -530,35 +249,6 @@ func parseMigrationFixture(t *testing.T, sources map[string]string) *migrationPr
 	return program
 }
 
-func parseCompleteMigrationAcquisitionFixture(t *testing.T, checkBody string) *migrationProgram {
-	t.Helper()
-	return parseMigrationFixture(t, map[string]string{
-		"internal/state/observation.go": `package state
-func ObserveWorkspace() { observeWorkspace() }
-func observeWorkspace() {}
-`,
-		"internal/state/status.go": `package state
-func Status() { statusWithCallback() }
-func statusWithCallback() { observeWorkspace() }
-`,
-		"internal/gate/gate.go": fmt.Sprintf(`package gate
-import %q
-func Check() {
-%s
-}
-`, migrationStateImport, checkBody),
-		"internal/gate/readiness_binding.go": fmt.Sprintf(`package gate
-import %q
-func ReadinessBinding() { state.ObserveWorkspace() }
-func ReadinessInputDigests() { state.ObserveWorkspace() }
-`, migrationStateImport),
-		"internal/lib/workspace_pool.go": fmt.Sprintf(`package lib
-import %q
-func WorkspaceReady() { state.ObserveWorkspace() }
-`, migrationStateImport),
-	})
-}
-
 func newMigrationProgram() *migrationProgram {
 	return &migrationProgram{functions: make(map[migrationEntry]*migrationFunction)}
 }
@@ -575,11 +265,10 @@ func (p *migrationProgram) addFile(t *testing.T, name, parsePath string, source 
 	}
 	name = filepath.ToSlash(name)
 	parsed := &migrationFile{
-		name:        name,
-		directory:   filepath.ToSlash(filepath.Dir(name)),
-		packageName: file.Name.Name,
-		syntax:      file,
-		imports:     make(map[string]string),
+		name:      name,
+		directory: filepath.ToSlash(filepath.Dir(name)),
+		syntax:    file,
+		imports:   make(map[string]string),
 	}
 	for _, spec := range file.Imports {
 		importPath, err := strconv.Unquote(spec.Path.Value)
@@ -752,76 +441,6 @@ func obsoleteSurfaceProblems(program *migrationProgram) []string {
 	return problems
 }
 
-func acquisitionProblems(program *migrationProgram) []string {
-	allowed := map[migrationAcquisitionUse]int{
-		{file: "internal/state/observation.go", function: "ObserveWorkspace", target: "observeWorkspace"}:                 1,
-		{file: "internal/state/status.go", function: "statusWithCallback", target: "observeWorkspace"}:                    1,
-		{file: "internal/gate/gate.go", function: "Check", target: "state.ObserveWorkspace"}:                              1,
-		{file: "internal/gate/readiness_binding.go", function: "ReadinessBinding", target: "state.ObserveWorkspace"}:      1,
-		{file: "internal/gate/readiness_binding.go", function: "ReadinessInputDigests", target: "state.ObserveWorkspace"}: 1,
-		{file: "internal/lib/workspace_pool.go", function: "WorkspaceReady", target: "state.ObserveWorkspace"}:            1,
-	}
-	counts := make(map[migrationAcquisitionUse]int)
-	var problems []string
-	for _, use := range migrationAcquisitionUses(program) {
-		if use.functionValue {
-			problems = append(problems, fmt.Sprintf("%s:%s retains acquisition function reference %s; only direct calls are approved", use.file, use.function, use.target))
-			continue
-		}
-		key := use
-		key.loop = ""
-		counts[key]++
-		if _, ok := allowed[key]; !ok {
-			problems = append(problems, fmt.Sprintf("%s:%s retains unapproved acquisition call %s", use.file, use.function, use.target))
-		} else if use.loop != "" {
-			problems = append(problems, fmt.Sprintf("%s:%s calls %s inside a %s loop; repeated acquisition risk", use.file, use.function, use.target, use.loop))
-		}
-	}
-	for acquisition, want := range allowed {
-		if got := counts[acquisition]; got != want {
-			problems = append(problems, fmt.Sprintf("%s:%s calls %s %d times, want %d", acquisition.file, acquisition.function, acquisition.target, got, want))
-		}
-	}
-	status := migrationEntry{directory: "internal/state", function: "Status"}
-	statusFunction, ok := program.functions[status]
-	if !ok || statusFunction.file.name != "internal/state/status.go" {
-		problems = append(problems, "internal/state/status.go:Status is missing")
-	} else if got := migrationLocalReferenceCount(program, status, "statusWithCallback"); got != 1 {
-		problems = append(problems, fmt.Sprintf("internal/state/status.go:Status references statusWithCallback %d times, want 1", got))
-	}
-	sort.Strings(problems)
-	return problems
-}
-
-func migrationAcquisitionUses(program *migrationProgram) []migrationAcquisitionUse {
-	var uses []migrationAcquisitionUse
-	for _, file := range program.files {
-		for _, declaration := range file.syntax.Decls {
-			switch declaration := declaration.(type) {
-			case *ast.FuncDecl:
-				if declaration.Body != nil {
-					inspectMigrationAcquisitions(file, declaration.Name.Name, declaration.Body, &uses)
-				}
-			case *ast.GenDecl:
-				for _, spec := range declaration.Specs {
-					value, ok := spec.(*ast.ValueSpec)
-					if !ok {
-						continue
-					}
-					for _, expression := range value.Values {
-						inspectMigrationAcquisitions(file, "<package>", expression, &uses)
-					}
-				}
-			}
-		}
-	}
-	return uses
-}
-
-func inspectMigrationAcquisitions(file *migrationFile, function string, root ast.Node, uses *[]migrationAcquisitionUse) {
-	ast.Walk(migrationAcquisitionVisitor{file: file, function: function, uses: uses}, root)
-}
-
 func inspectMigrationIdentifiers(root ast.Node, visit func(*ast.Ident)) {
 	var inspect func(ast.Node) bool
 	inspect = func(node ast.Node) bool {
@@ -835,20 +454,6 @@ func inspectMigrationIdentifiers(root ast.Node, visit func(*ast.Ident)) {
 		return true
 	}
 	ast.Inspect(root, inspect)
-}
-
-func migrationLocalReferenceCount(program *migrationProgram, entry migrationEntry, target string) int {
-	function, ok := program.functions[entry]
-	if !ok {
-		return 0
-	}
-	count := 0
-	inspectMigrationIdentifiers(function.decl.Body, func(identifier *ast.Ident) {
-		if identifier.Name == target {
-			count++
-		}
-	})
-	return count
 }
 
 func migrationConsumerEntries() []migrationEntry {

@@ -98,6 +98,98 @@ func TestWorkspaceObservationInventoryCanonicalArtifactsOnce(t *testing.T) {
 	}
 }
 
+func TestReferencedWorkspaceObservationRefusesLiveAppearanceDuringArchiveRead(t *testing.T) {
+	for _, stage := range []observationStage{observationAfterResolve, observationBeforeRead, observationBeforeFinalSweep} {
+		t.Run(observationStageName(stage), func(t *testing.T) {
+			root, slug := newObservationWorkspace(t)
+			writeObservationArtifact(t, root, slug, LedgerFile, []byte("- Phase: build\n"))
+			writeObservationArtifact(t, root, slug, "plan.md", []byte("archived plan\n"))
+			workspace := filepath.Join(root, "work", slug)
+			archive := filepath.Join(root, "archive", slug)
+			if err := os.MkdirAll(filepath.Dir(archive), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Rename(workspace, archive); err != nil {
+				t.Fatal(err)
+			}
+			mutated := false
+			observation, err := observeWorkspaceSource(root, slug, true, func(current observationStage, artifact ArtifactPath) error {
+				if current == stage && !mutated && (current != observationBeforeRead || artifact == "plan.md") {
+					mutated = true
+					writeObservationArtifact(t, root, slug, LedgerFile, []byte("- Phase: spec\n"))
+				}
+				return nil
+			})
+			if !mutated || observation != nil || (err != ObservationWorkspaceInvalid && err != ObservationConcurrentChange) {
+				t.Fatalf("live appearance = (%+v, %v), mutated=%v; want fail-closed acquisition", observation, err, mutated)
+			}
+		})
+	}
+}
+
+func TestReferencedWorkspaceObservationRetainsUnreadableLiveInput(t *testing.T) {
+	root, slug := newObservationWorkspace(t)
+	writeObservationArtifact(t, root, slug, LedgerFile, []byte("- Phase: build\n"))
+	writeObservationArtifact(t, root, slug, "plan.md", []byte("archived plan\n"))
+	archive := filepath.Join(root, "archive", slug)
+	if err := os.MkdirAll(filepath.Dir(archive), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(filepath.Join(root, "work", slug), archive); err != nil {
+		t.Fatal(err)
+	}
+	writeObservationArtifact(t, root, slug, LedgerFile, []byte("- Phase: build\n"))
+	writeObservationArtifact(t, root, slug, "plan.md", []byte("live plan\n"))
+	observation, err := observeWorkspaceSource(root, slug, true, func(stage observationStage, artifact ArtifactPath) error {
+		if stage == observationBeforeOpen && artifact == "plan.md" {
+			return fs.ErrPermission
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertArtifactFact(t, observation, "plan.md", ArtifactUnreadable, DiagnosticPermissionDenied, nil)
+}
+
+func TestReferencedWorkspaceObservationRejectsUnsafeFallback(t *testing.T) {
+	for _, mutation := range []string{"archive override", "matching live override", "live parent symlink", "live parent file"} {
+		t.Run(mutation, func(t *testing.T) {
+			root, slug := newObservationWorkspace(t)
+			writeObservationArtifact(t, root, slug, LedgerFile, []byte("- Phase: build\n"))
+			archive := filepath.Join(root, "archive", slug)
+			if err := os.MkdirAll(filepath.Dir(archive), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			workspace := filepath.Join(root, "work", slug)
+			if err := os.Rename(workspace, archive); err != nil {
+				t.Fatal(err)
+			}
+			switch mutation {
+			case "archive override":
+				t.Setenv("DEVRITES_WORKSPACE", archive)
+			case "matching live override":
+				t.Setenv("DEVRITES_WORKSPACE", workspace)
+			case "live parent symlink", "live parent file":
+				work := filepath.Dir(workspace)
+				if err := os.Remove(work); err != nil {
+					t.Fatal(err)
+				}
+				if mutation == "live parent symlink" {
+					if err := os.Symlink(t.TempDir(), work); err != nil {
+						t.Fatal(err)
+					}
+				} else if err := os.WriteFile(work, []byte("not a directory\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if observation, err := ObserveReferencedWorkspace(root, slug); observation != nil || err != ObservationWorkspaceInvalid {
+				t.Fatalf("unsafe fallback = (%+v, %v), want workspace_invalid", observation, err)
+			}
+		})
+	}
+}
+
 func TestWorkspaceObservationPathAcceptsCanonicalRelativeOverride(t *testing.T) {
 	root, slug := newObservationWorkspace(t)
 	writeObservationArtifact(t, root, slug, LedgerFile, []byte("- Phase: build\n"))

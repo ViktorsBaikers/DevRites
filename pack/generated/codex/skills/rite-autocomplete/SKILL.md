@@ -88,6 +88,9 @@ next sequence continuation through Vet in a second session, then stop.
 
 1. **Orient and parse.** Resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding); when a workspace exists,
    require its `state.md` and read its cursor; a fresh idea starts empty at step 2.
+   Before phase-local cold recovery, execute the bounded
+   [global frontier pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier);
+   retain this source's return cursor and pending reviewer handles.
    Before honoring `blocked` with terminal `next_action`,
    reconcile retained consumptive evidence and fingerprint attempts from
    `drift.md`/`evidence.md`; a retained fingerprint below its cap resumes offline
@@ -118,16 +121,12 @@ next sequence continuation through Vet in a second session, then stop.
    `$rite-build` batch loop → `$rite-prove` → `$rite-polish` →
    `$rite-review` → `$rite-seal`. Read and execute each skill; durable files, not
    chat, carry state. Apply the mutable post-vet budget before first Build.
-   Execute [`parallel-workspaces.md`](../devrites-lib/reference/parallel-workspaces.md):
-   continuously scan the authorized recorded sequence across stages, preparing
-   and re-Vetting future targets while writers run. Build queries the global
-   pool with `parallel select --from-plan --slug <controller> --workspaces
-   <controller,authorized-source,...> --cap N`; N is explicit `--parallel N`, else
-   sentinel `max_parallel`, else 10 — one global writer cap, including explicit 1.
-   Always pass resolved `--parallel N` to Build. Cap>1 uses an isolated first
-   writer even when initially alone; refill globally per landing and planning/
-   review return. Unsupported host stays serial. No local ready slice is not
-   completion while authorized planning, repair/re-Vet or independent work remains.
+   Execute the shared [global frontier pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
+   at phase entry, before recovery, on returns and before native waits, not only
+   during Build or after Seal. Preserve source-local phase cursors; Autocomplete
+   retains repository scheduling. Apply its protected validation window before
+   landings/checkpoints and account admission. Pass resolved `--parallel N` to
+   Build under its one global cap and existing admission/isolation gates.
    **Completion:** loop reaches Seal GO or persists a valid stop before any later phase.
 5. **Apply stops.** At every gate use
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:

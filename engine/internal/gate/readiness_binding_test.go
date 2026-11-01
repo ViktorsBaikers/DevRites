@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -100,6 +101,153 @@ func TestReadinessBindingGoldenDigest(t *testing.T) {
 	const want = "Readiness inputs SHA-256: 6a0d4991d86f5a0e78333289840b5fb1a123adbb18b53243b1af34fcffcf1961"
 	if got := mustReadinessBinding(t, root, "golden"); got != want {
 		t.Fatalf("ReadinessBinding()=%q, want %q", got, want)
+	}
+}
+
+func TestReadinessBindingArchiveRecomputesWithoutRestoringWorkspace(t *testing.T) {
+	root := t.TempDir()
+	workspace := writeReadinessFixture(t, root, "archived", "build")
+	testutil.WriteFile(t, filepath.Join(root, "principles.md"), "# Principles\n\nGlobal source.\n")
+	testutil.WriteFile(t, filepath.Join(workspace, ".devrites", "principles.md"), "Decoy principles.\n")
+	const lease = "# Retained parallel lease\n\nstatus: running\n"
+	testutil.WriteFile(t, filepath.Join(workspace, "parallel-lease.md"), lease)
+	testutil.WriteFile(t, filepath.Join(root, "ACTIVE"), "controller\n")
+	before, binding, err := ReadinessInputDigests(root, "archived")
+	if err != nil {
+		t.Fatal(err)
+	}
+	archive := filepath.Join(root, "archive", "archived")
+	if err := os.MkdirAll(filepath.Dir(archive), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(workspace, archive); err != nil {
+		t.Fatal(err)
+	}
+	testutil.WriteFile(t, filepath.Join(archive, "readiness-inputs.json"), `{"binding":"untrusted stored digest"}`)
+	if got := mustReadinessBinding(t, root, "archived"); got != binding {
+		t.Fatalf("archive binding = %q, want live identity %q", got, binding)
+	}
+	after, archivedBinding, err := ReadinessInputDigests(root, "archived")
+	if err != nil || archivedBinding != binding || !slices.Equal(before, after) {
+		t.Fatalf("archive digests = (%v, %q, %v), want (%v, %q, nil)", after, archivedBinding, err, before, binding)
+	}
+	if _, err := os.Lstat(workspace); !os.IsNotExist(err) {
+		t.Fatalf("binding restored archived workspace: %v", err)
+	}
+	if _, err := state.ObserveWorkspace(root, "archived"); err != state.ObservationWorkspaceInvalid {
+		t.Fatalf("active observation accepted archive: %v", err)
+	}
+	for path, want := range map[string]string{
+		filepath.Join(root, "ACTIVE"):                        "controller\n",
+		filepath.Join(archive, "parallel-lease.md"):          lease,
+		filepath.Join(archive, "readiness-inputs.json"):      `{"binding":"untrusted stored digest"}`,
+		filepath.Join(archive, ".devrites", "principles.md"): "Decoy principles.\n",
+	} {
+		got, err := os.ReadFile(path)
+		if err != nil || string(got) != want {
+			t.Fatalf("read-only binding changed %s: %q %v", filepath.Base(path), got, err)
+		}
+	}
+	testutil.WriteFile(t, filepath.Join(root, "principles.md"), "# Principles\n\nChanged globally.\n")
+	if got := mustReadinessBinding(t, root, "archived"); got == binding {
+		t.Fatal("archived binding ignored current global principles")
+	}
+}
+
+func TestReadinessBindingLiveSourceTakesPrecedenceOverArchive(t *testing.T) {
+	for _, mutation := range []struct {
+		name   string
+		mutate func(*testing.T, string)
+		want   string
+	}{
+		{name: "changed", mutate: func(t *testing.T, workspace string) {
+			testutil.WriteFile(t, filepath.Join(workspace, "plan.md"), "# Plan\n\nLive authority.\n")
+		}},
+		{name: "missing input", mutate: func(t *testing.T, workspace string) {
+			if err := os.Remove(filepath.Join(workspace, "plan.md")); err != nil {
+				t.Fatal(err)
+			}
+		}, want: "readiness input plan.md is missing"},
+		{name: "malformed input", mutate: func(t *testing.T, workspace string) {
+			testutil.WriteFile(t, filepath.Join(workspace, "plan.md"), "invalid\x00Markdown")
+		}, want: "malformed_markdown"},
+		{name: "symlink input", mutate: func(t *testing.T, workspace string) {
+			if err := os.Remove(filepath.Join(workspace, "plan.md")); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink("spec.md", filepath.Join(workspace, "plan.md")); err != nil {
+				t.Fatal(err)
+			}
+		}, want: "final_symlink"},
+		{name: "dangling workspace symlink", mutate: func(t *testing.T, workspace string) {
+			if err := os.Rename(workspace, workspace+"-aside"); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink("missing", workspace); err != nil {
+				t.Fatal(err)
+			}
+		}, want: "workspace_invalid"},
+	} {
+		t.Run(mutation.name, func(t *testing.T) {
+			root := t.TempDir()
+			workspace := writeReadinessFixture(t, root, "precedence", "build")
+			archive := filepath.Join(root, "archive", "precedence")
+			if err := os.MkdirAll(filepath.Dir(archive), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Rename(workspace, archive); err != nil {
+				t.Fatal(err)
+			}
+			archivedBinding := mustReadinessBinding(t, root, "precedence")
+			writeReadinessFixture(t, root, "precedence", "build")
+			mutation.mutate(t, workspace)
+			binding, err := ReadinessBinding(root, "precedence")
+			_, introspected, introspectionErr := ReadinessInputDigests(root, "precedence")
+			if mutation.want != "" {
+				if err == nil || !strings.Contains(err.Error(), mutation.want) || introspectionErr == nil || !strings.Contains(introspectionErr.Error(), mutation.want) {
+					t.Fatalf("live refusal = (%q, %v), introspection = (%q, %v), want %q", binding, err, introspected, introspectionErr, mutation.want)
+				}
+			} else if err != nil || introspectionErr != nil || binding == archivedBinding || introspected != binding {
+				t.Fatalf("live identity = (%q, %v), introspection = (%q, %v), archive = %q", binding, err, introspected, introspectionErr, archivedBinding)
+			}
+		})
+	}
+}
+
+func TestReadinessBindingRejectsUnsafeArchive(t *testing.T) {
+	for _, target := range []string{"workspace", "archive parent", "input"} {
+		t.Run(target, func(t *testing.T) {
+			root := t.TempDir()
+			workspace := writeReadinessFixture(t, root, "unsafe-archive", "build")
+			archive := filepath.Join(root, "archive", "unsafe-archive")
+			if err := os.MkdirAll(filepath.Dir(archive), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Rename(workspace, archive); err != nil {
+				t.Fatal(err)
+			}
+			link := archive
+			if target == "archive parent" {
+				link = filepath.Dir(archive)
+			} else if target == "input" {
+				link = filepath.Join(archive, "plan.md")
+			}
+			if err := os.Rename(link, link+"-aside"); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(filepath.Base(link)+"-aside", link); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := ReadinessBinding(root, "unsafe-archive"); err == nil {
+				t.Fatal("binding accepted unsafe archive")
+			}
+			if _, _, err := ReadinessInputDigests(root, "unsafe-archive"); err == nil {
+				t.Fatal("introspection accepted unsafe archive")
+			}
+			if _, err := os.Lstat(workspace); !os.IsNotExist(err) {
+				t.Fatalf("unsafe archive restored workspace: %v", err)
+			}
+		})
 	}
 }
 

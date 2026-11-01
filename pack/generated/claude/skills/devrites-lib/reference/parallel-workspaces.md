@@ -69,6 +69,9 @@ incomplete, stale or human-blocked future work is a planning/repair/blocked
 opportunity, not a fatal pool failure. Retain every readiness reason: fixing stale
 bindings does not waive a coexisting human/access/safety gate. Re-Vet affected
 predecessor assumptions, then record current bindings; never auto-refresh a digest.
+Read archived predecessors in place through the engine's referenced read-only
+readiness lookup. Never copy an archive into live `work/` merely to read/hash it:
+that can resurrect stale controller leases and claims.
 
 ## Recover avoidable serialization
 
@@ -106,13 +109,28 @@ reslicing unchanged work.
 
 ## Continuous global frontier
 
-At entry, each landing, planning/review return and before any wait or final reply:
+Autocomplete executes this bounded pass at every phase entry (including cold
+Prove/Vet/Review), before phase-local recovery, on each landing/planning/review
+return, and immediately before a native wait or final reply. A nested phase
+returns scheduling to Autocomplete; its source-local phase/recovery return cursor
+and pending native reviewer handles remain intact. This is not a second phase
+controller or a persistent frontier artifact.
 
 1. Re-read controller lease, per-source state/questions/readiness and authorized
-   sequence. Scan all stages, not only the owner's next local slice. While writers
-   run, root advances authorized Spec → Clarify → Temper → Define/Plan → Vet,
-   including narrow repair/re-Vet of prepared targets, under unchanged approval
-   and safety rules. Missing human authority blocks that target, not safe siblings.
+   sequence. Examine every recorded authorized source once per pass, not only
+   the owner's next local slice or first blocked child. Prepare absent targets
+   through authorized native Spec → Clarify → Temper → Define/Plan → Vet; repair
+   and re-Vet current readiness of prepared targets now, not after owner Seal.
+   Assess actual source gates, claims and explicit planning/Build restrictions
+   before routing. Owner-local red/human/access gates withhold that owner or its
+   actual consumers, not independent authorized planning; true whole-run safety,
+   access and claim constraints still bind. Retain concrete actions or blockers
+   in existing source artifacts under normal write authority.
+   Yield a child at its pending reviewer/phase boundary back to this controller;
+   never recursively wait for child completion while parent returns are pending.
+   Reconcile available parent returns before another pass. A native wait is
+   justified only after concrete authorized actions/blockers across the pool
+   have been examined; reading later phase skills is not pending Plan/Vet work.
    If an explicit/AFK capacity change differs from retained capacity, reconcile it
    before selection using `parallel add --root <repo> --slug <controller> --cap N --json -`
    with stdin `[]`. This changes capacity only, not workers or a complete lease's
@@ -137,11 +155,14 @@ At entry, each landing, planning/review return and before any wait or final repl
    Unsupported isolation uses truthful serial owner dispatch and ordinary ordered
    handoff, never early same-tree foreign Build or concurrent same-worktree writers.
 4. Launch every selected native writer before waiting on any; keep scheduling
-   planning and independent review while they run. Land each individually green
-   sibling through Build review/proof and `parallel integrate --slice <key>`;
-   refill immediately from the whole authorized pool. A red sibling repairs in
-   place and holds its slot/paths; it does not delay independent green landings.
-   Never satisfy a producer edge on writer return or green-but-unlanded work.
+   planning and independent review while they run, including while the owner
+   awaits Prove/Vet/Review accounts. Apply the protected window below before any
+   landing: defer control mutations while frozen validation is pending. Outside
+   that window, land each individually green sibling through Build review/proof
+   and `parallel integrate --slice <key>`; refill immediately from the whole pool.
+   A red sibling repairs in place and holds its slot/paths; it does not delay
+   independent safe landings. Never satisfy a producer edge on writer return or
+   green-but-unlanded work.
    After worker-bound review/proof and source bookkeeping finish, prune only
    verified clean integrated checkouts with `parallel prune --root <repo>
    --slug <controller>`. Retain transfer refs/lease identities; dirty or ignored
@@ -182,8 +203,17 @@ controller bookkeeping nor sibling proof closes a child's acceptance.
 
 Prove/Polish/Review/Seal remain per workspace with fresh candidate bindings. Shared
 durable Polish outputs serialize; source changes invalidate affected evidence.
-Before any non-lease product correction, shared durable Polish write or control
-checkpoint, freeze new writer admissions, drain/reconcile retained writers, land
+From candidate freeze/validator dispatch through account admission, preserve the
+exact candidate, control tip and all consumed metadata/validator inputs. Independent
+authorized planning and isolated writers may proceed only without changing those
+inputs or shared runtime resources. Defer integration, checkpoints, cross-source
+corrections and consumed-artifact edits until the window closes; retained green
+workers keep their identities/slots. Recheck candidate, control-tip identity and
+consumed inputs before accepting each account; drift invalidates affected accounts
+and requires native fresh validation, never acceptance against a moving tip.
+After any protected validation window closes, before a non-lease product correction,
+shared durable Polish write or control checkpoint, freeze new writer admissions,
+drain/reconcile retained writers, land
 safe green work and cleanup the lease. Preserve blocked work; never force-clean
 it merely to advance a phase. Perform phase-owned correction/proof/checkpoint,
 then resume the pool from new HEAD. Never accept unrelated commits as expected
@@ -192,6 +222,10 @@ ControlTip or invent phase slices. Read-only frozen proof/review and planning-on
 Normal ordered handoff reuses the same controller and prepared child cursor.
 Never archive controller/source while retained lease owns it; clean up owned
 workers first, preserving salvage and unknown outcomes.
+Global scheduling is not global gating or ordered handoff. Unmet or abandoned
+owner gates remain non-green: an owner request to defer obligations routes Spec
+Drift Guard → Plan → affected Vet under existing authority, or retains the blocked
+source. It never becomes Prove green or Seal GO merely to reach another source.
 
 Early child WIPs can interleave with parent WIPs. Parent-only Ship must not absorb
 those commits as if parent alone were sealed. Deferred release waits for every
