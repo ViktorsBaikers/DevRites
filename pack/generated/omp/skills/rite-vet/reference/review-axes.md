@@ -31,6 +31,8 @@ Before implementation review, check for work beyond the settled spec.
    `Budget override`: route to `/rite-plan course-correct` (`MVP cut`) with the
    continuation sequence named; do not vet the whole epic. An `ADVISORY size:`
    or `hub:` line without its rationale is a non-blocking Suggestion to split or seam it.
+   Before READY, apply the shared [serialization audit](skill://devrites-lib/reference/parallel-workspaces.md#recover-avoidable-serialization):
+   verify independent cuts and retained producer/proof/authority gates, or the concrete serial rationale.
 4. **Built-in check.** For each new pattern/infra/concurrency approach, invoke
    `devrites-source-driven` inline to verify current framework/runtime support and cite it. Custom
    work where a built-in suffices is a scope-reduction finding.

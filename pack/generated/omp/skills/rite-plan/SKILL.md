@@ -85,6 +85,8 @@ Before classifying any Reslice, read `.omp/skills/devrites-lib/reference/standar
    affected artifacts, settled contract, and failure/drift; a slice-bound repair
    builds its bundle with `--slice <SLICE-ID>` per affected slice. Await one atomic, read-only
    the drafter's `candidate_files` bundle; human choices return separately.
+   For a capacity-driven repair, include the shared [serialization audit](skill://devrites-lib/reference/parallel-workspaces.md#recover-avoidable-serialization)
+   and its concrete blocked edges, independent cut, retained-worker impact and unchanged gates in that frozen scope.
    When the observed failure is missing or ambiguous consumptive-action evidence,
    require the drafter to apply [`one-shot-actions.md`](skill://devrites-lib/reference/standards/one-shot-actions.md) and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
