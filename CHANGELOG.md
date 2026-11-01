@@ -33,6 +33,10 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 - Audit underfilled parallel frontiers through acceptance-preserving Plan/Vet;
   separate independently provable capabilities without dropping producer, proof
   or authority gates.
+- Recompute archived predecessor readiness in place without restoring historical
+  workspaces or reviving their controller leases.
+- Execute Autocomplete's global frontier at cold Prove/Vet/Review and native wait
+  boundaries; preserve frozen candidates, standalone scope, and non-green gates.
 
 ## [7.2.8](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.7...v7.2.8) (2026-10-31)
 

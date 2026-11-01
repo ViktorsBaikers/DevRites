@@ -35,8 +35,9 @@ TTHW, and exact signal-bearing errors; never assert DX (trigger `devex`).
   grammar/hashing. Spec Drift Guard owns revealed contract drift.
 - Root runs vetted gates/browser and records immutable evidence; proof runner
   validates it. Only the bounded wright fixes product source/tests.
-- **Prove remains the controlling caller** during technical backtracking. Save
-  its cursor; run Plan repair, Recovery Vet, remediation, and re-proof inline;
+- **Prove remains the source-local controlling caller** during technical backtracking;
+  under Autocomplete, repository scheduling stays with Autocomplete. Save
+  Prove's cursor; run Plan repair, Recovery Vet, remediation, and re-proof inline;
   consume nested boundaries; resume the failed rung. A strategy is spent after
   three no-progress attempts on the exact same fingerprint; escalate it per the
   [retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve)
@@ -60,12 +61,15 @@ test changes.
 ## Workflow
 
 1. **Orient.** Read core, resolve source per [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require `state.md`, and read its
-   cursor. On blocked Prove cold resume, reconcile retained consumptive evidence
-   and no-progress corrections before accepting terminal none; a distinct
-   fingerprint below cap resumes offline triage without another real action.
+   cursor. Under Autocomplete, return scheduling for its
+   [global frontier pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
+   before cold/local recovery; preserve Prove's source-local return cursor.
+   On blocked Prove cold resume, reconcile retained consumptive evidence and
+   no-progress corrections before accepting terminal none; a distinct fingerprint
+   below cap resumes offline triage without another real action.
 2. **Freeze scope.** Read spec, tasks, state, test plan, and full diff. Require
-   every slice built except a [deferred slice](skill://rite-plan/reference/slicing.md#deferred-slice). Missing `test-plan.md` returns to Vet inline (Prove stays the controlling
-   caller) and resumes here; it never authorizes ad hoc proof.
+   every slice built except a [deferred slice](skill://rite-plan/reference/slicing.md#deferred-slice). Missing `test-plan.md` returns to Vet inline (Prove stays the source-local
+   controlling caller) and resumes here; it never authorizes ad hoc proof.
 3. **Approve commands.** If absent, use
    [test-command-discovery](reference/test-command-discovery.md) over repository
    manifests/CI. Discovery is evidence only: `test-plan.md` is the sole approved runtime
@@ -119,6 +123,10 @@ test changes.
 7. **Independent validation.** Fresh read-only `devrites-proof-runner` and
    `devrites-spec-reviewer`, in one parallel wave, judge the same candidate/commands/evidence/acceptance map.
    Neither runs commands; reject missing/stale, invented-ID, label-only or self-attested reports.
+   Under Autocomplete, before native wait return scheduling to its global frontier
+   pass, retaining both validator handles. Standalone Prove stays source-local.
+   Apply the shared protected validation window and recheck identities before
+   admitting accounts.
 8. **Map proof.** Reconcile verdicts under [acceptance-proof.md](reference/acceptance-proof.md).
    Every criterion/scenario/interaction/key link needs discriminating evidence or a
    blocker, including critical-path, observability, developer and wiring branches.

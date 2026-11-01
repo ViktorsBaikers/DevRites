@@ -62,6 +62,9 @@ Pull these via `Read` when the diff demands them:
 0. Read `.agents/skills/devrites-lib/reference/standards/core.md` first (the always-on operating rules); pull the
    on-demand rules above as the diff demands them.
    Resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding) before loading workspace artifacts.
+   Under Autocomplete, return scheduling for its
+   [global frontier pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
+   before cold/local recovery, preserving Review's source-local return cursor.
 1. Read `spec.md`, `tasks.md`, `state.md`, `decisions.md`,
    `touched-files.md`, `.devrites/principles.md` (if present: the binding invariants to score
    the diff against), and the `git diff`. For "what would this change break"
@@ -127,6 +130,10 @@ Pull these via `Read` when the diff demands them:
      [[`agents.md`](../devrites-lib/reference/standards/agents.md) § Result admission](../devrites-lib/reference/standards/agents.md#result-admission).
      Either `Outcome: gap` stops Review; silence, failure, or malformed output never
      becomes an empty findings list.
+   Under Autocomplete, before native wait return scheduling to its global frontier
+   pass with cohort handles retained; standalone Review stays source-local. Apply
+   the shared protected validation window and identity recheck before account
+   admission.
 4. **Reconcile, don't re-review.** With the two parallel reports in hand, the inline
    lead reconciles. It does **not** re-run the code-review axes over correctness /
    readability / architecture / maintainability that `devrites-code-reviewer` already

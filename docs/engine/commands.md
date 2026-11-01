@@ -82,6 +82,12 @@ command namespace.
   Awaiting-human section. Resolving another question leaves the live wait intact.
 - `state close` reads the physical `ACTIVE` pointer under the feature lock;
   `DEVRITES_WORKSPACE` cannot make it clear another feature's pointer.
+- Read-only readiness bindings and input introspection resolve explicit sources
+  live first, then safely archived bytes only when the live workspace is absent.
+  `check readiness --emit-binding <slug>` recomputes archived inputs in place;
+  cached binding records do not establish freshness. Active workspace commands
+  remain live-only. Never restore an archive merely to hash it: copied historical
+  leases can become live controllers.
 - `gates run` and `reverify` snapshot every declared `INPUTS` dependency around
   the actual shared CHECK execution, recheck during locked writeback, and
   invalidate earlier passes if later checks move their inputs.

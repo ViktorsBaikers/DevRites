@@ -266,7 +266,6 @@ require "$STATE_WORKSPACE" 'agent-owned technical backtracking' 'state cursor pr
 require "$STATE_WORKSPACE" 'terminal `next_action` is a claim to verify' 'cold resume reconciles stale terminal cursors'
 require "$STATE_WORKSPACE" 'spent action authorization blocks another execution' 'state recovery separates action authority from offline repair'
 require "$DRIFT" 'invoke `/rite-plan repair` and `/rite-vet` inline' 'spec drift recovery stays inside the active caller'
-require "$PROVE" 'Prove remains the controlling caller' 'prove owns repair and re-vet continuation'
 require "$PLAN" 'preserve any valid return cursor' 'plan repair preserves its caller recovery target'
 require "$VET" 'restore and consume the return cursor' 'vet returns a repaired plan to the originating phase'
 require "$AUTOCOMPLETE" 'follow agent-owned backward edges' 'autocomplete follows technical backtracking internally'

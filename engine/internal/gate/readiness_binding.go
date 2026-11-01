@@ -40,8 +40,9 @@ var readinessInputs = [...]readinessInput{
 }
 
 // ReadinessBinding returns the exact line Vet records in eng-review.md.
+// Explicit sources resolve live first, then safely archived planning bytes.
 func ReadinessBinding(root, slug string) (string, error) {
-	observation, err := state.ObserveWorkspace(root, slug)
+	observation, err := state.ObserveReferencedWorkspace(root, slug)
 	if err != nil {
 		return "", err
 	}
@@ -180,9 +181,9 @@ func withoutReviewedIdentity(content []byte) []byte {
 // ReadinessInputDigests returns each readiness input's content digest plus the
 // aggregate binding line Vet records in eng-review.md. A required input that
 // is missing, or any unreadable input, is an error — the same refusal the
-// readiness gate applies.
+// readiness gate applies. Source selection matches ReadinessBinding.
 func ReadinessInputDigests(root, slug string) ([]ReadinessInputDigest, string, error) {
-	observation, err := state.ObserveWorkspace(root, slug)
+	observation, err := state.ObserveReferencedWorkspace(root, slug)
 	if err != nil {
 		return nil, "", err
 	}

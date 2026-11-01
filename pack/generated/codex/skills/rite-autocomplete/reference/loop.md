@@ -67,12 +67,19 @@ Workspace files, not chat, carry state. Read/execute each phase skill:
 | 3 | `$rite-temper` | harden or reduce; `expand` and extra acceptance stop for a human; irreversible risk still pauses |
 | 4 | `$rite-define` | approved plan/tasks/traceability |
 | 5 | `$rite-vet` | every plan; derive mutable budget after READY |
-| 6 | `$rite-build` global frontier | execute [shared controller workflow](../../devrites-lib/reference/parallel-workspaces.md); scan authorized stages and repair/re-Vet while writers run, refill per landing under one global cap; charge each source once per landed slice |
+| 6 | `$rite-build` | execute shared controller selection/admission; charge each source once per landed slice |
 | 7 | `$rite-prove` | all slices built except deferred (`Satisfies: none`); approved proof; recovery on red |
 | 8 | `$rite-polish` | re-prove after code edits |
 | 9 | `$rite-review` | in-scope correction then fresh proof |
 | 10 | `$rite-seal` | GO/NO-GO; no Git |
 | 11 | `$rite-ship` | only after GO; `--ship` never authorizes Git; stop at literal-GO/native approval |
+
+At every phase entry, before cold/local recovery, on reviewer/planning returns and
+before native waits, Autocomplete executes the bounded
+[global frontier pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
+Keep source-local return cursors and pending handles; apply its protected
+validation window before accepting accounts or landing work. This scheduling
+precedes owner Seal and does not change ordered handoff below.
 
 Check [stop-conditions.md](stop-conditions.md) before advancing. Discard stale
 pass evidence after source edits. Re-read the selected source before each phase per [phase target binding](../../devrites-lib/reference/parallel-workspaces.md#phase-target-binding). On a cold resume or

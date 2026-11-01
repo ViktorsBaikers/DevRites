@@ -244,11 +244,40 @@ func ObserveWorkspace(root, slug string) (*WorkspaceObservation, error) {
 	return observeWorkspace(root, slug, nil)
 }
 
+// ObserveReferencedWorkspace acquires a read-only planning source, live first
+// and archived only when its canonical live directory is absent. A different
+// valid active-workspace override never redirects this explicit source.
+func ObserveReferencedWorkspace(root, slug string) (*WorkspaceObservation, error) {
+	return observeWorkspaceSource(root, slug, true, nil)
+}
+
 func observeWorkspace(root, slug string, callback observationCallback) (*WorkspaceObservation, error) {
-	if !observationWorkspaceOverrideValid(root, slug) {
+	return observeWorkspaceSource(root, slug, false, callback)
+}
+
+func observeWorkspaceSource(root, slug string, allowArchive bool, callback observationCallback) (*WorkspaceObservation, error) {
+	override := os.Getenv("DEVRITES_WORKSPACE")
+	overrideSlug := slug
+	if allowArchive && override != "" {
+		overrideSlug = filepath.Base(filepath.Clean(override))
+	}
+	if !observationWorkspaceOverrideValid(root, overrideSlug) {
 		return nil, ObservationWorkspaceInvalid
 	}
-	workspacePath, err := devritespaths.ExistingFeatureDirChecked(root, slug)
+	workspacePath, err := devritespaths.ExistingFeatureDirChecked(root, overrideSlug)
+	canArchive := allowArchive && override == ""
+	if overrideSlug != slug {
+		if err != nil {
+			return nil, ObservationWorkspaceInvalid
+		}
+		workspacePath, err = devritespaths.ExistingCanonicalFeatureDirChecked(root, slug)
+		canArchive = allowArchive
+	}
+	archived := false
+	if err != nil && canArchive && errors.Is(err, fs.ErrNotExist) {
+		workspacePath, err = devritespaths.ExistingArchivedFeatureDirChecked(root, slug)
+		archived = err == nil
+	}
 	if err != nil {
 		return nil, ObservationWorkspaceInvalid
 	}
@@ -270,6 +299,9 @@ func observeWorkspace(root, slug string, callback observationCallback) (*Workspa
 	}
 	defer func() { _ = roots.devrites.Close() }()
 	defer func() { _ = roots.workspace.Close() }()
+	if archived && !liveWorkspaceAbsent(roots.devrites, slug) {
+		return nil, ObservationWorkspaceInvalid
+	}
 
 	inventory := observationInventory()
 	facts := make([]ArtifactFact, 0, len(inventory))
@@ -315,7 +347,22 @@ func observeWorkspace(root, slug string, callback observationCallback) (*Workspa
 	if err != nil {
 		return nil, ObservationWorkspaceInvalid
 	}
+	if archived && !liveWorkspaceAbsent(roots.devrites, slug) {
+		return nil, ObservationConcurrentChange
+	}
 	return &WorkspaceObservation{slug: slug, facts: facts, index: index, rootFiles: rootFiles}, nil
+}
+
+func liveWorkspaceAbsent(root *os.Root, slug string) bool {
+	work := inspectEntry(root, "work")
+	if work.state == entryAbsent {
+		return true
+	}
+	if work.state != entryPresent || work.info.Mode()&os.ModeSymlink != 0 || !work.info.IsDir() {
+		return false
+	}
+	workspace := inspectEntry(root, filepath.Join("work", slug))
+	return workspace.state == entryAbsent && sameObservedEntry(work, inspectEntry(root, "work"))
 }
 
 // readRootFiles lists the workspace directory's regular entries through the

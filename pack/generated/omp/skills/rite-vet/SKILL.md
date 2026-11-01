@@ -78,6 +78,9 @@ plan declares a root-authored executable workflow file, read
    assumptions, and state. Require approved Plan and `Decision coverage: CLEAR`;
    otherwise stop for Define or Clarify. Check placement (`get_architecture`),
    blast radius (`trace_path`), and reuse (`search_graph`) per [`code-navigation.md`](skill://devrites-lib/reference/standards/code-navigation.md).
+   Under Autocomplete, return scheduling for its
+   [global frontier pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
+   before cold/local recovery; preserve Vet's source-local return cursor.
 1. **Select depth.** Apply `reference/depth.md` exactly; never skip. Initial passes
    record engineering verdict and test-plan coverage. Valid Recovery rechecks
    retain prior depth; enter 1b.
@@ -87,12 +90,18 @@ plan declares a root-authored executable workflow file, read
    parallel under `skill://devrites-lib/reference/parallel-dispatch.md`: independent
    read-only passes on one frozen candidate. Missing required account blocks.
    Meanwhile run root steps 2–4, including step 3 preflight commands, on that
-   candidate; reconcile returned accounts.
+   candidate. Under Autocomplete, before native wait return scheduling to its
+   global frontier pass with reviewer handles retained; standalone Vet stays
+   source-local. Apply the shared protected validation window and identity
+   recheck before reconciling returned accounts.
 1b. **Recovery recheck.** Require valid return cursor, accepted prior finding,
    exact fingerprint/reproduction, repaired candidate identity, changed
    paths/criteria, affected drift/evidence, and the recorded delta self-check.
    Freeze that packet and dispatch each exact owning reviewer once,
    fresh/read-only, limited to it — all its open fingerprints in that dispatch.
+   Under Autocomplete, before native wait use the same controller pass and retained
+   handles as step 1a; standalone Vet stays source-local. Apply the same
+   protected-window account admission.
    Do not rerun broad inventory or unaffected reviewers. Close the prior
    fingerprint only with discriminating evidence plus an explicit
    correction-created regression verdict on the touched invariants (acyclic
