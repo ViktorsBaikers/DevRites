@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.3.1](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.0...v7.3.1) (2026-11-01)
+
+### Fixed
+
+* **devrites:** keep workspace frontier active across phase waits ([#204](https://github.com/ViktorsBaikers/DevRites/issues/204)) ([56006f4](https://github.com/ViktorsBaikers/DevRites/commit/56006f4ca0545b4ede1ed81b0373e61b7cd7ce7d))
+
 ## [7.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.8...v7.3.0) (2026-11-01)
 
 ### Added
