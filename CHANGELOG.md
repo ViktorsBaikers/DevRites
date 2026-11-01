@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.3.0](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.8...v7.3.0) (2026-11-01)
+
+### Added
+
+* **devrites:** improve parallel throughput and proof integrity ([#203](https://github.com/ViktorsBaikers/DevRites/issues/203)) ([ac9c404](https://github.com/ViktorsBaikers/DevRites/commit/ac9c404908f3b709bfb76205aae0574e89bfcfe3))
+
 ## Unreleased
 
 ### Added
