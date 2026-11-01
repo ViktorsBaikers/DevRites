@@ -4686,7 +4686,7 @@ def command_output(command: list[str], env: dict[str, str] | None = None) -> sub
     return subprocess.run(command, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, timeout=120)
 
 
-def check_instruction_size_baseline(root: Path) -> tuple[int, int]:
+def check_instruction_size_baseline(root: Path) -> None:
     project = project_root_for_tests(root)
     with tempfile.TemporaryDirectory() as tmp:
         tree = Path(tmp)
@@ -4697,19 +4697,20 @@ def check_instruction_size_baseline(root: Path) -> tuple[int, int]:
             destination = tree / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / relative, destination)
-        measured = subprocess.run(
-            ["node", str(project / "scripts/check-instruction-size-baseline.mjs"),
-             "--root", str(tree), "--baseline", str(root / "tests/instruction-size-baseline.json")],
-            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}, text=True,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, timeout=120,
-        )
-        match = re.fullmatch(
-            r"instruction-size: ([0-9]+) instruction files checked, ([0-9]+) skill bytes\n",
-            measured.stdout,
-        )
-        require(measured.returncode == 0 and match is not None,
-                f"candidate instruction size: {measured.stdout[-1000:]}")
-        return tuple(map(int, match.groups()))
+        command = [
+            "node", str(project / "scripts/check-instruction-size-baseline.mjs"),
+            "--root", str(tree), "--baseline", str(root / "tests/instruction-size-baseline.json"),
+        ]
+        measured = command_output(command)
+        require(measured.returncode == 0, f"candidate instruction size: {measured.stdout[-1000:]}")
+        relative = "pack/.claude/skills/devrites-lib/reference/standards/workflow-artifacts.md"
+        limits = json.loads((root / "tests/instruction-size-baseline.json").read_text())["files"]
+        candidate = tree / relative
+        content = candidate.read_text().encode()
+        candidate.write_bytes(content + b"\n" * (limits[relative] - len(content) + 1))
+        rejected = command_output(command)
+        require(rejected.returncode == 1 and relative in rejected.stdout,
+                f"one-byte instruction overshoot accepted: {rejected.stdout[-1000:]}")
 
 
 def check_actual_engine_separation(root: Path) -> None:
@@ -7416,12 +7417,7 @@ def default_tests(root: Path) -> None:
         ("workspace_evidence_mapping", check_workspace_evidence_mapping),
         ("normal_generator_contract_delta", check_normal_generator_contract_delta),
         ("complete_stage_gate_failure_rollback", check_complete_stage_gate_failure_rollback),
-        ("instruction_size_baseline", lambda: (
-            (lambda measured: require(
-                measured[0] == 286 and measured[1] <= 1600000 and 1600000 - measured[1] > 14,
-                "instruction size count/cap/headroom",
-            ))(check_instruction_size_baseline(root))
-        )),
+        ("instruction_size_baseline", lambda: check_instruction_size_baseline(root)),
         ("walkthrough_outer_bound", check_walkthrough_outer_bound),
         ("golden_vector", check_golden_vector),
         ("markdown_backslash_parity", check_markdown_backslash_parity),

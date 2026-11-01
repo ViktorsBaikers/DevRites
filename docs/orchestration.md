@@ -141,19 +141,32 @@ base before native transfer, then re-proves the reconciled candidate. Missing tr
 conflict, extra paths, moved base, or cleanup failure stops with worktree evidence
 preserved. No ad hoc copy/cherry-pick/merge occurs from the read-only root.
 
-Isolation does not authorize same-worktree throughput. Parallel writers are allowed
-**only** under the `/rite-build` batch path when path-disjoint eligibility, abort-batch,
-and a control `parallel-lease.md` apply. `--parallel N` on `/rite-autocomplete`
-or `/rite-build` is the batch cap for that run and wins over leftover sentinel
-`max_parallel`; `/rite-autocomplete --parallel N` also writes or replaces only
-that field. Absent the flag, the sentinel (default cap 10 under
-`/rite-autocomplete`) is a **cap**: the run fills it
-with the largest eligible set, lands each sibling as soon as its review and proof are
-green, refills the freed slot (`parallel add`), and repeats until no pending slice
-remains; a one-slice round is serial for that round only (see
-[`parallel-batch.md`](../pack/.claude/skills/rite-build/reference/parallel-batch.md)).
-Same-worktree multi-writer and root-emulated worktrees remain forbidden; default
-`/rite-build` stays one writer across linked worktrees.
+Parallel writers use the `/rite-build` worktree lifecycle: independently vetted
+contracts, disjoint declared/hidden write surfaces, one retained controller lease,
+and per-sibling review/proof before serialized integration. `--parallel N` on
+Autocomplete is one global active-writer cap across authorized sequence workspaces;
+without the flag it uses AFK `max_parallel`, retained lease capacity on resume,
+else 10. No additional user flag is needed. Standalone Build remains scoped to
+its requested workspace.
+
+While a writer runs, Autocomplete prepares or re-Vets recorded continuations and
+refills from the whole eligible pool. A future slice needs an explicit, current
+Plan/Vet `Workspace dependencies` declaration; absent or stale declarations never
+become independence merely because files differ. Only durable integrated producer
+checkpoints release dependent work. Human/access/safety gates retain their scope.
+
+Each worker keeps its source workspace identity, isolated cwd, candidate, proof,
+state and `WIP(<source>):` checkpoint. Even a lone initial writer is isolated when
+using a parallel-capable controller, so later work can refill without creating
+same-tree co-writers. Explicit `--parallel 1` remains one writer total. Unsupported
+host isolation falls back truthfully to serial execution.
+
+The controller drains and cleans its lease before non-lease product corrections,
+shared Polish writes or checkpoints; unrelated control commits are never blessed
+as a new expected tip. Final per-workspace proof/Seal and exact release-union Ship
+approval remain mandatory. See the
+[controller workflow](../pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md)
+and [worktree lifecycle](../pack/.claude/skills/rite-build/reference/parallel-batch.md).
 
 ## Engine boundary
 

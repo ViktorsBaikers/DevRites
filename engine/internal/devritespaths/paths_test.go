@@ -57,6 +57,42 @@ func TestWorkspaceOverrideCheckedRequiresPhysicalRootContainment(t *testing.T) {
 	}
 }
 
+func TestWorkspaceOverrideCheckedRelativeRootRetainsScope(t *testing.T) {
+	project := t.TempDir()
+	root := filepath.Join(project, DevritesRootName)
+	workspace := filepath.Join(root, "work", "feature")
+	if err := os.MkdirAll(workspace, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.EqualFold(filepath.VolumeName(cwd), filepath.VolumeName(root)) {
+		t.Skip("relative paths cannot span filesystem volumes")
+	}
+	relativeRoot, err := filepath.Rel(cwd, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := filepath.EvalSymlinks(workspace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, override := range []string{workspace, filepath.Join(DevritesRootName, "work", "feature")} {
+		t.Setenv("DEVRITES_WORKSPACE", override)
+		got, err := WorkspaceOverrideChecked(relativeRoot, "feature")
+		if err != nil || got != want || os.Getenv("DEVRITES_WORKSPACE") != override {
+			t.Fatalf("relative root changed scope: got=%q err=%v override=%q", got, err, os.Getenv("DEVRITES_WORKSPACE"))
+		}
+	}
+	outside := filepath.Join(t.TempDir(), "feature")
+	t.Setenv("DEVRITES_WORKSPACE", outside)
+	if _, err := WorkspaceOverrideChecked(relativeRoot, "feature"); err == nil || !strings.Contains(err.Error(), "DRV-WORKSPACE-OUTSIDE-ROOT") {
+		t.Fatalf("relative root admitted outside workspace: %v", err)
+	}
+}
+
 func TestWorkspaceOverrideCheckedRejectsSymlinkEscapeAndSlugMismatch(t *testing.T) {
 	project := t.TempDir()
 	root := filepath.Join(project, DevritesRootName)

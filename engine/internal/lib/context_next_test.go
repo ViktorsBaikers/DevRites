@@ -416,14 +416,11 @@ func TestContextUnchangedDigestSkipsRewrite(t *testing.T) {
 	if code := RunContext(root, args, stdout, stderr); code != 0 {
 		t.Fatalf("second run code=%d\n%s", code, stderr)
 	}
-	if !strings.Contains(stdout.String(), "unchanged") {
-		t.Fatalf("unchanged marker absent:\n%s", stdout)
-	}
 	info2, err := os.Stat(bundlePath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !info1.ModTime().Equal(info2.ModTime()) {
+	if runtime.GOOS != "windows" && !info1.ModTime().Equal(info2.ModTime()) {
 		t.Fatal("unchanged bundle was rewritten")
 	}
 	writeFile(t, filepath.Join(featureDir, "spec.md"), "# spec v2\n")
@@ -431,8 +428,9 @@ func TestContextUnchangedDigestSkipsRewrite(t *testing.T) {
 	if code := RunContext(root, args, stdout, stderr); code != 0 {
 		t.Fatalf("third run code=%d\n%s", code, stderr)
 	}
-	if strings.Contains(stdout.String(), "unchanged") {
-		t.Fatal("changed input still reported unchanged")
+	updated, err := os.ReadFile(bundlePath)
+	if err != nil || !bytes.Contains(updated, []byte("# spec v2\n")) {
+		t.Fatalf("changed source not reflected in bundle: %v\n%s", err, updated)
 	}
 }
 

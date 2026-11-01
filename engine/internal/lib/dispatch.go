@@ -325,6 +325,8 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 					if err := lintReviewCandidate(root, slug, packet); err != nil {
 						return fail("BLOCKED: %v", err)
 					}
+				} else if err := lintPacketDiffs(root, slug, packet, false); err != nil {
+					return fail("BLOCKED: %v", err)
 				}
 				break
 			}

@@ -178,6 +178,8 @@ serializes: cut a slice that stands alone, or record `Serial rationale: <why>`.
 `check task-graph <slug> --strict` refuses a plan whose shared path carries `ADVISORY hub:`
 writers, so a contended plan must split disjointly instead of widening the cap.
 Never merge slices or drop acceptance to widen it.
+Apply the shared [avoidable-serialization audit](../../devrites-lib/reference/parallel-workspaces.md#recover-avoidable-serialization)
+before accepting a serial frontier; independent cuts must still pass this section's vertical sizing rules.
 
 ## Deferred slice
 A slice with `Satisfies: none` is an optional follow-up: plan-invented hardening or

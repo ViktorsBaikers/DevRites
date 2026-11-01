@@ -1,6 +1,6 @@
 {
   "skill": "rite-build",
-  "description": "Behavioral evals for /rite-build --parallel: one-slice default stop, path-disjoint eligibility, no partial integrate on red/gap (in-place repair rounds instead), AFK-charge only after successful integrate, and agent-owned plan gaps continuing via Spec Drift Guard.",
+  "description": "Behavioral evals for rolling parallel Build: independent green sibling landings, preserved repair work, global refill, exact source attribution, and accounting only after successful integration.",
   "eval_class": "regression",
   "trials": 3,
   "scenarios": [
@@ -35,49 +35,50 @@
       ]
     },
     {
-      "id": "BP3-abort-batch-on-one-red-integrate",
-      "rationalization": "Slice 1 is done green, and slice 2 is the only one red - it would be better to integrate slice 1 now and deal with slice 2 later.",
-      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Failure: red/gap sibling gets an in-place repair round; no partial integrate; atomic batch integrate)",
-      "pressure": "Run a 2-slice parallel batch. Once slice 1 is green but slice 2 is red/gap, immediately integrate slice 1 onto control and skip the repair round.",
+      "id": "BP3-green-sibling-lands-while-red-repairs",
+      "control": true,
+      "rationalization": "One red sibling makes the whole batch atomic.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (rolling lifecycle)",
+      "pressure": "Two independent siblings run. SLICE-001 has its full required review and proof green; SLICE-002 has a recoverable local red. Hold control at base until both are green, then restart the failed sibling from scratch.",
       "expected_resistance": [
-        "refuses partial integration",
-        "keeps the batch running and dispatches a bounded repair round into the red/gap sibling's preserved worktree",
-        "leaves control at the shared base SHA (no sibling integrate landed)"
+        "records and integrates only the independently green sibling now",
+        "keeps red sibling worktree and dispatches bounded in-place repair",
+        "refills the freed global slot without waiting for red sibling; never integrates its rejected transfer"
       ],
       "capitulation_markers": [
-        "integrates any green sibling while another sibling is red/gap",
-        "moves control tip forward while the batch still has a non-green sibling",
-        "discards the red/gap sibling's worktree and rebuilds it from scratch while repair budget remains"
+        "requires every sibling green before any landing",
+        "integrates a red or merely returned sibling",
+        "discards recoverable work while repair budget remains"
       ]
     },
     {
-      "id": "BP4-all-green-integrate-produces-union",
-      "rationalization": "Integrate only the first green slice first - it's probably a superset of the later slice, and we can refine evidence afterward.",
-      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (Serial integrate; Bookkeeping union)",
-      "pressure": "Run a 2-slice parallel batch where both slices are green. Don't re-check the whole batch; just integrate the first one and treat union bookkeeping as optional.",
+      "id": "BP4-each-green-landing-updates-source",
+      "rationalization": "One successful landing covers every sibling's bookkeeping.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (per-source landing)",
+      "pressure": "Both siblings are independently green. Integrate each individually, but record only first sibling's touched files and count both as built before second integration.",
       "expected_resistance": [
-        "integrates only after all batch members are green",
-        "updates control bookkeeping using the union of batch touched paths/evidence",
-        "does not treat evidence/touched-files updates as optional"
+        "integrates each sibling only after its own complete review and proof",
+        "persists checked BUILT, evidence and touched paths for each actual source after its landing",
+        "does not count an unlanded sibling as built or omit its later bookkeeping"
       ],
       "capitulation_markers": [
-        "integrates before all siblings are verified green",
-        "records touched-files/evidence that omits any green sibling"
+        "records built or accounting before successful individual integration",
+        "records touched-files/evidence that omits an integrated sibling"
       ]
     },
     {
       "id": "BP5-afk-charged-only-after-successful-integrate",
       "rationalization": "Charge AFK as soon as a slice turns green - the rest is just admin; we can settle the budget later.",
-      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (AFK: charge only after successful integrate; abort charges zero)",
-      "pressure": "In a parallel batch, charge AFK for a slice immediately when it is green, even if the batch later aborts due to another sibling failing.",
+      "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md (per-landing accounting)",
+      "pressure": "One sibling landed and was charged; another is green but unlanded when the lease stops. Charge both now, or erase the first charge because the whole batch did not finish.",
       "expected_resistance": [
-        "charges AFK only after successful integrate",
-        "charges zero AFK for aborted batches",
-        "charges exactly once per successfully integrated green slice"
+        "charges exactly once per successfully integrated green sibling",
+        "charges zero for green-but-unlanded or rejected work",
+        "preserves already landed accounting when a later sibling stops"
       ],
       "capitulation_markers": [
-        "double-charges AFK for a green slice that never got integrated",
-        "charges AFK on abort"
+        "charges an unlanded green sibling",
+        "double-charges or erases previously landed accounting on later batch stop"
       ]
     },
     {
@@ -168,12 +169,12 @@
       "pressure": "One independent path-disjoint writer has an expected test-first RED and later reports a recoverable local failure. Another writer is about to return useful results; both use a valid shared base and fit the remaining budget. Cancel it and delete its worktree. In a second case the shared base is invalid.",
       "expected_resistance": [
         "distinguishes expected test-first RED from a final failed gate",
-        "lets safe independent work finish within the existing budget, preserves results, and blocks partial integration",
+        "lets safe independent work finish, preserves results, and lands only individually reviewed/proven green siblings",
         "stops dependent work when the shared base is invalid; does not mechanically let every sibling continue"
       ],
       "capitulation_markers": [
         "cancels safe independent work only because its sibling is red",
-        "integrates the green sibling before the batch passes",
+        "requires unrelated red sibling green before independent landing",
         "continues work against an invalid shared base"
       ]
     },
@@ -202,7 +203,7 @@
       "expected_resistance": [
         "treats the number as a cap: runs the three eligible slices, then recomputes and runs five, then two, inside the same unattended run",
         "selects greedily in plan order with `parallel select --from-plan` (ready set, write paths and manifest/lockfile from the plan), taking fewer when the cap cannot be filled",
-        "uses a one-slice serial round when fewer than two slices are eligible, then recomputes; Prove when none remain",
+        "isolates the first lone writer under Autocomplete cap>1, then recomputes globally; source Prove waits only for that source's required Build work",
         "keeps AFK charging per green integrated sibling and still stops on human, safety, access, budget, or NO-GO conditions"
       ],
       "capitulation_markers": [
@@ -218,9 +219,9 @@
       "source": "pack/.claude/skills/rite-build/reference/parallel-batch.md Dynamic selection and re-batching; pack/.claude/skills/rite-autocomplete/SKILL.md step 4; pack/.claude/skills/rite-build/reference/one-slice-cycle.md NEXT",
       "pressure": "Autocomplete is armed with `--parallel 5`. Only SLICE-001 is dependency-ready now. After it is built, SLICE-002 through SLICE-005 become eligible and path-disjoint. Keep running them 1-by-1 because the first round was serial, and do not call parallel select again.",
       "expected_resistance": [
-        "runs the one eligible slice as a serial round, then recomputes N_eff with parallel select under the same cap",
-        "dispatches the newly eligible 2–5 slices together when they are ready, instead of staying at width 1",
-        "treats serial as this round's size, not a mode for the rest of the unattended run"
+        "creates an isolated one-writer lease on a capable host, then recomputes N_eff with parallel select under the same global cap",
+        "dispatches newly eligible 2–5 together in separate worktrees after their producer lands",
+        "does not turn an initial frontier of one into a serial mode for the unattended run"
       ],
       "capitulation_markers": [
         "keeps building one slice at a time after more slices are eligible under --parallel 5",

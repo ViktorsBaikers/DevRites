@@ -33,6 +33,8 @@ func setupRepo(t *testing.T) (repo, base string) {
 	t.Helper()
 	repo = t.TempDir()
 	gitOk(t, repo, "init")
+	// Keep fixture and sanitized production Git on the same checkout policy.
+	gitOk(t, repo, "config", "core.autocrlf", "false")
 	gitOk(t, repo, "checkout", "-b", "main")
 	if err := os.MkdirAll(filepath.Join(repo, "src"), 0o755); err != nil {
 		t.Fatal(err)
@@ -310,13 +312,13 @@ func TestCreateRefusesCountOutsideBounds(t *testing.T) {
 	repo, base := setupRepo(t)
 	_, err := Create(CreateOpts{
 		Root:    repo,
-		Slug:    "demo-one",
+		Slug:    "demo-empty",
 		BatchID: "batch1",
 		BaseSHA: base,
-		Slices:  []SlicePaths{{ID: "slice-a", Paths: []string{"src/a.go"}}},
+		Slices:  nil,
 	})
-	if err == nil || !strings.Contains(err.Error(), "2-10 slices") {
-		t.Fatalf("expected 2-10 bound for N=1, got %v", err)
+	if err == nil {
+		t.Fatal("create accepted no writers")
 	}
 
 	slices := make([]SlicePaths, MaxParallelSlices+1)
@@ -337,8 +339,8 @@ func TestCreateRefusesCountOutsideBounds(t *testing.T) {
 		BaseSHA: base,
 		Slices:  slices,
 	})
-	if err == nil || !strings.Contains(err.Error(), "2-10 slices") {
-		t.Fatalf("expected 2-10 bound for N=11, got %v", err)
+	if err == nil {
+		t.Fatal("create accepted more than ten writers")
 	}
 }
 
@@ -349,7 +351,7 @@ func TestValidateLeaseBounds(t *testing.T) {
 		t.Fatalf("N=%d should validate: %v", MaxParallelSlices, err)
 	}
 	tooMany := validTestLease(MaxParallelSlices + 1)
-	if err := ValidateLease(tooMany); err == nil || !strings.Contains(err.Error(), "2-10 slices") {
+	if err := ValidateLease(tooMany); err == nil {
 		t.Fatalf("N=%d should refuse, got %v", MaxParallelSlices+1, err)
 	}
 }

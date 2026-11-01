@@ -3,6 +3,7 @@ package lib
 import (
 	"bytes"
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -23,7 +24,7 @@ func TestDetectMakefileWins(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d out=%s", code, out)
 	}
-	for _, want := range []string{"make test", "make lint", "make build", "go vet ./...", "go test -tags=integration"} {
+	for _, want := range []string{"make test", "make lint", "make build", "go vet ./..."} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q in:\n%s", want, out)
 		}
@@ -115,4 +116,41 @@ func TestDetectUsageError(t *testing.T) {
 	if code := RunDetectCommands("", []string{"commands", "--bogus"}, stdout, stderr); code != 2 {
 		t.Fatalf("bad flag should be usage error, got %d", code)
 	}
+}
+
+func TestDetectIntegrationRequiresExplicitRepositoryCommand(t *testing.T) {
+	for _, manifest := range []string{"go.mod", "Cargo.toml", "pyproject.toml", "setup.py", "pom.xml", "build.gradle", "composer.json", "Gemfile", "mix.exs"} {
+		t.Run(manifest, func(t *testing.T) {
+			root := t.TempDir()
+			writeFile(t, root+"/"+manifest, "")
+			report := detectCommands(root)
+			for _, command := range report.Commands {
+				if command.Name == "integration" {
+					t.Fatalf("manifest alone invented integration suite: %+v", command)
+				}
+			}
+			if !slices.Contains(report.Unresolved, "integration") {
+				t.Fatalf("integration must remain unresolved: %+v", report)
+			}
+			writeFile(t, root+"/Makefile", "test-integration:\n\t./scripts/real-integration\n")
+			report = detectCommands(root)
+			found := false
+			for _, command := range report.Commands {
+				if command.Name == "integration" && command.Command == "make test-integration" {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatalf("explicit integration target not resolved: %+v", report)
+			}
+		})
+	}
+	root := t.TempDir()
+	writeFile(t, root+"/package.json", `{"scripts":{"test:integration":"node integration.js"}}`)
+	for _, command := range detectCommands(root).Commands {
+		if command.Name == "integration" && command.Command == "npm run test:integration" {
+			return
+		}
+	}
+	t.Fatal("explicit package integration script not resolved")
 }

@@ -47,9 +47,13 @@ func WorkspaceOverrideChecked(root, slug string) (string, error) {
 	if raw == "" {
 		return "", nil
 	}
+	absoluteRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: resolve DevRites root %q: %w", root, err)
+	}
 	path := raw
 	if !filepath.IsAbs(path) {
-		path = filepath.Join(filepath.Dir(root), path)
+		path = filepath.Join(filepath.Dir(absoluteRoot), path)
 	}
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -59,10 +63,10 @@ func WorkspaceOverrideChecked(root, slug string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: resolve DEVRITES_WORKSPACE %q: %w", raw, err)
 	}
-	if !safepath.WithinResolved(path, root) {
+	if !safepath.WithinResolved(path, absoluteRoot) {
 		return "", fmt.Errorf("DRV-WORKSPACE-OUTSIDE-ROOT: DEVRITES_WORKSPACE %q is outside %q; run `unset DEVRITES_WORKSPACE`", raw, root)
 	}
-	resolvedRoot, err := safepath.ResolveExisting(root)
+	resolvedRoot, err := safepath.ResolveExisting(absoluteRoot)
 	if err != nil {
 		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: resolve DevRites root %q: %w", root, err)
 	}
@@ -113,6 +117,15 @@ func ExistingFeatureDirChecked(root, slug string) (string, error) {
 			return "", fmt.Errorf("no workspace for feature %q at %s (DEVRITES_WORKSPACE; state.md missing): %w", slug, ws, os.ErrNotExist)
 		}
 		return ws, nil
+	}
+	return ExistingCanonicalFeatureDirChecked(root, slug)
+}
+
+// ExistingCanonicalFeatureDirChecked resolves an explicit producer workspace
+// inside root without redirecting it through a consumer's workspace override.
+func ExistingCanonicalFeatureDirChecked(root, slug string) (string, error) {
+	if !ValidSlug(slug) {
+		return "", fmt.Errorf("DRV-WORKSPACE-INVALID: %q is not a feature slug", slug)
 	}
 	candidate := filepath.Join(root, "work", slug)
 	resolved, err := checkedCanonicalDir(root, candidate, "work", slug)

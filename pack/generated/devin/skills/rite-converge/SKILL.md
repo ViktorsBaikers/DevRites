@@ -4,7 +4,7 @@ description: Converge intent and live code. Use when resuming a half-built featu
 argument-hint: "[feature-slug]"
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/testing.md","rite-converge/reference/convergence-assessment.md","rite-converge/reference/anti-patterns.md","rite-build/reference/spec-drift-guard.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"principles":["devrites-lib/reference/standards/principles.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md"],"workspaceByRole":{"evidence-scout":["spec.md","plan.md","tasks.md","state.md","evidence.md"]},"rootOnly":["devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/tooling.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/testing.md","rite-converge/reference/convergence-assessment.md","rite-converge/reference/anti-patterns.md","rite-build/reference/spec-drift-guard.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"principles":["devrites-lib/reference/standards/principles.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md"],"workspaceByRole":{"evidence-scout":["spec.md","plan.md","tasks.md","state.md","evidence.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/tooling.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --phase converge` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -15,7 +15,7 @@ Read `spec.md`, `plan.md`, and `tasks.md` as the **sole source of intent** (with
 implements, and **append every unmet piece as a new traceable `SLICE-###`** at the
 bottom of `tasks.md` so `/rite-build` can finish it. Use this for a resumed half-built
 feature, an adopted codebase that drifted from its derived spec, or a build that stalled
-mid-slice. **Read the active
+mid-slice. **Read the selected source
 workspace first**; if there's no `spec.md`/`plan.md`/`tasks.md`, tell the user which
 prerequisite skill to run.
 
@@ -73,9 +73,9 @@ Pull on demand:
 ## Workflow
 
 0. **Read `.devin/skills/devrites-lib/reference/standards/core.md`** first (the always-on
-   operating rules), then resolve the active slug, require its `state.md`, and
+   operating rules), then resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require its `state.md`, and
    read the cursor directly.
-1. **Confirm the gate.** Require `spec.md` + `plan.md` + `tasks.md` in the active workspace. If
+1. **Confirm the gate.** Require `spec.md` + `plan.md` + `tasks.md` in that source workspace. If
    any is missing, **STOP** and name the prerequisite (`/rite-spec` for a missing spec,
    `/rite-define` for a missing plan/tasks, `/rite-adopt` to onboard existing code). Do not
    produce partial output.

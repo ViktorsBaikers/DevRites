@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -80,6 +81,22 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 	if err != nil {
 		return fail(err)
 	}
+	code := 0
+	if err := state.WithFeatureLock(root, slug, func() error {
+		code = freezeCandidateLocked(root, slug, workspace, wave, slice, base, worktree, paths, stdout, stderr)
+		return nil
+	}); err != nil {
+		return fail(err)
+	}
+	return code
+}
+
+func freezeCandidateLocked(root, slug, workspace, wave, slice, base, worktree string, paths []string, stdout, stderr io.Writer) int {
+	fail := func(err error) int {
+		fmt.Fprintf(stderr, "candidate freeze: %v\n", err)
+		return 3
+	}
+	var err error
 	if slice != "" {
 		if paths, err = slicePaths(root, slug, slice); err != nil {
 			return fail(err)
@@ -98,12 +115,9 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 	if err := validateCandidateRows(project, rows); err != nil {
 		return fail(err)
 	}
-	diff, baseCommit, err := freezeDiff(project, base, rows)
+	digest, err := hashCandidate(project, rows, true)
 	if err != nil {
 		return fail(err)
-	}
-	if len(diff) == 0 {
-		return fail(errors.New("the path set has no change against the base; there is no candidate to freeze"))
 	}
 	head := ""
 	if worktree != "" {
@@ -115,24 +129,27 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 		if len(dirty) != 0 {
 			return fail(errors.New("the worktree has uncommitted changes on the path set; the frozen candidate must be its HEAD transfer commit"))
 		}
-		head = "head " + commit + "\n"
+		head = commit
 	}
-	digest, err := hashCandidate(project, rows)
+	diff, baseCommit, err := freezeDiff(project, base, rows)
 	if err != nil {
 		return fail(err)
 	}
+	if len(diff) == 0 {
+		return fail(errors.New("the path set has no change against the base; there is no candidate to freeze"))
+	}
 	var sums strings.Builder
-	fmt.Fprintf(&sums, "%s %s\nbase %s\n%sdiff %x packets/%s.diff\n", candidateDigestDomain, candidateDigestVersion, baseCommit, head, sha256.Sum256(diff), wave)
+	fmt.Fprintf(&sums, "%s %s\nbase %s\n", candidateDigestDomain, candidateDigestVersion, baseCommit)
+	if head != "" {
+		fmt.Fprintf(&sums, "head %s\n", head)
+	}
+	fmt.Fprintf(&sums, "diff %x packets/%s.diff\n", sha256.Sum256(diff), wave)
 	for _, row := range rows {
 		if row.state != "present" {
 			fmt.Fprintf(&sums, "file absent %s\n", row.path)
 			continue
 		}
-		file := sha256.New()
-		if err := hashCandidateFile(file, project, row); err != nil {
-			return fail(fmt.Errorf("candidate %q: %w", row.path, err))
-		}
-		fmt.Fprintf(&sums, "file %x %s\n", file.Sum(nil), row.path)
+		fmt.Fprintf(&sums, "file %s %s\n", row.fileDigest, row.path)
 	}
 	fmt.Fprintf(&sums, "aggregate %s\n", digest)
 
@@ -141,6 +158,9 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 	if prev, err := readBoundedRegularFile(sumPath, workspaceArtifactLimit); err == nil && string(prev) != sums.String() {
 		return fail(fmt.Errorf("packets/%s.sha256 already freezes a different candidate; a frozen candidate is never replaced, so freeze this one under a new wave", wave))
 	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fail(err)
+	}
+	if err := revalidateFrozenCandidate(project, baseCommit, rows, digest, diff, head); err != nil {
 		return fail(err)
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -155,6 +175,34 @@ func RunCandidateFreeze(root string, args []string, stdout, stderr io.Writer) in
 	rel := workspaceRel(root, workspace)
 	fmt.Fprintf(stdout, "candidate: %s (%d paths, base %s)\ndiff: %s/packets/%s.diff\nsha256: %s/packets/%s.sha256\n", digest, len(rows), baseCommit, rel, wave, rel, wave)
 	return 0
+}
+
+// Bracket Git's mutable worktree reads; refuse observed drift, not a filesystem snapshot guarantee.
+func revalidateFrozenCandidate(project, base string, rows []candidateRow, digest string, diff []byte, head string) error {
+	currentDiff, commit, err := freezeDiff(project, base, rows)
+	if err != nil {
+		return err
+	}
+	if commit != base || !bytes.Equal(currentDiff, diff) {
+		return errors.New("candidate diff changed during freeze; retry under a new wave")
+	}
+	current, err := hashCandidate(project, rows, false)
+	if err != nil {
+		return fmt.Errorf("candidate changed during freeze: %w", err)
+	}
+	if current != digest {
+		return errors.New("candidate bytes changed during freeze; retry under a new wave")
+	}
+	if head != "" {
+		dirty, currentHead, err := freezeDiff(project, "HEAD", rows)
+		if err != nil {
+			return err
+		}
+		if currentHead != head || len(dirty) != 0 {
+			return errors.New("worktree HEAD or path set changed during freeze; candidate must remain its clean transfer commit")
+		}
+	}
+	return nil
 }
 
 // slicePaths is the slice's tasks.md write set: Writer allowlist, else Files

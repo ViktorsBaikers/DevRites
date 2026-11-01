@@ -5,15 +5,15 @@ argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-cor
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/agents.md","rite-plan/reference/slicing.md","rite-plan/reference/replan-and-repair.md","rite-plan/reference/dependency-graph.md","rite-plan/reference/task-breakdown.md","rite-plan/reference/anti-patterns.md","rite-define/reference/plan-template.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","drift.md"],"workspaceByRole":{"evidence-scout":["spec.md","architecture.md","decisions.md","state.md"],"plan-drafter":["brief.md","spec.md","plan.md","tasks.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","state.md","drift.md"]},"rootOnly":["devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/workflow-artifacts.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/agents.md","rite-plan/reference/slicing.md","rite-plan/reference/replan-and-repair.md","rite-plan/reference/dependency-graph.md","rite-plan/reference/task-breakdown.md","rite-plan/reference/anti-patterns.md","rite-define/reference/plan-template.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","drift.md"],"workspaceByRole":{"evidence-scout":["spec.md","architecture.md","decisions.md","state.md"],"plan-drafter":["brief.md","spec.md","plan.md","tasks.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","state.md","drift.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/workflow-artifacts.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --phase plan` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
 # $rite-plan: (re)plan an active feature
 
-Update a plan invalidated by evidence, drift, or user decision. **Read the active workspace
-first.** Missing `.devrites/ACTIVE`/workspace stops to `$rite-spec <feature>`. **Revise is
-artifact-only**: reconcile
+Update a plan invalidated by evidence, drift, or user decision. **Read the selected
+source workspace first.** A missing selected workspace stops to `$rite-spec <feature>`.
+**Revise is artifact-only**: reconcile
 `spec.md` / `architecture.md` / `plan.md` / `tasks.md` / `traceability.md` without
 editing source code.
 
@@ -40,8 +40,9 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
   [`slicing.md`](reference/slicing.md).
 - **Size by complexity, order by dependency.** A slice carries a `Complexity: N/5` score (from
   `$rite-define`); a slice scoring **>3** is a reslice trigger unless its inline reason justifies
-  the irreducible complexity. Honor each slice's `depends_on:`: the next *buildable* slice is the
-  lowest pending one whose dependencies are all built. This preserves one-slice-at-a-time execution.
+  the irreducible complexity. Honor local `depends_on` and explicit `Workspace
+  dependencies`; only built producer checkpoints unblock consumers. Ready
+  independent slices may run together under the controlling caller's cap.
 - **Root writes; drafter proposes.** Follow
   [`agents.md`](../devrites-lib/reference/standards/agents.md). The controlling chat owns
   human questions, decisions, reconciliation, and planning writes.
@@ -52,7 +53,7 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
 
 ## Workflow
 0. Read `.agents/skills/devrites-lib/reference/standards/core.md` (operating rules) before reshaping anything.
-   Then resolve the explicit or active slug, require its `state.md`, and read
+   Then resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require its `state.md`, and read
    the cursor directly.
 1. Read `spec.md`, `decision-coverage.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`,
    `eng-review.md`, and the current `git diff` (if a repo). Read `decisions.md` and
@@ -84,6 +85,8 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
    affected artifacts, settled contract, and failure/drift; a slice-bound repair
    builds its bundle with `--slice <SLICE-ID>` per affected slice. Await one atomic, read-only
    the drafter's `candidate_files` bundle; human choices return separately.
+   For a capacity-driven repair, include the shared [serialization audit](../devrites-lib/reference/parallel-workspaces.md#recover-avoidable-serialization)
+   and its concrete blocked edges, independent cut, retained-worker impact and unchanged gates in that frozen scope.
    When the observed failure is missing or ambiguous consumptive-action evidence,
    require the drafter to apply [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md) and return the bounded
    diagnostic-amplification design, injective boundary map, per-seam fixtures, and
@@ -131,7 +134,7 @@ Before classifying any Reslice, read `.agents/skills/devrites-lib/reference/stan
    `$rite-clarify`. AFK records the suspect seam in `state.md` and continues
    within budgets — a coverage limitation is a product decision and is never
    auto-declared.
-   Bind exact active `.devrites/work/<slug>/` targets and executable contract; after Vet READY, root
+   Bind exact source `.devrites/work/<slug>/` targets and executable contract; after Vet READY, root
    materializes the exact vetted workflow-artifact paths under
    [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md)
    without dispatching the product wright.

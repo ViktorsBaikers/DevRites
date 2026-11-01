@@ -180,7 +180,7 @@ func pathSetIdentity(project string, paths []string) (candidateIdentity, error) 
 	if err != nil {
 		return candidateIdentity{}, err
 	}
-	digest, err := hashCandidate(project, rows)
+	digest, err := hashCandidate(project, rows, false)
 	return candidateIdentity{digest: digest, rows: rows}, err
 }
 
@@ -244,7 +244,7 @@ func runPerturbProbe(project string, identity candidateIdentity, gate *acceptanc
 		probe.reason = "candidate copy failed: " + oneLine(err.Error())
 		return probe
 	}
-	if probe.copyStart, err = hashCandidate(base, rows); err != nil || probe.copyStart != identity.digest {
+	if probe.copyStart, err = hashCandidate(base, rows, false); err != nil || probe.copyStart != identity.digest {
 		probe.reason = "the isolated copy does not hash to the candidate digest"
 		return probe
 	}
@@ -267,7 +267,7 @@ func runPerturbProbe(project string, identity candidateIdentity, gate *acceptanc
 		return probe
 	}
 	if err := validateCandidateRows(base, rows); err == nil {
-		probe.copyRestored, _ = hashCandidate(base, rows)
+		probe.copyRestored, _ = hashCandidate(base, rows, false)
 	}
 	if probe.copyRestored != identity.digest {
 		probe.reason = "the reverted copy does not hash to the candidate digest"

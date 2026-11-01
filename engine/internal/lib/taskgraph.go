@@ -201,34 +201,10 @@ func PrecheckSkips(root, slug, slice string, gateIDs []string) (map[string]strin
 // manifest and lockfile when it declares external dependencies. root is the
 // .devrites directory.
 func planReady(root, slug string) ([]parallel.SlicePaths, error) {
-	raw, err := readWorkspaceArtifact(root, slug, "tasks.md")
-	if err != nil {
-		return nil, err
-	}
-	graph := ParseTaskGraph(raw)
-	if len(graph.Problems) > 0 {
-		return nil, fmt.Errorf("tasks.md: %s", strings.Join(graph.Problems, "; "))
-	}
-	built, err := builtSlices(root, slug)
-	if err != nil {
-		return nil, err
-	}
-	isBuilt := func(id string) bool { return built[sliceNumber(id)] }
-	paths, _ := sliceWritePaths(raw, graph)
-	project := filepath.Dir(root)
-	var ready []parallel.SlicePaths
-	for _, s := range graph.Slices {
-		if isBuilt(s.ID) || slices.ContainsFunc(s.Dependencies, func(dep string) bool { return !isBuilt(dep) }) {
-			continue
-		}
-		if len(paths[s.ID]) == 0 {
-			return nil, fmt.Errorf("%s has no Writer allowlist or Files likely touched", s.ID)
-		}
-		block, _ := state.ExtractTaskSlice(raw, s.ID)
-		external, _ := fieldValue(sliceFields(block), "external dependencies")
-		ready = append(ready, parallel.SlicePaths{ID: s.ID, Paths: withManifests(project, paths[s.ID], external)})
-	}
-	return ready, nil
+	ready, _, err := workspacePlanReady(root, slug, false, func(name string) ([]byte, error) {
+		return readWorkspaceArtifact(root, slug, name)
+	})
+	return ready, err
 }
 
 // builtWordRe marks a checked state.md item as a built checkpoint.
@@ -240,7 +216,13 @@ var builtWordRe = regexp.MustCompile(`(?i)\bbuilt\b`)
 // was checkpointed and whose section has a `Checkpoint: <sha>` line — a missed
 // checkbox must not keep dependents out of the ready set.
 func builtSlices(root, slug string) (map[string]bool, error) {
-	raw, err := readWorkspaceArtifact(root, slug, "state.md")
+	return builtSlicesFrom(func(name string) ([]byte, error) {
+		return readWorkspaceArtifact(root, slug, name)
+	})
+}
+
+func builtSlicesFrom(read func(string) ([]byte, error)) (map[string]bool, error) {
+	raw, err := read("state.md")
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +239,7 @@ func builtSlices(root, slug string) (map[string]bool, error) {
 			built[strings.TrimLeft(m[1], "0")] = true
 		}
 	}
-	extra, err := evidenceBuilt(root, slug)
+	extra, err := evidenceBuiltFrom(read)
 	if err != nil {
 		return nil, err
 	}
@@ -273,9 +255,9 @@ var (
 	checkpointSHARe       = regexp.MustCompile(`(?m)^[ \t]*Checkpoint: [0-9a-fA-F]{7,40}\b`)
 )
 
-// evidenceBuilt reads evidence.md checkpoint sections. A missing file is none.
-func evidenceBuilt(root, slug string) (map[string]bool, error) {
-	raw, err := readWorkspaceArtifact(root, slug, "evidence.md")
+// evidenceBuiltFrom reads evidence.md checkpoint sections. A missing file is none.
+func evidenceBuiltFrom(read func(string) ([]byte, error)) (map[string]bool, error) {
+	raw, err := read("evidence.md")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return map[string]bool{}, nil
@@ -421,9 +403,11 @@ func planBatch(root, slug string, capN int) (eligible, batch []string, err error
 		return nil, nil, err
 	}
 	ids := func(in []parallel.SlicePaths) []string {
-		out := make([]string, len(in))
-		for i, s := range in {
-			out[i] = s.ID
+		var out []string
+		for _, s := range in {
+			if s.Workspace == "" || s.Workspace == slug {
+				out = append(out, s.ID)
+			}
 		}
 		return out
 	}

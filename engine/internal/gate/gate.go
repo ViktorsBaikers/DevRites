@@ -51,6 +51,12 @@ func Check(kind Kind, root, slug string) (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gate %s: %w", kind, err)
 	}
+	return CheckObserved(kind, root, observation)
+}
+
+// CheckObserved checks retained facts acquired from root, so a caller can use
+// those same vetted bytes for subsequent admission without rereading the workspace.
+func CheckObserved(kind Kind, root string, observation *state.WorkspaceObservation) (*Result, error) {
 	result, err := checkObservation(kind, observation)
 	if err != nil {
 		return nil, fmt.Errorf("gate %s: %w", kind, err)

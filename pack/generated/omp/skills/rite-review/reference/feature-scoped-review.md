@@ -1,7 +1,7 @@
 # Feature-scoped review
 
-The review boundary is the **active feature**: the files in `touched-files.md` and the
-current diff. This is a hard rule, not a guideline.
+The review boundary is the **selected source feature** per [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding):
+its `touched-files.md` and current diff. This is a hard rule, not a guideline.
 
 ## In scope
 - Code added/changed by this feature.

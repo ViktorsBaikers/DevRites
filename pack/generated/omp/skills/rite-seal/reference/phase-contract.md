@@ -1,6 +1,6 @@
 # rite-seal phase contract
 
-1. **Read.** Resolve the explicit slug or `.devrites/ACTIVE`, require its
+1. **Read.** Resolve source per [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require its
    `state.md`, then read required workspace artifacts, conditional
    browser/design/devex evidence, and final diff.
 2. **Recheck identity and real proof.** Run

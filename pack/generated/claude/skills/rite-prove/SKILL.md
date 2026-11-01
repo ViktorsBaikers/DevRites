@@ -5,7 +5,7 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/candidate-integrity.md","devrites-lib/reference/standards/testing.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/test-proof-checklist.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/gates.md","devrites-lib/reference/standards/verification-methods.md","rite-prove/reference/acceptance-proof.md","rite-prove/reference/proof-ladder.md","rite-prove/reference/failure-triage.md","rite-prove/reference/test-command-discovery.md","rite-prove/reference/anti-patterns.md","rite-build/reference/checkpoint.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"browser":["devrites-lib/reference/standards/browser-proof-checklist.md","rite-prove/reference/browser-proof.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"observability":["devrites-lib/reference/standards/observability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md","touched-files.md","browser-evidence.md"],"workspaceByRole":{"proof-runner":["spec.md","test-plan.md","tasks.md","gates.md","evidence.md","touched-files.md","browser-evidence.md","state.md"],"spec-reviewer":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","state.md"]},"rootOnly":["rite-build/reference/checkpoint.md","devrites-lib/reference/standards/workflow-artifacts.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/candidate-integrity.md","devrites-lib/reference/standards/testing.md","devrites-lib/reference/standards/spec-grammar.md","devrites-lib/reference/standards/test-proof-checklist.md","devrites-lib/reference/standards/agents.md","devrites-lib/reference/standards/gates.md","devrites-lib/reference/standards/verification-methods.md","rite-prove/reference/acceptance-proof.md","rite-prove/reference/proof-ladder.md","rite-prove/reference/failure-triage.md","rite-prove/reference/test-command-discovery.md","rite-prove/reference/anti-patterns.md","rite-build/reference/checkpoint.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"browser":["devrites-lib/reference/standards/browser-proof-checklist.md","rite-prove/reference/browser-proof.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"observability":["devrites-lib/reference/standards/observability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","evidence.md","touched-files.md","browser-evidence.md"],"workspaceByRole":{"proof-runner":["spec.md","test-plan.md","tasks.md","gates.md","evidence.md","touched-files.md","browser-evidence.md","state.md"],"spec-reviewer":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","state.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","rite-build/reference/checkpoint.md","devrites-lib/reference/standards/workflow-artifacts.md"]} -->
 > Read-set manifest: `devrites-engine context <slug> --phase prove` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -59,7 +59,7 @@ test changes.
 
 ## Workflow
 
-1. **Orient.** Read core, resolve active slug, require `state.md`, and read its
+1. **Orient.** Read core, resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require `state.md`, and read its
    cursor. On blocked Prove cold resume, reconcile retained consumptive evidence
    and no-progress corrections before accepting terminal none; a distinct
    fingerprint below cap resumes offline triage without another real action.
@@ -88,9 +88,13 @@ test changes.
    --transcripts` executes every unmet runnable gate against the same approved
    preflight rows, records definition-bound evidence, and writes one redacted,
    candidate-bound transcript per gate under `references/gates/<gate-id>/`;
-   `gates reverify <slug> --transcripts` re-executes all of them when any prior
-   pass is in doubt. Hand the proof runner those transcripts, never hand-built
-   logs. Attest manual gates with `gates attest
+   `gates reverify <slug> --transcripts` refreshes prior passes, except valid
+   unchanged-`INPUTS` proof may reuse its complete executed origin. Missing origins
+   rerun affected approved checks; a reused log never counts as execution.
+   If non-file prerequisites changed or proof is doubtful, invalidate affected
+   automatic evidence through the workspace's single-writer protocol before rerun.
+   Hand the proof runner those transcripts, never hand-built logs.
+   Attest manual gates with `gates attest
    <slug> <id> <note>` only against observed judgment whose note cites the
    human's own words or source; placeholder notes are unmet and an AFK run never
    self-attests. Only gates manual at Vet are attested; runnable-to-manual

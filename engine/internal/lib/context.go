@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -93,12 +94,18 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 			return 2
 		}
 	}
+	sources := contextSources{dir: featureDir}
 	// One active slice per bundle, except a parallel batch: the root has to
 	// see the other slices to start them. Whole tasks/plan/decisions ride
 	// that batch's turns; serial runs stay scoped.
 	autoScope := false
 	if featureDir != "" && opts.role == "" && opts.slice == "" && !opts.whole && (opts.phase == "build" || opts.phase == "autocomplete") && !parallelPlanVisible(root, opts.slug) {
-		if id := activeSliceScope(featureDir); id != "" {
+		id, err := activeSliceScope(&sources)
+		if err != nil {
+			fmt.Fprintf(stderr, "context: %v\n", err)
+			return 2
+		}
+		if id != "" {
 			opts.slices, opts.slice, autoScope = []string{id}, id, true
 		}
 	}
@@ -110,10 +117,21 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	var inventory []byte
 	recheckPath := opts.recheck
 	if recheckPath != "" {
-		if !filepath.IsAbs(recheckPath) {
+		if filepath.IsAbs(recheckPath) {
+			absoluteFeature, absErr := filepath.Abs(featureDir)
+			if absErr != nil {
+				fmt.Fprintf(stderr, "context: --recheck: %v\n", absErr)
+				return 2
+			}
+			if rel, relErr := filepath.Rel(absoluteFeature, recheckPath); relErr == nil && filepath.IsLocal(rel) {
+				inventory, err = sources.read(rel)
+			} else {
+				inventory, err = readBoundedRegularFile(recheckPath, workspaceArtifactLimit)
+			}
+		} else {
+			inventory, err = sources.read(recheckPath)
 			recheckPath = filepath.Join(featureDir, filepath.FromSlash(recheckPath))
 		}
-		inventory, err = os.ReadFile(recheckPath) // #nosec G304 -- the root names its own recheck inventory file
 		if err == nil && len(bytes.TrimSpace(inventory)) == 0 {
 			err = fmt.Errorf("%s is empty", opts.recheck)
 		}
@@ -141,7 +159,7 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	var sliceBlock string
 	var sliceIDs []citedID
 	if opts.slice != "" {
-		raw, err := os.ReadFile(filepath.Join(featureDir, "tasks.md")) // #nosec G304 -- featureDir is the validated feature workspace
+		raw, err := sources.read("tasks.md")
 		if err != nil {
 			fmt.Fprintf(stderr, "context: %v\n", err)
 			return 2
@@ -238,12 +256,17 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	}
 	// The open findings lead a recheck bundle, before any reference text.
 	if inventory != nil {
-		writeContextEntry(&bundle, recheckPath, "recheck inventory: "+opts.recheck, seen, false)
+		writeContextData(&bundle, recheckPath, "recheck inventory: "+opts.recheck, inventory, nil, seen, false)
 		loaded++
 	}
 	var rootOnly []string
 	citedSections, packByReference := 0, 0
-	keepModel := opts.role == "" || keepModelSurface(opts.role, gatherTriggerFacts(root, featureDir, opts.role))
+	facts, err := gatherTriggerFacts(root, opts.role, &sources)
+	if err != nil {
+		fmt.Fprintf(stderr, "context: %v\n", err)
+		return 2
+	}
+	keepModel := opts.role == "" || keepModelSurface(opts.role, facts)
 	for _, rel := range files {
 		abs := filepath.Join(skillsRoot, filepath.FromSlash(rel))
 		if seen[abs] {
@@ -297,16 +320,21 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		for _, rel := range workspaceList {
 			abs := filepath.Join(featureDir, filepath.FromSlash(rel))
+			data, err := sources.read(rel)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				fmt.Fprintf(stderr, "context: %v\n", err)
+				return 2
+			}
 			// Role bundles without --slice (full Vet, Review, Seal) read
 			// everything; root and --slice bundles take over-budget
 			// artifacts by anchor.
 			if opts.slice == "" && opts.role != "" {
-				if writeContextEntry(&bundle, abs, "workspace/"+rel, seen, false) {
+				if writeContextData(&bundle, abs, "workspace/"+rel, data, err, seen, false) {
 					loaded++
 				}
 				continue
 			}
-			ok, byRef := writeSliceEntry(&bundle, filepath.Dir(root), abs, "workspace/"+rel, opts.slice, sliceBlock, sliceIDs, seen)
+			ok, byRef := writeSliceEntry(&bundle, filepath.Dir(root), abs, "workspace/"+rel, data, err, opts.slice, sliceBlock, sliceIDs, seen)
 			if ok {
 				loaded++
 			}
@@ -322,33 +350,10 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	withTOC := insertSectionTOC(bundle.String())
 	bundle.Reset()
 	bundle.WriteString(withTOC)
-	out := opts.out
-	if out == "" {
-		out = filepath.Join(featureDir, "ctx", bundleName(opts))
-	} else if !filepath.IsAbs(out) && featureDir != "" {
-		out = filepath.Join(featureDir, filepath.FromSlash(out))
-	}
-	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+	out, unchanged, err := publishContext(featureDir, opts, []byte(bundle.String()))
+	if err != nil {
 		fmt.Fprintf(stderr, "context: %v\n", err)
 		return 2
-	}
-	digestPath := out + ".sha256"
-	digest := fmt.Sprintf("%x", sha256.Sum256([]byte(bundle.String())))
-	unchanged := false
-	if prev, err := os.ReadFile(digestPath); err == nil && strings.TrimSpace(string(prev)) == digest { // #nosec G304 -- digestPath is generated under the feature workspace
-		if _, err := os.Stat(out); err == nil {
-			unchanged = true
-		}
-	}
-	if !unchanged {
-		if err := os.WriteFile(out, []byte(bundle.String()), 0o600); err != nil {
-			fmt.Fprintf(stderr, "context: %v\n", err)
-			return 2
-		}
-		if err := os.WriteFile(digestPath, []byte(digest+"\n"), 0o600); err != nil {
-			fmt.Fprintf(stderr, "context: %v\n", err)
-			return 2
-		}
 	}
 	if opts.slug != "" {
 		phaseLabel := opts.phase
@@ -396,7 +401,7 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stdout, "triggers: auto=[%s] (fired by --role dispatch)\n",
 				strings.Join(autoTriggers, ","))
 		}
-		if suggested := suggestTriggers(manifest, root, featureDir, opts); len(suggested) > 0 {
+		if suggested := suggestTriggers(manifest, opts, facts); len(suggested) > 0 {
 			fmt.Fprintf(stdout, "triggers: suggested=[%s] (advisory — confirm each before use)\n",
 				strings.Join(suggested, ","))
 			// The advisory list is only actionable if the agent is told how to
@@ -558,11 +563,10 @@ const sliceInlineMaxBytes = 16 << 10
 // other artifact but spec.md over sliceInlineMaxBytes as a by-reference index;
 // any canonical artifact over its line/byte budget as a by-reference index;
 // everything else whole.
-func writeSliceEntry(bundle *strings.Builder, project, abs, label, slice, block string, ids []citedID, seen map[string]bool) (loaded, byRef bool) {
+func writeSliceEntry(bundle *strings.Builder, project, abs, label string, data []byte, err error, slice, block string, ids []citedID, seen map[string]bool) (loaded, byRef bool) {
 	if seen[abs] {
 		return false, false
 	}
-	data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated feature workspace
 	name := filepath.Base(abs)
 	if err == nil && name == "tasks.md" && slice != "" {
 		seen[abs] = true
@@ -570,7 +574,7 @@ func writeSliceEntry(bundle *strings.Builder, project, abs, label, slice, block 
 	} else if err == nil && slice != "" && name != "spec.md" && len(data) > sliceInlineMaxBytes {
 		seen[abs] = true
 	} else if status, ok := state.ArtifactBudget(name, data); err != nil || !ok || !status.Over {
-		return writeContextEntry(bundle, abs, label, seen, false), false
+		return writeContextData(bundle, abs, label, data, err, seen, false), false
 	} else {
 		seen[abs] = true
 	}
@@ -729,9 +733,16 @@ func writeContextEntry(bundle *strings.Builder, abs, label string, seen map[stri
 	if seen[abs] {
 		return false
 	}
+	data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated context source set
+	return writeContextData(bundle, abs, label, data, err, seen, expand)
+}
+
+func writeContextData(bundle *strings.Builder, abs, label string, data []byte, err error, seen map[string]bool, expand bool) bool {
+	if seen[abs] {
+		return false
+	}
 	seen[abs] = true
 	fmt.Fprintf(bundle, "===== %s =====\n", label)
-	data, err := os.ReadFile(abs) // #nosec G304 -- abs is resolved from the validated context source set
 	if err != nil {
 		fmt.Fprintf(bundle, "MISSING: %s\n\n", label)
 		return false
@@ -926,20 +937,28 @@ func roleAgentPath(manifest loadsManifest, role string) string {
 
 // activeSliceScope is state.md's active_slice when it names a slice block in
 // tasks.md, else "" (unset, "none", or stale cursors keep the whole bundle).
-func activeSliceScope(featureDir string) string {
-	lines := strings.Split(string(readWorkspaceFile(featureDir, "state.md")), "\n")
+func activeSliceScope(sources *contextSources) (string, error) {
+	raw, err := sources.read("state.md")
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
+	lines := strings.Split(string(raw), "\n")
 	// active_slice outlives Build; after it the root's autocomplete bundle stays whole.
 	if phase, _ := state.CursorField(lines, state.CursorPhase); strings.TrimSpace(phase) != "build" {
-		return ""
+		return "", nil
 	}
 	id, _ := state.CursorField(lines, state.CursorActiveSlice)
 	if id = strings.TrimSpace(id); !state.ValidSliceID(id) {
-		return ""
+		return "", nil
 	}
-	if _, ok := state.ExtractTaskSlice(readWorkspaceFile(featureDir, "tasks.md"), id); !ok {
-		return ""
+	tasks, err := sources.read("tasks.md")
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", err
 	}
-	return id
+	if _, ok := state.ExtractTaskSlice(tasks, id); !ok {
+		return "", nil
+	}
+	return id, nil
 }
 
 func bundleName(opts contextOpts) string {

@@ -20,8 +20,47 @@ var winAbsRE = regexp.MustCompile(`(?i)^[A-Za-z]:[/\\]`)
 
 // SlicePaths is one path-disjoint eligibility unit.
 type SlicePaths struct {
-	ID    string   `json:"id"`
-	Paths []string `json:"paths"`
+	ID        string   `json:"id"`
+	Workspace string   `json:"workspace,omitempty"`
+	Paths     []string `json:"paths"`
+}
+
+// SliceKey identifies a slice in its source workspace; empty means controller.
+func SliceKey(workspace, id string) string {
+	if workspace == "" {
+		return id
+	}
+	return workspace + "/" + id
+}
+
+func normalizeSlices(controller string, slices []SlicePaths, root string) ([]SlicePaths, error) {
+	normalized := make([]SlicePaths, 0, len(slices))
+	seen := make(map[string]bool, len(slices))
+	for _, item := range slices {
+		if err := validateSliceID(item.ID); err != nil {
+			return nil, err
+		}
+		if item.Workspace != "" {
+			if err := validateSlug(item.Workspace); err != nil {
+				return nil, err
+			}
+			if item.Workspace == controller {
+				item.Workspace = ""
+			}
+		}
+		key := SliceKey(item.Workspace, item.ID)
+		if seen[key] {
+			return nil, fmt.Errorf("duplicate slice id %q", key)
+		}
+		seen[key] = true
+		paths, err := validateSlicePaths(item.Paths, fmt.Sprintf("slice %q", key), root)
+		if err != nil {
+			return nil, err
+		}
+		item.Paths = paths
+		normalized = append(normalized, item)
+	}
+	return normalized, nil
 }
 
 // NormalizePath mirrors scripts/check-path-disjoint.py: slash-normalize, reject
@@ -116,10 +155,15 @@ func CheckPathDisjoint(slices []SlicePaths, root string) ([]string, error) {
 	for index, item := range slices {
 		label := fmt.Sprintf("slice %d", index)
 		if item.ID != "" {
-			label = fmt.Sprintf("slice %q", item.ID)
-			ids = append(ids, item.ID)
+			label = fmt.Sprintf("slice %q", SliceKey(item.Workspace, item.ID))
+			ids = append(ids, SliceKey(item.Workspace, item.ID))
 		} else {
 			ids = append(ids, fmt.Sprintf("%d", index))
+		}
+		if item.Workspace != "" {
+			if err := validateSlug(item.Workspace); err != nil {
+				return nil, err
+			}
 		}
 		paths, err := validateSlicePaths(item.Paths, label, root)
 		if err != nil {

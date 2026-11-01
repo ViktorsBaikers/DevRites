@@ -16,7 +16,7 @@ cat > "$scratch/root/tests/workflow-artifact-identity-test.sh" <<'STUB'
 if [ -n "${DEVRITES_WAI_BOUNDARY_ONLY:-}" ] || [ -n "${DEVRITES_WAI_DELIVERY_MODEL_ONLY:-}" ]; then exit 0; fi
 exec python3 -c '
 import os, signal, sys, time
-signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
+signal.signal(signal.SIGTERM, lambda *_: sys.exit(int(os.environ["TERM_EXIT"])))
 marker = os.path.join(os.environ["MARKER_DIR"], os.environ.get("DEVRITES_WAI_CORE_SHARD", "whole").replace("/", "-"))
 open(marker, "w").close()
 try:
@@ -26,18 +26,20 @@ finally:
 '
 STUB
 
-out="$scratch/out.txt"
-rc=0
-MARKER_DIR="$scratch/markers" DEVRITES_HOST_ARTIFACT_DIR="$scratch/artifacts" \
-  DEVRITES_TEST_TIMEOUT_SEC=2 node "$scratch/root/scripts/run-tests.mjs" >"$out" 2>&1 || rc=$?
-
 fail() { echo "FAIL: $1" >&2; cat "$out" >&2; exit 1; }
 
-[ "$rc" -ne 0 ] || fail "timed-out core piece should fail the run"
-grep -q 'timeout: killed after 2s' "$out" || fail "timeout not reported"
-[ -z "$(ls -A "$scratch/markers")" ] || fail "timed-out child did not run its cleanup"
-grep -q '^PASS: .*workflow-artifact-identity-test.sh#boundary' "$out" || fail "no separate boundary piece"
-grep -q '^FAIL: .*workflow-artifact-identity-test.sh#core' "$out" || fail "no separate core piece"
+for term_exit in 143 0; do
+  out="$scratch/out-$term_exit.txt"
+  rc=0
+  TERM_EXIT="$term_exit" MARKER_DIR="$scratch/markers" DEVRITES_HOST_ARTIFACT_DIR="$scratch/artifacts" \
+    DEVRITES_TEST_TIMEOUT_SEC=2 node "$scratch/root/scripts/run-tests.mjs" >"$out" 2>&1 || rc=$?
+
+  [ "$rc" -ne 0 ] || fail "timed-out core piece should fail even when cleanup exits $term_exit"
+  grep -q 'timeout: killed after 2s' "$out" || fail "timeout not reported"
+  [ -z "$(ls -A "$scratch/markers")" ] || fail "timed-out child did not run its cleanup"
+  grep -q '^PASS: .*workflow-artifact-identity-test.sh#boundary' "$out" || fail "no separate boundary piece"
+  grep -q '^FAIL: .*workflow-artifact-identity-test.sh#core' "$out" || fail "no separate core piece"
+done
 
 # Sharding must partition the tests even when the workflow-artifact-identity
 # test is not part of the selected set.

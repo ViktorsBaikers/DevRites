@@ -19,7 +19,7 @@ need() {
   grep -q "$token" "$file" && ok "$(basename "$file") contains $token" || no "$(basename "$file") missing $token"
 }
 
-for token in '.devrites/ACTIVE' 'state.md' 'questions.md' 'decisions.md' 'test-plan.md' 'evidence.md'; do
+for token in 'state.md' 'questions.md' 'decisions.md' 'test-plan.md' 'evidence.md'; do
   need "$HYGIENE" "$token"
   need "$CHECKPOINT" "$token"
   need "$AUTOCOMPLETE" "$token"

@@ -110,7 +110,7 @@ the hook receives:
 | `DEVRITES_QID` | the new qid (e.g. `q-2026-05-28-001`) |
 | `DEVRITES_GATE` | `advisory` / `validating` / `blocking` / `escalating` |
 | `DEVRITES_SLICE` | `<N — name>` |
-| `DEVRITES_SLUG` | active feature slug |
+| `DEVRITES_SLUG` | source feature slug |
 | `DEVRITES_QUESTION` | the checkpoint text |
 | `DEVRITES_PROPOSED` | the proposed answer |
 

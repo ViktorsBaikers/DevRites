@@ -38,6 +38,7 @@ type candidateRow struct {
 	executable bool
 	size       int64
 	info       os.FileInfo
+	fileDigest string
 }
 
 type candidateIdentity struct {
@@ -72,7 +73,7 @@ func loadCandidateIdentity(root, slug string) (candidateIdentity, error) {
 	if err := validateCandidateRows(project, rows); err != nil {
 		return candidateIdentity{}, err
 	}
-	digest, err := hashCandidate(project, rows)
+	digest, err := hashCandidate(project, rows, false)
 	if err != nil {
 		return candidateIdentity{}, err
 	}
@@ -407,15 +408,18 @@ func candidatePathInfo(project, name string) (os.FileInfo, bool, error) {
 	return nil, false, errors.New("path is empty")
 }
 
-func hashCandidate(project string, rows []candidateRow) (string, error) {
+func hashCandidate(project string, rows []candidateRow, perFile bool) (string, error) {
 	digest := sha256.New()
 	writeCandidateField(digest, candidateDigestDomain)
 	writeCandidateField(digest, candidateDigestVersion)
 	writeCandidateField(digest, fmt.Sprintf("%d", len(rows)))
-	for _, row := range rows {
+	for i, row := range rows {
 		writeCandidateField(digest, row.state)
 		writeCandidateField(digest, row.path)
 		if row.state == "deleted" {
+			if err := validateCandidateRow(project, &row); err != nil {
+				return "", fmt.Errorf("candidate %q: %w", row.path, err)
+			}
 			writeCandidateField(digest, "absent")
 			writeCandidateField(digest, "0")
 			writeCandidateLength(digest, 0)
@@ -428,8 +432,17 @@ func hashCandidate(project string, rows []candidateRow) (string, error) {
 			writeCandidateField(digest, "0")
 		}
 		writeCandidateLength(digest, uint64(row.size)) // #nosec G115 -- validateCandidateRow bounds size to 0..64 MiB
-		if err := hashCandidateFile(digest, project, row); err != nil {
+		var writer io.Writer = digest
+		var fileDigest hash.Hash
+		if perFile {
+			fileDigest = sha256.New()
+			writer = io.MultiWriter(digest, fileDigest)
+		}
+		if err := hashCandidateFile(writer, project, row); err != nil {
 			return "", fmt.Errorf("candidate %q: %w", row.path, err)
+		}
+		if perFile {
+			rows[i].fileDigest = hex.EncodeToString(fileDigest.Sum(nil))
 		}
 	}
 	return hex.EncodeToString(digest.Sum(nil)), nil
@@ -446,7 +459,7 @@ func writeCandidateLength(writer hash.Hash, size uint64) {
 	_, _ = writer.Write(encoded[:])
 }
 
-func hashCandidateFile(digest hash.Hash, project string, row candidateRow) error {
+func hashCandidateFile(digest io.Writer, project string, row candidateRow) error {
 	if _, exists, err := candidatePathInfo(project, row.path); err != nil || !exists {
 		if err != nil {
 			return err
@@ -464,7 +477,7 @@ func hashCandidateFile(digest hash.Hash, project string, row candidateRow) error
 	if err != nil {
 		return err
 	}
-	if !opened.Mode().IsRegular() || opened.Size() != row.size || (opened.Mode().Perm()&0o111 != 0) != row.executable || !os.SameFile(row.info, opened) {
+	if !opened.Mode().IsRegular() || opened.Size() != row.size || (opened.Mode().Perm()&0o111 != 0) != row.executable || !os.SameFile(row.info, opened) || !row.info.ModTime().Equal(opened.ModTime()) {
 		return errors.New("file changed size or type before reading")
 	}
 	written, err := io.CopyN(digest, file, row.size)
@@ -483,7 +496,7 @@ func hashCandidateFile(digest hash.Hash, project string, row candidateRow) error
 	if err != nil {
 		return err
 	}
-	if !exists || !after.Mode().IsRegular() || after.Size() != row.size || (after.Mode().Perm()&0o111 != 0) != row.executable || !os.SameFile(opened, after) || !os.SameFile(opened, current) {
+	if !exists || !after.Mode().IsRegular() || after.Size() != row.size || current.Size() != row.size || (after.Mode().Perm()&0o111 != 0) != row.executable || (current.Mode().Perm()&0o111 != 0) != row.executable || !os.SameFile(opened, after) || !os.SameFile(opened, current) || !opened.ModTime().Equal(after.ModTime()) || !opened.ModTime().Equal(current.ModTime()) {
 		return errors.New("file changed size or type while reading")
 	}
 	return nil

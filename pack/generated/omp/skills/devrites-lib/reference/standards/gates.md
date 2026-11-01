@@ -65,11 +65,18 @@ their optional `Run at` cell, writing the same transcripts.
 Execution contract: the command runs through the platform shell in the named
 directory with a bounded timeout; pass requires exit 0 **and** output matching
 EXPECT. Without `--transcripts`, output is captured but never persisted, only its
-digest. `--transcripts` writes one file per executed or reused gate under
-`references/gates/<gate-id>/`. Each file holds the command, cwd, attempt, times,
-exit, EXPECT verdict, the candidate digest read before and after the run, and the
-output with known credential shapes masked and capped at 1 MiB. Its
-`OUTPUT_SHA256` equals the ledger evidence digest.
+digest. `--transcripts` atomically writes a private v2 executed record under
+`references/gates/<gate-id>/`, or returns a verified original record for reuse
+without rewriting its historical candidate labels. Metadata and output mask
+known credential shapes; output is capped at 1 MiB. `DEFINITION_SHA256` binds the
+oracle, `OUTPUT_SHA256`/`OUTPUT_BYTES` describe original output, and the final
+`TRANSCRIPT_SHA256` hashes all preceding record bytes for drift detection.
+Do not rehash redacted/truncated output as though it were original output.
+Reuse requires a complete passing executed origin matching current definition,
+output identity and declared inputs, plus current command approval. Missing,
+corrupt, legacy v1 or reuse-only records rerun only affected approved checks;
+missing approval blocks even when an old checkbox remains met. A record checksum
+detects drift; it is not a signature or proof of honest execution.
 
 After Vet READY the runnable set is fixed: converting a runnable gate to manual,
 loosening EXPECT, changing CHECK or CWD, adding or narrowing INPUTS, or removing
@@ -115,10 +122,12 @@ devrites-engine gates attest <slug> <id> <note>   record human evidence on a man
 devrites-engine gates abandon <slug> <id> <why>   record a terminal ABANDON handoff
 ```
 
-Run/reverify hold the feature lock, re-read the ledger before writeback, and
-discard a result whose gate definition moved mid-run. Reverify is the
-suspicion-killer: when any doubt exists about prior passes, rerun it rather
-than trusting recorded evidence.
+Run/reverify serialize execution, origin lookup and transcript publication under
+the gates lock; the feature lock is held only for input acquisition and ledger
+writeback. Results whose gate definition moved are discarded. Unchanged declared
+inputs may reuse proof even under reverify; a reused result is never execution.
+If non-file prerequisites changed or proof is doubtful, invalidate affected
+automatic evidence through the single-writer protocol before approved rerun.
 
 ## Oracle quality (`gates lint`)
 

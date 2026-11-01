@@ -46,10 +46,10 @@ only per [`checkpoint.md`](checkpoint.md).
 
 Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
 preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
-Parallel isolated-writer worktrees remain forbidden until this serial pilot measures
-transfer, conflict, proof, and review outcomes on both hosts; opt-in `$rite-build --parallel N`
-(2≤N≤10) path-disjoint fan-out is the only sanctioned parallel mode. Same-worktree multi-writer / root-emulated
-worktrees stay forbidden.
+Parallel isolated writers use only [`parallel-batch.md`](parallel-batch.md) and,
+under Autocomplete, the shared
+[`workspace controller`](../../devrites-lib/reference/parallel-workspaces.md).
+Same-worktree multi-writer / root-emulated worktrees stay forbidden.
 
 ## Prepare
 
@@ -131,9 +131,9 @@ a spec trace of the slice's obligations (hardening no AC/INV/PROH requires moves
 a sibling slice dependents do not need, still gated before Seal), and
 reopen with `--reslice-review <DRIFT-ID>`. Same-worktree stays one writer.
 Never run two writers in one worktree, mix isolated and same-worktree writers,
-or substitute a generic agent. Opt-in `$rite-build --parallel N` is the
-exception: one wright per worktree, each its own `slice-wright.<SLICE-ID>` role
-on one wave ([`parallel-batch.md`](parallel-batch.md)).
+or substitute a generic agent. Sanctioned parallel dispatch uses one exact
+wright per worktree, source-local `slice-wright.<SLICE-ID>` roles and starts
+all selected sources before first wait ([`parallel-batch.md`](parallel-batch.md)).
 
 The `return` that completes the wave releases its claim; `dispatch abandon --release`
 releases it on any other host-confirmed terminal path (a stop, a launch refused with no

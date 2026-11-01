@@ -26,7 +26,7 @@ const (
 	// control; it no longer holds a parallel slot.
 	WrightIntegrated = "integrated"
 
-	MinParallelSlices = 2
+	MinParallelSlices = 1
 	MaxParallelSlices = 10
 )
 
@@ -46,7 +46,12 @@ type Lease struct {
 	CreatedAt           string       `json:"created_at"`
 	BaseSHA             string       `json:"base_sha"`
 	ControlTip          string       `json:"control_tip,omitempty"`
+	ControlCheckout     string       `json:"control_checkout,omitempty"`
+	ControlRef          string       `json:"control_ref,omitempty"`
+	PendingLanding      *landing     `json:"pending_landing,omitempty"`
+	LastLanding         *landing     `json:"last_landing,omitempty"`
 	N                   int          `json:"n"`
+	Capacity            int          `json:"capacity,omitempty"`
 	Status              string       `json:"status"`
 	ControlPIDOrSession string       `json:"control_pid_or_session"`
 	Slices              []LeaseSlice `json:"slices"`
@@ -57,6 +62,7 @@ type Lease struct {
 // from the original create).
 type LeaseSlice struct {
 	ID             string   `json:"id"`
+	Workspace      string   `json:"workspace,omitempty"`
 	Paths          []string `json:"paths"`
 	WorktreePath   string   `json:"worktree_path"`
 	Branch         string   `json:"branch"`
@@ -87,7 +93,7 @@ func activeSlices(lease *Lease) []SlicePaths {
 	var active []SlicePaths
 	for _, sl := range lease.Slices {
 		if sl.WrightStatus != WrightIntegrated {
-			active = append(active, SlicePaths{ID: sl.ID, Paths: sl.Paths})
+			active = append(active, SlicePaths{ID: sl.ID, Workspace: sl.Workspace, Paths: sl.Paths})
 		}
 	}
 	return active
@@ -112,15 +118,62 @@ func IntegrateBranchName(slug, batchID string) string {
 	return fmt.Sprintf("devrites/parallel/%s/%s/integrate", slug, batchID)
 }
 
-// ownedBranchName reports whether branch is inside this batch's namespace —
-// devrites/parallel/<slug>/<batch>/…. Cleanup deletes only owned branches;
-// a lease naming anything else (e.g. a forged "main") is left alone.
-func ownedBranchName(slug, batchID, branch string) bool {
-	return strings.HasPrefix(branch, fmt.Sprintf("devrites/parallel/%s/%s/", slug, batchID))
-}
-
 func WorkerWorktreePath(repoRoot, batchID, sliceID string) string {
 	return filepath.Join(ScratchRoot(repoRoot), batchID, sliceID)
+}
+
+func workerBranch(slug, batchID, workspace, id string) string {
+	if workspace != "" {
+		return WorkerBranch(slug, batchID, "_workspaces/"+workspace+"/"+id)
+	}
+	return WorkerBranch(slug, batchID, id)
+}
+
+func workerWorktreePath(root, batchID, workspace, id string) string {
+	if workspace != "" {
+		return filepath.Join(ScratchRoot(root), batchID, "_workspaces", workspace, id)
+	}
+	return WorkerWorktreePath(root, batchID, id)
+}
+
+func leaseCapacity(lease *Lease) int {
+	if lease.Capacity == 0 {
+		return MaxParallelSlices
+	}
+	return lease.Capacity
+}
+
+func validateCapacity(capacity int) error {
+	if capacity < 0 || capacity > MaxParallelSlices {
+		return fmt.Errorf("cap must be 1-%d (got %d)", MaxParallelSlices, capacity)
+	}
+	return nil
+}
+
+func normalizeLease(lease *Lease, controller string) error {
+	for i := range lease.Slices {
+		if lease.Slices[i].Workspace == controller {
+			lease.Slices[i].Workspace = ""
+		}
+	}
+	return ValidateLease(lease)
+}
+
+func normalizeSliceRef(controller, ref string) (string, error) {
+	workspace, id, qualified := strings.Cut(ref, "/")
+	if !qualified {
+		return ref, validateSliceID(ref)
+	}
+	if err := validateSlug(workspace); err != nil {
+		return "", err
+	}
+	if err := validateSliceID(id); err != nil {
+		return "", err
+	}
+	if workspace == controller {
+		workspace = ""
+	}
+	return SliceKey(workspace, id), nil
 }
 
 func validateSlug(slug string) error {
@@ -177,8 +230,11 @@ func ValidateLease(lease *Lease) error {
 	if len(lease.Slices) < MinParallelSlices {
 		return checkParallelSliceCount(len(lease.Slices))
 	}
-	if active := len(activeSlices(lease)); active > MaxParallelSlices {
-		return fmt.Errorf("parallel requires %d-%d slices active at once (got %d)", MinParallelSlices, MaxParallelSlices, active)
+	if err := validateCapacity(lease.Capacity); err != nil {
+		return err
+	}
+	if active := len(activeSlices(lease)); active > leaseCapacity(lease) {
+		return fmt.Errorf("parallel requires %d-%d slices active at once (got %d)", MinParallelSlices, leaseCapacity(lease), active)
 	}
 	if lease.N != len(lease.Slices) {
 		return fmt.Errorf("lease n=%d does not match slices=%d", lease.N, len(lease.Slices))
@@ -188,24 +244,36 @@ func ValidateLease(lease *Lease) error {
 		if err := validateSliceID(sl.ID); err != nil {
 			return fmt.Errorf("slice %d: %w", i, err)
 		}
-		if _, ok := seen[sl.ID]; ok {
-			return fmt.Errorf("duplicate slice id %q", sl.ID)
+		if sl.Workspace != "" {
+			if err := validateSlug(sl.Workspace); err != nil {
+				return fmt.Errorf("slice %d: %w", i, err)
+			}
 		}
-		seen[sl.ID] = struct{}{}
-		if _, err := validateSlicePaths(sl.Paths, fmt.Sprintf("slice %q", sl.ID), ""); err != nil {
+		key := SliceKey(sl.Workspace, sl.ID)
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("duplicate slice id %q", key)
+		}
+		seen[key] = struct{}{}
+		if _, err := validateSlicePaths(sl.Paths, fmt.Sprintf("slice %q", key), ""); err != nil {
 			return err
 		}
 		switch sl.WrightStatus {
 		case "", WrightPending, WrightGreen, WrightRed, WrightGap, WrightIntegrated:
 		default:
-			return fmt.Errorf("slice %q: invalid wright_status %q", sl.ID, sl.WrightStatus)
+			return fmt.Errorf("slice %q: invalid wright_status %q", key, sl.WrightStatus)
 		}
 		if sl.TransferCommit != "" && !shaRE.MatchString(sl.TransferCommit) {
-			return fmt.Errorf("slice %q: invalid transfer_commit %q", sl.ID, sl.TransferCommit)
+			return fmt.Errorf("slice %q: invalid transfer_commit %q", key, sl.TransferCommit)
 		}
 		if sl.BaseSHA != "" && !shaRE.MatchString(sl.BaseSHA) {
-			return fmt.Errorf("slice %q: invalid base_sha %q", sl.ID, sl.BaseSHA)
+			return fmt.Errorf("slice %q: invalid base_sha %q", key, sl.BaseSHA)
 		}
+	}
+	if err := validateLanding(lease, lease.PendingLanding, false); err != nil {
+		return err
+	}
+	if err := validateLanding(lease, lease.LastLanding, true); err != nil {
+		return err
 	}
 	return nil
 }
@@ -228,11 +296,17 @@ func EmitLeaseMarkdown(lease *Lease) (string, error) {
 		fmt.Fprintf(&b, "control_tip: %s\n", yamlQuote(lease.ControlTip))
 	}
 	fmt.Fprintf(&b, "n: %d\n", lease.N)
+	if lease.Capacity != 0 {
+		fmt.Fprintf(&b, "capacity: %d\n", lease.Capacity)
+	}
 	fmt.Fprintf(&b, "status: %s\n", yamlQuote(lease.Status))
 	fmt.Fprintf(&b, "control_pid_or_session: %s\n", yamlQuote(lease.ControlPIDOrSession))
 	b.WriteString("slices:\n")
 	for _, sl := range lease.Slices {
 		fmt.Fprintf(&b, "  - id: %s\n", yamlQuote(sl.ID))
+		if sl.Workspace != "" {
+			fmt.Fprintf(&b, "    workspace: %s\n", yamlQuote(sl.Workspace))
+		}
 		if len(sl.Paths) == 0 {
 			b.WriteString("    paths: []\n")
 		} else {
@@ -299,6 +373,11 @@ func ReadLease(path string) (*Lease, error) {
 }
 
 func ClearLease(path string) error {
+	if lease, err := ReadLease(path); err == nil && lease.PendingLanding != nil {
+		return fmt.Errorf("lease-clear refuses pending landing; recover with integrate --apply-to-control or abort")
+	} else if err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	err := os.Remove(path)
 	if err != nil && !os.IsNotExist(err) {
 		return err

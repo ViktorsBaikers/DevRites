@@ -89,3 +89,16 @@ func TestPathDisjointRejectsOversizedInputWithoutDraining(t *testing.T) {
 		t.Fatalf("read %d bytes, want at most about %d", src.n, limit+1)
 	}
 }
+
+func TestParallelPruneHelpAndForceRefusal(t *testing.T) {
+	for _, args := range [][]string{{"prune", "--help"}, {"prune", "--root", t.TempDir(), "--slug", rollSlug, "--force"}} {
+		code, stdout, stderr := runCLI(t, "", args...)
+		if args[1] == "--help" {
+			if code != ExitOK || !strings.Contains(stdout, usagePrune) || stderr != "" {
+				t.Fatalf("prune help: %d %q %q", code, stdout, stderr)
+			}
+		} else if code != ExitUsage || !strings.Contains(stderr, "--force") {
+			t.Fatalf("prune force must be refused: %d %q %q", code, stdout, stderr)
+		}
+	}
+}

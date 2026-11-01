@@ -420,7 +420,9 @@ function runOne(test) {
     // ponytail: signals only the bash child; orphaned grandchildren may linger,
     // but destroying the pipes lets the runner report the hung test and move on.
     let killTimer;
+    let timedOut = false;
     const timer = setTimeout(() => {
+      timedOut = true;
       chunks.push(Buffer.from(`timeout: killed after ${testTimeoutSec}s (DEVRITES_TEST_TIMEOUT_SEC)\n`));
       child.kill('SIGTERM');
       killTimer = setTimeout(() => {
@@ -433,15 +435,16 @@ function runOne(test) {
       clearTimeout(timer);
       clearTimeout(killTimer);
       const elapsed = ((Date.now() - start) / 1000).toFixed(2);
-      const status = code === 0 ? 'PASS' : 'FAIL';
+      const passed = code === 0 && !timedOut;
+      const status = passed ? 'PASS' : 'FAIL';
       const displayName = typeof test === 'string' ? test : label;
       process.stdout.write(`== ${displayName} ==\n`);
       for (const chunk of chunks) process.stdout.write(chunk);
       if (chunks.length && !String(chunks.at(-1)).endsWith('\n')) process.stdout.write('\n');
       process.stdout.write(`${status}: ${displayName} (${elapsed}s)\n`);
       if (signal) process.stdout.write(`signal: ${signal}\n`);
-      if (code !== 0) failedTests.add(path);
-      resolve(code === 0);
+      if (!passed) failedTests.add(path);
+      resolve(passed);
     });
   });
 }

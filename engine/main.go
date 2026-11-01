@@ -74,7 +74,7 @@ Usage:
   devrites-engine check indexes [--root <dir>]  Report manifest and code-index presence as JSON
   devrites-engine detect commands [--root <dir>] [--json]
                                          Resolve test/lint/vet/build commands from the repository's own wiring
-  devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/cleanup
+  devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/prune/cleanup
   devrites-engine gates <subcommand> <slug>  Machine-checked gates.md ledger: scaffold/status/run/reverify/lint/precheck/attest/abandon
   devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
   devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
@@ -125,6 +125,7 @@ func init() {
 	}
 	// parallel cannot import lib (lib imports it), so `parallel select --from-plan` gets the plan-derived ready set through this hook.
 	parallel.PlanReady = lib.PlanReady
+	parallel.WorkspaceReady = lib.WorkspaceReady
 	// `gates precheck` runs `check windows` through this hook for the same reason.
 	acceptance.WindowsCheck = lib.RunCheckWindows
 	// ...and `gates precheck --slice` learns which writer gates to skip.

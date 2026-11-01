@@ -47,7 +47,7 @@ Required review rosters and final proof remain. Preserve protected history uncha
 a compact current view references originals without omitting active requirements.
 
 **Compaction fallback:** after compaction or a resumed session, always run
-`devrites-engine handoff [slug] --resume` first (slug from `.devrites/ACTIVE`) — one
+`devrites-engine handoff <source> --resume` first for the selected source per [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding) — one
 deterministic resume record reduced from durable artifacts (cursor, `awaiting_human`,
 open `questions.md` gates, the `gates.md` reduction with unmet/stale ids,
 `decisions.md` dead ends, in-flight dispatch waves, and the read-next order over

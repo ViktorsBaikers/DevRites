@@ -5,7 +5,7 @@ argument-hint: "<feature or idea>"
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/standards/agents.md","rite-spec/reference/investigation.md","rite-spec/reference/question-protocol.md","rite-spec/reference/spec-template.md","rite-spec/reference/spec-checklists.md","rite-spec/reference/state-workspace.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/interview-patterns.md","rite-spec/reference/ai-spec-template.md","rite-spec/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"edge-cases":["devrites-lib/reference/standards/edge-case-trace.md"],"frontend":["rite-build/reference/frontend-trigger.md"],"grammar":["devrites-lib/reference/standards/spec-grammar.md"],"principles":["devrites-lib/reference/standards/principles.md"],"references":["rite-spec/reference/references-intake.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md"],"workspaceByRole":{"evidence-scout":["brief.md","spec.md","state.md","questions.md"]},"rootOnly":["devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/standards/agents.md","rite-spec/reference/investigation.md","rite-spec/reference/question-protocol.md","rite-spec/reference/spec-template.md","rite-spec/reference/spec-checklists.md","rite-spec/reference/state-workspace.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/interview-patterns.md","rite-spec/reference/ai-spec-template.md","rite-spec/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"edge-cases":["devrites-lib/reference/standards/edge-case-trace.md"],"frontend":["rite-build/reference/frontend-trigger.md"],"grammar":["devrites-lib/reference/standards/spec-grammar.md"],"principles":["devrites-lib/reference/standards/principles.md"],"references":["rite-spec/reference/references-intake.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md"],"workspaceByRole":{"evidence-scout":["brief.md","spec.md","state.md","questions.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase spec` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -38,7 +38,7 @@ load a routed standard to discover required behavior, not to prescribe implement
   [`elicitation.md`](../devrites-lib/reference/standards/elicitation.md) before continuing.
 
 ## Workflow
-0. Read core; if `.devrites/ACTIVE` exists, require its `state.md`.
+0. Read core; apply shared [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding). If `.devrites/ACTIVE` exists, require its owner's `state.md`; it is not the target when the controller explicitly prepares a recorded future continuation.
 0a. **Adoption check.** For a never-adopted existing codebase, route first to
    `/rite-adopt` with `$ARGUMENTS`; it derives baseline spec/principles. HITL
    offers ranked adopt-first and spec-only choices; permitted AFK adopts.
@@ -123,9 +123,12 @@ load a routed standard to discover required behavior, not to prescribe implement
    product/acceptance ambiguity, irreversible/external approval, or human-only access. Record
    owned prerequisites. Keep a build checkpoint only for unavailable pre-code evidence or a
    mandatory action-time approval. **Completion:** no foreseeable human choice is deferred.
-5. **Create or update the workspace** + set `.devrites/ACTIVE` from
-   [state-workspace](reference/state-workspace.md); a `--lookahead` run
-   leaves `.devrites/ACTIVE` unchanged. If the slug already exists,
+5. **Create or update the workspace** per
+   [state-workspace](reference/state-workspace.md). Ordinary standalone Spec sets
+   `.devrites/ACTIVE`; explicit `--lookahead` and main-controller preparation of
+   an authorized recorded future continuation preserve the ordered owner's ACTIVE.
+   Pass the target slug explicitly to every phase; no new flag or global workspace
+   override. If the slug already exists,
    update the existing workspace rather than overwrite it; preserve history and
    unrelated settled content. Write every required artifact and conditional
    annex exactly from [spec-template](reference/spec-template.md)

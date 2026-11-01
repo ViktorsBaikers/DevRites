@@ -7,8 +7,15 @@ Order slices by what must exist before what. Keep it in `plan.md` as plain text.
    calls, a component it composes, a contract/schema/config it consumes, or a deployable
    version that must already tolerate the change).
 2. Draw edges prerequisite → dependent.
-3. Topologically sort. Independent slices can be built in any order (or noted as
-   parallelizable for the user).
+3. Topologically sort local and explicit `Workspace dependencies` producer edges.
+   Validate each qualified producer in its live/safely archived tasks graph.
+   Inspect assumptions, consumed interfaces, shared runtime resources and proof
+   independence before declaring `none`; disjoint paths alone prove neither.
+   Only durably BUILT/integrated producer checkpoints unblock consumers. Current
+   native Plan/Vet approves early future admission; absent legacy declarations
+   require narrow repair, not invented independence. Use the
+   [canonical field](../../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar),
+   not a second lane-policy artifact.
 
 ```
 SLICE-001 (schema)  ->  SLICE-002 (write API)  ->  SLICE-003 (UI form)

@@ -477,7 +477,7 @@ func TestOpenBlockingQuestionGatesFailsClosedOnUnmaskableInput(t *testing.T) {
 	}
 }
 
-func TestCheckObservationUsesRetainedPhaseQuestionsReadinessAndReview(t *testing.T) {
+func TestCheckObservedUsesRetainedPhaseQuestionsReadinessAndReview(t *testing.T) {
 	root := t.TempDir()
 	workspace := writeReadinessFixture(t, root, "retained", "build")
 	binding := mustReadinessBinding(t, root, "retained")
@@ -492,7 +492,7 @@ func TestCheckObservationUsesRetainedPhaseQuestionsReadinessAndReview(t *testing
 	testutil.WriteFile(t, filepath.Join(workspace, "plan.md"), "# Plan\n\nChanged after observation.\n")
 	testutil.WriteFile(t, filepath.Join(workspace, "eng-review.md"), "# Engineering review\n\nNo binding.\n")
 
-	result, err := checkObservation(Readiness, observation)
+	result, err := CheckObserved(Readiness, root, observation)
 	if err != nil {
 		t.Fatal(err)
 	}

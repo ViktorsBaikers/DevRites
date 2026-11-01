@@ -94,6 +94,17 @@ func TestCheckSliceMissingSliceAndArgs(t *testing.T) {
 	}
 }
 
+func TestDeferredSliceAfterEmptyFencedFieldIsNeverScheduled(t *testing.T) {
+	tasks := poolSlice("SLICE-001", "src/deferred.go", "Size rationale:\n```text\nexample\n```\nSatisfies: none") +
+		poolSlice("SLICE-002", "src/required.go", "")
+	project := t.TempDir()
+	poolWorkspace(t, filepath.Join(project, ".devrites"), "feat", "", tasks)
+	ready, err := PlanReady(project, "feat")
+	if err != nil || len(ready) != 1 || ready[0].ID != "SLICE-002" {
+		t.Fatalf("empty optional field swallowed live deferral: ready=%v err=%v", ready, err)
+	}
+}
+
 func TestCheckSliceRejectsSliceWithNoAC(t *testing.T) {
 	tasks := `# Tasks
 
@@ -166,5 +177,17 @@ func TestSliceSizeRationaleSilencesAdvisory(t *testing.T) {
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	if code := RunTaskGraphCheck(root, "feat", stdout, stderr); code != 0 || strings.Contains(stdout.String(), "ADVISORY size") {
 		t.Fatalf("rationale must silence advisory: code=%d\n%s", code, stdout)
+	}
+}
+
+func TestCheckSliceIgnoresFencedFields(t *testing.T) {
+	tasks := strings.Replace(goodSliceTasks, "Goal: do the thing.", "```text\nSatisfies: none\nWriter allowlist: .devrites/state.md\nTests/proof: example\n```\nGoal: do the thing.", 1)
+	root := sliceWorkspace(t, tasks, sliceSpec)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunCheckSlice(root, []string{"feat", "SLICE-001"}, stdout, stderr); code != 0 || !strings.Contains(stdout.String(), "paths=2") {
+		t.Fatalf("live fields must win over fenced examples: code=%d\n%s%s", code, stdout, stderr)
+	}
+	if problems := UnbuiltSliceProblems(root, "feat"); len(problems) != 0 {
+		t.Fatalf("live contract rejected: %v", problems)
 	}
 }

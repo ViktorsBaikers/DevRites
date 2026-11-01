@@ -12,7 +12,7 @@ Acceptance criteria proven: <n / total>
 Branch:   <target branch>
 Candidate paths: <exact project-relative paths>
 Checkpoint collapse: <exact `git reset --soft '<merge-base>'` command | skip>
-Collapse slugs: <active slug plus every recorded sequence slug in the range | n/a>
+Collapse slugs: <selected source slug plus every recorded sequence slug in the range | n/a>
 Stage plan: <exact argv-safe `git add -- '<path>'` command for every manifest row>
 Commit:   <exact git commit command>
 Push:     <exact git push command | skip>
@@ -47,7 +47,7 @@ Pre-GO is read-only. Do not run the disclosed collapse or staging commands.
 1. **Analyze checkpoint history without mutating it.** Read the upstream, merge
    base, commit OIDs, and full subjects. If no checkpoint commit exists, disclose
    `skip`. A collapse is eligible only when every commit in its range has the exact
-   `WIP(<slug>):` prefix for the validated active slug — or, for a release ship of a
+   `WIP(<slug>):` prefix for the validated source slug — or, for a release ship of a
    deferred-ship sequence, for a slug recorded in the parent's `decisions.md`
    sequence whose workspace is sealed in this run
    ([afk-hitl.md § Sequence continuation](../../devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces));

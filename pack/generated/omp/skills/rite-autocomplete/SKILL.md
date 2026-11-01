@@ -5,7 +5,7 @@ argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] 
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"lookahead":["rite-autocomplete/reference/lookahead.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"],"rootOnly":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/workflow-artifacts.md","rite-autocomplete/reference/lookahead.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"lookahead":["rite-autocomplete/reference/lookahead.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"],"rootOnly":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/workflow-artifacts.md","rite-autocomplete/reference/lookahead.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --phase autocomplete` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -86,7 +86,7 @@ With `--lookahead` (trigger `lookahead`), follow
 [`lookahead.md`](reference/lookahead.md) instead of the steps below: plan the
 next sequence continuation through Vet in a second session, then stop.
 
-1. **Orient and parse.** Resolve the explicit or active slug; when a workspace exists,
+1. **Orient and parse.** Resolve source per [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding); when a workspace exists,
    require its `state.md` and read its cursor; a fresh idea starts empty at step 2.
    Before honoring `blocked` with terminal `next_action`,
    reconcile retained consumptive evidence and fingerprint attempts from
@@ -96,7 +96,7 @@ next sequence continuation through Vet in a second session, then stop.
    Reconstruct a missing return cursor only from
    the current phase and exact approved action in `test-plan.md`/evidence, never
    from chat. After compaction or a resumed session, always run `devrites-engine
-   handoff <slug> --resume` first (slug from `.devrites/ACTIVE`) and open only the
+   handoff <source> --resume` first for that selected source and open only the
    `read_next` artifacts it names, per [`context-hygiene.md`](skill://devrites-lib/reference/standards/context-hygiene.md) § Compaction fallback.
    Normalize current arguments to idea, `ship_preflight: yes|no`,
    `max_slices: unlimited`, `parallel: N|default`, `profile: standard|full`,
@@ -118,13 +118,16 @@ next sequence continuation through Vet in a second session, then stop.
    `/rite-build` batch loop → `/rite-prove` → `/rite-polish` →
    `/rite-review` → `/rite-seal`. Read and execute each skill; durable files, not
    chat, carry state. Apply the mutable post-vet budget before first Build.
-   Build uses `parallel select --from-plan` (cap: explicit `--parallel N`, else
-   sentinel `max_parallel`, else 10), refilling per landing until none pending;
-   a one-slice round is serial for that round only; reselect afterward. Host
-   isolation may force serial. If `--parallel N` is explicit,
-   pass it into `/rite-build` and ignore leftover sentinel `max_parallel`.
-   Otherwise pass the resolved sentinel/default cap into `/rite-build` as
-   `--parallel N`, never bare `/rite-build`.
+   Execute [`parallel-workspaces.md`](skill://devrites-lib/reference/parallel-workspaces.md):
+   continuously scan the authorized recorded sequence across stages, preparing
+   and re-Vetting future targets while writers run. Build queries the global
+   pool with `parallel select --from-plan --slug <controller> --workspaces
+   <controller,authorized-source,...> --cap N`; N is explicit `--parallel N`, else
+   sentinel `max_parallel`, else 10 — one global writer cap, including explicit 1.
+   Always pass resolved `--parallel N` to Build. Cap>1 uses an isolated first
+   writer even when initially alone; refill globally per landing and planning/
+   review return. Unsupported host stays serial. No local ready slice is not
+   completion while authorized planning, repair/re-Vet or independent work remains.
    **Completion:** loop reaches Seal GO or persists a valid stop before any later phase.
 5. **Apply stops.** At every gate use
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:

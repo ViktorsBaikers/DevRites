@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,8 +56,8 @@ func TestLintReviewCandidateNeedsFrozenDiff(t *testing.T) {
 	if err := os.WriteFile(diff, []byte("diff --git a/a b/a\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	packet = writePacket(t, "Scope: SLICE-001.\nDiff: packets/review.diff\n")
+	packet = writePacket(t, fmt.Sprintf("Scope: SLICE-001.\ndiff %x packets/review.diff\n", sha256.Sum256([]byte("diff --git a/a b/a\n"))))
 	if err := lintReviewCandidate(root, "feature", packet); err != nil {
-		t.Fatalf("a packet naming an existing diff must pass: %v", err)
+		t.Fatalf("a packet binding an existing diff must pass: %v", err)
 	}
 }

@@ -91,6 +91,21 @@ func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		return fail(err)
 	}
+	code := 0
+	if err := state.WithFeatureLock(root, slug, func() error {
+		code = renderPacketLocked(root, slug, workspace, wave, phase, role, slice, checks, focus, recheck, wright, doubt, stdout, stderr)
+		return nil
+	}); err != nil {
+		return fail(err)
+	}
+	return code
+}
+
+func renderPacketLocked(root, slug, workspace, wave, phase, role, slice, checks, focus, recheck string, wright, doubt bool, stdout, stderr io.Writer) int {
+	fail := func(err error) int {
+		fmt.Fprintf(stderr, "packet: %v\n", err)
+		return 3
+	}
 	rel := workspaceRel(root, workspace)
 	bundle := "ctx/" + bundleName(contextOpts{phase: phase, role: role, slice: slice, recheck: recheck})
 	if info, err := os.Stat(filepath.Join(workspace, filepath.FromSlash(bundle))); err != nil || !info.Mode().IsRegular() {
@@ -188,16 +203,24 @@ func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
 		return fail(err)
 	}
 	// Lint a sibling draft so a refused re-render keeps the packet already on disk.
-	draft := filepath.Join(workspace, "packets", "."+name+".draft")
-	if err := state.AtomicWrite(draft, []byte(b.String()), 0o600); err != nil {
+	draftFile, err := os.CreateTemp(filepath.Dir(out), "."+name+".draft-*")
+	if err != nil {
+		return fail(err)
+	}
+	draft := draftFile.Name()
+	defer func() { _ = os.Remove(draft) }()
+	_, writeErr := io.WriteString(draftFile, b.String())
+	if writeErr == nil {
+		writeErr = draftFile.Sync()
+	}
+	closeErr := draftFile.Close()
+	if err := errors.Join(writeErr, closeErr); err != nil {
 		return fail(err)
 	}
 	if err := lintRenderedPacket(root, slug, draft, role, wright, finalPhase); err != nil {
-		_ = os.Remove(draft)
 		return fail(fmt.Errorf("BLOCKED: %w", err))
 	}
 	if err := os.Rename(draft, out); err != nil {
-		_ = os.Remove(draft)
 		return fail(err)
 	}
 	fmt.Fprintf(stdout, "packet: %s/packets/%s (%s, %d bytes)\n", rel, name, role, b.Len())
@@ -216,7 +239,7 @@ func lintRenderedPacket(root, slug, path, role string, wright, finalPhase bool) 
 	if finalPhase {
 		return lintReviewCandidate(root, slug, path)
 	}
-	return nil
+	return lintPacketDiffs(root, slug, path, false)
 }
 
 // frozenCandidate returns packets/<wave>.sha256 when candidate freeze wrote
@@ -231,8 +254,15 @@ func frozenCandidate(workspace, wave string) (sums string, partial bool, err err
 	if err != nil {
 		return "", false, fmt.Errorf("packets/%s.sha256: %w", wave, err)
 	}
-	if info, err := os.Stat(filepath.Join(workspace, "packets", wave+".diff")); err != nil || !info.Mode().IsRegular() || info.Size() == 0 {
-		return "", false, fmt.Errorf("packets/%s.sha256 has no non-empty packets/%s.diff beside it; rerun candidate freeze under a new wave", wave, wave)
+	bindings, err := frozenDiffBindings(raw)
+	if err != nil || len(bindings) != 1 || bindings[0].name != "packets/"+wave+".diff" {
+		return "", false, fmt.Errorf("packets/%s.sha256 must bind exactly packets/%s.diff with a diff SHA256 checksum", wave, wave)
+	}
+	if _, _, err := candidatePathInfo(workspace, "packets/"+wave+".diff"); err != nil {
+		return "", false, err
+	}
+	if err := verifyFrozenDiff(filepath.Join(workspace, "packets", wave+".diff"), bindings[0].digest); err != nil {
+		return "", false, fmt.Errorf("packets/%s.diff: %w", wave, err)
 	}
 	if len(raw) <= maxContractBytes/2 {
 		return string(raw), false, nil
