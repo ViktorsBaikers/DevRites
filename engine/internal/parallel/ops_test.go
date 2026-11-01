@@ -715,10 +715,9 @@ func TestCleanupDoesNotClaimUnregisteredWhenListUnreadable(t *testing.T) {
 	}
 }
 
-// TestCleanupStrandedRealGit runs the real git: an undeletable file inside the
-// worktree makes `git worktree remove --force` unregister it and still fail,
-// so stranding must be decided from git's registration, not the exit code.
-func TestCleanupStrandedRealGit(t *testing.T) {
+// Residual out-of-allowlist data stays registered and reachable, even if its
+// permissions would make recursive deletion fail.
+func TestCleanupPreservesResidualRealGit(t *testing.T) {
 	if os.Geteuid() == 0 || runtime.GOOS == "windows" {
 		t.Skip("directory permissions do not bind root or windows")
 	}
@@ -751,9 +750,13 @@ func TestCleanupStrandedRealGit(t *testing.T) {
 
 	swapSeams(t)
 	warnf = func(string, ...any) {}
-	_, err := Cleanup(repo, slug, true)
-	if err == nil || !strings.Contains(err.Error(), wt) || !strings.Contains(err.Error(), "remove it by hand") {
-		t.Fatalf("error must name %s and say it needs manual removal, got %v", wt, err)
+	results, err := Cleanup(repo, slug, true)
+	if err != nil || len(results) != 1 || results[0].Worktree != wt {
+		t.Fatalf("cleanup must report residual recovery path %s: %+v %v", wt, results, err)
+	}
+	registered, err := registeredWorktrees(repo)
+	if err != nil || !registered[resolvedPath(wt)] {
+		t.Fatalf("preserved data must remain registered: %v", err)
 	}
 	if err := os.Chmod(locked, 0o755); err != nil {
 		t.Fatal(err)
@@ -762,7 +765,7 @@ func TestCleanupStrandedRealGit(t *testing.T) {
 		t.Fatalf("rerun: %v", err)
 	}
 	if _, err := os.Stat(wt); err != nil {
-		t.Fatalf("rerun must leave the unregistered directory in place, stat err=%v", err)
+		t.Fatalf("rerun must leave preserved residual directory in place, stat err=%v", err)
 	}
 }
 
@@ -868,11 +871,8 @@ func TestConcurrentCreateSingleWinner(t *testing.T) {
 	}
 }
 
-// stuckBranchBatch creates a two-slice batch and stubs worktree removal so
-// cleanup leaves a stale registration behind: Cleanup's own RemoveAll deletes
-// the worktree directory while git still lists the branch as checked out, so
-// deleteBranch refuses. It returns the repo, slug, the stuck branch and the
-// captured warnings.
+// stuckBranchBatch injects a Git removal refusal. Checkout, registration and
+// branch must remain available for a later retry.
 func stuckBranchBatch(t *testing.T) (repo, slug, branch string, warnings *[]string) {
 	t.Helper()
 	repo, base := setupRepo(t)
@@ -916,8 +916,8 @@ func TestCleanupWarnsOnFailedBranchCleanup(t *testing.T) {
 	if _, err := os.Stat(leasePath); err != nil {
 		t.Fatalf("lease must survive a failed cleanup, got %v", err)
 	}
-	// The rerun finds the lease and, with the stale registration pruned by the
-	// first pass, completes the removal and clears it.
+	// Retry only after the removal failure is resolved.
+	removeWorktree = worktreeRemove
 	if _, err := Cleanup(repo, slug, true); err != nil {
 		t.Fatalf("rerun against the kept lease: %v", err)
 	}

@@ -13,7 +13,10 @@ func TestGatherTriggerFactsReadsCappedPrefixOfOversizedArtifact(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "spec.md"), []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	facts := gatherTriggerFacts("", dir, "")
+	facts, err := gatherTriggerFacts("", "", &contextSources{dir: dir})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !uiSignalRe.MatchString(facts.corpus) {
 		t.Fatalf("oversized artifact contributed no corpus (len=%d)", len(facts.corpus))
 	}

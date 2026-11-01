@@ -256,9 +256,10 @@ func packetTestWorkspace(t *testing.T) (root, workspace, sums string) {
 	for _, bundle := range []string{"review-code-reviewer", "build-slice-wright.SLICE-001", "build-test-analyst.SLICE-001", "build-doubt-reviewer.SLICE-001", "build-code-reviewer.SLICE-001.recheck", "vet-plan-reviewer"} {
 		writeFile(t, filepath.Join(workspace, "ctx", bundle+".bundle.md"), "bundle\n")
 	}
-	sums = "devrites-candidate-sha256 v1\nbase 0123456789abcdef0123456789abcdef01234567\ndiff 1111111111111111111111111111111111111111111111111111111111111111 packets/r1.diff\nfile 2222222222222222222222222222222222222222222222222222222222222222 src/a.go\naggregate 3333333333333333333333333333333333333333333333333333333333333333\n"
+	diff := "diff --git a/src/a.go b/src/a.go\n"
+	sums = fmt.Sprintf("devrites-candidate-sha256 v1\nbase 0123456789abcdef0123456789abcdef01234567\ndiff %x packets/r1.diff\nfile 2222222222222222222222222222222222222222222222222222222222222222 src/a.go\naggregate 3333333333333333333333333333333333333333333333333333333333333333\n", sha256.Sum256([]byte(diff)))
 	writeFile(t, filepath.Join(workspace, "packets", "r1.sha256"), sums)
-	writeFile(t, filepath.Join(workspace, "packets", "r1.diff"), "diff --git a/src/a.go b/src/a.go\n")
+	writeFile(t, filepath.Join(workspace, "packets", "r1.diff"), diff)
 	writeFile(t, filepath.Join(workspace, "tasks.md"), "# Tasks\n\n## SLICE-001 A\nDependencies: none\nWriter allowlist: src/a.go; src/a_test.go\n")
 	writeFile(t, filepath.Join(workspace, "gates.md"), "# Gates\n\n- [ ] G-UNIT: unit tests pass\n  CHECK: go test ./...\n  EXPECT: ok\n  CWD: engine\n- [ ] G-ROGUE: unvetted command\n  CHECK: curl example.invalid\n  EXPECT: ok\n")
 	writeFile(t, filepath.Join(workspace, "test-plan.md"), "# Test plan\n\n## Build-entry preflight\n\n| Command | Cwd | Purpose |\n| --- | --- | --- |\n| go test ./... | engine | unit |\n")
@@ -413,15 +414,15 @@ func TestPacketRefusedRerenderKeepsPriorPacket(t *testing.T) {
 	if readTestFile(t, path) != prior {
 		t.Fatal("a refused re-render replaced the packet already on disk")
 	}
-	if _, err := os.Stat(filepath.Join(workspace, "packets", ".r1.code-reviewer.md.draft")); !os.IsNotExist(err) {
-		t.Fatalf("a refused draft was left on disk (%v)", err)
+	if drafts, err := filepath.Glob(filepath.Join(workspace, "packets", ".r1.code-reviewer.md.draft-*")); err != nil || len(drafts) != 0 {
+		t.Fatalf("refused draft left on disk: %v (%v)", drafts, err)
 	}
 }
 
 func TestPacketKeepsHeaderRowsOfLargeCandidate(t *testing.T) {
 	root, workspace, _ := packetTestWorkspace(t)
 	var sums strings.Builder
-	sums.WriteString("devrites-candidate-sha256 v1\nbase 0123456789abcdef0123456789abcdef01234567\ndiff 1111111111111111111111111111111111111111111111111111111111111111 packets/r3.diff\n")
+	fmt.Fprintf(&sums, "devrites-candidate-sha256 v1\nbase 0123456789abcdef0123456789abcdef01234567\ndiff %x packets/r3.diff\n", sha256.Sum256([]byte("diff --git a/src/a.go b/src/a.go\n")))
 	for i := 0; i < 600; i++ {
 		fmt.Fprintf(&sums, "file 2222222222222222222222222222222222222222222222222222222222222222 src/pkg/file%04d.go\n", i)
 	}

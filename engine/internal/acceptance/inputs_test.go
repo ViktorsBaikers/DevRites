@@ -184,7 +184,7 @@ func TestRunGatesRejectsInputsMovedAfterSharedExecution(t *testing.T) {
 				return err
 			}
 			approved := []ApprovedCommand{{Command: check}}
-			results := RunGates(context.Background(), project, ledgerPath, ParseLedger(mustRead(t, ledgerPath)), approved, false, 10*time.Second, writeLock)
+			results := RunGates(context.Background(), project, ledgerPath, ParseLedger(mustRead(t, ledgerPath)), approved, false, 10*time.Second, &RunOptions{WriteLock: writeLock})
 			if len(results) != 2 || !results[0].Passed || results[1].Passed || !results[1].Ran || results[1].WriteErr != nil {
 				t.Fatalf("later consumer certified moved inputs: %+v", results)
 			}
@@ -236,7 +236,7 @@ func TestRunGatesRejectsInputsMovedBeforeWriteback(t *testing.T) {
 		return fn()
 	}
 	results := RunGates(context.Background(), project, ledgerPath, ParseLedger(mustRead(t, ledgerPath)),
-		[]ApprovedCommand{{Command: check}}, false, 10*time.Second, writeLock)
+		[]ApprovedCommand{{Command: check}}, false, 10*time.Second, &RunOptions{WriteLock: writeLock})
 	if !results[0].Ran || results[0].Passed || results[0].WriteErr != nil || !strings.Contains(results[0].Detail, "INPUTS") {
 		t.Fatalf("input moved before locked writeback must not certify: %+v", results)
 	}

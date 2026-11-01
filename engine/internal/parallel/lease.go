@@ -46,6 +46,10 @@ type Lease struct {
 	CreatedAt           string       `json:"created_at"`
 	BaseSHA             string       `json:"base_sha"`
 	ControlTip          string       `json:"control_tip,omitempty"`
+	ControlCheckout     string       `json:"control_checkout,omitempty"`
+	ControlRef          string       `json:"control_ref,omitempty"`
+	PendingLanding      *landing     `json:"pending_landing,omitempty"`
+	LastLanding         *landing     `json:"last_landing,omitempty"`
 	N                   int          `json:"n"`
 	Capacity            int          `json:"capacity,omitempty"`
 	Status              string       `json:"status"`
@@ -265,6 +269,12 @@ func ValidateLease(lease *Lease) error {
 			return fmt.Errorf("slice %q: invalid base_sha %q", key, sl.BaseSHA)
 		}
 	}
+	if err := validateLanding(lease, lease.PendingLanding, false); err != nil {
+		return err
+	}
+	if err := validateLanding(lease, lease.LastLanding, true); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -363,6 +373,11 @@ func ReadLease(path string) (*Lease, error) {
 }
 
 func ClearLease(path string) error {
+	if lease, err := ReadLease(path); err == nil && lease.PendingLanding != nil {
+		return fmt.Errorf("lease-clear refuses pending landing; recover with integrate --apply-to-control or abort")
+	} else if err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	err := os.Remove(path)
 	if err != nil && !os.IsNotExist(err) {
 		return err

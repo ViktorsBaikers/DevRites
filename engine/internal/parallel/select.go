@@ -94,6 +94,9 @@ func SelectForSlug(root, slug string, capN int, ready []SlicePaths) (eligible, p
 	candidates := make([]SlicePaths, len(ready))
 	copy(candidates, ready)
 	if found != nil {
+		if found.lease.PendingLanding != nil {
+			return nil, nil, -1, fmt.Errorf("pending landing blocks admission; recover controller %s at %s with integrate --apply-to-control or abort", found.controller, found.root)
+		}
 		controller = found.controller
 		if slug != "" && slug != controller {
 			for i := range candidates {

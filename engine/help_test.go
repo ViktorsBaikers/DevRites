@@ -46,6 +46,7 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"parallel", "create", "--help"}, want: "usage: parallel create --root --slug --batch --base --json"},
 		{args: []string{"parallel", "create", "-h"}, want: "parallel create"},
 		{args: []string{"parallel", "select", "--help"}, want: "parallel select --cap"},
+		{args: []string{"parallel", "prune", "--help"}, want: "parallel prune --root --slug"},
 		{args: []string{"observe", "--help"}, want: "observe summary"},
 		{args: []string{"observe", "summary", "--help"}, want: "observe summary"},
 		{args: []string{"observe", "slice", "--help"}, want: "observe slice <slug> <SLICE-ID>"},

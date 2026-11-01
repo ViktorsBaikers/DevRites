@@ -29,9 +29,13 @@ Same-candidate accounts may be cited when permitted. Corrections require
 new candidate checks, affected real proof and fresh affected exact reviewers for
 all open findings and dependency/regression closure, including newly triggered roles.
 After an all-met acceptance ledger has been executed, any candidate digest change
-requires `devrites-engine gates reverify <slug>` against the corrected frozen
-candidate before refreshed evidence or review bindings are written; ordinary
-`gates run` skips already-met rows and cannot refresh them.
+requires `devrites-engine gates reverify <slug> --transcripts` against the corrected
+frozen candidate before refreshed evidence or review bindings are written.
+Unchanged declared `INPUTS` may reuse complete passing originating transcripts;
+missing origins rerun only affected approved checks. Reuse is not execution.
+If non-file prerequisites changed or prior proof is doubtful, invalidate affected
+automatic evidence through the workspace's single-writer protocol before rerun.
+Ordinary `gates run` skips already-met rows and cannot refresh them.
 Changed contracts or uncertain closure require a full applicable pass.
 Unchanged sub-scope needs explicit unchanged-input/dependency justification and a
 link to original evidence. Never relabel an old candidate-bound account.

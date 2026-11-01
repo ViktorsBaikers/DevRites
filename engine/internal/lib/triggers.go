@@ -1,9 +1,8 @@
 package lib
 
 import (
-	"io"
+	"errors"
 	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"sort"
@@ -82,8 +81,7 @@ var triggerSignals = []struct {
 
 // suggestTriggers returns declared, unselected trigger names whose firing facts
 // hold in this workspace. Sorted for stable output.
-func suggestTriggers(manifest loadsManifest, root, featureDir string, opts contextOpts) []string {
-	facts := gatherTriggerFacts(root, featureDir, opts.role)
+func suggestTriggers(manifest loadsManifest, opts contextOpts, facts triggerFacts) []string {
 	var suggested []string
 	for name := range manifest.Triggers {
 		if slices.Contains(opts.triggers, name) {
@@ -101,45 +99,46 @@ func suggestTriggers(manifest loadsManifest, root, featureDir string, opts conte
 	return suggested
 }
 
-func gatherTriggerFacts(root, featureDir, role string) triggerFacts {
+func gatherTriggerFacts(root, role string, sources *contextSources) (triggerFacts, error) {
 	facts := triggerFacts{role: roleBase(role)}
 	if root != "" {
-		afkPath := filepath.Join(root, "AFK")
-		if info, err := os.Stat(afkPath); err == nil && info.Mode().IsRegular() {
-			facts.afk = true
-			if data, err := os.ReadFile(afkPath); err == nil { // #nosec G304 -- .devrites/AFK sentinel
-				facts.afkParallel = afkAllowsParallel(string(data))
-			}
+		sentinels := contextSources{dir: root}
+		data, err := sentinels.read("AFK")
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return facts, err
 		}
-		if info, err := os.Stat(filepath.Join(root, "principles.md")); err == nil && info.Mode().IsRegular() {
-			facts.principles = true
+		facts.afk = err == nil
+		facts.afkParallel = afkAllowsParallel(string(data))
+		_, err = sentinels.read("principles.md")
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return facts, err
 		}
+		facts.principles = err == nil
 	}
-	if featureDir != "" {
-		if info, err := os.Stat(filepath.Join(featureDir, "ai-spec.md")); err == nil && info.Mode().IsRegular() {
-			facts.aiSpec = true
+	if sources.dir != "" {
+		_, err := sources.read("ai-spec.md")
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return facts, err
 		}
+		facts.aiSpec = err == nil
 		var corpus strings.Builder
 		for _, name := range triggerEvidenceFiles {
-			path := filepath.Join(featureDir, name)
-			info, err := os.Stat(path)
-			if err != nil || !info.Mode().IsRegular() {
-				continue
-			}
-			f, err := os.Open(path) // #nosec G304 -- workspace artifact; read is capped below
+			data, err := sources.read(name)
 			if err != nil {
-				continue
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
+				return facts, err
 			}
-			data, err := io.ReadAll(io.LimitReader(f, triggerEvidenceFileCap))
-			_ = f.Close()
-			if err == nil {
-				corpus.Write(data)
-				corpus.WriteByte('\n')
+			if len(data) > triggerEvidenceFileCap {
+				data = data[:triggerEvidenceFileCap]
 			}
+			corpus.Write(data)
+			corpus.WriteByte('\n')
 		}
 		facts.corpus = strings.ToLower(corpus.String())
 	}
-	return facts
+	return facts, nil
 }
 
 var afkParallelRe = regexp.MustCompile(`(?m)^\s*max_parallel\s*:\s*([0-9]+)\s*$`)

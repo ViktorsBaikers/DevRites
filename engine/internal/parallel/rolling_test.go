@@ -286,15 +286,6 @@ func TestIntegrateSliceRefuses(t *testing.T) {
 		},
 		{name: "slice not green", slice: "slice-b", apply: true, want: "is not green", status: StatusRunning},
 		{name: "unknown slice", slice: "slice-z", apply: true, want: "slice not in lease", status: StatusRunning},
-		{
-			name: "already integrated",
-			prep: func(t *testing.T, repo string) {
-				if _, _, err := Integrate(IntegrateOpts{Root: repo, Slug: rollSlug, Slice: "slice-a", ApplyToControl: true}); err != nil {
-					t.Fatal(err)
-				}
-			},
-			slice: "slice-a", apply: true, want: "already integrated", status: StatusRunning,
-		},
 		{name: "missing --apply-to-control", slice: "slice-a", want: "requires --apply-to-control", status: StatusRunning},
 		{
 			name: "transfer strays outside the slice paths",

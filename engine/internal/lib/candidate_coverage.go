@@ -1,9 +1,7 @@
 package lib
 
 import (
-	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -128,20 +126,5 @@ func lintReviewCandidate(root, slug, packet string) error {
 	if err := CheckCandidateCoverage(root, slug); err != nil {
 		return err
 	}
-	raw, err := readBoundedRegularFile(packet, maxContractBytes)
-	if err != nil {
-		return fmt.Errorf("reviewer packet %s: %w", packet, err)
-	}
-	for _, name := range diffPathRE.FindAllString(string(raw), -1) {
-		for _, dir := range []string{projectDir(root), featureDir(root, slug), ""} {
-			candidate := name
-			if dir != "" {
-				candidate = filepath.Join(dir, filepath.FromSlash(name))
-			}
-			if info, err := os.Stat(candidate); err == nil && info.Mode().IsRegular() && info.Size() > 0 {
-				return nil
-			}
-		}
-	}
-	return errors.New("a Review or Seal reviewer packet must name the frozen candidate diff (an existing non-empty .diff or .patch file); reviewers cannot judge a digest alone")
+	return lintPacketDiffs(root, slug, packet, true)
 }

@@ -378,7 +378,7 @@ func TestRunGatesSharedCheckExecutesOnceAndLocksWrites(t *testing.T) {
 	locked := 0
 	writeLock := func(fn func() error) error { locked++; return fn() }
 
-	results := RunGates(context.Background(), project, ledgerPath, doc, approved, false, 10*time.Second, writeLock)
+	results := RunGates(context.Background(), project, ledgerPath, doc, approved, false, 10*time.Second, &RunOptions{WriteLock: writeLock})
 	if !results[0].Passed || !results[1].Passed || results[2].Passed {
 		t.Fatalf("each gate must match its own EXPECT: %+v", results)
 	}
@@ -1157,6 +1157,25 @@ func TestRunPreconditionsRunsOnlyMatchingRows(t *testing.T) {
 	// Slice IDs are SLICE-\d+, so a four-digit ID is a valid --slice value.
 	if code := RunPreconditions(root, []string{"feat", "--slice", "SLICE-1000"}, &stdout, &stderr); code != ExitOK || !strings.Contains(stdout.String(), "result: none") {
 		t.Fatalf("a slice without rows runs nothing: code=%d\n%s", code, stdout.String())
+	}
+}
+
+func TestPreflightRedactedLabelPassIsRetained(t *testing.T) {
+	label := "dependency-dry-run SLICE-002 ghp_" + strings.Repeat("a", 36)
+	plan := strings.Replace(preconditionsPlan, "slice probe", label, 1)
+	plan = strings.Replace(plan, "echo PRE-OK", "echo PRE-OK >> preflight-runs.txt", 1)
+	root, work, rows := writePreconditionsPlan(t, plan)
+	for range 2 {
+		var stdout, stderr strings.Builder
+		if code := RunPreconditions(root, []string{"feat", "--slice", "SLICE-002"}, &stdout, &stderr); code != ExitOK {
+			t.Fatalf("pre-dispatch failed: code=%d", code)
+		}
+		if !PreflightPassed(work, rows[1]) {
+			t.Fatal("published redacted preflight record is not discoverable")
+		}
+	}
+	if got := strings.TrimSpace(mustRead(t, filepath.Join(filepath.Dir(root), "preflight-runs.txt"))); got != "PRE-OK" {
+		t.Fatalf("pre-dispatch baseline executed more than once: %q", got)
 	}
 }
 

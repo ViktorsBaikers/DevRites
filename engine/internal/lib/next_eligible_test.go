@@ -303,3 +303,27 @@ func TestNextBatchUnavailableIsAdvisory(t *testing.T) {
 		t.Fatalf("want an advisory unavailable line:\n%s", out)
 	}
 }
+
+func TestDeferredSlicesDoNotConsumeNextOrWidth(t *testing.T) {
+	root, dir := planWorkspace(t)
+	writeFile(t, filepath.Join(dir, "tasks.md"), "# Tasks\n"+
+		poolSlice("SLICE-002", "src/required.go", "Satisfies: nOnE\nWorkspace dependencies: invalid")+
+		poolSlice("SLICE-003", "src/required.go", "")+
+		poolSlice("SLICE-004", "src/other.go", "```text\nSatisfies: none\n```\nSatisfies: AC-001"))
+	eligible, batch, err := planBatch(root, "feat", 1)
+	if err != nil || !slices.Equal(eligible, []string{"SLICE-003", "SLICE-004"}) || !slices.Equal(batch, []string{"SLICE-003"}) {
+		t.Fatalf("eligible=%v batch=%v err=%v", eligible, batch, err)
+	}
+	_, batch, err = planBatch(root, "feat", 3)
+	if err != nil || len(batch) != 2 {
+		t.Fatalf("required width=%v err=%v", batch, err)
+	}
+	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if code := RunNext(root, []string{"feat"}, stdout, stderr); code != 0 {
+		t.Fatalf("next code=%d: %s%s", code, stdout, stderr)
+	}
+	if out := stdout.String(); !strings.Contains(out, "eligible_now: SLICE-003,SLICE-004\nbatch: SLICE-003,SLICE-004\n") {
+		t.Fatalf("next starved required slices: %s", out)
+	}
+}

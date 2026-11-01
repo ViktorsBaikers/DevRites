@@ -30,8 +30,9 @@ type GateResult struct {
 	Detail    string // exit/match/timeout/approval diagnostic
 	Discarded bool   // result dropped: bound oracle or inputs changed during the run
 	WriteErr  error  // evidence writeback failed for a reason other than drift
-	Reused    bool   // met gate kept because its INPUTS are unchanged
+	Reused    bool   // met gate kept under the selected reuse policy
 	Inputs    string // INPUTS content digest at run time, when declared
+	Origin    string // complete executed transcript retained when proof is reused
 	// Outcome, Started and Ended describe the execution this result judged;
 	// they are zero when the gate did not execute.
 	Outcome        RunOutcome
@@ -63,19 +64,33 @@ func ReadLedgerFile(ledgerPath string) (string, error) {
 	return string(raw), nil
 }
 
-// RunGates executes the runnable gates of ledgerPath. reverify re-runs every
-// runnable gate including already-met ones; the normal mode runs only unmet
-// runnable gates. approved is the vetted command set from test-plan.md; a
+// RunOptions controls evidence reuse and short ledger writeback locking.
+// TranscriptWork requires a usable executed origin before a met gate can skip.
+// The caller holds the gates execution lock through transcript publication.
+type RunOptions struct {
+	WriteLock      func(func() error) error
+	TranscriptWork string
+}
+
+// RunGates executes the runnable gates of ledgerPath. reverify also runs met
+// gates without INPUTS; met gates with unchanged INPUTS reuse their proof in
+// either mode, subject to options.TranscriptWork's executed-origin requirement.
+// approved is the vetted command set from test-plan.md; a
 // CHECK outside it never executes, and neither does one outside a surface that
 // could not be determined — an absent preflight is a refusal, not permission.
 // Each pass writes definition-bound evidence; each failure clears the box and
 // restores EVIDENCE: pending.
 //
 // Gates sharing one CHECK and CWD execute once per call; each matches its own
-// EXPECT against that shared output. writeLock, when non-nil, wraps every
+// EXPECT against that shared output. options.WriteLock, when non-nil, wraps every
 // ledger writeback so the caller need not hold the feature lock while checks
 // execute; writeResult re-verifies the gate's oracle before it writes.
-func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, approved []ApprovedCommand, reverify bool, timeout time.Duration, writeLock func(func() error) error) []GateResult {
+func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, approved []ApprovedCommand, reverify bool, timeout time.Duration, options *RunOptions) []GateResult {
+	var writeLock func(func() error) error
+	transcriptWork := ""
+	if options != nil {
+		writeLock, transcriptWork = options.WriteLock, options.TranscriptWork
+	}
 	var results []GateResult
 	executions := map[string]struct {
 		ran     bool
@@ -105,24 +120,35 @@ func RunGates(ctx context.Context, root, ledgerPath string, doc *Document, appro
 			results = append(results, GateResult{ID: gate.ID, Detail: "manual gate; evidence is judged, not executed"})
 			continue
 		}
+		isApproved := Approved(gate.Check, gate.Cwd, approved)
+		if transcriptWork != "" && !isApproved {
+			results = append(results, GateResult{ID: gate.ID, Detail: "CHECK/CWD is not an approved test-plan.md preflight row; not executed"})
+			continue
+		}
 		inputs := ""
 		if GateState(gate, doc) == StateMet {
-			if gate.Inputs == "" && !reverify {
-				results = append(results, GateResult{ID: gate.ID, Passed: true, Detail: "already met"})
-				continue
-			}
+			canReuse := gate.Inputs == "" && !reverify
 			if gate.Inputs != "" {
 				// An unreadable or unmatched spec never matches recorded evidence.
 				inputs, _ = InputsDigest(root, gate.Inputs)
+				canReuse = inputs != "" && inputs == recordedInputs(gate)
 			}
-			// A gate that declares INPUTS is reused, under run and reverify alike,
-			// exactly while the files it depends on are byte-identical; any change re-executes it.
-			if inputs != "" && inputs == recordedInputs(gate) {
-				results = append(results, GateResult{ID: gate.ID, Passed: true, Reused: true, Inputs: inputs, Detail: "reused: inputs unchanged"})
-				continue
+			if canReuse {
+				origin := ""
+				if transcriptWork != "" {
+					origin = passingOrigin(transcriptWork, gate)
+				}
+				if transcriptWork == "" || origin != "" {
+					detail := "already met"
+					if gate.Inputs != "" {
+						detail = "reused: inputs unchanged"
+					}
+					results = append(results, GateResult{ID: gate.ID, Passed: true, Reused: gate.Inputs != "" || origin != "", Inputs: inputs, Origin: origin, Detail: detail})
+					continue
+				}
 			}
 		}
-		if !Approved(gate.Check, gate.Cwd, approved) {
+		if !isApproved {
 			results = append(results, GateResult{ID: gate.ID, Detail: "CHECK/CWD is not an approved test-plan.md preflight row; not executed"})
 			continue
 		}

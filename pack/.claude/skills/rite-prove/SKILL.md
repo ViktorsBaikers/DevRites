@@ -88,9 +88,13 @@ test changes.
    --transcripts` executes every unmet runnable gate against the same approved
    preflight rows, records definition-bound evidence, and writes one redacted,
    candidate-bound transcript per gate under `references/gates/<gate-id>/`;
-   `gates reverify <slug> --transcripts` re-executes all of them when any prior
-   pass is in doubt. Hand the proof runner those transcripts, never hand-built
-   logs. Attest manual gates with `gates attest
+   `gates reverify <slug> --transcripts` refreshes prior passes, except valid
+   unchanged-`INPUTS` proof may reuse its complete executed origin. Missing origins
+   rerun affected approved checks; a reused log never counts as execution.
+   If non-file prerequisites changed or proof is doubtful, invalidate affected
+   automatic evidence through the workspace's single-writer protocol before rerun.
+   Hand the proof runner those transcripts, never hand-built logs.
+   Attest manual gates with `gates attest
    <slug> <id> <note>` only against observed judgment whose note cites the
    human's own words or source; placeholder notes are unmet and an AFK run never
    self-attests. Only gates manual at Vet are attested; runnable-to-manual

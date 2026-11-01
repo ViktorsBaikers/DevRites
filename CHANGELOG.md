@@ -2,6 +2,28 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## Unreleased
+
+### Added
+
+- Pool independent, currently vetted continuation slices under one repository-wide
+  parallel controller, with rolling landings and refills across workspace sources.
+- Prune clean integrated worker checkouts without discarding transfer branches,
+  proof identities, retained lease rows, or running siblings.
+
+### Fixed
+
+- Recover exact recorded parallel landings after interrupted lease persistence;
+  preserve late worker edits, ignored data, extra commits, and missing-checkout
+  Git metadata during cleanup.
+- Exclude explicitly deferred slices from runnable work; stop inventing integration
+  suites from language manifests alone.
+- Verify cached context bytes and frozen review diffs, publish complete artifacts
+  atomically, and isolate concurrent freeze/render attempts.
+- Recover missing executed gate transcripts without rerunning valid scoped proof;
+  redact sensitive transcript metadata as well as command output.
+- Keep timed-out tests failed even when graceful termination exits successfully.
+
 ## [7.2.8](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.7...v7.2.8) (2026-10-31)
 
 ### Fixed

@@ -252,6 +252,8 @@ func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdIntegrate(rest, stdout, stderr)
 	case "cleanup":
 		return cmdCleanup(rest, stdout, stderr)
+	case "prune":
+		return cmdPrune(rest, stdout, stderr)
 	case "status":
 		return cmdStatus(rest, stdout, stderr)
 	case "lease-write":
@@ -278,6 +280,7 @@ const (
 	usageAbort        = "usage: parallel abort --root --slug"
 	usageIntegrate    = "usage: parallel integrate --root --slug [--apply-to-control [--slice <id>]]"
 	usageCleanup      = "usage: parallel cleanup --root --slug [--force]"
+	usagePrune        = "usage: parallel prune --root --slug"
 	usageStatus       = "usage: parallel status --root --slug"
 	usageLeaseWrite   = "usage: parallel lease-write --root --slug --json"
 	usageLeaseRead    = "usage: parallel lease-read --root --slug [--field name]"
@@ -296,6 +299,7 @@ Subcommands:
   abort           --root --slug
   integrate       --root --slug [--apply-to-control [--slice <id>]]
   cleanup         --root --slug [--force]
+  prune           --root --slug
   status          --root --slug
   lease-write     --root --slug --json
   lease-read      --root --slug [--field name]
@@ -321,6 +325,8 @@ func CommandUsage(name string) string {
 		return usageIntegrate
 	case "cleanup":
 		return usageCleanup
+	case "prune":
+		return usagePrune
 	case "status":
 		return usageStatus
 	case "lease-write":
@@ -693,6 +699,29 @@ func cmdCleanup(args []string, stdout, stderr io.Writer) int {
 	return ExitOK
 }
 
+func cmdPrune(args []string, stdout, stderr io.Writer) int {
+	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usagePrune)
+	if done {
+		return code
+	}
+	if code := requireRootSlug(f, stderr); code != ExitOK {
+		return code
+	}
+	if code := rejectUnsupportedFlags(f, stderr, false, false); code != ExitOK {
+		return code
+	}
+	removed, err := Prune(f.Root, f.Slug)
+	for _, path := range removed {
+		fmt.Fprintf(stdout, "pruned: %s\n", path)
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "parallel prune: %v\n", err)
+		return ExitBlocked
+	}
+	fmt.Fprintln(stdout, "prune: done; branches and lease retained")
+	return ExitOK
+}
+
 func cmdStatus(args []string, stdout, stderr io.Writer) int {
 	f, code, done := parseFlagsOrHelp(args, stdout, stderr, usageStatus)
 	if done {
@@ -751,8 +780,9 @@ func cmdLeaseWrite(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 		if err != nil {
 			return err
 		}
+		var current *Lease
 		if found != nil {
-			current := found.lease
+			current = found.lease
 			if lease.BatchID != current.BatchID || lease.BaseSHA != current.BaseSHA || expectedControl(&lease) != expectedControl(current) {
 				return fmt.Errorf("lease-write cannot replace retained batch or control tip; cleanup the current controller explicitly")
 			}
@@ -762,6 +792,17 @@ func cmdLeaseWrite(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 		}
 		if err := normalizeLease(&lease, f.Slug); err != nil {
 			return err
+		}
+		if err := protectRawLease(current, &lease); err != nil {
+			return err
+		}
+		if current != nil {
+			if err := ensureControllerIdentity(f.Root, current); err != nil {
+				return err
+			}
+			if current.PendingLanding != nil {
+				return nil
+			}
 		}
 		if err := validateLeaseSources(filepath.Join(f.Root, ".devrites"), &lease); err != nil {
 			return err

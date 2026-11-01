@@ -277,11 +277,14 @@ func workspacePlanReady(root, slug string, requireDeclaration bool, read func(st
 	var notices []string
 	valid := map[string]bool{}
 	for _, node := range graph.Slices {
+		block, _ := state.ExtractTaskSlice(raw, node.ID)
+		if satisfies, _ := fieldValue(sliceFields(block), "satisfies"); strings.EqualFold(satisfies, "none") {
+			continue
+		}
 		if built[sliceNumber(node.ID)] || slicesUnbuilt(node.Dependencies, built) {
 			continue
 		}
 		key := parallel.SliceKey(slug, node.ID)
-		block, _ := state.ExtractTaskSlice(raw, node.ID)
 		refs, declared, problem := declaredWorkspaceDependencies(block)
 		if problem == nil && requireDeclaration && !declared {
 			problem = fmt.Errorf("missing Workspace dependencies; native Plan/Vet must bind none or explicit producers before foreign admission")

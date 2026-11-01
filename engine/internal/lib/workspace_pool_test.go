@@ -409,3 +409,39 @@ func TestWorkspaceReadySequenceTraversalBound(t *testing.T) {
 		t.Fatalf("unbounded continuation traversal: ready=%v notices=%v err=%v", ready, notices, err)
 	}
 }
+
+func TestWorkspaceReadySkipsDeferredBeforeAdmission(t *testing.T) {
+	for _, foreign := range []bool{false, true} {
+		for _, paths := range []string{"src/required.go", "src/deferred.go", ""} {
+			t.Run(fmt.Sprintf("foreign=%t/paths=%s", foreign, paths), func(t *testing.T) {
+				project := t.TempDir()
+				root := filepath.Join(project, ".devrites")
+				target := "parent"
+				if foreign {
+					poolWorkspace(t, root, "parent", "", poolSlice("SLICE-001", "src/parent.go", ""))
+					target = "child"
+				}
+				parent := ""
+				if foreign {
+					parent = "parent"
+				}
+				poolWorkspace(t, root, target, parent,
+					poolSlice("SLICE-001", paths, "Satisfies: NoNe\nWorkspace dependencies: malformed")+
+						poolSlice("SLICE-002", "src/required.go", "Workspace dependencies: none")+
+						poolSlice("SLICE-003", "src/other.go", "```text\nSatisfies: none\nWriter allowlist: src/example.go\n```\nSatisfies: AC-001\nWorkspace dependencies: none"))
+				ready, notices, err := WorkspaceReady(project, "parent", target)
+				prefix := ""
+				if foreign {
+					prefix = "child/"
+				}
+				if err != nil || len(notices) != 0 || !slices.Equal(poolKeys(ready), []string{prefix + "SLICE-002", prefix + "SLICE-003"}) {
+					t.Fatalf("ready=%v notices=%v err=%v", ready, notices, err)
+				}
+				picked, err := parallel.SelectGreedy(1, ready, project)
+				if err != nil || !slices.Equal(poolKeys(picked), []string{prefix + "SLICE-002"}) {
+					t.Fatalf("deferred slice starved required work: picks=%v err=%v", picked, err)
+				}
+			})
+		}
+	}
+}

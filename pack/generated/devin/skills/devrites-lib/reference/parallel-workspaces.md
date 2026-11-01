@@ -84,6 +84,8 @@ At entry, each landing, planning/review return and before any wait or final repl
    with stdin `[]`. This changes capacity only, not workers or a complete lease's
    status. A decrease below active count refuses: pause admissions and drain to
    the requested count, then retry; never cancel workers to meet a lower cap.
+   A pending landing is recovery, not free capacity: retry the exact recorded
+   integrate before admission; unrelated HEAD/ref movement remains blocked.
 2. Query the mixed pool in stable sequence order, controller first (the ordered
    ACTIVE owner may now differ):
    `devrites-engine parallel select --root <repo> --slug <controller> --from-plan --workspaces <controller,authorized-source,...> --cap N`.
@@ -106,6 +108,10 @@ At entry, each landing, planning/review return and before any wait or final repl
    refill immediately from the whole authorized pool. A red sibling repairs in
    place and holds its slot/paths; it does not delay independent green landings.
    Never satisfy a producer edge on writer return or green-but-unlanded work.
+   After worker-bound review/proof and source bookkeeping finish, prune only
+   verified clean integrated checkouts with `parallel prune --root <repo>
+   --slug <controller>`. Retain transfer refs/lease identities; dirty or ignored
+   data stays with its reported recovery path and does not justify forced deletion.
 
 ## Identity, dispatch and proof
 
@@ -115,7 +121,7 @@ Lease targeting uses bare `SLICE-001` only for controller, `child/SLICE-001` for
 foreign sources. Duplicate local IDs across sources remain distinct typed keys.
 Use the lease's worktree/branch paths, not hand-built namespaces.
 
-Controller slug owns `parallel create/add/status/record-green/integrate/cleanup`.
+Controller slug owns `parallel create/add/status/record-green/integrate/prune/cleanup`.
 SOURCE slug owns `context`, `packet`, `dispatch open/start/return`, slice checks,
 candidate freeze, proof, repair, evidence and bookkeeping. Open source-local waves
 with local roles `slice-wright.<SLICE-ID>` and local `--slice <SLICE-ID>`; no slash

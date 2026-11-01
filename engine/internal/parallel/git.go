@@ -192,7 +192,25 @@ func deleteBranch(repo, branch string) error {
 	if err != nil || !exists {
 		return err
 	}
-	_, err = git(repo, "branch", "-D", branch)
+	tip, err := revParse(repo, "refs/heads/"+branch)
+	if err != nil {
+		return err
+	}
+	return deleteBranchAt(repo, branch, tip)
+}
+
+// Bind deletion to the observed tip without bypassing checked-out branch safety.
+func deleteBranchAt(repo, branch, tip string) error {
+	worktrees, err := git(repo, "worktree", "list", "--porcelain", "-z")
+	if err != nil {
+		return err
+	}
+	for _, field := range strings.Split(worktrees, "\x00") {
+		if field == "branch refs/heads/"+branch {
+			return fmt.Errorf("branch %s remains checked out in a registered worktree", branch)
+		}
+	}
+	_, err = git(repo, "update-ref", "-d", "refs/heads/"+branch, tip)
 	return err
 }
 
@@ -208,15 +226,15 @@ func AddDetachedWorktree(repo, path, rev string) error {
 	return err
 }
 
-// RemoveWorktree force-removes a worktree, falling back to delete plus prune.
-func RemoveWorktree(repo, path string) error { return worktreeRemove(repo, path) }
+// RemoveWorktree force-removes a caller-owned throwaway worktree. A Git
+// refusal never grants permission to recursively delete its remaining data.
+func RemoveWorktree(repo, path string) error {
+	_, err := git(repo, "worktree", "remove", "--force", resolvedPath(path))
+	return err
+}
 
 func worktreeRemove(repo, path string) error {
-	_, err := git(repo, "worktree", "remove", "--force", resolvedPath(path))
-	if err != nil {
-		_ = os.RemoveAll(path)
-		_, _ = git(repo, "worktree", "prune")
-	}
+	_, err := git(repo, "worktree", "remove", resolvedPath(path))
 	return err
 }
 
@@ -243,10 +261,22 @@ func resolvedPath(p string) string {
 	if abs, err := filepath.Abs(p); err == nil {
 		p = abs
 	}
-	if r, err := filepath.EvalSymlinks(p); err == nil {
-		return r
+	original := filepath.Clean(p)
+	prefix, suffix := original, ""
+	for {
+		if resolved, err := filepath.EvalSymlinks(prefix); err == nil {
+			return filepath.Join(resolved, suffix)
+		} else if !os.IsNotExist(err) {
+			return original
+		}
+		parent := filepath.Dir(prefix)
+		if parent == prefix {
+			return original
+		}
+		// Missing leaves must retain their existing ancestors' canonical identity.
+		suffix = filepath.Join(filepath.Base(prefix), suffix)
+		prefix = parent
 	}
-	return filepath.Clean(p)
 }
 
 // createdWorktree reports whether p is a registered worktree. A path that is

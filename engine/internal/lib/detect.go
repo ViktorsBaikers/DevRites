@@ -251,27 +251,27 @@ func manifestFallback(root string, slot string) (detectedCommand, bool) {
 	}
 	manifests := []manifest{
 		{"go.mod", "go.mod", map[string]string{
-			"unit": "go test ./...", "integration": "go test -tags=integration ./...",
+			"unit": "go test ./...",
 			"lint": "golangci-lint run", "vet": "go vet ./...", "build": "go build ./...",
 		}},
 		{"Cargo.toml", "Cargo.toml", map[string]string{
-			"unit": "cargo test", "integration": "cargo test -- --ignored",
+			"unit": "cargo test",
 			"lint": "cargo clippy --all-targets", "vet": "cargo check", "build": "cargo build",
 		}},
 		{"pyproject.toml", "pyproject.toml", map[string]string{
-			"unit": "python -m pytest", "integration": "python -m pytest -m integration",
+			"unit": "python -m pytest",
 			"lint": "ruff check", "vet": "mypy .", "build": "python -m build",
 		}},
 		{"setup.py", "setup.py", map[string]string{
-			"unit": "python -m pytest", "integration": "python -m pytest -m integration",
+			"unit": "python -m pytest",
 			"lint": "flake8", "vet": "mypy .",
 		}},
 		{"pom.xml", "pom.xml", map[string]string{
-			"unit": "mvn test", "integration": "mvn verify",
-			"vet": "mvn -q compile", "build": "mvn package",
+			"unit": "mvn test",
+			"vet":  "mvn -q compile", "build": "mvn package",
 		}},
 		{"build.gradle", "build.gradle", map[string]string{
-			"unit": "gradle test", "integration": "gradle integrationTest",
+			"unit": "gradle test",
 			"lint": "gradle check", "build": "gradle build",
 		}},
 		{"composer.json", "composer.json", map[string]string{
@@ -279,7 +279,7 @@ func manifestFallback(root string, slot string) (detectedCommand, bool) {
 			"vet": "vendor/bin/phpstan analyse",
 		}},
 		{"Gemfile", "Gemfile", map[string]string{
-			"unit": "bundle exec rspec", "integration": "bundle exec rspec --tag integration",
+			"unit": "bundle exec rspec",
 			"lint": "bundle exec rubocop",
 		}},
 		{"mix.exs", "mix.exs", map[string]string{

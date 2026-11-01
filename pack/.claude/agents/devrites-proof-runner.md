@@ -26,8 +26,8 @@ and only the orchestrator-supplied changed paths.
    contradictory, whose output and exit come from different executions, whose
    command masks status, or whose exit and output disagree. A pass after a failed
    attempt on an unchanged digest is `flaky`: `fail` for its AC.
-2. Confirm every log, screenshot, trace, and result belongs to the supplied
-   candidate.
+2. Confirm proof belongs to the supplied candidate, except explicitly scoped
+   reuse backed by unchanged declared inputs and a valid executed origin.
 3. Map real REQ/AC/scenario/link IDs **and meaning** to observed proof. Invented/
    label-only maps or internal proof of an external outcome fail. Behavior MUST
    be positive, discriminating; reject skipped/focused/filtered/pending, zero-test,
@@ -49,13 +49,20 @@ and only the orchestrator-supplied changed paths.
    named blocker, never a pass. Otherwise use `cannot_verify`.
 8. A manual gate whose `gates.md` note lacks the human's own words or source, is a
    placeholder, or was runnable at Vet is `cannot_verify` ([`gates.md`](../skills/devrites-lib/reference/standards/gates.md)).
-9. An engine transcript (`DEVRITES-GATE-TRANSCRIPT v1` under `references/gates/`)
-   is immutable proof of its COMMAND, CWD, ATTEMPT, EXIT and output for the
-   candidate in CANDIDATE_BEFORE/AFTER. A `-reused.log` proves a gate for the
-   current candidate only when its INPUTS_SHA256 equals that of the gate's latest
-   executed, passing transcript.
-10. Recheck supplied before/after candidate identities. A mismatch or unexpected
-   repository mutation fails the side-effect boundary.
+9. An engine transcript (`DEVRITES-GATE-TRANSCRIPT v2` under `references/gates/`)
+   records one execution, not an assertion that proof is sufficient. Verify its
+   `TRANSCRIPT_SHA256` over all bytes before that footer; match the definition,
+   original output identity/byte count, declared inputs, EXIT and EXPECT verdict
+   against current ledger evidence and approved commands. Metadata and output may
+   be redacted; never hash the redacted body as the original output.
+   Reuse cites the unchanged executed origin path and its historical candidate
+   labels, with matching current `INPUTS_SHA256` and bounded dependency closure.
+   A legacy v1 or `-reused.log` alone cannot authorize reuse; request engine
+   `gates run`/`reverify --transcripts` to recover approved missing origins.
+10. Before/after identities must match within the recorded execution.
+    Historical/current candidate differences need the scoped reuse justification
+    above; never relabel an old observation. Unexpected repository mutation fails
+    the side-effect boundary.
 
 ## Rules
 

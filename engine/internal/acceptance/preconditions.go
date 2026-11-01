@@ -49,7 +49,7 @@ func PreflightRowsPassed(root, slug string, rows []PreflightRow) (bool, error) {
 // candidate but the lookup does not compare it: Vet writes workspace artifacts
 // after the run, and only a change to the row's command or cwd retires a pass.
 func PreflightPassed(work string, row PreflightRow) bool {
-	dir := filepath.Join(work, "references", "gates", unsafeNameRE.ReplaceAllString(PreflightGateID(row), "_"))
+	dir := filepath.Join(work, "references", "gates", transcriptGateName(PreflightGateID(row)))
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false

@@ -45,6 +45,9 @@ If the candidate diff has no matching surfaces, record
    `proof-runner`, keep their own) with `devrites-engine packet <slug> --wave <w> --phase <p>
    --role <role> [--slice <SLICE-ID>] [--focus <file>]`: it names the bundle and frozen
    diff by reference, copies the digests, and runs the `open` lints. Build roles add `--slice <SLICE-ID>` (slice-scoped, slice-named bundle).
+   Packet rendering and dispatch verify each named diff's recorded SHA-256.
+   Manually authored `.diff`/`.patch` packets need explicit
+   `diff <64hex> <path>` binding rows too; an unbound diff is refused.
    Evaluate the skill's trigger conditions and pass each that fires — a role's
    Trigger column maps to the phase manifest's names: `security-auditor` →
    `security`; at Review, `frontend-reviewer` → `ui` and `performance-reviewer` →

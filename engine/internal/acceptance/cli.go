@@ -27,11 +27,13 @@ Subcommands:
   scaffold <slug>            Create gates.md from spec.md AC ids (only when absent)
   status <slug>              Reduce the ledger without executing; exit 3 unless ALL MET
   run <slug> [--timeout N] [--transcripts]
-                             Execute unmet runnable gates and record evidence
+                             Execute unmet gates; reuse unchanged INPUTS evidence
   reverify <slug> [--timeout N] [--transcripts]
-                             Re-execute every runnable gate, demoting stale passes
-                             (--transcripts writes one redacted, candidate-bound
-                             file per gate under references/gates/<gate-id>/)
+                             Re-run runnable gates except valid unchanged INPUTS proof
+                             --transcripts requires current approval and complete
+                             passing executed origins for reuse; recover missing
+                             origins by executing only affected approved gates.
+                             New private redacted records: references/gates/<gate-id>/
   lint <slug> [--strict]     Audit oracle quality without executing
   precheck <slug> --worktree <path> [--slice <SLICE-ID>]
                              Run every RUN: writer gate, then check windows, in
@@ -263,12 +265,6 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 		fmt.Fprintf(stderr, "gates %s: %v\n", verb, err)
 		return ExitBlocked
 	}
-	before := ""
-	if transcripts {
-		before = candidateLabel(root, slug)
-	}
-	var ran []GateResult
-	var ranDoc *Document
 	attemptFailed := false
 
 	// The gates lock serializes check execution; the feature lock is held only
@@ -293,18 +289,33 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 			}
 			return nil
 		}
-		ran, ranDoc = RunGates(context.Background(), project, ledgerPath, doc, approved, reverify, timeout, featureLock), doc
-		for _, result := range ran {
-			if result.Ran && !result.Passed || result.Discarded || result.WriteErr != nil {
+		options := &RunOptions{WriteLock: featureLock}
+		before := ""
+		if transcripts {
+			options.TranscriptWork = work
+			before = candidateLabel(root, slug)
+		}
+		ran := RunGates(context.Background(), project, ledgerPath, doc, approved, reverify, timeout, options)
+		for i, result := range ran {
+			if result.Ran && !result.Passed || result.Discarded || result.WriteErr != nil || transcripts && doc.Gates[i].Check != "" && !result.Passed {
 				attemptFailed = true
 			}
 			switch {
 			case !result.Ran:
-				fmt.Fprintf(stdout, "gate %s: skipped (%s)\n", result.ID, result.Detail)
+				fmt.Fprintf(stdout, "gate %s: skipped (%s)\n", transcriptMetadata(result.ID), transcriptMetadata(result.Detail))
 			case result.Passed && !result.Discarded && result.WriteErr == nil:
-				fmt.Fprintf(stdout, "gate %s: pass\n", result.ID)
+				fmt.Fprintf(stdout, "gate %s: pass\n", transcriptMetadata(result.ID))
 			default:
-				fmt.Fprintf(stdout, "gate %s: fail (%s)\n", result.ID, result.Detail)
+				fmt.Fprintf(stdout, "gate %s: fail (%s)\n", transcriptMetadata(result.ID), transcriptMetadata(result.Detail))
+			}
+		}
+		if transcripts {
+			paths, err := writeTranscripts(work, doc, ran, before, candidateLabel(root, slug))
+			for _, path := range paths {
+				fmt.Fprintf(stdout, "transcript: %s\n", path)
+			}
+			if err != nil {
+				return fmt.Errorf("transcript: %w", err)
 			}
 		}
 		return nil
@@ -312,16 +323,6 @@ func cmdRun(root string, args []string, reverify bool, stdout, stderr io.Writer)
 	if lockErr != nil {
 		fmt.Fprintf(stderr, "gates %s: %v\n", verb, lockErr)
 		return ExitBlocked
-	}
-	if transcripts && ranDoc != nil {
-		paths, err := writeTranscripts(work, ranDoc, ran, before, candidateLabel(root, slug))
-		for _, path := range paths {
-			fmt.Fprintf(stdout, "transcript: %s\n", path)
-		}
-		if err != nil {
-			fmt.Fprintf(stderr, "gates %s: transcript: %v\n", verb, err)
-			return ExitBlocked
-		}
 	}
 	fmt.Fprintln(stdout, "---")
 	return reportStatus(slug, ledgerPath, testPlanPath, attemptFailed, stdout, stderr)

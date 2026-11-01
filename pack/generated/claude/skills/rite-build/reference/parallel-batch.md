@@ -158,20 +158,29 @@ means controller; CLI lease `--slice` uses source-qualified foreign keys.
 6. `parallel integrate --slice <id> --apply-to-control` **only after its steps
    4–5 are green**: `transfer_commit` descends from the sibling's base and diffs
    path-exact vs it; apply as its own local `WIP(<source-slug>):` commit
-   (imperative summary, never a slice id). Staging branch, then FF; the engine
-   refuses (never rewinds) if anything but this lease moved control. Conflict →
-   `integrate-failed`; classify under repair rounds (siblings stay in place).
+   (imperative summary, never a slice id). Staging branch, durable exact landing
+   intent, then FF; retry the same operation after interrupted persistence.
+   The engine reconciles only that recorded landing and refuses unrelated
+   HEAD/ref movement. Conflict → `integrate-failed`; classify under repair rounds
+   (siblings stay in place).
    Never integrate because a wright returned.
 7. Each landing: FF control (the branch that held `HEAD` when the batch started —
    often `main`/`master`, otherwise whatever the user was on) by one local commit,
    never pushed; union only that sibling's paths into SOURCE `touched-files.md`;
    update its checked BUILT state/evidence and regression floor; AFK +1 once.
+   Once every worker-bound reviewer/proof handle is terminal and source bookkeeping
+   is durable, run `parallel prune --root <repo> --slug <controller>` to release
+   clean integrated checkouts before refilling. It keeps transfer branches, proof
+   identities, lease rows and pending siblings. A dirty, ignored-data-bearing,
+   switched or unknown checkout stays untouched; record its recovery path and
+   continue safe independent work, never force-delete it to reclaim a slot.
    Land every independently green sibling and refill globally immediately
    ([Dynamic selection](#dynamic-selection-and-re-batching)), then run source-owned
    feature gates for the train ([Proof tiers](phase-contract.md#proof-tiers));
    refilled wrights do not wait for unrelated source proof.
-8. Cleanup runs only after the last landing marks the lease `complete` — work
-   landed in control, so `parallel cleanup` removes worktrees/branches.
+8. Whole cleanup runs only after the last landing marks the lease `complete`.
+   `parallel cleanup` removes verified disposable checkouts/branches; late edits,
+   ignored/untracked data and extra commits stay with reported recovery paths.
    Blocked/human-stopped batches keep lease, worktrees, branches — nothing is
    removed while the batch may resume. `parallel abort` + `cleanup --force`
    abandons the batch — the explicit human discard path; the single

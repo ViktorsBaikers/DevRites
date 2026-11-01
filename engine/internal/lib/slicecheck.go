@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -21,7 +22,7 @@ import (
 //	0  contract holds    2  usage error    3  blocked: problems listed
 
 var (
-	sliceFieldRe     = regexp.MustCompile(`(?m)^([A-Za-z][A-Za-z /_-]*):\s*(.*)$`)
+	sliceFieldRe     = regexp.MustCompile(`(?m)^([A-Za-z][A-Za-z /_-]*):[ \t]*(.*)$`)
 	sliceACRe        = regexp.MustCompile(`\bAC-\d+\b`)
 	pathGlobCharRe   = regexp.MustCompile(`[*?\[\]{}]`)
 	pathTraversalRe  = regexp.MustCompile(`(^|/)\.\.(/|$)`)
@@ -48,6 +49,11 @@ func sliceSizeAdvisory(block string) (int, bool) {
 // sliceFields extracts the single-line `Field: value` pairs of a slice block.
 func sliceFields(block string) map[string]string {
 	fields := map[string]string{}
+	structural, err := markdowntext.Structural([]byte(block))
+	if err != nil {
+		return fields
+	}
+	block = string(structural)
 	for _, m := range sliceFieldRe.FindAllStringSubmatch(block, -1) {
 		key := strings.ToLower(strings.TrimSpace(m[1]))
 		if _, seen := fields[key]; !seen {
