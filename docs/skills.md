@@ -194,6 +194,11 @@ and `Shipped`. Utility commands keep the same compact labels and one-next-action
 | [`devrites-api-interface`](../pack/.claude/skills/devrites-api-interface/SKILL.md) | Design stable API / interface contracts: REST/GraphQL, module boundaries, type contracts, FE/BE split. | A slice crosses a boundary or defines a public interface. |
 | [`devrites-debug-recovery`](../pack/.claude/skills/devrites-debug-recovery/SKILL.md) | Reproduce → ranked hypotheses → instrument → fix in scope → regression-test. Caller and recovery count at most three failures per causal fingerprint from context and Dead ends/evidence. | Tests, builds, or runtime checks fail. |
 
+Under Autocomplete, existing parallel capacity spans authorized sequence
+workspaces. It overlaps future planning/re-Vet with isolated, independently
+admitted writers; standalone Build stays scoped. See the
+[global controller](../pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md).
+
 ### Prove: collect evidence, including browser evidence
 
 | Skill | What It Does | Use When |

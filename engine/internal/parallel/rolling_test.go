@@ -473,8 +473,8 @@ func TestValidateLeaseRollingBounds(t *testing.T) {
 	}{
 		{name: "old format has no rolling fields", n: 2, nyaml: []string{"control_tip", "    base_sha"}},
 		{name: "twelve slices with two landed", n: 12, edit: integrate(2)},
-		{name: "eleven active", n: 12, edit: integrate(1), want: "2-10 slices"},
-		{name: "one slice", n: 1, want: "2-10 slices"},
+		{name: "eleven active", n: 12, edit: integrate(1), want: "active at once"},
+		{name: "one isolated slice", n: 1},
 		{
 			name: "rolling fields are mirrored",
 			n:    2,

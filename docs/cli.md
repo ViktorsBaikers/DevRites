@@ -304,7 +304,7 @@ selection exits `2`; a malformed/unsafe manifest or candidate mismatch prints
 - Atomic state operations retain their documented operation-specific nonzero
   results.
 - `state close` exits `4` for usage or a missing workspace.
-- `state close` exits `3` for a schema refusal.
+- `state close` exits `3` for a schema refusal or a retained controller/source lease.
 - `state close` exits `5` when an archive already exists.
 - `state close` exits `1` for an invalid workspace, archive directory, or ACTIVE cursor.
 
@@ -313,6 +313,12 @@ selection exits `2`; a malformed/unsafe manifest or candidate mismatch prints
 `DEVRITES_ROOT` selects a project root or `.devrites/` directory.
 `DEVRITES_WORKSPACE` may select one explicit contained workspace. Mutating
 commands refuse ambiguous, escaped, symlinked, or otherwise unsafe roots.
+Explicit producer dependencies resolve safely within the selected `DEVRITES_ROOT`
+without changing or redirecting the consumer's workspace override.
+Global controller queries use explicit source slugs in a per-invocation environment
+without a worker's `DEVRITES_WORKSPACE`; conflicting overrides fail closed rather
+than redirecting another workspace's reads. Workspace parallelism keeps one
+controller lease and global writer capacity; it does not broaden Ship approval.
 
 Install, update application, and uninstall remain manifest-owned local
 operations. Direct engine update, shell, and npm may acquire a release candidate;

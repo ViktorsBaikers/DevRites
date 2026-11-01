@@ -281,6 +281,10 @@ import %q
 func ReadinessBinding() { state.ObserveWorkspace() }
 func ReadinessInputDigests() { state.ObserveWorkspace() }
 `, migrationStateImport),
+			"internal/lib/workspace_pool.go": fmt.Sprintf(`package lib
+import %q
+func WorkspaceReady() { state.ObserveWorkspace() }
+`, migrationStateImport),
 		})
 		if problems := acquisitionProblems(program); len(problems) != 0 {
 			t.Fatalf("dot-import acquisition call was rejected: %v", problems)
@@ -548,6 +552,10 @@ import %q
 func ReadinessBinding() { state.ObserveWorkspace() }
 func ReadinessInputDigests() { state.ObserveWorkspace() }
 `, migrationStateImport),
+		"internal/lib/workspace_pool.go": fmt.Sprintf(`package lib
+import %q
+func WorkspaceReady() { state.ObserveWorkspace() }
+`, migrationStateImport),
 	})
 }
 
@@ -751,6 +759,7 @@ func acquisitionProblems(program *migrationProgram) []string {
 		{file: "internal/gate/gate.go", function: "Check", target: "state.ObserveWorkspace"}:                              1,
 		{file: "internal/gate/readiness_binding.go", function: "ReadinessBinding", target: "state.ObserveWorkspace"}:      1,
 		{file: "internal/gate/readiness_binding.go", function: "ReadinessInputDigests", target: "state.ObserveWorkspace"}: 1,
+		{file: "internal/lib/workspace_pool.go", function: "WorkspaceReady", target: "state.ObserveWorkspace"}:            1,
 	}
 	counts := make(map[migrationAcquisitionUse]int)
 	var problems []string

@@ -248,8 +248,11 @@ See [`flow.md`](flow.md) for the Mermaid diagrams. The text form is:
 only the exact-plan Ship approval boundary and never authorizes Git.
 ```
 
-- Every phase **reads the active workspace first**; if none, it stops and tells
-  the user to run `/rite-spec <feature>`.
+- Every phase resolves its explicit source workspace before the ACTIVE default.
+  Autocomplete keeps ACTIVE on the ordered lifecycle owner while preparing or
+  building authorized independent future slices through one global controller.
+  Existing `--parallel N` spans those workspaces; no second feature flag is needed.
+  See [cross-workspace admission](../pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md).
 - **Spec Drift Guard** lives in build/prove/polish/review/seal: on drift, stop,
   record in `drift.md`, and classify. Objective implementation and tool defects
   use bounded recovery; a wrong durable plan uses `/rite-plan repair`; only a

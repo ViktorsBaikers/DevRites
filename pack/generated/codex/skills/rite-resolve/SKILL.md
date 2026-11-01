@@ -5,7 +5,7 @@ argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <
 user-invocable: true
 disable-model-invocation: true
 ---
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-resolve/reference/answer-protocol.md"],"triggers":{"standards":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/documentation.md"]},"rootOnly":["devrites-lib/reference/standards/afk-hitl.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","rite-resolve/reference/answer-protocol.md"],"triggers":{"standards":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/documentation.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill rite-resolve` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 # $rite-resolve: answer the human gate
@@ -31,8 +31,8 @@ Pull these via `Read` when shaping the resolve:
 
 ## Operating rules
 
-- **Requires an active workspace.** Read `.devrites/ACTIVE` first; if empty, **STOP** and
-  tell the user to run `$rite-spec <feature>` first. If the slug has no `questions.md`,
+- **Requires a selected source workspace.** Apply [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding); if none, **STOP** and
+  tell the user to run `$rite-spec <feature>` first. If that source has no `questions.md`,
   report the missing required artifact and stop.
 - **One mutation per call.** A single qid (or `--batch` file) per invocation; never
   silently coalesce multiple human decisions into one log entry.

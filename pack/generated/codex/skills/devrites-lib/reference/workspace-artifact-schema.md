@@ -223,6 +223,7 @@ SLA: <15m | 4h | 24h | none>
 Checkpoint: <question + why it needs unavailable pre-code evidence or action-time approval | none>
 Dependencies: <SLICE-### (via <interface it consumes>) list | none>
 depends_on: [<SLICE-### IDs>]
+Workspace dependencies: <none | comma-separated <workspace-slug>/SLICE-### producer refs>
 Consumes / Produces: <interfaces read and exposed>
 Known-Gotchas: <ordering hazards and framework footguns | none>
 Prior-slice learnings: <constraints learned earlier | none>
@@ -245,6 +246,15 @@ Done condition: <checkable, exhaustive completion criterion>
 
 `depends_on` is the machine-readable mirror of `Dependencies`; keep the sets
 identical and cycle-free. Each dependency names what crosses it (`check task-graph` advises).
+`Workspace dependencies` records cross-workspace producer prerequisites, separate
+from local `Dependencies`/`depends_on`. Define/Plan writes it after native interface,
+assumption, runtime-resource and proof-independence review; Vet approves the current
+bound declaration. `none` is explicit, not inferred from paths or local edges.
+Only durably BUILT/integrated producer checkpoints satisfy refs, including valid
+archived predecessors; unknown/malformed refs or cycles withhold unsafe work.
+Missing field on a legacy future plan requires narrow Plan/Vet repair before
+early admission, not rejection of existing local/standalone execution. The global
+controller procedure lives only in [`parallel-workspaces.md`](parallel-workspaces.md).
 Define and `$rite-plan` repair write `Prior-slice learnings`, folding Build's
 `decisions.md` carry-forward constraints; Build never edits `tasks.md`. `Gate`, `SLA`, and `Checkpoint` are required for HITL
 slices; use `none` when they do not apply. Complexity above 3 triggers reslicing

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -79,18 +80,27 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	capN := 0
 	sawCap := false
 	fromPlan := false
+	workspaces := ""
+	sawWorkspaces, sawInput := false, false
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "--root", "--slug":
+		case "--root", "--slug", "--workspaces":
 			if i+1 >= len(args) {
 				fmt.Fprintln(stderr, usageSelect)
 				return ExitUsage
 			}
 			i++
-			if args[i-1] == "--root" {
+			switch args[i-1] {
+			case "--root":
 				root = args[i]
-			} else {
+			case "--slug":
 				slug = args[i]
+			case "--workspaces":
+				if sawWorkspaces {
+					fmt.Fprintln(stderr, "parallel select: duplicate --workspaces")
+					return ExitUsage
+				}
+				workspaces, sawWorkspaces = args[i], true
 			}
 		case "--cap":
 			if i+1 >= len(args) {
@@ -116,28 +126,90 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 				return ExitUsage
 			}
 			jsonPath = args[i]
+			if sawInput {
+				fmt.Fprintln(stderr, "parallel select: multiple JSON inputs")
+				return ExitUsage
+			}
+			sawInput = true
 		}
 	}
-	if !sawCap {
+	if !sawCap || capN < 1 || capN > MaxParallelSlices {
 		fmt.Fprintln(stderr, usageSelect)
+		return ExitUsage
+	}
+	if sawWorkspaces && (!fromPlan || root == "" || slug == "" || sawInput) {
+		fmt.Fprintln(stderr, "parallel select: --workspaces requires --from-plan, --root and --slug and takes no JSON input")
 		return ExitUsage
 	}
 	var slices []SlicePaths
 	if fromPlan {
-		if slug == "" || jsonPath != "-" {
+		if slug == "" || sawInput {
 			fmt.Fprintln(stderr, "parallel select: --from-plan needs --slug and takes no JSON input")
 			return ExitUsage
 		}
-		if PlanReady == nil {
-			fmt.Fprintln(stderr, "parallel select: --from-plan is unavailable in this build")
-			return ExitBlocked
+		if sawWorkspaces {
+			order := []string{slug}
+			seen := make(map[string]bool)
+			if err := validateSlug(slug); err != nil {
+				fmt.Fprintf(stderr, "parallel select: %v\n", err)
+				return ExitUsage
+			}
+			for _, target := range strings.Split(workspaces, ",") {
+				if err := validateSlug(target); err != nil || seen[target] {
+					fmt.Fprintf(stderr, "parallel select: invalid or duplicate workspace %q\n", target)
+					return ExitUsage
+				}
+				seen[target] = true
+				if target != slug {
+					order = append(order, target)
+				}
+			}
+			if _, err := controllerLease(root, slug); err != nil {
+				fmt.Fprintf(stderr, "parallel select: %v\n", err)
+				return ExitBlocked
+			}
+			if WorkspaceReady == nil {
+				fmt.Fprintln(stderr, "parallel select: --workspaces is unavailable in this build")
+				return ExitBlocked
+			}
+			for _, target := range order {
+				ready, notices, err := WorkspaceReady(root, slug, target)
+				for _, notice := range notices {
+					fmt.Fprintf(stderr, "parallel select: workspace %s: %s\n", target, notice)
+				}
+				if err == nil {
+					ready, err = normalizeSlices(slug, ready, root)
+				}
+				if err == nil {
+					for _, sp := range ready {
+						source := sp.Workspace
+						if source == "" {
+							source = slug
+						}
+						if source != target {
+							err = fmt.Errorf("candidate source %s does not match requested workspace", source)
+							break
+						}
+					}
+				}
+				if err != nil {
+					fmt.Fprintf(stderr, "parallel select: workspace %s: %v\n", target, err)
+					continue
+				}
+				slices = append(slices, ready...)
+			}
+		} else {
+			if PlanReady == nil {
+				fmt.Fprintln(stderr, "parallel select: --from-plan is unavailable in this build")
+				return ExitBlocked
+			}
+			ready, err := PlanReady(root, slug)
+			if err != nil {
+				fmt.Fprintf(stderr, "parallel select: %v\n", err)
+				return ExitBlocked
+			}
+			slices = ready
 		}
-		ready, err := PlanReady(root, slug)
-		if err != nil {
-			fmt.Fprintf(stderr, "parallel select: %v\n", err)
-			return ExitBlocked
-		}
-		slices = ready
 	} else {
 		data, err := readJSONInput(jsonPath, stdin)
 		if err != nil {
@@ -159,26 +231,6 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintln(stdout, formatSelect(selected, running))
 	return ExitOK
-}
-
-// runningLease returns slug's lease when it is still in flight
-// (running|integrate-failed), or nil when there is none to seed from.
-func runningLease(root, slug string) (*Lease, error) {
-	path, err := LeasePath(root, slug)
-	if err != nil {
-		return nil, err
-	}
-	lease, err := ReadLease(path)
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	if lease.Status != StatusRunning && lease.Status != StatusIntegrateFailed {
-		return nil, nil
-	}
-	return lease, nil
 }
 
 func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -220,8 +272,8 @@ func runParallel(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 }
 
 const (
-	usageCreate       = "usage: parallel create --root --slug --batch --base --json"
-	usageAdd          = "usage: parallel add --root --slug --json <json-file>|-"
+	usageCreate       = "usage: parallel create --root --slug --batch --base --json [--cap <1-10>]"
+	usageAdd          = "usage: parallel add --root --slug --json <json-file>|- [--cap <1-10>]"
 	usageRecordGreen  = "usage: parallel record-green --root --slug --slice --commit"
 	usageAbort        = "usage: parallel abort --root --slug"
 	usageIntegrate    = "usage: parallel integrate --root --slug [--apply-to-control [--slice <id>]]"
@@ -231,15 +283,15 @@ const (
 	usageLeaseRead    = "usage: parallel lease-read --root --slug [--field name]"
 	usageLeaseClear   = "usage: parallel lease-clear --root --slug"
 	usagePathDisjoint = "usage: check path-disjoint [--root <dir>] [<json-file>|-]"
-	usageSelect       = "usage: parallel select --cap <1-10> [--root <dir>] [--slug <slug>] [--from-plan | <json-file>|-]"
+	usageSelect       = "usage: parallel select --cap <1-10> [--root <dir>] [--slug <slug>] [--from-plan [--workspaces <slugs>] | <json-file>|-]"
 )
 
 func parallelUsage() string {
 	return strings.TrimSpace(`usage: parallel <subcommand> [options]
 
 Subcommands:
-  create          --root --slug --batch --base --json
-  add             --root --slug --json
+  create          --root --slug --batch --base --json [--cap <1-10>]
+  add             --root --slug --json [--cap <1-10>]
   record-green    --root --slug --slice --commit
   abort           --root --slug
   integrate       --root --slug [--apply-to-control [--slice <id>]]
@@ -248,7 +300,7 @@ Subcommands:
   lease-write     --root --slug --json
   lease-read      --root --slug [--field name]
   lease-clear     --root --slug
-  select          --cap <1-10> [--root] [--slug] [--from-plan | <json-file>|-]
+  select          --cap <1-10> [--root] [--slug] [--from-plan [--workspaces <slugs>] | <json-file>|-]
 
 Exit codes: 0 ok, 2 usage, 3 blocked`)
 }
@@ -288,7 +340,8 @@ func CommandUsage(name string) string {
 
 type flagSet struct {
 	Root, Slug, Batch, Base, Slice, Commit, JSON, Field, Session string
-	ApplyToControl, Force, Help                                  bool
+	ApplyToControl, Force, Help, HasCapacity                     bool
+	Capacity                                                     int
 }
 
 func parseFlags(args []string, stderr io.Writer) (flagSet, []string, int) {
@@ -359,6 +412,17 @@ func parseFlags(args []string, stderr io.Writer) (flagSet, []string, int) {
 				return f, nil, ExitUsage
 			}
 			f.Session = v
+		case "--cap":
+			v, ok := need(a)
+			if !ok {
+				return f, nil, ExitUsage
+			}
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 || n > MaxParallelSlices || f.HasCapacity {
+				fmt.Fprintf(stderr, "parallel: --cap must be one integer from 1-%d\n", MaxParallelSlices)
+				return f, nil, ExitUsage
+			}
+			f.Capacity, f.HasCapacity = n, true
 		case "--apply-to-control":
 			f.ApplyToControl = true
 		case "--force":
@@ -385,6 +449,10 @@ func parseFlagsOrHelp(args []string, stdout, stderr io.Writer, usage string) (fl
 	if f.Help {
 		fmt.Fprintln(stdout, usage)
 		return f, ExitOK, true
+	}
+	if f.HasCapacity && usage != usageCreate && usage != usageAdd {
+		fmt.Fprintln(stderr, "parallel: --cap is only supported by create and add")
+		return f, ExitUsage, true
 	}
 	return f, ExitOK, false
 }
@@ -450,12 +518,13 @@ func cmdCreate(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return ExitBlocked
 	}
 	lease, err := Create(CreateOpts{
-		Root:    f.Root,
-		Slug:    f.Slug,
-		BatchID: f.Batch,
-		BaseSHA: f.Base,
-		Session: f.Session,
-		Slices:  slices,
+		Root:     f.Root,
+		Slug:     f.Slug,
+		BatchID:  f.Batch,
+		BaseSHA:  f.Base,
+		Session:  f.Session,
+		Slices:   slices,
+		Capacity: f.Capacity,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel create: %v\n", err)
@@ -490,10 +559,14 @@ func cmdAdd(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "parallel add: %v\n", err)
 		return ExitBlocked
 	}
-	lease, err := Add(AddOpts{Root: f.Root, Slug: f.Slug, Slices: slices})
+	lease, err := Add(AddOpts{Root: f.Root, Slug: f.Slug, Slices: slices, Capacity: f.Capacity})
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel add: %v\n", err)
 		return ExitBlocked
+	}
+	if len(slices) == 0 {
+		fmt.Fprintf(stdout, "capacity: %d; batch=%s active=%d\n", leaseCapacity(lease), lease.BatchID, len(activeSlices(lease)))
+		return ExitOK
 	}
 	fmt.Fprintf(stdout, "added: %d worktrees; batch=%s active=%d base=%s\n",
 		len(slices), lease.BatchID, len(activeSlices(lease)), lease.Slices[len(lease.Slices)-1].BaseSHA)
@@ -673,7 +746,28 @@ func cmdLeaseWrite(args []string, stdin io.Reader, stdout, stderr io.Writer) int
 		fmt.Fprintf(stderr, "parallel lease-write: %v\n", err)
 		return ExitUsage
 	}
-	err = withLeaseLock(f.Root, f.Slug, func() error { return WriteLease(path, &lease) })
+	err = withLeaseLock(f.Root, f.Slug, func() error {
+		found, err := controllerLease(f.Root, f.Slug)
+		if err != nil {
+			return err
+		}
+		if found != nil {
+			current := found.lease
+			if lease.BatchID != current.BatchID || lease.BaseSHA != current.BaseSHA || expectedControl(&lease) != expectedControl(current) {
+				return fmt.Errorf("lease-write cannot replace retained batch or control tip; cleanup the current controller explicitly")
+			}
+			if lease.Capacity == 0 {
+				lease.Capacity = current.Capacity
+			}
+		}
+		if err := normalizeLease(&lease, f.Slug); err != nil {
+			return err
+		}
+		if err := validateLeaseSources(filepath.Join(f.Root, ".devrites"), &lease); err != nil {
+			return err
+		}
+		return WriteLease(path, &lease)
+	})
 	if err != nil {
 		fmt.Fprintf(stderr, "parallel lease-write: %v\n", err)
 		return ExitBlocked
@@ -703,6 +797,10 @@ func cmdLeaseRead(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "parallel lease-read: %v\n", err)
 		return ExitBlocked
 	}
+	if err := normalizeLease(lease, f.Slug); err != nil {
+		fmt.Fprintf(stderr, "parallel lease-read: %v\n", err)
+		return ExitBlocked
+	}
 	switch f.Field {
 	case "", "yaml", "md":
 		text, err := EmitLeaseMarkdown(lease)
@@ -726,6 +824,8 @@ func cmdLeaseRead(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, lease.BatchID)
 	case "n":
 		fmt.Fprintln(stdout, lease.N)
+	case "capacity":
+		fmt.Fprintln(stdout, leaseCapacity(lease))
 	default:
 		fmt.Fprintf(stderr, "parallel lease-read: unknown field %q\n", f.Field)
 		return ExitUsage

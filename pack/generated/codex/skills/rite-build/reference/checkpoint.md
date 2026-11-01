@@ -70,7 +70,7 @@ After a crash, a fresh session may read the last `WIP(<slug>)` body as crash con
 Authoritative state remains in `.devrites/`: validate the body against that workspace;
 never reconstruct or advance state from the commit body. Reload per
 [`context-hygiene.md`](../../devrites-lib/reference/standards/context-hygiene.md)
-(`.devrites/ACTIVE`, `state.md`, `questions.md`, `decisions.md`, `test-plan.md`/`evidence.md`).
+(source-local `state.md`, `questions.md`, `decisions.md`, `test-plan.md`/`evidence.md`).
 
 ## Collapse at ship
 WIP commits are scratch and never reach shared history. `$rite-ship` folds them into the

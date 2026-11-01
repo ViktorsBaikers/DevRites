@@ -23,39 +23,25 @@ func SelectGreedySeeded(cap int, seed, ready []SlicePaths, root string) ([]Slice
 	if cap < 1 || cap > MaxParallelSlices {
 		return nil, fmt.Errorf("cap must be 1-%d (got %d)", MaxParallelSlices, cap)
 	}
-	normalized := make([]SlicePaths, 0, len(ready))
-	seen := make(map[string]struct{}, len(ready))
-	for i, item := range ready {
-		label := fmt.Sprintf("slice %d", i)
-		if item.ID != "" {
-			if err := validateSliceID(item.ID); err != nil {
-				return nil, fmt.Errorf("%s: %w", label, err)
-			}
-			label = fmt.Sprintf("slice %q", item.ID)
-		} else {
-			return nil, fmt.Errorf("%s: missing id", label)
-		}
-		if _, ok := seen[item.ID]; ok {
-			return nil, fmt.Errorf("duplicate slice id %q", item.ID)
-		}
-		seen[item.ID] = struct{}{}
-		paths, err := validateSlicePaths(item.Paths, label, root)
-		if err != nil {
-			return nil, err
-		}
-		normalized = append(normalized, SlicePaths{ID: item.ID, Paths: paths})
+	normalized, err := normalizeSlices("", ready, root)
+	if err != nil {
+		return nil, err
+	}
+	seed, err = normalizeSlices("", seed, root)
+	if err != nil {
+		return nil, err
 	}
 
 	running := make(map[string]bool, len(seed))
 	for _, s := range seed {
-		running[s.ID] = true
+		running[SliceKey(s.Workspace, s.ID)] = true
 	}
 	selected := append([]SlicePaths{}, seed...)
 	for _, cand := range normalized {
 		if len(selected) >= cap {
 			break
 		}
-		if running[cand.ID] {
+		if running[SliceKey(cand.Workspace, cand.ID)] {
 			continue
 		}
 		if len(selected) == 0 {
@@ -79,32 +65,65 @@ func SelectGreedySeeded(cap int, seed, ready []SlicePaths, root string) ([]Slice
 // imports this package.
 var PlanReady func(root, slug string) ([]SlicePaths, error)
 
-// SelectForSlug is SelectGreedySeeded seeded from slug's running lease: its
-// active slices keep their slots and paths, and nothing it names (active or
-// landed) is picked again. eligible is ready minus those names; running is -1
-// when no lease seeded the selection. An empty slug skips the lease.
+// WorkspaceReady supplies native-authorized candidates and per-workspace notices.
+// main wires this hook from lib, which owns planning and dependency readiness.
+var WorkspaceReady func(root, controller, target string) ([]SlicePaths, []string, error)
+
+// SelectForSlug seeds every retained repository slot, regardless of source.
+// Bare candidates belong to slug; returned foreign identities stay qualified
+// relative to the retained controller. An omitted slug means controller-local.
 func SelectForSlug(root, slug string, capN int, ready []SlicePaths) (eligible, picks []SlicePaths, running int, err error) {
-	eligible, running = ready, -1
-	var seed []SlicePaths
+	if capN < 1 || capN > MaxParallelSlices {
+		return nil, nil, -1, fmt.Errorf("cap must be 1-%d (got %d)", MaxParallelSlices, capN)
+	}
 	if slug != "" {
-		lease, err := runningLease(root, slug)
+		if err := validateSlug(slug); err != nil {
+			return nil, nil, -1, err
+		}
+	}
+	running = -1
+	var seed []SlicePaths
+	controller := slug
+	var found *repositoryLease
+	if root != "" || slug != "" {
+		found, err = controllerLease(root, "")
 		if err != nil {
 			return nil, nil, -1, err
 		}
-		if lease != nil {
-			seed = activeSlices(lease)
-			running = len(seed)
-			named := make(map[string]bool, len(lease.Slices))
-			for _, sl := range lease.Slices {
-				named[sl.ID] = true
-			}
-			eligible = nil
-			for _, s := range ready {
-				if !named[s.ID] {
-					eligible = append(eligible, s)
+	}
+	candidates := make([]SlicePaths, len(ready))
+	copy(candidates, ready)
+	if found != nil {
+		controller = found.controller
+		if slug != "" && slug != controller {
+			for i := range candidates {
+				if candidates[i].Workspace == "" {
+					candidates[i].Workspace = slug
 				}
 			}
 		}
+		seed = activeSlices(found.lease)
+		running = len(seed)
+		if capacity := leaseCapacity(found.lease); capN > capacity {
+			capN = capacity
+		}
+	}
+	eligible, err = normalizeSlices(controller, candidates, root)
+	if err != nil {
+		return nil, nil, -1, err
+	}
+	if found != nil {
+		named := make(map[string]bool, len(found.lease.Slices))
+		for _, sl := range found.lease.Slices {
+			named[SliceKey(sl.Workspace, sl.ID)] = true
+		}
+		filtered := eligible[:0]
+		for _, sp := range eligible {
+			if !named[SliceKey(sp.Workspace, sp.ID)] {
+				filtered = append(filtered, sp)
+			}
+		}
+		eligible = filtered
 	}
 	picks, err = SelectGreedySeeded(capN, seed, eligible, root)
 	return eligible, picks, running, err
@@ -127,7 +146,7 @@ func selectMode(n int) string {
 func formatSelect(picks []SlicePaths, running int) string {
 	ids := make([]string, len(picks))
 	for i, item := range picks {
-		ids[i] = item.ID
+		ids[i] = SliceKey(item.Workspace, item.ID)
 	}
 	mode := selectMode(len(picks))
 	if running > 0 && len(picks) > 0 {

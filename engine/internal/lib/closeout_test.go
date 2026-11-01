@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -129,6 +130,9 @@ func TestCloseOutRollsBackArchiveWhenActiveCannotBeCleared(t *testing.T) {
 	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "inside\n- Schema: 4\n")
 	writeFile(t, filepath.Join(root, "ACTIVE"), "feat\n")
 	if err := os.MkdirAll(filepath.Join(root, "archive"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := parallel.WithControlLock(root, func() error { return nil }); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Chmod(root, 0o555); err != nil {

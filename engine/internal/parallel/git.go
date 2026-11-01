@@ -197,7 +197,7 @@ func deleteBranch(repo, branch string) error {
 }
 
 func worktreeAdd(repo, path, branch, startPoint string) error {
-	_, err := git(repo, "worktree", "add", "-b", branch, path, startPoint)
+	_, err := git(repo, "worktree", "add", "-b", branch, resolvedPath(path), startPoint)
 	return err
 }
 
@@ -212,7 +212,7 @@ func AddDetachedWorktree(repo, path, rev string) error {
 func RemoveWorktree(repo, path string) error { return worktreeRemove(repo, path) }
 
 func worktreeRemove(repo, path string) error {
-	_, err := git(repo, "worktree", "remove", "--force", path)
+	_, err := git(repo, "worktree", "remove", "--force", resolvedPath(path))
 	if err != nil {
 		_ = os.RemoveAll(path)
 		_, _ = git(repo, "worktree", "prune")
@@ -223,12 +223,12 @@ func worktreeRemove(repo, path string) error {
 // registeredWorktrees returns the symlink-resolved paths git lists as
 // worktrees of repo: the only authoritative record of what worktree add made.
 func registeredWorktrees(repo string) (map[string]bool, error) {
-	out, err := git(repo, "worktree", "list", "--porcelain")
+	out, err := git(repo, "worktree", "list", "--porcelain", "-z")
 	if err != nil {
 		return nil, err
 	}
 	set := map[string]bool{}
-	for _, line := range strings.Split(out, "\n") {
+	for _, line := range strings.Split(out, "\x00") {
 		if p, ok := strings.CutPrefix(line, "worktree "); ok {
 			set[resolvedPath(p)] = true
 		}
@@ -240,6 +240,9 @@ func registeredWorktrees(repo string) (map[string]bool, error) {
 func RegisteredWorktrees(repo string) (map[string]bool, error) { return registeredWorktrees(repo) }
 
 func resolvedPath(p string) string {
+	if abs, err := filepath.Abs(p); err == nil {
+		p = abs
+	}
 	if r, err := filepath.EvalSymlinks(p); err == nil {
 		return r
 	}

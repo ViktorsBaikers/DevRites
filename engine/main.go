@@ -125,6 +125,7 @@ func init() {
 	}
 	// parallel cannot import lib (lib imports it), so `parallel select --from-plan` gets the plan-derived ready set through this hook.
 	parallel.PlanReady = lib.PlanReady
+	parallel.WorkspaceReady = lib.WorkspaceReady
 	// `gates precheck` runs `check windows` through this hook for the same reason.
 	acceptance.WindowsCheck = lib.RunCheckWindows
 	// ...and `gates precheck --slice` learns which writer gates to skip.

@@ -36,6 +36,8 @@ lifecycle state from chat or optional `README.md`.
   ([`workspace-artifact-schema.md`](reference/workspace-artifact-schema.md)).
 - [`reference/reply-contract.md`](reference/reply-contract.md): compact user-facing
   completion states. The host renders the response normally.
+- [`reference/parallel-workspaces.md`](reference/parallel-workspaces.md): explicit
+  phase targets, one isolated global controller, and source-owned proof.
 - [`reference/visual-playbooks/index.md`](reference/visual-playbooks/index.md): progressive
   visual HTML playbook router (load matching ids only; dual-read outline).
 

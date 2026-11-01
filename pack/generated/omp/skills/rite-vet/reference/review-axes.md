@@ -197,11 +197,16 @@ Use standard `ask`:
 3. **Failure-mode table:** per new codepath: realistic failure, partial/unknown effect,
    recovery owner, test, handling, and user-visible/silent result. No test + no handling +
    silent = **Critical** (`artifacts.md`).
-4. **Dependency safety:** verify graph/order and shared file/state/contract/lock/port/queue/env
-   conflicts. Each `Dependencies` edge must genuinely gate its slice (consumes an
-   output, interface, or state the predecessor produces); remove an ordering-only
-   edge, since it silently shrinks the parallel set. Correct the plan; native host
-   scheduling needs no lane artifact.
+4. **Dependency safety:** verify local and qualified workspace graph/order,
+   assumptions, consumed interfaces, shared file/state/contract/lock/port/queue/env
+   conflicts and independent proof. Verify Plan's explicit `Workspace dependencies`
+   for each future-admission slice under the
+   [canonical grammar](skill://devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar);
+   `none` needs native judgment, not disjoint-path inference. Real producer edges
+   remain until durably BUILT/integrated; green unlanded work is not a producer
+   checkpoint. Remove ordering-only edges, never genuine interface/runtime/proof
+   dependencies. Missing legacy future declarations route narrow Plan repair/Vet;
+   current local execution stays compatible. Native scheduling needs no lane artifact.
 5. **Build-entry preflight:** commands/cwds, tools, package state, parser/browser smoke,
    prerequisites, and provenance ([`artifacts.md`](artifacts.md)).
 6. **Implementation readiness:** goal-backward coverage, wiring, dependency simulation,

@@ -10,6 +10,7 @@ import (
 	"runtime"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -78,11 +79,22 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 	// re-create work/<slug>. Windows cannot rename a directory that holds an
 	// open file, so there the lock is released just before the rename.
 	code := 1
-	if err := state.WithFeatureLockRelease(dv, slug, func(release func()) error {
-		code = closeOutLocked(release, work, arch, archiveDir, archDisplay, active, slug, stdout, stderr)
-		return nil
+	if err := parallel.WithControlLock(dv, func() error {
+		leased, err := parallel.WorkspaceLeased(dv, slug)
+		if err != nil {
+			return err
+		}
+		if leased {
+			fmt.Fprintf(stderr, "state close: BLOCKED: %s is named by a retained parallel lease; finish and clean up the controller lease before archiving\n", slug)
+			code = 3
+			return nil
+		}
+		return state.WithFeatureLockRelease(dv, slug, func(release func()) error {
+			code = closeOutLocked(release, work, arch, archiveDir, archDisplay, active, slug, stdout, stderr)
+			return nil
+		})
 	}); err != nil {
-		fmt.Fprintf(stderr, "state close: cannot lock feature %s: %v\n", slug, err)
+		fmt.Fprintf(stderr, "state close: %v\n", err)
 		return 1
 	}
 	return code

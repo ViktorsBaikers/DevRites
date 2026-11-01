@@ -4,6 +4,12 @@
 
 Opt-in only. Default `/rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.md).
 
+Autocomplete first executes shared
+[`parallel-workspaces.md`](../../devrites-lib/reference/parallel-workspaces.md):
+it owns global admission, authorized source discovery and controller routing.
+The local selection below applies to standalone Build; mixed selection uses
+that reference and then this same per-slice review/repair/integration lifecycle.
+
 ## Entry
 
 | Input | Behavior |
@@ -14,8 +20,9 @@ Opt-in only. Default `/rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.
 | Autocomplete `--parallel N` | N is the cap for this run; leftover sentinel `max_parallel` is ignored, then `/rite-autocomplete` writes or replaces only `max_parallel: N` |
 | Autocomplete, no flag | Same path, cap from sentinel `max_parallel` else 10; serial only when ineligible |
 
-AFK caps `N`. Charge green siblings once after integrate; abort /
-integrate-failed → **0**. `parallel create` refuses while a lease exists.
+AFK caps `N`. Charge each green sibling once after its successful landing;
+rejected/unlanded work charges zero, without undoing prior landed accounting.
+`parallel create` refuses another retained repository controller.
 Reconcile retained repair-round artifacts by exact causal fingerprint before honoring a stored blocked status/verdict. Blocked status, round count, or distinct finding alone cannot stop cold resume: establish missing or stale review coverage under step 4; repair unless a stop condition remains evidenced.
 
 ## Dynamic selection and re-batching
@@ -45,8 +52,10 @@ passes `--whole` so the other slices stay visible.
 `next` prints `eligible_now:`/`batch:`. `n_eff` counts new picks only.
 With a running lease, a single new pick still uses `parallel add`;
 `n_eff=0` with a running lease waits for siblings, not Prove. Without one:
-≥2 → parallel batch, 1 → serial, none pending → Prove.
-Serial is this round only; a cap need not be filled.
+≥2 → parallel batch, 1 → standalone serial; Autocomplete cap>1 on a capable
+host instead isolates that first writer for global refill. No pending work
+returns to the caller's next phase; no ready local work does not exhaust its
+authorized global frontier. A cap need not be filled.
 
 **Refill per landing; never wait for the batch.** Each sibling lands alone when
 green ([Lifecycle](#lifecycle) step 6). Re-read state, pending slices, and the
@@ -91,33 +100,36 @@ lands a broken lockfile.
 
 ## Control vs workers
 
-Control owns `.devrites/work/<slug>/` (lease + bookkeeping).
-Workers: `.scratch/parallel-wt/<batch>/<slice>/` on
-`devrites/parallel/<slug>/<batch>/<slice>` @ base `B`. Wrights never write
-`.devrites/**`.
+Control owns the controller lease; source workspaces own their bookkeeping.
+Use returned worker `worktree_path`/`branch`: controller-local siblings retain
+`<batch>/<slice>`, foreign siblings use `<batch>/_workspaces/<source>/<slice>`.
+Workers never write `.devrites/**`.
 
-Lease: `batch_id`, `created_at`, `base_sha`, `n`,
-`status` (`running|aborted|integrate-failed|complete`), `control_pid_or_session`,
-`slices[]` (`id`, `paths`, `worktree_path`, `branch`, `wright_status`,
-`transfer_commit`).
+Lease includes `batch_id`, `created_at`, `base_sha`, `capacity`, `n`, `status`,
+`control_pid_or_session` and `slices[]` (`id`, optional `workspace`, `paths`,
+`worktree_path`, `branch`, `wright_status`, `transfer_commit`). Omitted workspace
+means controller; CLI lease `--slice` uses source-qualified foreign keys.
 
 ## Lifecycle
 
 1. Orient/gate; parse the cap; compute `N_eff` and select the eligible set
    ([Dynamic selection and re-batching](#dynamic-selection-and-re-batching)) —
-   `parallel select --slug <slug> --cap N --from-plan` (ready set, write paths,
-   and pairwise disjointness are inside that verb).
+   local `parallel select --slug <slug> --cap N --from-plan`, or Autocomplete's
+   authorized mixed-source query from the shared controller reference.
    Preflight each selected slice with `devrites-engine check slice <slug>
    <id>`, plus `check preconditions <slug> --slice <id>` when it has a
    `pre-dispatch <id>` preflight row; a malformed contract or non-zero
    precondition is dropped from the batch and recorded as a gap, not dispatched.
-2. Write lease; freeze `B=HEAD`; `parallel create` worktrees.
-3. Dispatch ≤10 wrights in parallel (cwd=worktree; allowlist; prove `HEAD==B`).
-   One wave, one role per sibling: `--role slice-wright.<SLICE-ID> --slice <SLICE-ID>`
-   for each. `start` every role before waiting on any. One shared `slice-wright`
-   role is refused: it has one handle, so the other slices never start.
-   A linked worktree has no `.devrites`:
-   tell each wright to run `gates precheck` with `DEVRITES_ROOT=<control>/.devrites`.
+2. Write lease with `parallel create --cap N`; freeze `B=HEAD`; create isolated
+   worktrees, including Autocomplete's first lone writer at cap>1.
+3. Dispatch ≤N active wrights globally (absolute cwd=returned worktree; exact
+   `devrites-slice-wright` native profile; source slug; allowlist; prove `HEAD==B`).
+   Source-local waves use one role per sibling:
+   `--role slice-wright.<SLICE-ID> --slice <SLICE-ID>`.
+   `start` every selected role across sources before waiting on any.
+   Shared `slice-wright` role is refused: one handle cannot track siblings.
+   Linked worktrees run source checks with `DEVRITES_ROOT=<control>/.devrites`;
+   source overrides never leak into controller lease mutations.
 4. Inspect each returned path list, cumulative diff from `B`, transfer identity,
    and required result fields against the immutable contract. Reject malformed,
    stale, or out-of-scope work. Freeze and probe the sibling in its worktree:
@@ -145,19 +157,19 @@ Lease: `batch_id`, `created_at`, `base_sha`, `n`,
    preserve completed and in-progress recoverable work and classify each result.
 6. `parallel integrate --slice <id> --apply-to-control` **only after its steps
    4–5 are green**: `transfer_commit` descends from the sibling's base and diffs
-   path-exact vs it; apply as its own local `WIP(<slug>):` commit
+   path-exact vs it; apply as its own local `WIP(<source-slug>):` commit
    (imperative summary, never a slice id). Staging branch, then FF; the engine
    refuses (never rewinds) if anything but this lease moved control. Conflict →
    `integrate-failed`; classify under repair rounds (siblings stay in place).
    Never integrate because a wright returned.
 7. Each landing: FF control (the branch that held `HEAD` when the batch started —
    often `main`/`master`, otherwise whatever the user was on) by one local commit,
-   never pushed; union that sibling's paths into `touched-files.md`; update
-   state/evidence; AFK +1; optional `check candidate`. Land every green sibling,
-   refill ([Dynamic selection](#dynamic-selection-and-re-batching)), then run the
-   feature gates once for the train
-   ([Proof tiers](phase-contract.md#proof-tiers)); the next train waits, the
-   refilled wrights do not.
+   never pushed; union only that sibling's paths into SOURCE `touched-files.md`;
+   update its checked BUILT state/evidence and regression floor; AFK +1 once.
+   Land every independently green sibling and refill globally immediately
+   ([Dynamic selection](#dynamic-selection-and-re-batching)), then run source-owned
+   feature gates for the train ([Proof tiers](phase-contract.md#proof-tiers));
+   refilled wrights do not wait for unrelated source proof.
 8. Cleanup runs only after the last landing marks the lease `complete` — work
    landed in control, so `parallel cleanup` removes worktrees/branches.
    Blocked/human-stopped batches keep lease, worktrees, branches — nothing is
@@ -225,9 +237,9 @@ Repair rejected work in place; never discard/rebuild while budget remains.
 ## Engine verbs
 
 ```text
-devrites-engine parallel select --cap <1-10> [--root <dir>] [--slug <slug>] [--from-plan | <json-file>|-]
-devrites-engine parallel create --root <repo> --slug <slug> --batch <id> --base <B> --json <file>|-
-devrites-engine parallel add --root <repo> --slug <slug> --json <file>|-
+devrites-engine parallel select --cap <1-10> [--root <dir>] [--slug <controller>] [--from-plan [--workspaces <controller,authorized-source,...>] | <json-file>|-]
+devrites-engine parallel create --root <repo> --slug <controller> --batch <id> --base <B> --cap <N> --json <file>|-
+devrites-engine parallel add --root <repo> --slug <controller> --cap <N> --json <file>|-
 devrites-engine parallel record-green --root <repo> --slug <slug> --slice <id> --commit <sha>
 devrites-engine parallel integrate --root <repo> --slug <slug> --slice <id> --apply-to-control
 devrites-engine parallel integrate --root <repo> --slug <slug> --apply-to-control

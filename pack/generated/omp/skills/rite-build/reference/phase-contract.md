@@ -4,11 +4,13 @@
 
 Apply [`one-slice-cycle.md`](one-slice-cycle.md) and
 [`candidate-integrity.md`](skill://devrites-lib/reference/candidate-integrity.md).
-Opt-in `--parallel N` replaces steps 2–8 with [`parallel-batch.md`](parallel-batch.md);
+`--parallel N` uses [`parallel-batch.md`](parallel-batch.md) for steps 2–8;
+Autocomplete also executes the shared
+[`workspace controller`](skill://devrites-lib/reference/parallel-workspaces.md).
 Spec Drift Guard still applies.
 
-1. **Gate.** Read core, `.devrites/ACTIVE`, then `devrites-engine orient <slug>`
-   (`devrites-engine next <slug>` prints the minimal remaining path) and the
+1. **Gate.** Read core and ordered ACTIVE owner; use explicit SOURCE slug for
+   `devrites-engine orient <slug>` (`next <slug>` prints its minimal path) and the
    Build read-next in
    [`workspace-artifact-schema.md`](skill://devrites-lib/reference/workspace-artifact-schema.md#read-next-by-phase):
    the selected slice via `devrites-engine observe slice <slug> <SLICE-ID>`, not whole
@@ -16,8 +18,9 @@ Spec Drift Guard still applies.
    `Implementation readiness: READY`, current `Readiness inputs SHA-256`, exact
    required accounts, ID/meaning traceability and green proof preflight.
    Run `devrites-engine check readiness <slug>`; any miss/nonzero blocks.
-   Non-empty `orient` `inflight_waves` is reconciled first: `dispatch return` each
-   role whose account is in hand, else `dispatch abandon --reason` and re-dispatch.
+   Non-empty `orient` `inflight_waves` is reconciled first: record accounts in
+   hand; retain running/unknown writer handles, claims and lease slots. Read-only
+   stale waves follow terminal reconciliation before re-dispatch, not blind abandon.
 2. **Select.** Pick the lowest pending slice whose `depends_on` are all built, using
    `orient` `task_graph.slices` plus the `state.md` built list — never by scanning
    `tasks.md`; then `observe slice` it. Restate its goal, ACs, exclusions and exact paths. Include

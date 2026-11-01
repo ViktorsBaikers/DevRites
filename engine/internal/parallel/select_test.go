@@ -98,9 +98,10 @@ func TestSelectCLIRequiresCap(t *testing.T) {
 func TestSelectCLIFromPlan(t *testing.T) {
 	saved := PlanReady
 	t.Cleanup(func() { PlanReady = saved })
+	root := t.TempDir()
 	run := func(args ...string) (int, string, string) {
 		var stdout, stderr bytes.Buffer
-		code := Run("parallel", append([]string{"select", "--cap", "5"}, args...), strings.NewReader(""), &stdout, &stderr)
+		code := Run("parallel", append([]string{"select", "--cap", "5", "--root", root}, args...), strings.NewReader(""), &stdout, &stderr)
 		return code, stdout.String(), stderr.String()
 	}
 

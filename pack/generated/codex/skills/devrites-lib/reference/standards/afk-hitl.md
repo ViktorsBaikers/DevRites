@@ -118,18 +118,15 @@ candidate manifest to cover the whole recorded chain — run
   `$rite-autocomplete` recovers agent-owned Seal `NO-GO` per
   [stop-conditions.md](../../../rite-autocomplete/reference/stop-conditions.md), not a handoff.
 
-`max_parallel` is the unattended default batch cap only when this invocation does
-not contain `--parallel N`; `1` forces the serial cycle only in that default
-case. An exact `--parallel N` on `$rite-autocomplete` or `$rite-build` is the
-batch cap for this run: do not consult leftover sentinel `max_parallel`, and do
-not treat `max_parallel: 1` as serial. `$rite-autocomplete --parallel N` writes
-or replaces only that field so later ticks keep the cap; `$rite-build --parallel N`
-wins for that invocation without rewriting the sentinel. Never write `max_slices`
-from `--max-slices`. **Failing case:** `$rite-autocomplete --parallel 5` honors a
-leftover `max_parallel: 1` and stays serial.
-Unattended runs take the largest eligible set ≤ that cap and recompute after
-every completed round (serial slice or parallel integrate)
-([parallel-batch.md § Dynamic selection and re-batching](../../../rite-build/reference/parallel-batch.md#dynamic-selection-and-re-batching)).
+`max_parallel` is the unattended default writer cap when this invocation omits
+`--parallel N`; explicit N wins and Autocomplete writes/replaces only that field.
+Build's explicit flag wins without rewriting the sentinel. Never write
+`max_slices` from `--max-slices`. Autocomplete uses one cap across all authorized
+sources, including explicit 1, under the shared root-only
+[`workspace controller`](../parallel-workspaces.md); standalone Build stays local.
+Unattended runs recompute after each landing and planning/review return, not only
+after a batch completes. **Failing case:** `$rite-autocomplete --parallel 5`
+honors leftover `max_parallel: 1`, or grants five writers per workspace.
 
 ## Unattended resource envelope
 

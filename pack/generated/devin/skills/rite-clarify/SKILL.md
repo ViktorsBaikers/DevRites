@@ -4,7 +4,7 @@ description: Audit a completed spec for missing decisions before strategy or arc
 argument-hint: "[feature-slug]"
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md","rite-clarify/reference/decision-coverage.md","rite-clarify/reference/anti-patterns.md"],"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md"],"workspaceByRole":{"evidence-scout":["brief.md","spec.md","state.md","questions.md"]},"rootOnly":["devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md","rite-clarify/reference/decision-coverage.md","rite-clarify/reference/anti-patterns.md"],"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md"],"workspaceByRole":{"evidence-scout":["brief.md","spec.md","state.md","questions.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
 > Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --phase clarify` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -39,7 +39,7 @@ dispatch uses
 
 ## Workflow
 
-1. **Orient.** Read `.devrites/ACTIVE`, `state.md`, and `spec.md`. Require
+1. **Orient.** Resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding), then read its `state.md` and `spec.md`. Require
    `state.md` `spec_gate: passed` (legacy `Spec gate: passed` line accepted); otherwise stop at `/rite-spec`. Apply the native cursor
    protocol below before changing workspace artifacts.
 2. **Enumerate the topology.** From the spec, live code, contracts, references,

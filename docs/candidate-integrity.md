@@ -116,6 +116,16 @@ Candidate and Seal. A mismatch stops; it is never reinterpreted as equivalent.
 Fresh literal `GO` and native host approval remain required for each disclosed
 Git attempt.
 
+## Concurrent workspaces
+
+Mixed-workspace execution shares a controller, not a candidate or proof ledger.
+Every landing uses `WIP(<source>):` and updates only that source's manifest and
+evidence. Interleaved child checkpoints do not authorize parent-only Ship to
+absorb unfinished child work. The deferred release waits for participating
+workspaces' final proof/Review/Seal, generates the recorded sequence's union
+manifest, and checks exact staged bytes and scope under fresh literal `GO`.
+Retained controller/source leases must be cleaned before archival.
+
 ## Older workspaces
 
 Released v1/v2/v3 unfinished workspaces use read-only `/rite-upgrade`. A missing

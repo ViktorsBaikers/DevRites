@@ -5,7 +5,7 @@ argument-hint: "[feature-slug] [--mode expand|selective|hold-rigor|reduce-to-MVP
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/agents.md","rite-temper/reference/significance.md","rite-temper/reference/scope-modes.md","rite-temper/reference/review-dimensions.md","rite-temper/reference/strategy-template.md","rite-temper/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"yagni":["devrites-lib/reference/standards/patterns.md","devrites-lib/reference/standards/coding-style.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","strategy.md","design-brief.md"],"workspaceByRole":{"strategy-reviewer":["brief.md","spec.md","decision-coverage.md","decisions.md","strategy.md","state.md"]},"rootOnly":["devrites-lib/reference/standards/code-index.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
+<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/agents.md","rite-temper/reference/significance.md","rite-temper/reference/scope-modes.md","rite-temper/reference/review-dimensions.md","rite-temper/reference/strategy-template.md","rite-temper/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"yagni":["devrites-lib/reference/standards/patterns.md","devrites-lib/reference/standards/coding-style.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","strategy.md","design-brief.md"],"workspaceByRole":{"strategy-reviewer":["brief.md","spec.md","decision-coverage.md","decisions.md","strategy.md","state.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
 > Read-set manifest: `devrites-engine context <slug> --phase temper` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
 
 
@@ -14,7 +14,7 @@ user-invocable: true
 Review readied spec ambition, scope, pre-mortem risk, and excess surface. Fold
 accepted decisions into the canonical contract before `/rite-define`. Optional for
 small work; skips low-stakes specs; `/rite-autocomplete` always invokes it.
-**Read active workspace first**; no readied `spec.md` → `/rite-spec`. Depth follows
+**Read the selected source workspace first**; no readied `spec.md` → `/rite-spec`. Depth follows
 [`devrites-lib/reference/orchestration-profiles.md`](../devrites-lib/reference/orchestration-profiles.md);
 the required exact strategy reviewer never changes with profile.
 
@@ -49,7 +49,7 @@ the spec applicability map triggers that risk family.
 
 ## Workflow
 0. **Read `.claude/skills/devrites-lib/reference/standards/core.md`**, then
-   resolve the active slug, require its `state.md`, and read the cursor directly.
+   resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require its `state.md`, and read the cursor directly.
    Then read the workspace: `spec.md`, `decision-coverage.md` (+ `decisions.md`,
    `assumptions.md`, `design-brief.md` if UI), `state.md`. Require `state.md` `spec_gate: passed` (legacy `Spec gate:` accepted): else
    STOP → `/rite-spec`. Require `Decision coverage: CLEAR`: else STOP →

@@ -16,7 +16,7 @@ allow_gates: [advisory, validating]
 # max_slices / max_agents / max_minutes / max_review_queue omitted: unlimited
 # continue_sequence: false         # opt out; default chains after Seal GO
 # max_workspaces: 5                # sequence budget when chaining
-# max_parallel: 10                 # default cap when this invocation omits `--parallel N`; `--parallel N` wins and rewrites only this field
+# max_parallel: 10                 # fresh-run default; preserve retained lease capacity on cold resume; explicit `--parallel N` rewrites only this field
 # max_tokens: <N>
 # max_cost_usd: <amount>
 # notify: "<cmd>"
@@ -28,7 +28,10 @@ when this invocation contains `--parallel N`: then write or replace only
 malformed. Do not stop because it names `max_slices` / `max_agents` /
 `max_minutes` / `max_review_queue` or only `[advisory]`. If absent, write it
 once after clarity, and include `max_parallel: N` when that flag is present.
-Never write `max_slices` from `--max-slices`. It is otherwise read-only: never rewrite it after Vet or reset it on resume. Leftover `expires_at` is ignored
+Without the flag, seed a newly created sentinel from retained global lease capacity
+when present; otherwise use fresh-run default 10. Never replace a valid existing
+sentinel's capacity from lease/default. Never write `max_slices` from `--max-slices`.
+It is otherwise read-only: never rewrite it after Vet or reset it on resume. Leftover `expires_at` is ignored
 and never rewritten. **Failing case:** leftover `max_parallel: 1` keeps the run
 serial after `--parallel 5`.
 
@@ -64,7 +67,7 @@ Workspace files, not chat, carry state. Read/execute each phase skill:
 | 3 | `/rite-temper` | harden or reduce; `expand` and extra acceptance stop for a human; irreversible risk still pauses |
 | 4 | `/rite-define` | approved plan/tasks/traceability |
 | 5 | `/rite-vet` | every plan; derive mutable budget after READY |
-| 6 | `/rite-build` batch loop | largest eligible path-disjoint set (cap: this invocation's `--parallel N`, else sentinel `max_parallel`, else 10; serial if <2 eligible); refill per landing; charge once per landed slice |
+| 6 | `/rite-build` global frontier | execute [shared controller workflow](skill://devrites-lib/reference/parallel-workspaces.md); scan authorized stages and repair/re-Vet while writers run, refill per landing under one global cap; charge each source once per landed slice |
 | 7 | `/rite-prove` | all slices built except deferred (`Satisfies: none`); approved proof; recovery on red |
 | 8 | `/rite-polish` | re-prove after code edits |
 | 9 | `/rite-review` | in-scope correction then fresh proof |
@@ -72,7 +75,7 @@ Workspace files, not chat, carry state. Read/execute each phase skill:
 | 11 | `/rite-ship` | only after GO; `--ship` never authorizes Git; stop at literal-GO/native approval |
 
 Check [stop-conditions.md](stop-conditions.md) before advancing. Discard stale
-pass evidence after source edits. Re-read active workspace before each phase. On a cold resume or
+pass evidence after source edits. Re-read the selected source before each phase per [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding). On a cold resume or
 new activation, run `devrites-engine check regression <slug>`: `BLOCKED` names a
 durable fact lost since the last checkpoint — restore or route it through its
 owning phase before continuing; `unproven` does not block. After each phase's
@@ -89,11 +92,12 @@ step 10 does not end the run: leave the sealed workspace unshipped with its
 (`/rite-spec <parent>-<n> "<objective>"` from the parent's `decisions.md` sequence)
 and re-enter step 1. Spend one workspace per opened continuation.
 
-For a child already planned by [lookahead](lookahead.md), do not re-specify.
-Wait while `devrites-engine claim check --workspace <child>` exits 3 (live
-lookahead), then set `.devrites/ACTIVE` to the child and resume its cursor at
-step 1. A predecessor replan since its Vet blocks child readiness with
-`DRV-GATE-READINESS-STALE`; route to `/rite-vet` before Build.
+For an already prepared child, do not re-specify. Follow
+[`parallel-workspaces.md`](skill://devrites-lib/reference/parallel-workspaces.md)
+while the owner is still running: honor claims, repair/re-Vet stale readiness,
+and admit only explicitly independent/dependency-satisfied isolated work.
+ACTIVE changes to the child only at normal ordered handoff after the owner Seal;
+resume its durable cursor without a second controller or another opening charge.
 
 Before invoking a continuation, require durable `state.md`
 `sequence_workspaces_remaining > 0`; if absent, first write

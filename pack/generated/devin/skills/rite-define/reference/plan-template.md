@@ -95,9 +95,11 @@ artifact. Without boundary change write exactly:
 Shared contract impact: none — <specific justification>
 
 ## Dependency graph
-List slice prerequisites, non-code prerequisites, and deployable order:
+List local prerequisites and explicit `Workspace dependencies` under the
+[canonical slice grammar](../../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar),
+non-code prerequisites and deployable order:
 contract/schema/config → old/new app/worker → migration/backfill → exposure → removal.
-Name shared mutable resources that force serialization.
+Name shared mutable resources that force serialization or explicit isolation.
 Each temporary flag, shim/adapter, dual read/write, retained old column/endpoint, or deprecated
 alias the plan adds names its removal `SLICE-###` here, or a Non-goal continuation
 (`/rite-spec <slug>-N`) with measurable trigger + owner; otherwise Vet returns NEEDS REPLAN.

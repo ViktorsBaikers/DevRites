@@ -215,18 +215,6 @@ for index, match in enumerate(steps):
     if "**Completion:**" not in workflow[match.start():end]:
         raise SystemExit(f"rite-autocomplete step {match.group(1)} has no completion criterion")
 
-lookahead = (canonical / "skills/rite-autocomplete/reference/lookahead.md").read_text()
-for phrase in (
-    "does not skip Define, Plan, or Vet",
-    "not gate `access`",
-    "predecessor is still Build",
-    "No Vet `READY` until those roles are admitted",
-    "Do not report a stop from chat",
-    "fold resolved decisions into the spec",
-    "change the spec and resolve it",
-):
-    if phrase not in lookahead:
-        raise SystemExit(f"lookahead contract missing {phrase!r}")
 for name, phrase in (
     ("skills/devrites-lib/reference/standards/principles.md", "Comply by changing the spec."),
     ("skills/rite-spec/SKILL.md", "complies by changing the spec"),
@@ -900,27 +888,8 @@ for text, required in (
     (spec, ("Native grammar re-read checklist", "No parser or replacement script")),
     (checkpoint, ("scan every question header", "re-read `questions.md` immediately before", "next unused", "under a bounded tool timeout", "append the exit code to `evidence.md`")),
     (clarify, ("return_phase", "return_next_action", "preserve unrelated Markdown", "/rite-plan repair")),
-    (afk_contract, (
-        "read-only config", "afk_slices_remaining", "released bullet", "pre-seed",
-        "never increased or reinitialized", "max_agents", "max_minutes",
-        "max_review_queue", "leftover `expires_at` is ignored", "do not add dispatch telemetry to `.devrites/`",
-        "do not consult leftover sentinel `max_parallel`",
-        "/rite-autocomplete --parallel N` writes",
-        "Above it stop; at it run only reconciliation", "if declared but unobservable, stop",
-        "per native activation and start fresh only", "remain durable/recomputed across wakes",
-        "`/rite-autocomplete` deliberately ignores `max_slices`, `max_agents`, `max_minutes` and `max_review_queue`",
-    )),
     (afk, ("afk-hitl.md", "Build dispatch, charging, and red paths", "Under active `/rite-autocomplete`, skip the slice-cap checks, charges, and cap-stop message below;", "exactly once after each green built slice", "never below zero", "fails closed", "before dispatching another slice", "curl -fsS -m 10 -d")),
     (recovery, ("caller and recovery attempts", "three no-progress attempts", "Count an attempt only", "## Dead ends", "never request attempt four of the same strategy")),
-    ((canonical / "skills/rite-build/reference/wright-dispatch.md").read_text(), (
-        "Isolated writer-worktree pilot", "show-superproject-working-tree",
-        "one writer", "transfer_commit", "preserve the worktree and commit",
-        "actual `git rev-parse HEAD` equals supplied", "Mismatch returns a gap with no write",
-        "Parallel isolated-writer worktrees", "remain forbidden until this serial pilot",
-        "successful return, rejected result, stop, or a launch the host refused with no handle",
-        "A timeout or unknown outcome keeps the claim",
-        "](../../devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation)",
-    )),
     ((canonical / "skills/rite-build/reference/parallel-batch.md").read_text(), (
         "stop for the human (never stash or commit their work); the batch is untouched",
     )),

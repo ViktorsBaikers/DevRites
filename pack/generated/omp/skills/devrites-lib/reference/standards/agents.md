@@ -76,7 +76,7 @@ Only that bounded writer may edit its exact project-relative source/test paths; 
 workspace writes, scope widening, or second writer. Root remains source/test nonwriter.
 This exception grants no additional tools, permissions, phase, agent-launch, or Git authority.
 
-Isolated-worktree pilot only under [`wright-dispatch.md`](skill://rite-build/reference/wright-dispatch.md#isolated-writer-worktree-pilot): one writer, committed/clean baseline, non-submodule parent, exact transfer commit, candidate reconciliation — never parallel writers nor weaker exact-path admission. Root may materialize only exact Vet-ready workflow-artifact paths per [`workflow-artifacts.md`](workflow-artifacts.md) — not a writer dispatch or candidate mutation.
+Isolated-worktree pilot follows [`wright-dispatch.md`](skill://rite-build/reference/wright-dispatch.md#isolated-writer-worktree-pilot); sanctioned parallel work follows [`parallel-batch.md`](skill://rite-build/reference/parallel-batch.md) and Autocomplete's shared [`workspace controller`](skill://devrites-lib/reference/parallel-workspaces.md), never same-tree co-writers or weaker exact-path admission. Root may materialize only exact Vet-ready workflow-artifact paths per [`workflow-artifacts.md`](workflow-artifacts.md) — not a writer dispatch or candidate mutation.
 
 Each job gets objective/exclusions, exact paths/immutable candidate, rubric/result shape, a **stop condition** (when to return), and the exact result shape; a dispatch missing them is malformed and re-issued. Briefs MUST NOT seed verdict/severity cap/conclusion/suppression. Results state status/scope, outcome, commands/escalation; wright adds paths, changed files, gates, stood decisions; results never widen scope.
 
