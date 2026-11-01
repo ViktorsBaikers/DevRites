@@ -55,28 +55,27 @@ If the candidate diff has no matching surfaces, record
    The `agents` dispatch contract needs no flag: `--role` auto-fires it
    (`auto=[agents]` in the output). The command prints `unselected=[...]`; an
    omitted applicable trigger is a gap, not a shortcut.
-3. Enforce the launch barrier through the engine, not prose. Open the wave
-   (`devrites-engine dispatch <slug> open --phase <p> --wave <w> --role <r>...`;
-   a reviewer, auditor, or test-analyst wave adds `--packet <file>`, any one of the
-   wave's rendered `packets/<w>.<role>.md` (hand each agent its own file unedited), and `open` refuses one that seeds a gate result, outcome,
-   count, or "already passed" claim; a Build reviewer wave adds `--slice <SLICE-ID>`
-   so its findings key on that slice; at Review and Seal it also needs the packet to
-   name the frozen candidate diff and the manifest to cover every checkpointed path;
-   a same-tree writer wave adds `--claim-session <id> --claim <path>...` per
-   [`wright-dispatch.md`](skill://rite-build/reference/wright-dispatch.md#run)), launch every native agent nonblocking through the host's own agent
-   tool (never a shell-launched host CLI such as `omp -p` or `claude -p`: that is a
-   dispatch bridge, its PID handle dies with the session, and its return is a `gap`),
-   record each returned host handle
-   (`dispatch ... start --wave <w> --role <r> --handle <id>`) — the last start
-   seals the wave (an explicit `seal` is a no-op), which makes a
-   serial launch-then-wait pattern impossible to record. Record each completion
-   with `dispatch ... return`; a reviewer adds `--result <file>` holding its return verbatim (the engine stores it as `packets/<wave>-<role>.return.md`, derives the outcome from its head, and records its `Finding:` keys; a file already at that path is kept), or `--outcome <findings|no-findings|gap>` when the host cannot hand the return over as a file; `return` refuses before seal. `dispatch status`
-   exits nonzero while the wave is open, sealed, or abandoned. `start`/`return`
-   auto-record the dispatch/return metrics events — no separate ledger call. If
-   an opened wave cannot obtain every handle or reach `seal`, run
-   `devrites-engine dispatch <slug> abandon --wave <w> --reason <reason>` (with
-   `--release` on a host-confirmed stop or refused launch) before
-   recording the gap; never leave an open wave to block a retry.
+3. Open a single-use wave; every retry needs a fresh ID:
+   `devrites-engine dispatch <slug> open --phase <p> --wave <w> --role <r>...`.
+   Reviewer/auditor/test-analyst waves add `--packet <file>` naming any rendered
+   `packets/<w>.<role>.md`; give each agent its own packet unedited. `open` rejects
+   seeded gate results, outcomes, counts, or pass claims. Build reviewers add
+   `--slice <SLICE-ID>`; Review/Seal packets bind the frozen diff and a manifest
+   covering every checkpointed path. Same-tree writers add `--claim-session <id>
+   --claim <path>...` per [`wright-dispatch.md`](skill://rite-build/reference/wright-dispatch.md#run).
+   Launch all native agents nonblocking through the host tool before waiting.
+   Never shell-launch host CLIs (`omp -p`, `claude -p`): that bridge's handle dies
+   with the session and its return is a gap. Record every host handle with
+   `dispatch ... start --wave <w> --role <r> --handle <id>`; the last seals the wave
+   (explicit `seal` then does nothing). Return only after seal, with the recorded
+   handle: `dispatch ... return --wave <w> --role <r> --handle <id>`.
+   Reviewers add `--result <file>`: retain it verbatim at
+   `packets/<wave>-<role>.return.md` (keep an existing file), derive outcome and
+   `Finding:` keys. If the host cannot provide a file, use explicit
+   `--outcome findings|no-findings|gap`. Status is nonzero for open/sealed/abandoned
+   waves; start/return record metrics. If handles/seal cannot be obtained,
+   `dispatch ... abandon --wave <w> --reason <reason>` before recording the gap;
+   add `--release` only after host-confirmed stop/refused launch.
 4. Ask for each exact named agent in fresh context; omit native syntax and
    `agent_type`/`task_name`/`fork_turns` from the instruction.
 5. Every dispatch reaches a terminal classification before reconciliation:
@@ -144,31 +143,34 @@ the client renames a field its mocked test still passes, and the verdict reads c
 
 ## Cancellation and terminal reconciliation
 
-Cancellation acknowledgement means the host accepted a request, not that the
-child stopped. A transport timeout likewise leaves execution unknown. Keep the
-child's handle, path/resource ownership and capacity reservation until the
-native host confirms a terminal state and returned work has been reconciled.
-Query or wait on that handle; do not replace the child, release its slot, or
-reuse its resources while it may still run. If terminal state cannot be
-established, record a gap and retain ownership; for a child launched by an earlier
-session, the claim proof below settles it. A result classification alone
-does not prove host termination.
+Cancellation acknowledgement or timeout leaves execution unknown. Keep handles,
+path/resource ownership, and capacity until the native host confirms termination
+and returned work is reconciled. Query/wait; never replace children, release slots,
+or reuse resources prematurely. If unproven, record a gap and retain ownership;
+earlier-session claim proof follows. Outcome classification alone proves no death.
 
 On resume (compaction or a new session), run `devrites-engine dispatch <slug>
 status`, `parallel status`, and `claim list` before any dispatch. A read-only
 wave whose handles this session cannot query: `abandon` it, record each unreturned
-role `gap`, and re-dispatch fresh on the current digest; its late returns are
-`stale`. A writer keeps its claim and lease — no relaunch on those paths until the
-claim is released or its holder is proven terminal. For an unqueryable writer,
-`claim list` showing its claim `dead` (the engine proved the holding session
-exited on this host), or `claim list --all --session <id>` showing it `released`
-(bare `list` only counts released rows), is that proof: `abandon` the wave, record the
-role `gap`, claim the paths, and re-dispatch without waiting on the launching
-session. `live` or `expired` stays held. A wright that never returned an
+role `gap`, and re-dispatch under a fresh wave ID on the current digest; its late
+returns are `stale`. A writer retains claim/lease: no relaunch under a fresh wave,
+same session, or expired TTL until release or proven termination. For an
+unqueryable writer, `claim list` `dead` proves its holding session exited on this
+host; `claim list --all --session <id>` shows `released` (bare `list` counts it).
+After that proof, `dispatch <slug> abandon --wave <w> --release --reason <reason>`
+stamps `terminal_at` even without a claim, not a return. Record `gap`, reclaim
+paths, and re-dispatch. `live`/`expired` stays held; cancellation acknowledgement,
+timeout, ordinary abandonment, or replacement cannot prove writer death.
+A wright that never returned an
 admitted result leaves unadmitted bytes: task-path changes since its pre-dispatch
 `git diff --name-only` baseline are never cited as built nor discarded, and are
 named in the re-dispatch contract; changes outside task paths stop for the human
 (Converge side: [`rite-converge`](skill://rite-converge/SKILL.md)).
+
+Finalization settles every launched role, including proof/custom/writer roles.
+Abandoned proof/reviewer replacement needs a newer settled account, same canonical
+phase/role/exact unordered slice set, and distinct handle. Writer termination
+admits no bytes and bypasses no candidate, admission, review or proof gate.
 
 ## Scale limits
 

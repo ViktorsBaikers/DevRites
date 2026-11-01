@@ -249,3 +249,92 @@ func TestSequenceChainBeyondBoundRefusesInsteadOfTruncating(t *testing.T) {
 		t.Fatal("release union passed over an over-long chain")
 	}
 }
+
+func TestAuditSequenceParentlessReleaseBoundary(t *testing.T) {
+	for _, tc := range []struct {
+		position string
+		valid    bool
+	}{
+		{position: "1", valid: true},
+		{position: "10"},
+		{position: "0"},
+		{position: "01"},
+		{position: ""},
+	} {
+		for _, consumer := range []string{"merge", "verify"} {
+			t.Run(tc.position+"/"+consumer, func(t *testing.T) {
+				root := unionRoot(t)
+				unionWorkspace(t, root, "release", manifestBody("| present | `src/release.ts` | SLICE-001 | Release. |"), false)
+				dir := filepath.Join(root, "work", "release")
+				stateBody := "| phase | seal |\n| schema | 4 |\n| sequence_role | release |\n| sequence_position | " + tc.position + " |\n"
+				if err := os.WriteFile(filepath.Join(dir, "state.md"), []byte(stateBody), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				if consumer == "verify" {
+					err := VerifyReleaseUnion(root, "release")
+					if (err == nil) != tc.valid {
+						t.Fatalf("position %q: valid=%v, error=%v", tc.position, tc.valid, err)
+					}
+					return
+				}
+				manifestPath := filepath.Join(dir, "touched-files.md")
+				before, err := os.ReadFile(manifestPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var stdout, stderr bytes.Buffer
+				code := RunMergeManifest(root, []string{"release"}, &stdout, &stderr)
+				if tc.valid {
+					if code != 0 {
+						t.Fatalf("position 1: code=%d stderr=%s", code, stderr.String())
+					}
+				} else {
+					if code != 3 || !strings.Contains(stderr.String(), "sequence_position") {
+						t.Fatalf("position %q: code=%d stderr=%s", tc.position, code, stderr.String())
+					}
+					after, err := os.ReadFile(manifestPath)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if !bytes.Equal(before, after) {
+						t.Fatal("invalid parentless release changed its manifest")
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestAuditSequenceExplicitListCannotOmitRoot(t *testing.T) {
+	root := unionRoot(t)
+	for i, slug := range []string{"p1", "p2", "release"} {
+		unionWorkspace(t, root, slug, manifestBody(fmt.Sprintf("| present | `src/%s.ts` | SLICE-001 | Product. |", slug)), i == 0)
+		location := "work"
+		if i == 0 {
+			location = "archive"
+		}
+		stateBody := fmt.Sprintf("| phase | seal |\n| schema | 4 |\n| sequence_position | %d |\n", i+1)
+		if i > 0 {
+			stateBody += "| sequence_parent | p" + fmt.Sprint(i) + " |\n"
+		}
+		if err := os.WriteFile(filepath.Join(root, location, slug, "state.md"), []byte(stateBody), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	manifestPath := filepath.Join(root, "work", "release", "touched-files.md")
+	before, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := RunMergeManifest(root, []string{"release", "p2"}, &stdout, &stderr); code != 3 {
+		t.Fatalf("incomplete explicit chain: code=%d stderr=%s", code, stderr.String())
+	}
+	after, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatal("incomplete explicit chain changed the release manifest")
+	}
+}

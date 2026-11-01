@@ -34,10 +34,30 @@ SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 USES_RE = re.compile(r"^\s*-?\s*uses\s*:\s*([^\s#]+)")
 DEPENDABOT_GATE = "github.event.pull_request.user.login == 'dependabot[bot]'"
 UNQUOTED_NAME_COLON_RE = re.compile(r"^\s*(?:-\s*)?name:\s+[^'\"].*:\s+\S")
-RUN_RE = re.compile(r"^(\s*)(?:-\s*)?run\s*:\s*(.*)$")
-DISPATCH_EXPRESSION_RE = re.compile(r"\$\{\{[^}]*\binputs\b", re.IGNORECASE)
+INPUTS_RE = re.compile(r"\binputs\b", re.IGNORECASE)
 COMMITLINT_RUN_RE = re.compile(r"^\s*(?:-\s*)?(?:run\s*:\s*)?.*\bnpx\b.*\bcommitlint\b", re.MULTILINE)
 TITLE_ENV_RE = re.compile(r"^\s*\w+\s*:\s*\$\{\{\s*github\.event\.pull_request\.title\s*\}\}", re.MULTILINE)
+
+
+def run_interpolates_inputs(command):
+    """Keep quoted braces inside an expression, including doubled single quotes."""
+    start = command.find("${{")
+    while start != -1:
+        end = start + 3
+        quoted = False
+        while end < len(command):
+            if command[end] == "'":
+                if quoted and command.startswith("''", end):
+                    end += 2
+                    continue
+                quoted = not quoted
+            elif not quoted and command.startswith("}}", end):
+                break
+            end += 1
+        if INPUTS_RE.search(command, start + 3, end):
+            return True
+        start = command.find("${{", end + 2)
+    return False
 
 
 def trigger_configs(doc):
@@ -159,23 +179,16 @@ def scan_text(path, text):
             findings.append("%s:%d: action '%s' is not pinned to a full commit "
                             "SHA. Pin it because a moving tag is a supply-chain risk"
                             % (path, i, ref))
-    for i, line in enumerate(lines):
-        match = RUN_RE.match(line)
-        if not match:
-            continue
-        run_indent = len(match.group(1))
-        run_lines = [(i + 1, match.group(2))]
-        for j in range(i + 1, len(lines)):
-            candidate = lines[j]
-            if candidate.strip() and len(candidate) - len(candidate.lstrip()) <= run_indent:
-                break
-            run_lines.append((j + 1, candidate))
-        for line_number, command in run_lines:
-            if DISPATCH_EXPRESSION_RE.search(command):
+    jobs = doc.get("jobs")
+    for job_id, job in jobs.items() if isinstance(jobs, dict) else []:
+        steps = job.get("steps") if isinstance(job, dict) else None
+        for step_number, step in enumerate(steps if isinstance(steps, list) else [], 1):
+            command = step.get("run") if isinstance(step, dict) else None
+            if isinstance(command, str) and run_interpolates_inputs(command):
                 findings.append(
-                    "%s:%d: workflow_dispatch input appears directly in run. "
+                    "%s: job %s step %d: workflow_dispatch input appears directly in run. "
                     "Pass it through env and quote the shell variable"
-                    % (path, line_number)
+                    % (path, job_id, step_number)
                 )
     return findings
 

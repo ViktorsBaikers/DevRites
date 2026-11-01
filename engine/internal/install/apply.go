@@ -43,6 +43,10 @@ func (r *runner) install() error {
 	if err := r.preflightInstall(); err != nil {
 		return err
 	}
+	// Complete binary installation before changing payload ownership or version.
+	if err := r.installBinary(); err != nil {
+		return fmt.Errorf("install engine binary: %w", err)
+	}
 
 	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin, r.opts.WithDsh) {
 		if err := r.installTree(tree.PayloadPrefix, tree.TargetPrefix); err != nil {
@@ -105,9 +109,6 @@ func (r *runner) install() error {
 		if err := r.writeManifest(); err != nil {
 			return fmt.Errorf("write manifest: %w", err)
 		}
-	}
-	if err := r.installBinary(); err != nil {
-		return fmt.Errorf("install engine binary: %w", err)
 	}
 
 	fmt.Fprintln(r.opts.Stdout)

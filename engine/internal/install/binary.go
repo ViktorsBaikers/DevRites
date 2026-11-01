@@ -63,11 +63,20 @@ func (r *runner) installBinary() error {
 	if err != nil {
 		return err
 	}
+	removeBackup := true
 	if backup != "" {
-		defer func() { _ = os.Remove(backup) }()
+		defer func() {
+			if removeBackup {
+				_ = os.Remove(backup)
+			}
+		}()
 	}
 	if err := fsutil.WriteFileAtomic(dest, data, 0o755); err != nil {
 		if restoreErr := restoreBinary(dest, backup, oldMode, hadOld); restoreErr != nil {
+			removeBackup = false
+			if backup != "" {
+				restoreErr = fmt.Errorf("%w (previous binary retained at %s)", restoreErr, backup)
+			}
 			return fmt.Errorf("install binary: %v; restore previous binary: %w", err, restoreErr)
 		}
 		return err
@@ -75,6 +84,10 @@ func (r *runner) installBinary() error {
 	_ = os.Chmod(dest, 0o755)
 	if _, err := verifyEngineBinary(dest, tag, 30*time.Second); err != nil {
 		if restoreErr := restoreBinary(dest, backup, oldMode, hadOld); restoreErr != nil {
+			removeBackup = false
+			if backup != "" {
+				restoreErr = fmt.Errorf("%w (previous binary retained at %s)", restoreErr, backup)
+			}
 			return fmt.Errorf("verify installed engine binary: %v; restore previous binary: %w", err, restoreErr)
 		}
 		if hadOld {

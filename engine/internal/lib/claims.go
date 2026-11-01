@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/parallel"
+	"github.com/devrites/devrites/internal/safepath"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -262,6 +264,137 @@ func claimPathsOverlap(a, b string) bool {
 	return a == b || strings.HasPrefix(a, b+"/") || strings.HasPrefix(b, a+"/")
 }
 
+// Retained writer ownership belongs to the repository ledger, not a session or
+// TTL. Caller holds its lock; workspace moves use the same lock.
+func retainedWriterConflicts(root string, latest map[string]*claimRecord, paths []string, probe holderProbe) ([]*claimRecord, error) {
+	var conflicts []*claimRecord
+	var physical []string
+	seen := map[string]bool{}
+	for _, parent := range []string{"work", "archive"} {
+		base := filepath.Join(root, parent)
+		if parent == "archive" {
+			var err error
+			base, err = devritespaths.ArchiveDirChecked(root)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if info, err := os.Lstat(base); os.IsNotExist(err) {
+			continue
+		} else if err != nil {
+			return nil, err
+		} else if !info.IsDir() {
+			return nil, fmt.Errorf("claim: workspace collection %s is not a canonical directory", base)
+		}
+		entries, err := os.ReadDir(base)
+		if err != nil {
+			return nil, err
+		}
+		for _, entry := range entries {
+			if entry.Type().IsRegular() {
+				continue
+			}
+			var dir string
+			if parent == "work" {
+				dir, err = devritespaths.ExistingCanonicalFeatureDirChecked(root, entry.Name())
+			} else {
+				dir, err = devritespaths.ExistingArchivedFeatureDirChecked(root, entry.Name())
+			}
+			if err != nil {
+				return nil, err
+			}
+			path := filepath.Join(dir, "dispatch.json")
+			if info, err := os.Lstat(path); os.IsNotExist(err) {
+				continue
+			} else if err != nil {
+				return nil, err
+			} else if !info.Mode().IsRegular() {
+				return nil, fmt.Errorf("claim: %s is not a regular dispatch ledger", path)
+			}
+			f, _, err := loadDispatchFile(path)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", path, err)
+			}
+			for name, w := range f.Waves {
+				// A declared claim is write intent regardless of the host role label.
+				if w.State != "abandoned" || w.Claim == "" {
+					continue
+				}
+				rec := latest[w.Claim]
+				if rec == nil || (w.ClaimSession != "" && w.ClaimSession != rec.Session) {
+					return nil, fmt.Errorf("abandoned writer wave %s/%s has unknown claim %q", entry.Name(), name, w.Claim)
+				}
+				if rec.Released || seen[rec.ID] {
+					continue
+				}
+				seen[rec.ID] = true
+				if retainedWriterGone(probe, rec) {
+					continue
+				}
+				held, err := normalizeClaimPaths(rec.Paths)
+				if err != nil {
+					return nil, fmt.Errorf("abandoned writer claim %s has invalid paths: %w", rec.ID, err)
+				}
+				if physical == nil {
+					physical, err = physicalClaimPaths(root, paths)
+					if err != nil {
+						return nil, err
+					}
+				}
+				held, err = physicalClaimPaths(root, held)
+				if err != nil {
+					return nil, err
+				}
+				if slices.ContainsFunc(held, func(h string) bool {
+					return slices.ContainsFunc(physical, func(p string) bool { return claimPathsOverlap(h, p) })
+				}) {
+					conflicts = append(conflicts, rec)
+				}
+			}
+		}
+	}
+	return conflicts, nil
+}
+
+func retainedWriterGone(probe holderProbe, rec *claimRecord) bool {
+	valid := func(p claimProc) bool {
+		_, err := time.Parse(time.RFC3339, p.Start)
+		return p.PID > 1 && err == nil
+	}
+	if rec.Holder != nil {
+		if !valid(*rec.Holder) {
+			return false
+		}
+	} else {
+		for _, anchor := range rec.Anchors {
+			if !valid(anchor) {
+				return false
+			}
+		}
+	}
+	return probe.gone(rec)
+}
+
+func physicalClaimPaths(root string, paths []string) ([]string, error) {
+	project := root
+	if filepath.Base(root) == devritespaths.DevritesRootName {
+		project = filepath.Dir(root)
+	}
+	out := make([]string, 0, len(paths))
+	for _, path := range paths {
+		normalized, err := parallel.NormalizePath(path)
+		if err != nil {
+			return nil, err
+		}
+		resolved, err := safepath.ResolveExisting(filepath.Join(project, filepath.FromSlash(normalized)))
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, filepath.ToSlash(resolved))
+	}
+	return out, nil
+}
+
 // An unreadable line may be a live claim, so the conflict gates refuse to
 // answer rather than report a path free.
 const unparsedLedgerMsg = "claim: %d unparsed ledger line(s); cannot rule out a conflict, repair the claims ledger\n"
@@ -340,7 +473,7 @@ func addClaimTargets(root, session, reason string, ttl int, raw, workspaces []st
 	// sessions cannot both pass the check and claim the same path.
 	id, code := "", 0
 	if err := state.WithLock(path+".lock", func() error {
-		id, code = claimAddLocked(path, session, reason, ttl, paths, stdout, stderr)
+		id, code = claimAddLocked(path, session, reason, ttl, paths, paths, stdout, stderr)
 		return nil
 	}); err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
@@ -349,7 +482,7 @@ func addClaimTargets(root, session, reason string, ttl int, raw, workspaces []st
 	return id, code
 }
 
-func claimAddLocked(path, session, reason string, ttl int, paths []string, stdout, stderr io.Writer) (string, int) {
+func claimAddLocked(path, session, reason string, ttl int, paths, admissionPaths []string, stdout, stderr io.Writer) (string, int) {
 	latest, order, bad, err := readClaims(path)
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
@@ -361,6 +494,15 @@ func claimAddLocked(path, session, reason string, ttl int, paths []string, stdou
 	}
 	now := time.Now().UTC()
 	probe := newHolderProbe()
+	retained, err := retainedWriterConflicts(filepath.Dir(path), latest, admissionPaths, probe)
+	if err != nil {
+		fmt.Fprintf(stderr, "claim: %v\n", err)
+		return "", 3
+	}
+	if len(retained) > 0 {
+		printConflicts(stderr, retained)
+		return "", 3
+	}
 	conflicts := claimConflicts(probe.withoutGone(liveClaims(latest, order, now)), session, paths)
 	if len(conflicts) > 0 {
 		printConflicts(stderr, conflicts)
@@ -413,6 +555,8 @@ func claimRelease(root string, args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
+var errClaimAlreadyReleased = errors.New("already released")
+
 // releaseClaim marks session's claim id released and returns its path count.
 func releaseClaim(root, session, id string) (int, error) {
 	path := claimsPath(root)
@@ -428,7 +572,7 @@ func releaseClaim(root, session, id string) (int, error) {
 		return 0, fmt.Errorf("%q belongs to session %q, not %q", id, rec.Session, session)
 	}
 	if rec.Released {
-		return 0, fmt.Errorf("%q already released", id)
+		return 0, fmt.Errorf("%q %w", id, errClaimAlreadyReleased)
 	}
 	released := *rec
 	released.Released = true
@@ -523,6 +667,18 @@ func claimCheck(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
 		return 2
 	}
+	code := 0
+	if err := state.WithLock(claimsPath(root)+".lock", func() error {
+		code = claimCheckLocked(root, session, paths, stdout, stderr)
+		return nil
+	}); err != nil {
+		fmt.Fprintf(stderr, "claim: %v\n", err)
+		return 2
+	}
+	return code
+}
+
+func claimCheckLocked(root, session string, paths []string, stdout, stderr io.Writer) int {
 	latest, order, bad, err := readClaims(claimsPath(root))
 	if err != nil {
 		fmt.Fprintf(stderr, "claim: %v\n", err)
@@ -532,7 +688,17 @@ func claimCheck(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, unparsedLedgerMsg, bad)
 		return 2
 	}
-	conflicts := claimConflicts(newHolderProbe().withoutGone(liveClaims(latest, order, time.Now().UTC())), session, paths)
+	probe := newHolderProbe()
+	retained, err := retainedWriterConflicts(root, latest, paths, probe)
+	if err != nil {
+		fmt.Fprintf(stderr, "claim: %v\n", err)
+		return 2
+	}
+	if len(retained) > 0 {
+		printConflicts(stdout, retained)
+		return 3
+	}
+	conflicts := claimConflicts(probe.withoutGone(liveClaims(latest, order, time.Now().UTC())), session, paths)
 	if len(conflicts) > 0 {
 		printConflicts(stdout, conflicts)
 		return 3

@@ -59,34 +59,34 @@ dispatch uses
    remains.
 5. **Write the verdict.** Write `Decision coverage: CLEAR` only after re-reading all inputs and confirming
    every material row has current evidence and an owner. Normal flow sets `phase=clarify` and
-   `next_action=$rite-temper`. A low-stakes spec — the significance trigger temper itself
-   skips (rite-temper step 1) — sets `next_action=$rite-define` instead. A contract-neutral later-phase return uses
-   the native restore below; changed behavior or acceptance routes to
-   `$rite-plan repair` instead. Stop without starting the next phase.
+   `next_action=$rite-temper`, or `$rite-define` for low-stakes specs temper skips.
+   Later-phase entries follow the ownership protocol below. Return inline verdicts
+   to the controlling caller; otherwise stop before starting the next phase.
 
 ## Native clarify cursor protocol
 
-The controlling root edits only cursor rows in `state.md`; it must preserve unrelated Markdown and the file's existing table/bullet presentation.
+Edit only cursor rows; preserve unrelated Markdown and table/bullet presentation.
 
-- **Normal entry from Spec:** set `phase=clarify`, `status=running`, and
-  `next_action=$rite-clarify <slug>`; omit both return fields.
-- **Already in Clarify:** no-op. Do not overwrite an existing valid return
-  cursor.
-- **Later-phase entry:** only `temper`, `define`, `plan`, `vet`, `build`,
-  `converge`, `prove`, `polish`, `review`, `seal`, or `ship` may return. First
-  copy the current `phase` and non-empty `next_action` to `return_phase` and
-  `return_next_action`; then set `phase=clarify`, `status=running`, and
-  `next_action=$rite-clarify <slug>`. Missing/unknown cursor values fail closed
-  before any write.
-- **Contract-neutral restore:** after a fresh `Decision coverage: CLEAR`, require
-  `phase=clarify`, both return fields, a recognized later `return_phase`, and a
-  non-empty `return_next_action`. Restore those values to `phase` and
-  `next_action`, set `status=running`, and remove both return fields in the same
-  rewrite. Re-read the cursor and confirm the return rows are absent.
-- **Contract changed:** do not restore the saved cursor. Record drift and route
-  through `$rite-plan repair`, which owns the changed plan and next action.
-
-Never normalize or rewrite the rest of `state.md` while applying this protocol.
+- **Validate before writes:** require no return fields or a complete pair:
+  recognized later `return_phase`, non-empty `return_next_action`. Invalid/half
+  pairs fail closed. Later phases: `temper`, `define`, `plan`, `vet`, `build`,
+  `converge`, `prove`, `polish`, `review`, `seal`, `ship`.
+- **Spec entry:** set `phase=clarify`, `status=running`,
+  `next_action=$rite-clarify <slug>`; omit return fields.
+- **Caller-owned pair:** pair with `phase!=clarify` requires a native
+  controlling caller; otherwise stop for ownership recovery. Run bounded Clarify
+  inline, preserve all cursor rows, and return its verdict to caller.
+  Contract changes require Plan repair and Vet before outer resume.
+- **Clarify-owned pair:** standalone later-phase entry without a pair saves current
+  phase/non-empty next action as the pair, then sets `phase=clarify`,
+  `status=running`, `next_action=$rite-clarify <slug>`. Missing/unknown values
+  fail closed. `phase=clarify` resumes without writes; its pair belongs to
+  standalone Clarify, not a nested caller.
+- **Restore:** after fresh `CLEAR`, only the owner restores its pair.
+  Contract-neutral standalone Clarify restores phase/next action, sets
+  `status=running`, atomically unsets both return fields, and re-reads to verify.
+  Contract changes retain the pair through Plan repair and Vet; only its owner
+  consumes it after readiness. Preserve caller pairs.
 
 ## Output
 

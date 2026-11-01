@@ -148,7 +148,7 @@ func (o *WorkspaceObservation) DeclaredPhase() (Phase, error) {
 	if !ok {
 		return "", fmt.Errorf("feature %q: no phase in %s ledger; record phase in state.md and retry", o.slug, LedgerFile)
 	}
-	phase := Phase(firstPhaseWord(value))
+	phase := CanonicalPhase(value)
 	policy, ok := PolicyFor(phase)
 	if !ok {
 		return "", fmt.Errorf("feature %q: unknown phase %q; record a known phase in state.md and retry", o.slug, phase)

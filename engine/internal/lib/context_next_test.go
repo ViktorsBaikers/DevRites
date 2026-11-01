@@ -1150,9 +1150,9 @@ func TestMetricsSummaryBySlice(t *testing.T) {
 	writeFile(t, filepath.Join(featureDir, "dispatch.json"), `{"waves":{
  "w1":{"phase":"build","state":"complete","slices":["SLICE-001"],"roles":{"slice-wright":{"handle":"a","started":"2026-10-15T10:00:00Z","returned":true,"returned_at":"2026-10-15T10:30:00Z"}}},
  "w2":{"phase":"build","state":"complete","slices":["SLICE-001","SLICE-002"],"roles":{"slice-wright":{"handle":"b","started":"2026-10-15T11:00:00Z","returned":true,"returned_at":"2026-10-15T11:20:00Z"}}},
- "w3":{"phase":"build","state":"abandoned","slices":["SLICE-001"],"roles":{"slice-wright":{"handle":"c"}}},
- "v1":{"phase":"vet","state":"complete","slices":["SLICE-002"],"roles":{"plan-reviewer":{"handle":"d","started":"2026-10-15T12:00:00Z","returned":true}}},
- "f1":{"phase":"vet","state":"complete","roles":{"plan-reviewer":{"handle":"e"}}}
+ "w3":{"phase":"build","state":"abandoned","slices":["SLICE-001"],"roles":{"slice-wright":{"handle":"c","started":"2026-10-15T11:30:00Z"}}},
+ "v1":{"phase":"vet","state":"complete","slices":["SLICE-002"],"roles":{"plan-reviewer":{"handle":"d","started":"2026-10-15T12:00:00Z","returned":true,"returned_at":"2026-10-15T12:00:00Z"}}},
+ "f1":{"phase":"vet","state":"complete","roles":{"plan-reviewer":{"handle":"e","started":"2026-10-15T13:00:00Z","returned":true,"returned_at":"2026-10-15T13:00:00Z"}}}
 }}`)
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	if code := RunMetrics(root, []string{"summary", "feat", "--by-slice"}, stdout, stderr); code != 0 {

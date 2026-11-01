@@ -127,7 +127,7 @@ def generate(source, target):
         text = rewrite(path.read_text())
         fields, body = frontmatter(text)
         role = fields["name"]
-        permission = "workspace-write" if fields.get("permissionMode") == "acceptEdits" else "read-only"
+        permission = "workspace-write" if fields.get("permissionMode") == "acceptEdits" or role.startswith("overhaul-") else "read-only"
         raw = fields.get("tools", "Read, Grep, Glob, Bash, Skill" + (", Edit, Write" if permission == "workspace-write" else ""))
         tools = mapped_tools(raw)
         if permission == "read-only":

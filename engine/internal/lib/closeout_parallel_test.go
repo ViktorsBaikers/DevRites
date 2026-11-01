@@ -15,7 +15,11 @@ func TestCloseOutPreservesWorkspacesNamedByRetainedLease(t *testing.T) {
 			t.Run(status+"/"+slug, func(t *testing.T) {
 				root := t.TempDir()
 				for _, name := range []string{"controller", "child", "unrelated"} {
-					writeFile(t, filepath.Join(root, "work", name, "state.md"), "| phase | ship |\n| schema | 4 |\n")
+					phase := "ship"
+					if name == "unrelated" {
+						phase = "build"
+					}
+					writeFile(t, filepath.Join(root, "work", name, "state.md"), "| phase | "+phase+" |\n| schema | 4 |\n")
 				}
 				writeFile(t, filepath.Join(root, "ACTIVE"), "controller\n")
 				wright := parallel.WrightPending

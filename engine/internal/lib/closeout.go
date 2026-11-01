@@ -7,30 +7,27 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
+	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
+	"github.com/devrites/devrites/internal/gate"
+	"github.com/devrites/devrites/internal/notes"
 	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 )
 
-// releaseLockBeforeRename drops the feature lock before the workspace rename on
-// Windows, which refuses to rename a directory while the lock file inside it is
-// open. renameWorkspace is the rename; both are variables so tests can inject the
-// platform decision and observe the lock at the moment of the rename.
-var (
-	releaseLockBeforeRename = runtime.GOOS == "windows"
-	renameWorkspace         = os.Rename
-)
+// renameWorkspace lets tests observe exclusion at the archive boundary.
+var renameWorkspace = os.Rename
 
-// CloseOut retires a shipped feature: it moves the feature directory into the
-// archive and, when the feature is still the active one, clears the ACTIVE cursor
-// so the next /rite-spec starts clean. The workspace is relocated, never deleted:
-// the audit trail is preserved under archive/<slug>.
+// CloseOut physically archives a workspace, including owner-authorized nonfinal
+// exits. Seal, Ship, Done, and shipped/sealed/done statuses must first satisfy
+// the final gates and retained prerequisites. The workspace is relocated, never
+// deleted: the audit trail is preserved under archive/<slug>.
 //
 // args is `<slug>`; root is the already-resolved .devrites directory. Exit codes:
 //
 //	0  archived (ACTIVE cleared if it pointed here)
+//	3  final prerequisites or a retained parallel lease block archiving
 //	4  no slug given, or the feature has no workspace
 //	5  an archive already exists at the destination: refuse to clobber it
 func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
@@ -70,14 +67,8 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 		return 5
 	}
 
-	// Hold the per-feature lock across the rename and the ACTIVE clear, as
-	// dispatch and the parallel lease ops do across their load-modify-save. A
-	// writer already holding the lock finishes its save before the rename, so
-	// that save is archived. On unix a writer queued behind this close-out
-	// acquires a lock file that now lives in the archive; state.WithFeatureLock
-	// reports state.ErrWorkspaceMoved and the writer does not run, so it cannot
-	// re-create work/<slug>. Windows cannot rename a directory that holds an
-	// open file, so there the lock is released just before the rename.
+	// Hold the stable feature lock through verification, rename, ACTIVE clear,
+	// and rollback so queued writers cannot revive an archived workspace.
 	code := 1
 	if err := parallel.WithControlLock(dv, func() error {
 		leased, err := parallel.WorkspaceLeased(dv, slug)
@@ -89,9 +80,11 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 			code = 3
 			return nil
 		}
-		return state.WithFeatureLockRelease(dv, slug, func(release func()) error {
-			code = closeOutLocked(release, work, arch, archiveDir, archDisplay, active, slug, stdout, stderr)
-			return nil
+		return state.WithFeatureLock(dv, slug, func() error {
+			return state.WithLock(claimsPath(dv)+".lock", func() error {
+				code = closeOutLocked(work, arch, archiveDir, archDisplay, active, slug, stdout, stderr)
+				return nil
+			})
 		})
 	}); err != nil {
 		fmt.Fprintf(stderr, "state close: %v\n", err)
@@ -103,7 +96,41 @@ func CloseOut(root string, args []string, stdout, stderr io.Writer) int {
 // closeOutLocked performs the rename and the conditional ACTIVE clear. It runs
 // under the feature lock held by CloseOut and reports an exit code rather than
 // an error, preserving CloseOut's documented exit codes.
-func closeOutLocked(release func(), work, arch, archiveDir, archDisplay, active, slug string, stdout, stderr io.Writer) int {
+func closeOutLocked(work, arch, archiveDir, archDisplay, active, slug string, stdout, stderr io.Writer) int {
+	root := filepath.Dir(active)
+	ledger, err := readWorkspaceArtifact(root, slug, "state.md")
+	if err != nil {
+		fmt.Fprintf(stderr, "state close: BLOCKED: %v\n", err)
+		return 3
+	}
+	lines := strings.Split(string(ledger), "\n")
+	phase, _ := state.CursorField(lines, "phase")
+	status, _ := state.CursorField(lines, "status")
+	phase = string(state.CanonicalPhase(phase))
+	final := phase == string(state.PhaseSeal) || phase == string(state.PhaseShip) || phase == string(state.PhaseDone) ||
+		status == "sealed" || status == "shipped" || status == "done"
+	if final {
+		result, err := gate.Check(gate.Seal, root, slug)
+		if err != nil {
+			fmt.Fprintf(stderr, "state close: BLOCKED: %v\n", err)
+			return 3
+		}
+		if result.Blocked {
+			fmt.Fprint(stdout, result.Render())
+			return 3
+		}
+		if err := VerifyReleaseUnion(root, slug); err != nil {
+			fmt.Fprintf(stderr, "state close: BLOCKED: release-union: %v\n", err)
+			return 3
+		}
+		if err := CheckFinalPrerequisites(root, slug); err != nil {
+			fmt.Fprintf(stderr, "state close: BLOCKED: final-prerequisites: %v\n", err)
+			return 3
+		}
+		if EvidenceFresh(root, []string{slug}, stdout, stderr) != 0 || !notes.SealCheck(root, slug, stdout) {
+			return 3
+		}
+	}
 	activeSlug, err := devritespaths.PhysicalActiveSlug(filepath.Dir(active))
 	if err != nil {
 		fmt.Fprintf(stderr, "state close: invalid ACTIVE cursor: %v\n", err)
@@ -114,9 +141,6 @@ func closeOutLocked(release func(), work, arch, archiveDir, archDisplay, active,
 	if err := os.MkdirAll(archiveDir, 0o755); err != nil {
 		fmt.Fprintf(stderr, "state close: cannot create archive dir: %v\n", err)
 		return 1
-	}
-	if releaseLockBeforeRename {
-		release()
 	}
 	if err := renameWorkspace(work, arch); err != nil {
 		fmt.Fprintf(stderr, "state close: cannot archive %s -> %s: %v\n", work, arch, err)

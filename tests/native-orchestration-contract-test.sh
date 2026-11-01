@@ -613,7 +613,6 @@ pin_source(
     "skills/rite-seal/SKILL.md",
     "dispatch remaining required exact roles under `../devrites-lib/reference/parallel-dispatch.md`",
 )
-pin_source("skills/devrites-lib/reference/parallel-dispatch.md", "launch every native agent nonblocking")
 pin_source("skills/devrites-lib/reference/parallel-dispatch.md", "Ask for each exact named agent in fresh context")
 pin(
     "- `/rite-seal` fans out to `.claude/agents/devrites-*` reviewers **in parallel** "
@@ -880,14 +879,12 @@ for path in [canonical / "settings.json", *(canonical / "skills").rglob("*.md"),
 
 spec = (canonical / "skills/devrites-lib/reference/standards/spec-grammar.md").read_text()
 checkpoint = (canonical / "skills/rite-build/reference/checkpoint-protocol.md").read_text()
-clarify = (canonical / "skills/rite-clarify/SKILL.md").read_text()
 afk = (canonical / "skills/rite-build/reference/afk-discipline.md").read_text()
 afk_contract = (canonical / "skills/devrites-lib/reference/standards/afk-hitl.md").read_text()
 recovery = (canonical / "skills/devrites-debug-recovery/SKILL.md").read_text()
 for text, required in (
     (spec, ("Native grammar re-read checklist", "No parser or replacement script")),
     (checkpoint, ("scan every question header", "re-read `questions.md` immediately before", "next unused", "under a bounded tool timeout", "append the exit code to `evidence.md`")),
-    (clarify, ("return_phase", "return_next_action", "preserve unrelated Markdown", "/rite-plan repair")),
     (afk, ("afk-hitl.md", "Build dispatch, charging, and red paths", "Under active `/rite-autocomplete`, skip the slice-cap checks, charges, and cap-stop message below;", "exactly once after each green built slice", "never below zero", "fails closed", "before dispatching another slice", "curl -fsS -m 10 -d")),
     (recovery, ("caller and recovery attempts", "three no-progress attempts", "Count an attempt only", "## Dead ends", "never request attempt four of the same strategy")),
     ((canonical / "skills/rite-build/reference/parallel-batch.md").read_text(), (

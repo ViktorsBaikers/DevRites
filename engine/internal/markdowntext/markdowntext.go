@@ -9,6 +9,16 @@ import (
 // Structural returns Markdown with fenced blocks replaced by spaces. Byte
 // offsets and line breaks stay aligned with the original input.
 func Structural(input []byte) ([]byte, error) {
+	return structural(input, false)
+}
+
+// Prose also masks HTML comment blocks, while Structural retains comments used
+// by machine-readable markers. Both preserve byte offsets and line breaks.
+func Prose(input []byte) ([]byte, error) {
+	return structural(input, true)
+}
+
+func structural(input []byte, comments bool) ([]byte, error) {
 	if !utf8.Valid(input) {
 		return nil, errors.New("markdown text contains malformed UTF-8")
 	}
@@ -21,6 +31,8 @@ func Structural(input []byte) ([]byte, error) {
 	fenceWidth := 0
 	anchor, anchorStart := -1, 0
 	afterBlank := true
+	inComment := false
+lines:
 	for start := 0; start < len(input); {
 		lineEnd := bytes.IndexByte(input[start:], '\n')
 		if lineEnd < 0 {
@@ -35,43 +47,110 @@ func Structural(input []byte) ([]byte, error) {
 		line := input[start:contentEnd]
 
 		if marker == 0 {
-			if blank(line) {
-				afterBlank = true
-			} else if nextMarker, width, ok := openingFence(line, 3); ok {
-				marker, fenceWidth = nextMarker, width
-				mask(out[start:lineEnd])
-				anchor, afterBlank = -1, false
-			} else if nextMarker, width, ok := openingFence(line, anchor+3); ok && anchor >= 0 && indentColumns(line) >= anchor {
-				anchored := anchor
-				anchor, afterBlank = -1, false
-				if closeEnd := listFenceEnd(input, lineEnd, nextMarker, width, indentColumns(line), anchored); closeEnd >= 0 {
-					if !loneCR(input[anchorStart:closeEnd]) {
-						mask(out[start:closeEnd])
+			commentsPending := comments
+			// Recognize fences before their literal info strings can open comments.
+			for pass := 0; ; pass++ {
+				if commentsPending && (inComment || pass > 0) {
+					commentsPending = false
+					for pos := 0; pos < len(line); {
+						commentStart := pos
+						if !inComment {
+							if line[pos] == '`' {
+								end := pos + 1
+								for end < len(line) && line[end] == '`' {
+									end++
+								}
+								width := end - pos
+								for next := end; next < len(line); {
+									tick := bytes.IndexByte(line[next:], '`')
+									if tick < 0 {
+										break
+									}
+									next += tick
+									close := next + 1
+									for close < len(line) && line[close] == '`' {
+										close++
+									}
+									if close-next == width {
+										end = close
+										break
+									}
+									next = close
+								}
+								pos = end
+								continue
+							}
+							if !bytes.HasPrefix(line[pos:], []byte("<!--")) {
+								pos++
+								continue
+							}
+							pos += len("<!--")
+							inComment = true
+						}
+						end := bytes.Index(line[pos:], []byte("-->"))
+						if end < 0 {
+							mask(out[start+commentStart : contentEnd])
+							break
+						}
+						pos += end + len("-->")
+						mask(out[start+commentStart : start+pos])
+						inComment = false
+					}
+				}
+				if comments && !bytes.Equal(line, out[start:contentEnd]) && blank(out[start:contentEnd]) {
+					anchor, afterBlank = -1, false
+					if lineEnd == len(input) {
+						break lines
+					}
+					start = lineEnd + 1
+					continue lines
+				}
+				line = out[start:contentEnd]
+				if blank(line) {
+					afterBlank = true
+				} else if nextMarker, width, ok := openingFence(line, 3); ok {
+					marker, fenceWidth = nextMarker, width
+					mask(out[start:lineEnd])
+					anchor, afterBlank = -1, false
+				} else if nextMarker, width, ok := openingFence(line, anchor+3); ok && anchor >= 0 && indentColumns(line) >= anchor {
+					anchored := anchor
+					anchor, afterBlank = -1, false
+					if closeEnd := listFenceEnd(input, lineEnd, nextMarker, width, indentColumns(line), anchored); closeEnd >= 0 {
+						if !loneCR(input[anchorStart:closeEnd]) {
+							mask(out[start:closeEnd])
+						}
+						if closeEnd == len(input) {
+							break lines
+						}
+						start = closeEnd + 1
+						continue lines
+					}
+					if commentsPending {
+						continue
+					}
+				} else if fence, closeEnd := markerLineFence(input, line, lineEnd, afterBlank || anchor >= 0); closeEnd >= 0 {
+					anchor, afterBlank = -1, false
+					if !loneCR(input[start:closeEnd]) {
+						mask(out[start+fence : closeEnd])
 					}
 					if closeEnd == len(input) {
-						break
+						break lines
 					}
 					start = closeEnd + 1
-					continue
-				}
-			} else if fence, closeEnd := markerLineFence(input, line, lineEnd, afterBlank || anchor >= 0); closeEnd >= 0 {
-				anchor, afterBlank = -1, false
-				if !loneCR(input[start:closeEnd]) {
-					mask(out[start+fence : closeEnd])
-				}
-				if closeEnd == len(input) {
-					break
-				}
-				start = closeEnd + 1
-				continue
-			} else {
-				column, ok := topLevelItem(line)
-				if ok && (afterBlank || anchor >= 0) {
-					anchor, anchorStart = column, start
+					continue lines
 				} else {
-					anchor = -1
+					if commentsPending {
+						continue
+					}
+					column, ok := topLevelItem(line)
+					if ok && (afterBlank || anchor >= 0) {
+						anchor, anchorStart = column, start
+					} else {
+						anchor = -1
+					}
+					afterBlank = false
 				}
-				afterBlank = false
+				break
 			}
 		} else {
 			mask(out[start:lineEnd])

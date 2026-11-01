@@ -8,7 +8,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+
+	"github.com/devrites/devrites/internal/devritespaths"
 )
 
 // Binary patches can exceed the candidate's raw-byte bound; stream verification.
@@ -85,13 +88,21 @@ func verifyFrozenDiff(name, expected string) error {
 
 func resolvePacketDiff(root, slug, name string) (string, error) {
 	clean := filepath.Clean(filepath.FromSlash(name))
+	workspace, err := devritespaths.ExistingFeatureDirChecked(root, slug)
+	if err != nil {
+		return "", err
+	}
+	if rel, ok := strings.CutPrefix(name, workspaceRel(root, workspace)+"/"); ok && clean == filepath.FromSlash(name) {
+		name = rel
+		clean = filepath.Clean(filepath.FromSlash(name))
+	}
 	if clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) || clean != filepath.FromSlash(name) {
 		return "", fmt.Errorf("unsafe frozen candidate diff path %q", name)
 	}
-	dirs := []string{projectDir(root), featureDir(root, slug)}
+	dirs := []string{projectDir(root), workspace}
 	// Freeze's checksum rows use this workspace-relative namespace, never a product packets/ directory.
 	if strings.HasPrefix(name, "packets/") {
-		dirs = []string{featureDir(root, slug)}
+		dirs = []string{workspace}
 	}
 	if filepath.IsAbs(name) {
 		parent, err := filepath.EvalSymlinks(filepath.Dir(name))
@@ -120,11 +131,192 @@ func resolvePacketDiff(root, slug, name string) (string, error) {
 	return "", fmt.Errorf("frozen candidate diff %q does not exist", name)
 }
 
+var packetContextPathRE = regexp.MustCompile(`(?:[A-Za-z]:/)?[A-Za-z0-9_./@+-]+\.bundle\.md\b`)
+
+type packetContextRef struct {
+	dir  string
+	name string
+}
+
+// Preserve the leaf spelling below the workspace when an ancestor has an OS alias.
+func packetContextWorkspaceRelative(workspace, name string) (string, error) {
+	if rel, err := filepath.Rel(workspace, name); err == nil && filepath.IsLocal(rel) {
+		return rel, nil
+	}
+	selected, err := os.Stat(workspace)
+	if err != nil {
+		return "", err
+	}
+	for parent := filepath.Dir(name); ; parent = filepath.Dir(parent) {
+		info, err := os.Stat(parent)
+		if err != nil {
+			return "", err
+		}
+		if os.SameFile(selected, info) {
+			return filepath.Rel(parent, name)
+		}
+		if parent == filepath.Dir(parent) {
+			return "", nil
+		}
+	}
+}
+
+func resolvePacketContext(root, slug, name string) (packetContextRef, error) {
+	workspace, err := devritespaths.ExistingFeatureDirChecked(root, slug)
+	if err != nil {
+		return packetContextRef{}, err
+	}
+	workspace, err = filepath.Abs(workspace)
+	if err != nil {
+		return packetContextRef{}, err
+	}
+	clean := filepath.Clean(filepath.FromSlash(name))
+	if clean != filepath.FromSlash(name) {
+		return packetContextRef{}, fmt.Errorf("unsafe packet context path %q", name)
+	}
+	dirs := []string{projectDir(root), workspace}
+	// Only the selected workspace's exact namespace may contain leading "..".
+	if rel, ok := strings.CutPrefix(name, workspaceRel(root, workspace)+"/"); ok {
+		dirs, clean = []string{workspace}, filepath.FromSlash(rel)
+	} else if filepath.IsAbs(clean) {
+		rel, err := packetContextWorkspaceRelative(workspace, clean)
+		if err != nil {
+			return packetContextRef{}, err
+		}
+		if rel != "" {
+			dirs, clean = []string{workspace}, rel
+		} else {
+			// Absolute manual bundles remain supported, but not foreign workspaces.
+			physicalParent, err := filepath.EvalSymlinks(filepath.Dir(clean))
+			if err != nil {
+				return packetContextRef{}, err
+			}
+			physical := filepath.Join(physicalParent, filepath.Base(clean))
+			for _, work := range []string{filepath.Dir(workspace), filepath.Join(root, "work")} {
+				absoluteWork, err := filepath.Abs(work)
+				if err != nil {
+					return packetContextRef{}, err
+				}
+				absoluteWork, err = filepath.EvalSymlinks(absoluteWork)
+				if err != nil {
+					return packetContextRef{}, err
+				}
+				if rel, err := filepath.Rel(absoluteWork, physical); err == nil && filepath.IsLocal(rel) {
+					return packetContextRef{}, fmt.Errorf("foreign packet context path %q", name)
+				}
+			}
+			dirs, clean = []string{filepath.Dir(clean)}, filepath.Base(clean)
+		}
+	} else if strings.HasPrefix(name, "ctx/") || strings.HasPrefix(name, "packets/") {
+		dirs = []string{workspace}
+	} else {
+		work := filepath.ToSlash(workspaceRel(root, filepath.Dir(workspace))) + "/"
+		if strings.HasPrefix(name, work) {
+			return packetContextRef{}, fmt.Errorf("foreign packet context path %q", name)
+		}
+	}
+	if !filepath.IsLocal(clean) {
+		return packetContextRef{}, fmt.Errorf("unsafe packet context path %q", name)
+	}
+	for _, dir := range dirs {
+		if err := contextParents(dir, clean); err != nil {
+			return packetContextRef{}, err
+		}
+		ws, err := os.OpenRoot(dir)
+		if err != nil {
+			return packetContextRef{}, err
+		}
+		info, err := ws.Lstat(clean)
+		closeErr := ws.Close()
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return packetContextRef{}, err
+		}
+		if closeErr != nil {
+			return packetContextRef{}, closeErr
+		}
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if !info.Mode().IsRegular() {
+			return packetContextRef{}, errors.New("packet context is not a regular file")
+		}
+		absoluteDir, err := filepath.Abs(dir)
+		if err != nil {
+			return packetContextRef{}, err
+		}
+		return packetContextRef{dir: absoluteDir, name: clean}, nil
+	}
+	return packetContextRef{}, fmt.Errorf("packet context %q does not exist", name)
+}
+
+func lintPacketContexts(root, slug string, raw []byte) error {
+	bound := make(map[string]string)
+	var names []string
+	for _, line := range strings.Split(string(raw), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) > 0 && fields[0] == "context" {
+			if len(fields) < 3 || len(fields[1]) != sha256.Size*2 {
+				return errors.New("malformed context checksum; use context <SHA256> <path.bundle.md>")
+			}
+			if _, err := hex.DecodeString(fields[1]); err != nil {
+				return errors.New("malformed context SHA256 checksum")
+			}
+			entry := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "context"))
+			name := strings.TrimSpace(entry[len(fields[1]):])
+			ref, err := resolvePacketContext(root, slug, name)
+			if err != nil {
+				return err
+			}
+			path := filepath.Join(ref.dir, ref.name)
+			digest := strings.ToLower(fields[1])
+			if prior, ok := bound[path]; ok && prior != digest {
+				return fmt.Errorf("conflicting context checksums for %s", name)
+			}
+			body, err := readContextArtifact(ref.dir, ref.name)
+			if err != nil {
+				return fmt.Errorf("packet context %s: %w", name, err)
+			}
+			if len(body) == 0 || fmt.Sprintf("%x", sha256.Sum256(body)) != digest {
+				return fmt.Errorf("packet context %s SHA256 mismatch; render the intended read-set under a new wave", name)
+			}
+			bound[path] = digest
+			continue
+		}
+		if len(fields) >= 3 && fields[0] == "file" {
+			if fields[1] == "absent" {
+				continue
+			}
+			if digest, err := hex.DecodeString(fields[1]); err == nil && len(digest) == sha256.Size {
+				continue
+			}
+		}
+		if name, ok := strings.CutPrefix(strings.TrimSpace(line), "- "); ok && strings.HasSuffix(name, ".bundle.md") {
+			names = append(names, name)
+			continue
+		}
+		names = append(names, packetContextPathRE.FindAllString(line, -1)...)
+	}
+	for _, name := range names {
+		ref, err := resolvePacketContext(root, slug, name)
+		if err != nil {
+			return err
+		}
+		path := filepath.Join(ref.dir, ref.name)
+		if _, ok := bound[path]; !ok {
+			return fmt.Errorf("unbound packet context %s; add context <SHA256> %s to the packet", name, name)
+		}
+	}
+	return nil
+}
+
 // Caller may already hold the feature lock (dispatch); never acquire it here.
 func lintPacketDiffs(root, slug, packet string, required bool) error {
 	raw, err := readBoundedRegularFile(packet, maxContractBytes)
 	if err != nil {
 		return fmt.Errorf("reviewer packet %s: %w", packet, err)
+	}
+	if err := lintPacketContexts(root, slug, raw); err != nil {
+		return err
 	}
 	bindings, err := frozenDiffBindings(raw)
 	if err != nil {

@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -25,11 +26,14 @@ check, and each --checks gates.md gate's CHECK, which must be an approved
 test-plan.md Build-entry preflight row; a native-worktree pilot keeps its own
 contract. A reviewer
 role (*-reviewer, *-auditor, test-analyst) writes packets/<w>.<role>.md with
-its Outcome/Counts return head. Read first names the role's context bundle
-(run context first; --recheck names the build --recheck bundle) and
-packets/<w>.diff when candidate freeze wrote one; Candidate copies
-packets/<w>.sha256 verbatim, or only its header rows when the per-file rows
-would overflow the packet (required at review and seal). --focus (relative
+its Outcome/Counts return head. Read first names an immutable wave/role copy
+of the role's context bundle, bound by its actual SHA256 in the packet
+(run context first; --recheck copies the build --recheck bundle), and
+packets/<w>.diff when candidate freeze wrote one. The context path names the
+selected workspace, including authorized overrides outside the project.
+Candidate copies packets/<w>.sha256 verbatim, or only its header rows when the per-file rows
+would overflow the packet (required at review and seal). A wave/role cannot
+be re-rendered with a different context read-set. --focus (relative
 to the workspace) holds one "- <ID> <path:line> <text>" row per line, text up
 to 240 characters, and any other non-blank line is refused: open findings
 for a reviewer, defects and quoted carry-forward constraints for a wright,
@@ -108,13 +112,22 @@ func renderPacketLocked(root, slug, workspace, wave, phase, role, slice, checks,
 	}
 	rel := workspaceRel(root, workspace)
 	bundle := "ctx/" + bundleName(contextOpts{phase: phase, role: role, slice: slice, recheck: recheck})
-	if info, err := os.Stat(filepath.Join(workspace, filepath.FromSlash(bundle))); err != nil || !info.Mode().IsRegular() {
+	context, err := (&contextSources{dir: workspace}).read(bundle)
+	if errors.Is(err, os.ErrNotExist) {
 		scope := recheck
 		if slice != "" {
 			scope = " --slice " + slice + recheck
 		}
 		return fail(fmt.Errorf("%s/%s is missing; run devrites-engine context %s --phase %s --role %s%s first", rel, bundle, slug, phase, role, scope))
 	}
+	if err != nil {
+		return fail(err)
+	}
+	if len(context) == 0 {
+		return fail(fmt.Errorf("%s/%s is empty; run context first", rel, bundle))
+	}
+	contextName := wave + "." + role + ".context.bundle.md"
+	contextPath := rel + "/packets/" + contextName
 	candidate, partial, err := frozenCandidate(workspace, wave)
 	if err != nil {
 		return fail(err)
@@ -135,10 +148,11 @@ func renderPacketLocked(root, slug, workspace, wave, phase, role, slice, checks,
 	} else {
 		b.WriteString("Authority: read-only reviewer. Edit nothing and ask the user nothing; judge the candidate against the bundle sources.\n")
 	}
-	fmt.Fprintf(&b, "\nRead first:\n- %s/%s\n", rel, bundle)
+	fmt.Fprintf(&b, "\nRead first:\n- %s\n", contextPath)
 	if candidate != "" {
 		fmt.Fprintf(&b, "- %s/packets/%s.diff\n", rel, wave)
 	}
+	fmt.Fprintf(&b, "\nContext binding:\ncontext %x %s\n", sha256.Sum256(context), contextPath)
 	if wright {
 		raw, err := readWorkspaceArtifact(root, slug, "tasks.md")
 		if err != nil {
@@ -199,7 +213,14 @@ func renderPacketLocked(root, slug, workspace, wave, phase, role, slice, checks,
 		name = wave + ".contract.md"
 	}
 	out := filepath.Join(workspace, "packets", name)
-	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+	if prior, err := readBoundedRegularFile(out, maxContractBytes); err == nil {
+		if err := lintPacketContexts(root, slug, prior); err != nil {
+			return fail(fmt.Errorf("existing packet context: %w", err))
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fail(err)
+	}
+	if err := retainPacketContext(workspace, contextName, context); err != nil {
 		return fail(err)
 	}
 	// Lint a sibling draft so a refused re-render keeps the packet already on disk.
@@ -231,6 +252,9 @@ func renderPacketLocked(root, slug, workspace, wave, phase, role, slice, checks,
 // contract also gets the gates.md `RUN: writer` precheck lint.
 func lintRenderedPacket(root, slug, path, role string, wright, finalPhase bool) error {
 	if wright {
+		if err := lintPacketDiffs(root, slug, path, false); err != nil {
+			return err
+		}
 		return lintWrightContractFor(root, slug, path)
 	}
 	if err := lintReviewerWavePacket(path, []string{role}); err != nil {

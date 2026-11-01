@@ -567,10 +567,55 @@ func isDevritesHookCommand(v any) bool {
 		return false
 	}
 	command, _ := hook["command"].(string)
-	return strings.Contains(command, "devrites-engine hook ") ||
-		strings.Contains(command, ".claude/hooks/devrites-") ||
-		strings.Contains(command, ".codex/hooks/devrites-") ||
-		(strings.Contains(command, "printf ") && strings.Contains(command, "DevRites:"))
+	// Match shipped command templates, not quoted or logged mentions in user commands.
+	switch command {
+	case `printf '%s\n' 'DevRites: this subagent is the single write-capable slice-wright. Stay within the current slice contract and touched-files.md; write no .devrites bookkeeping.'`,
+		`printf '%s\n' 'DevRites: this subagent is read-only. Inspect with read/search/test commands and return findings only; do not mutate the tree.'`,
+		`printf '%s\n' 'DevRites: reconcile this subagent result against the active DevRites skill contract before claiming completion.'`,
+		`root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"; cd "$root" && DEVRITES_REVIEWER_AGENT_REQUIRED=1 bash "$root/.codex/hooks/devrites-reviewer-readonly.sh"`,
+		`root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"; cd "$root" && DEVRITES_WRIGHT_AGENT_REQUIRED=1 bash "$root/.codex/hooks/devrites-wright-scope.sh"`:
+		return true
+	}
+	for _, prefix := range [...]string{
+		`bash "$CLAUDE_PROJECT_DIR/.claude/hooks/devrites-`,
+		`bash "${CLAUDE_PLUGIN_ROOT}/pack/.claude/hooks/devrites-`,
+		`root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"; cd "$root" && bash "$root/.codex/hooks/devrites-`,
+	} {
+		if script, ok := strings.CutPrefix(command, prefix); ok {
+			switch script {
+			case `a1-guard.sh"`, `allow.sh"`, `cursor.sh"`, `orient.sh"`,
+				`redwatch.sh"`, `refresh-indexes.sh"`, `stop-gate.sh"`:
+				return true
+			}
+			return false
+		}
+	}
+	if rest, ok := strings.CutPrefix(command, "command -v devrites-engine >/dev/null 2>&1 && exec "); ok {
+		var complete bool
+		command, complete = strings.CutSuffix(rest, " || exit 0")
+		if !complete {
+			return false
+		}
+	}
+	command = strings.TrimPrefix(command, `command -v devrites-engine >/dev/null 2>&1 || exit 0; cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" 2>/dev/null || exit 0; exec `)
+	switch command {
+	case "env DEVRITES_REVIEWER_AGENT_REQUIRED=1 devrites-engine hook reviewer-readonly --harness=codex",
+		"env DEVRITES_WRIGHT_AGENT_REQUIRED=1 devrites-engine hook wright-scope --harness=codex":
+		return true
+	}
+	args, ok := strings.CutPrefix(command, "devrites-engine hook ")
+	if !ok {
+		return false
+	}
+	args = strings.TrimSuffix(strings.TrimSuffix(args, " --harness=claude"), " --harness=codex")
+	switch args {
+	case "a1-guard", "allow", "auq", "cursor", "event session-end", "event subagent-stop",
+		"git-guard", "handoff-snapshot", "old-gate", "orient", "redwatch", "refresh-indexes",
+		"reviewer-readonly", "source-cache-post", "source-cache-pre", "statusline",
+		"stop-gate", "subagent-orient", "wright-scope":
+		return true
+	}
+	return false
 }
 
 func isDevritesHooksComment(comment string) bool {
