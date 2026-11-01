@@ -23,6 +23,7 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 - Recover missing executed gate transcripts without rerunning valid scoped proof;
   redact sensitive transcript metadata as well as command output.
 - Keep timed-out tests failed even when graceful termination exits successfully.
+- Support drive-qualified Windows paths in reviewer diff bindings.
 
 ## [7.2.8](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.7...v7.2.8) (2026-10-31)
 

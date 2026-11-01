@@ -116,7 +116,7 @@ func omissionError(omitted []string) error {
 		len(omitted), strings.Join(shown, ", "), more)
 }
 
-var diffPathRE = regexp.MustCompile(`[A-Za-z0-9_./@+-]+\.(?:diff|patch)\b`)
+var diffPathRE = regexp.MustCompile(`(?:[A-Za-z]:/)?[A-Za-z0-9_./@+-]+\.(?:diff|patch)\b`)
 
 // lintReviewCandidate gates a Review or Seal reviewer wave: the candidate
 // manifest must cover every path the feature's checkpoints changed, and the

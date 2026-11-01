@@ -103,6 +103,7 @@ command namespace.
 - Frozen diff bytes must match their recorded SHA-256 at packet and dispatch
   validation. Manually authored final reviewer packets may still name `.diff`
   or `.patch` files, but must include `diff <64hex> <path>` binding rows.
+  Binding paths use `/` on every host, including drive-qualified Windows paths.
   Same-wave freeze publication is serialized; each renderer owns its lint draft.
 - `gates run`/`reverify --transcripts` reuse only a complete passing executed
   origin matching the gate definition, recorded output identity and declared

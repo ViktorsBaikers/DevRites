@@ -87,9 +87,16 @@ func TestContextValidRepeatPreservesBothFiles(t *testing.T) {
 	root, _, args, out := contextIntegrityFixture(t)
 	contextIntegrityRun(t, root, args, 0)
 	before := make([]os.FileInfo, 2)
+	// Windows path stats load IDs lazily; snapshot identity through an open handle.
 	for i, path := range []string{out, out + ".sha256"} {
-		var err error
-		before[i], err = os.Stat(path)
+		file, err := os.Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		before[i], err = file.Stat()
+		if closeErr := file.Close(); closeErr != nil {
+			t.Fatal(closeErr)
+		}
 		if err != nil {
 			t.Fatal(err)
 		}

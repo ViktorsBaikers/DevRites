@@ -291,7 +291,8 @@ func TestPacketWorkspaceDiffNamespaceSurvivesProductCollision(t *testing.T) {
 			writeFile(t, productDiff, productBytes)
 			packet := renderAndDispatchReviewT(t, root, "r1")
 			// An absolute project-qualified input remains independently bindable.
-			manual := writePacket(t, fmt.Sprintf("Read first:\n- %s\ndiff %x %s\n", productDiff, sha256.Sum256([]byte(productBytes)), productDiff))
+			productReference := filepath.ToSlash(productDiff)
+			manual := writePacket(t, fmt.Sprintf("Read first:\n- %s\ndiff %x %s\n", productReference, sha256.Sum256([]byte(productBytes)), productReference))
 			var stdout, stderr bytes.Buffer
 			if code := RunDispatch(root, []string{"feature", "open", "--phase", "review", "--wave", "manual", "--role", "code-reviewer", "--packet", manual}, &stdout, &stderr); code != 0 {
 				t.Fatalf("project-qualified manual packet: code=%d %s%s", code, &stdout, &stderr)

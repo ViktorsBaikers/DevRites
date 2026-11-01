@@ -33,6 +33,8 @@ func setupRepo(t *testing.T) (repo, base string) {
 	t.Helper()
 	repo = t.TempDir()
 	gitOk(t, repo, "init")
+	// Keep fixture and sanitized production Git on the same checkout policy.
+	gitOk(t, repo, "config", "core.autocrlf", "false")
 	gitOk(t, repo, "checkout", "-b", "main")
 	if err := os.MkdirAll(filepath.Join(repo, "src"), 0o755); err != nil {
 		t.Fatal(err)

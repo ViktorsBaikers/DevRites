@@ -293,14 +293,14 @@ func TestCleanupAbsentRegisteredThroughSymlinkRoot(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw := gitOk(t, repo, "worktree", "list", "--porcelain", "-z")
-	if !strings.Contains(raw, "worktree "+canonicalCheckout+"\x00") {
+	if !strings.Contains(raw, "worktree "+filepath.ToSlash(canonicalCheckout)+"\x00") {
 		t.Fatalf("fixture lost raw Git registration for %s: %q", canonicalCheckout, raw)
 	}
 	if results, err := Cleanup(alias, rollSlug, false); err != nil || len(results) != 1 || results[0].Worktree != worker.WorktreePath || results[0].Branch != worker.Branch {
 		t.Fatalf("cleanup failed through missing aliased path: %+v %v", results, err)
 	}
 	raw = gitOk(t, repo, "worktree", "list", "--porcelain", "-z")
-	if !strings.Contains(raw, "worktree "+canonicalCheckout+"\x00") {
+	if !strings.Contains(raw, "worktree "+filepath.ToSlash(canonicalCheckout)+"\x00") {
 		t.Fatalf("cleanup discarded missing worker raw Git registration: %q", raw)
 	}
 	if exists, err := branchExists(repo, worker.Branch); err != nil || !exists {
@@ -377,7 +377,7 @@ func TestParallelOperationsPreserveUnrelatedMissingRegistration(t *testing.T) {
 				}
 			}
 			raw := gitOk(t, repo, "worktree", "list", "--porcelain", "-z")
-			if !strings.Contains(raw, "worktree "+canonical+"\x00") {
+			if !strings.Contains(raw, "worktree "+filepath.ToSlash(canonical)+"\x00") {
 				t.Fatalf("operation discarded unrelated registration: %q", raw)
 			}
 			if after, err := os.ReadFile(indexPath); err != nil || string(after) != string(index) {
@@ -452,7 +452,7 @@ func TestCleanupMovedIntegratedWorkerPreservesIndexAndWorkingData(t *testing.T) 
 				t.Fatalf("cleanup changed moved working data: %q %v", working, err)
 			}
 			raw := gitOk(t, repo, "worktree", "list", "--porcelain", "-z")
-			if !strings.Contains(raw, "worktree "+canonical+"\x00") || gitOk(t, repo, "rev-parse", "refs/heads/"+worker.Branch) != tc {
+			if !strings.Contains(raw, "worktree "+filepath.ToSlash(canonical)+"\x00") || gitOk(t, repo, "rev-parse", "refs/heads/"+worker.Branch) != tc {
 				t.Fatalf("cleanup discarded moved-worker registration/ref: %q", raw)
 			}
 			path, _ := LeasePath(repo, rollSlug)

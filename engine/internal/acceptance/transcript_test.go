@@ -182,7 +182,9 @@ func TestGateTranscriptsRejectUnusableOrigins(t *testing.T) {
 		"reused-only": func(string) string {
 			return "DEVRITES-GATE-TRANSCRIPT v1\nRESULT: reused (inputs unchanged; not executed)\n"
 		},
-		"corrupt-output": func(s string) string { return strings.Replace(s, "\nOK\n", "\nNO\n", 1) },
+		"corrupt-output": func(s string) string {
+			return strings.Replace(s, "--- OUTPUT ---\n", "--- OUTPUT ---\nCORRUPTED", 1)
+		},
 	}
 	for key, value := range map[string]string{
 		"DEFINITION_SHA256": strings.Repeat("0", 64), "COMMAND": "echo OTHER", "CWD": "elsewhere",
@@ -203,7 +205,12 @@ func TestGateTranscriptsRejectUnusableOrigins(t *testing.T) {
 			writeLedger(t, ledgerPath, "- [ ] G1: probe\n  CHECK: "+check+"\n  EXPECT: OK\n  INPUTS: src.txt\n  EVIDENCE: pending\n")
 			writeTranscriptPlan(t, work, check)
 			path := transcriptPath(t, runTranscriptCLI(t, root, "run", true, ExitOK), 0)
-			writeLedger(t, path, mutate(mustRead(t, path)))
+			original := mustRead(t, path)
+			mutated := mutate(original)
+			if mutated == original {
+				t.Fatal("origin mutation did not change the executed record")
+			}
+			writeLedger(t, path, mutated)
 			output := runTranscriptCLI(t, root, "reverify", true, ExitOK)
 			if !strings.Contains(output, "gate G1: pass") || strings.Count(mustRead(t, filepath.Join(project, "runs.txt")), "x") != 2 {
 				t.Fatalf("unusable origin must execute, not certify old checkbox: %s", output)
