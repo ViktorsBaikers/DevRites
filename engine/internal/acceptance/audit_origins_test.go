@@ -60,7 +60,7 @@ func TestAuditPreflightRejectsInvalidExecutedOrigins(t *testing.T) {
 			case "forged-exit":
 				forged = rewriteTranscriptField(original, "EXIT", "1")
 			case "forged-body":
-				forged = auditRefreshTranscriptChecksum(t, strings.Replace(original, "--- OUTPUT ---\nPRE-OK\n", "--- OUTPUT ---\nFORGED\n", 1))
+				forged = auditRefreshTranscriptChecksum(t, strings.Replace(original, "--- OUTPUT ---\nPRE-OK", "--- OUTPUT ---\nFORGED", 1))
 			case "pass-header-only":
 				forged = "DEVRITES-GATE-TRANSCRIPT v2\nRESULT: pass\n"
 			}
@@ -128,8 +128,8 @@ func TestAuditPreflightRetainsHistoricalCandidateForUnchangedRow(t *testing.T) {
 		t.Fatal("candidate drift alone must not retire unchanged preflight row")
 	}
 	auditRunPreflight(t, root, true)
-	if got := mustRead(t, filepath.Join(filepath.Dir(root), "preflight-runs.txt")); got != "x\n" {
-		t.Fatalf("unchanged row must retain pre-edit execution, got counter %q", got)
+	if got := strings.Count(mustRead(t, filepath.Join(filepath.Dir(root), "preflight-runs.txt")), "x"); got != 1 {
+		t.Fatalf("unchanged row must retain pre-edit execution, got counter %d", got)
 	}
 	if mustRead(t, path) != original {
 		t.Fatal("reuse must not relabel historical candidate")
@@ -147,8 +147,8 @@ func TestAuditPreflightRetainsHistoricalCandidateForUnchangedRow(t *testing.T) {
 }
 
 func TestAuditTranscriptBodyForgeryForcesReexecution(t *testing.T) {
-	for _, replacement := range []string{"NO\n", "FORGED BODY\n"} {
-		t.Run(strings.TrimSpace(replacement), func(t *testing.T) {
+	for _, replacement := range []string{"NO", "FORGED BODY"} {
+		t.Run(replacement, func(t *testing.T) {
 			project, ledgerPath := writeWorkspace(t)
 			work, root := filepath.Dir(ledgerPath), filepath.Join(project, ".devrites")
 			check := "echo x>>runs.txt && echo OK"
@@ -157,14 +157,21 @@ func TestAuditTranscriptBodyForgeryForcesReexecution(t *testing.T) {
 			writeTranscriptPlan(t, work, check)
 			path := transcriptPath(t, runTranscriptCLI(t, root, "run", true, ExitOK), 0)
 			original := mustRead(t, path)
-			if !strings.Contains(original, "REDACTIONS: 0\nTRUNCATED: false\n--- OUTPUT ---\nOK\n\n--- END OUTPUT ---\n") {
+			output := "OK\n"
+			if runtime.GOOS == "windows" {
+				output = "OK\r\n"
+			}
+			if !strings.Contains(original, "REDACTIONS: 0\nTRUNCATED: false\n--- OUTPUT ---\n"+output+"\n--- END OUTPUT ---\n") {
 				t.Fatal("fixture must contain complete unredacted successful output")
 			}
-			forged := strings.Replace(original, "\n--- OUTPUT ---\nOK\n", "\n--- OUTPUT ---\n"+replacement, 1)
+			forged := strings.Replace(original, "\n--- OUTPUT ---\nOK", "\n--- OUTPUT ---\n"+replacement, 1)
+			if forged == original {
+				t.Fatal("body mutation must change real executed transcript")
+			}
 			writeLedger(t, path, auditRefreshTranscriptChecksum(t, forged))
 			out := runTranscriptCLI(t, root, "reverify", true, ExitOK)
-			if got := mustRead(t, filepath.Join(project, "runs.txt")); got != "x\nx\n" {
-				t.Fatalf("forged body must force real reexecution; counter=%q output=%s", got, out)
+			if got := strings.Count(mustRead(t, filepath.Join(project, "runs.txt")), "x"); got != 2 {
+				t.Fatalf("forged body must force real reexecution; counter=%d output=%s", got, out)
 			}
 			if transcriptPath(t, out, 0) == path {
 				t.Fatal("reverification must publish new origin, not reuse forged body")
@@ -204,8 +211,8 @@ func TestAuditTranscriptRedactedOriginsRemainReusable(t *testing.T) {
 				t.Fatal("fixture must retain redacted output with requested truncation state")
 			}
 			out := runTranscriptCLI(t, root, "reverify", true, ExitOK)
-			if got := mustRead(t, filepath.Join(project, "runs.txt")); got != "x\n" {
-				t.Fatalf("valid redacted origin must not rerun; counter=%q output=%s", got, out)
+			if got := strings.Count(mustRead(t, filepath.Join(project, "runs.txt")), "x"); got != 1 {
+				t.Fatalf("valid redacted origin must not rerun; counter=%d output=%s", got, out)
 			}
 			if transcriptPath(t, out, 0) != path || mustRead(t, path) != body {
 				t.Fatal("reuse must retain original redacted transcript")
@@ -230,7 +237,11 @@ func TestAuditFinalRetainedOriginsNeverExecutes(t *testing.T) {
 					t.Fatal(err)
 				}
 			case "body":
-				raw := strings.Replace(mustRead(t, path), "\n--- OUTPUT ---\nOK\n", "\n--- OUTPUT ---\nNO\n", 1)
+				original := mustRead(t, path)
+				raw := strings.Replace(original, "\n--- OUTPUT ---\nOK", "\n--- OUTPUT ---\nNO", 1)
+				if raw == original {
+					t.Fatal("body mutation must change real executed transcript")
+				}
 				writeLedger(t, path, auditRefreshTranscriptChecksum(t, raw))
 			case "inputs":
 				writeLedger(t, filepath.Join(project, "src.txt"), "changed")
@@ -241,8 +252,8 @@ func TestAuditFinalRetainedOriginsNeverExecutes(t *testing.T) {
 			if (err == nil) != (mutation == "none") {
 				t.Fatalf("mutation %s: retained origin check returned %v", mutation, err)
 			}
-			if got := mustRead(t, filepath.Join(project, "runs.txt")); got != "x\n" {
-				t.Fatalf("final check executed a command: %q", got)
+			if got := strings.Count(mustRead(t, filepath.Join(project, "runs.txt")), "x"); got != 1 {
+				t.Fatalf("final check executed a command: %d", got)
 			}
 		})
 	}
