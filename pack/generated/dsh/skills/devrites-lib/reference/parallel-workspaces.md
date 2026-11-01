@@ -98,7 +98,7 @@ audit the remaining frontier before treating serialization as irreducible:
 
 Completion: either admit a currently approved independent cut, or retain
 `Serial rationale: <consumed contract/resource/authority; next unblock event>`
-in the owning plan only when normal Plan write authority permits; otherwise
+in affected `tasks.md` slice blocks only when normal Plan write authority permits; otherwise
 report the existing blocker without planning writes. Revisit after relevant
 inputs change, not merely because capacity remains unused. Target width never
 justifies extra architecture, acceptance loss, premature proof or repeatedly

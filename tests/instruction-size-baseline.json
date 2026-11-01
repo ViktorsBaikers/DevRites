@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1582890,
+  "total_bytes": 1582907,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -66,7 +66,7 @@
     "pack/.claude/skills/devrites-lib/reference/intent-map.md": 8929,
     "pack/.claude/skills/devrites-lib/reference/orchestration-profiles.md": 2877,
     "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md": 12672,
-    "pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md": 13552,
+    "pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md": 13569,
     "pack/.claude/skills/devrites-lib/reference/reply-contract.md": 5706,
     "pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md": 3792,
     "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 29401,
