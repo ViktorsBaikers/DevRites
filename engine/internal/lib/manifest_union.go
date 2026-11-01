@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/devrites/devrites/internal/devritespaths"
@@ -134,9 +135,9 @@ func mergeManifestLocked(root, slug, workspace string, args []string, stdout, st
 	return 0
 }
 
-// explicitManifests parses the caller-ordered predecessor list. When the
-// workspace carries a sequence_parent cursor, the last predecessor must be the
-// recorded parent; a mismatch means the list does not describe this chain.
+// explicitManifests parses the caller-ordered predecessor list. A numbered
+// workspace or one recording a parent requires the complete recorded chain;
+// legacy workspaces without cursors retain caller-supplied ordering.
 func explicitManifests(root, slug string, predecessors []string) ([][]candidateRow, error) {
 	seen := make(map[string]struct{}, len(predecessors))
 	for _, pred := range predecessors {
@@ -148,8 +149,31 @@ func explicitManifests(root, slug string, predecessors []string) ([][]candidateR
 		}
 		seen[pred] = struct{}{}
 	}
-	if parent := sequenceParent(root, slug); parent != "" && parent != predecessors[len(predecessors)-1] {
-		return nil, fmt.Errorf("%s records sequence_parent %q; pass the full ordered predecessor list ending with it (or no list to walk the recorded chain)", slug, parent)
+	dir, err := devritespaths.ExistingFeatureDirChecked(root, slug)
+	if err != nil {
+		return nil, err
+	}
+	raw, err := readBoundedRegularFile(filepath.Join(dir, "state.md"), maxCandidateManifestBytes)
+	if err != nil {
+		return nil, fmt.Errorf("%s state.md: %w", slug, err)
+	}
+	lines := strings.Split(string(raw), "\n")
+	parent, _ := state.CursorField(lines, state.CursorSequenceParent)
+	_, numbered := state.CursorField(lines, state.CursorSequencePosition)
+	if parent != "" || numbered {
+		chain, manifests, err := walkSequenceChain(root, slug, dir)
+		if err != nil {
+			return nil, err
+		}
+		if len(chain) != len(predecessors) {
+			return nil, fmt.Errorf("%s requires the complete ordered sequence_parent chain", slug)
+		}
+		for i, pred := range predecessors {
+			if pred != chain[i] {
+				return nil, fmt.Errorf("%s requires the complete ordered sequence_parent chain", slug)
+			}
+		}
+		return manifests, nil
 	}
 	manifests := make([][]candidateRow, 0, len(predecessors))
 	for _, pred := range predecessors {
@@ -162,26 +186,52 @@ func explicitManifests(root, slug string, predecessors []string) ([][]candidateR
 	return manifests, nil
 }
 
-// walkSequenceChain follows the target workspace's sequence_parent links to the
-// chain head, returning predecessors oldest-first with their manifests. Every
-// link must resolve to a live or archived workspace carrying the cursor field;
-// a broken link refuses the merge rather than producing a partial union.
+// walkSequenceChain follows sequence_parent links, returning predecessors
+// oldest-first. Numbered chains must descend consecutively to position 1;
+// fully unnumbered legacy chains may end at any parentless workspace. Broken
+// links or mixed numbering refuse the merge instead of producing a partial union.
 func walkSequenceChain(root, slug, workspace string) ([]string, [][]candidateRow, error) {
 	visited := map[string]struct{}{slug: {}}
 	chain := []string{}
 	manifests := [][]candidateRow{}
 	dir := workspace
+	numbered := false
+	var expectedPosition uint64
 	for {
 		raw, err := readBoundedRegularFile(filepath.Join(dir, "state.md"), maxCandidateManifestBytes)
 		if err != nil {
 			return nil, nil, fmt.Errorf("%s state.md: %w", filepath.Base(dir), err)
 		}
-		parent, _ := state.CursorField(strings.Split(string(raw), "\n"), state.CursorSequenceParent)
+		lines := strings.Split(string(raw), "\n")
+		parent, _ := state.CursorField(lines, state.CursorSequenceParent)
+		positionText, hasPosition := state.CursorField(lines, state.CursorSequencePosition)
+		if len(chain) == 0 {
+			numbered = hasPosition
+		}
+		if hasPosition != numbered {
+			return nil, nil, fmt.Errorf("%s mixes numbered and unnumbered sequence positions", filepath.Base(dir))
+		}
+		if numbered {
+			position, err := strconv.ParseUint(positionText, 10, 64)
+			if err != nil || position == 0 || strconv.FormatUint(position, 10) != positionText {
+				return nil, nil, fmt.Errorf("%s sequence_position %q must be a positive canonical decimal", filepath.Base(dir), positionText)
+			}
+			if len(chain) > 0 && position != expectedPosition {
+				return nil, nil, fmt.Errorf("%s sequence_position %d; expected %d", filepath.Base(dir), position, expectedPosition)
+			}
+			if parent == "" && position != 1 {
+				return nil, nil, fmt.Errorf("%s sequence_position %d has no sequence_parent; only position 1 may end the chain", filepath.Base(dir), position)
+			}
+			if parent != "" && position == 1 {
+				return nil, nil, fmt.Errorf("%s sequence_position 1 must not have a sequence_parent", filepath.Base(dir))
+			}
+			expectedPosition = position - 1
+		}
 		if parent == "" {
 			break
 		}
 		if len(chain) == maxSequenceChain {
-			return nil, nil, fmt.Errorf("sequence chain longer than %d; pass an explicit ordered predecessor list", maxSequenceChain)
+			return nil, nil, fmt.Errorf("sequence chain longer than %d", maxSequenceChain)
 		}
 		if _, dup := visited[parent]; dup {
 			return nil, nil, fmt.Errorf("sequence_parent cycle at %q", parent)
@@ -201,7 +251,7 @@ func walkSequenceChain(root, slug, workspace string) ([]string, [][]candidateRow
 		chain = append(chain, parent)
 		manifests = append(manifests, rows)
 	}
-	if len(chain) == 0 {
+	if len(chain) == 0 && !numbered {
 		return nil, nil, fmt.Errorf("%s has no sequence_parent; pass an explicit ordered predecessor list", slug)
 	}
 	for i, j := 0, len(chain)-1; i < j; i, j = i+1, j-1 {
@@ -209,19 +259,6 @@ func walkSequenceChain(root, slug, workspace string) ([]string, [][]candidateRow
 		manifests[i], manifests[j] = manifests[j], manifests[i]
 	}
 	return chain, manifests, nil
-}
-
-func sequenceParent(root, slug string) string {
-	dir, err := devritespaths.ExistingFeatureDirChecked(root, slug)
-	if err != nil {
-		return ""
-	}
-	raw, err := readBoundedRegularFile(filepath.Join(dir, "state.md"), maxCandidateManifestBytes)
-	if err != nil {
-		return ""
-	}
-	parent, _ := state.CursorField(strings.Split(string(raw), "\n"), state.CursorSequenceParent)
-	return parent
 }
 
 // VerifyReleaseUnion enforces the release-milestone contract at the candidate

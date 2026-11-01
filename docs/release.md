@@ -24,8 +24,11 @@ version and run these steps:
 
 The release archive
 consumes the validated generated files from the same Git index as the rest of
-its payload. Package and release installs validate and copy
-`pack/generated/{claude,codex,omp,pi,devin}`. When a shell install or update shim runs from a
+its payload. Prior build outputs under `engine/dist/` remain excluded even when
+indexed.
+
+Package and release installs validate and copy
+`pack/generated/{claude,codex,omp,pi,devin,dsh}`. When a shell install or update shim runs from a
 source checkout whose generated payload is incomplete, the shim may regenerate
 the missing host payload before handing that local candidate to the engine. The
 engine itself only validates and copies host payloads; it never generates them.

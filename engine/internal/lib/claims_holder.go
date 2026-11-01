@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/devrites/devrites/internal/hostpack"
 )
 
 // claimAnchorAge separates a claiming session's long-lived host processes from
@@ -25,13 +27,6 @@ type procInfo struct {
 	ppid  int
 	start string
 	comm  string
-}
-
-// shells outlive the agent sessions they launch (a terminal pane, a
-// multiplexer's login shell), so a shell never stands for the holder.
-var shells = map[string]bool{
-	"sh": true, "bash": true, "zsh": true, "fish": true, "dash": true, "ksh": true,
-	"tcsh": true, "csh": true, "nu": true, "pwsh": true, "powershell": true, "cmd": true,
 }
 
 // processTable lists running processes keyed by pid, or nil when the host
@@ -95,9 +90,12 @@ func newHolderProbe() holderProbe {
 	return holderProbe{table: table, host: host, self: lineage(table, os.Getppid())}
 }
 
-// anchors returns the caller's ancestors that started more than
-// claimAnchorAge before now: the session's host processes.
+// anchors retains long-lived ancestry only for an identified session.
+// Unknown writers must not be released merely because their launchers exit.
 func (p holderProbe) anchors(now time.Time) []claimProc {
+	if p.holder(now) == nil {
+		return nil
+	}
 	var out []claimProc
 	for _, proc := range p.self {
 		start, err := time.Parse(time.RFC3339, proc.Start)
@@ -108,13 +106,12 @@ func (p holderProbe) anchors(now time.Time) []claimProc {
 	return out
 }
 
-// holder returns the nearest anchor that is not a shell: the agent session
-// process that owns the claim. A shell or terminal multiplexer above it can
-// outlive the session, so only the session's own exit proves release.
-func (p holderProbe) holder(now time.Time) *claimProc {
-	for _, proc := range p.anchors(now) {
-		name := strings.TrimPrefix(filepath.Base(p.table[proc.PID].comm), "-")
-		if name != "" && !shells[name] {
+// holder identifies the native session independently of its age or wrappers.
+// Only native executable identities prove a session; generic runtimes do not.
+func (p holderProbe) holder(_ time.Time) *claimProc {
+	for _, proc := range p.self {
+		switch filepath.Base(p.table[proc.PID].comm) {
+		case "claude", "codex", hostpack.PiSettings.Host, hostpack.OmpConfig.Host, "devin", "dsh":
 			return &proc
 		}
 	}

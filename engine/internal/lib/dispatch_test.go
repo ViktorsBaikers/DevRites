@@ -484,35 +484,6 @@ func TestDispatchWaveClaim(t *testing.T) {
 		}
 	})
 
-	t.Run("reopen keeps or replaces the kept claim", func(t *testing.T) {
-		for _, reopen := range [][]string{open, open[:7]} {
-			root, _ := newWorkspace(t, "build")
-			runDispatchT(t, root, open...)
-			runDispatchT(t, root, "start", "--wave", "w", "--role", "a", "--handle", "h")
-			runDispatchT(t, root, "abandon", "--wave", "w", "--reason", "timeout")
-			old := claimOf(t, root, "w")
-			if code, out := runDispatchT(t, root, reopen...); code != 0 {
-				t.Fatalf("reopen %v: code=%d\n%s", reopen, code, out)
-			}
-			if len(reopen) == len(open) && claimOf(t, root, "w") == old {
-				t.Fatal("reopen with claim flags kept the old claim id")
-			}
-			if len(reopen) < len(open) && claimOf(t, root, "w") != old {
-				t.Fatal("reopen without claim flags dropped the kept claim")
-			}
-			runDispatchT(t, root, "start", "--wave", "w", "--role", "a", "--handle", "h2")
-			if code, out := runDispatchT(t, root, "return", "--wave", "w", "--role", "a"); code != 0 || strings.Contains(out, "WARNING") {
-				t.Fatalf("return: code=%d\n%s", code, out)
-			}
-			if held(t, root) {
-				t.Fatalf("reopen %v left a claim held", reopen)
-			}
-			if _, out, _ := runClaim(t, root, "list"); strings.Contains(out, " live") {
-				t.Fatalf("reopen %v left a live claim:\n%s", reopen, out)
-			}
-		}
-	})
-
 	t.Run("abandon keeps claim unless release", func(t *testing.T) {
 		root, _ := newWorkspace(t, "build")
 		runDispatchT(t, root, open...)
@@ -683,5 +654,19 @@ func TestDispatchBuildWrightOpenRecordsTree(t *testing.T) {
 	}
 	if f, _, err := loadDispatch(plain, "feat"); err != nil || f.Waves["b1"].Tree != "" {
 		t.Fatalf("non-git wave tree: %v %+v", err, f)
+	}
+}
+
+func TestDispatchUnknownRoleLedgerRemainsUsable(t *testing.T) {
+	root, _ := newWorkspace(t, "build")
+	for _, args := range [][]string{
+		{"open", "--phase", "custom", "--wave", "custom", "--role", "custom-worker"},
+		{"start", "--wave", "custom", "--role", "custom-worker", "--handle", "custom-host"},
+		{"return", "--wave", "custom", "--role", "custom-worker"},
+		{"status", "--wave", "custom"},
+	} {
+		if code, out := runDispatchT(t, root, args...); code != 0 {
+			t.Fatalf("%v: code=%d\n%s", args, code, out)
+		}
 	}
 }

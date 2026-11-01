@@ -44,13 +44,20 @@ func PreflightRowsPassed(root, slug string, rows []PreflightRow) (bool, error) {
 	return true, nil
 }
 
-// PreflightPassed reports whether the row's newest transcript under
-// <work>/references/gates/ records RESULT: pass. The transcript records its
-// candidate but the lookup does not compare it: Vet writes workspace artifacts
-// after the run, and only a change to the row's command or cwd retires a pass.
+// PreflightPassed requires the newest transcript to be a complete passing record
+// for this row. Historical candidate labels do not retire an unchanged row.
 func PreflightPassed(work string, row PreflightRow) bool {
-	dir := filepath.Join(work, "references", "gates", transcriptGateName(PreflightGateID(row)))
-	entries, err := os.ReadDir(dir)
+	dir, err := transcriptDirectory(work, PreflightGateID(row), false)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = dir.Close() }()
+	listing, err := dir.Open(".")
+	if err != nil {
+		return false
+	}
+	entries, err := listing.ReadDir(-1)
+	_ = listing.Close()
 	if err != nil {
 		return false
 	}
@@ -67,11 +74,10 @@ func PreflightPassed(work string, row PreflightRow) bool {
 	if newest == "" {
 		return false
 	}
-	// #nosec G304 -- transcript path built from the workspace and a sanitized row id
-	body, err := os.ReadFile(filepath.Join(dir, newest))
-	// Only the header counts: command output could print the verdict line.
-	header, _, _ := strings.Cut(string(body), "--- OUTPUT ---")
-	return err == nil && strings.Contains(header, "\nRESULT: pass\n")
+	body, err := readTranscript(dir, newest)
+	gate := &Gate{ID: PreflightGateID(row), Title: row.Gate, Check: row.Command, Cwd: row.Cwd,
+		Expect: "exit 0 (Expected: " + valueOr(row.Expected, "unstated") + ")"}
+	return err == nil && validTranscript(string(body), gate, nil)
 }
 
 // RunPreconditions is `check preconditions <slug> [--slice S]`: it executes

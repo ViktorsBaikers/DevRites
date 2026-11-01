@@ -199,6 +199,23 @@ func acceptedRetry(root string, lease *Lease, selector string) (string, error) {
 }
 
 func protectRawLease(current, next *Lease) error {
+	for _, candidate := range next.Slices {
+		if candidate.WrightStatus != WrightIntegrated {
+			continue
+		}
+		found := false
+		if current != nil {
+			for _, sl := range current.Slices {
+				if sl.WrightStatus == WrightIntegrated && reflect.DeepEqual(sl, candidate) {
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("lease-write cannot introduce integrated slice %s; use integrate", SliceKey(candidate.Workspace, candidate.ID))
+		}
+	}
 	if current == nil {
 		if next.PendingLanding != nil || next.LastLanding != nil {
 			return fmt.Errorf("lease-write cannot fabricate landing evidence")

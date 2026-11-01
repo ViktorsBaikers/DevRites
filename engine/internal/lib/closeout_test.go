@@ -135,6 +135,12 @@ func TestCloseOutRollsBackArchiveWhenActiveCannotBeCleared(t *testing.T) {
 	if err := parallel.WithControlLock(root, func() error { return nil }); err != nil {
 		t.Fatal(err)
 	}
+	if err := state.WithFeatureLock(root, "feat", func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if err := state.WithLock(claimsPath(root)+".lock", func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.Chmod(root, 0o555); err != nil {
 		t.Fatal(err)
 	}
@@ -247,23 +253,18 @@ func TestCloseOutSerializesRenameBehindFeatureLock(t *testing.T) {
 	}
 }
 
-// TestCloseOutReleasesFeatureLockBeforeRenameWhenPlatformRequires injects the
-// Windows decision and checks, from inside the rename, that the feature lock is
-// free: another locker acquires it while the workspace still exists. With the
-// lock still held at the rename that locker stays blocked.
-func TestCloseOutReleasesFeatureLockBeforeRenameWhenPlatformRequires(t *testing.T) {
+// Close-out must keep writers excluded through the rename on every platform.
+func TestCloseOutHoldsFeatureLockThroughRename(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, filepath.Join(root, "work", "feat", "state.md"), "inside\n- Schema: 4\n")
 	writeFile(t, filepath.Join(root, "ACTIVE"), "feat\n")
 
-	origRelease, origRename := releaseLockBeforeRename, renameWorkspace
-	t.Cleanup(func() { releaseLockBeforeRename, renameWorkspace = origRelease, origRename })
-	releaseLockBeforeRename = true
-
+	origRename := renameWorkspace
+	t.Cleanup(func() { renameWorkspace = origRename })
+	done := make(chan error, 1)
 	var lockFreeAtRename bool
 	renameWorkspace = func(from, to string) error {
 		acquired := make(chan struct{})
-		done := make(chan error, 1)
 		go func() {
 			done <- state.WithFeatureLock(root, "feat", func() error {
 				close(acquired)
@@ -273,11 +274,7 @@ func TestCloseOutReleasesFeatureLockBeforeRenameWhenPlatformRequires(t *testing.
 		select {
 		case <-acquired:
 			lockFreeAtRename = true
-			<-done
 		case <-time.After(750 * time.Millisecond):
-			// Still blocked: the rename is about to run with the lock held.
-			// The locker is drained after CloseOut returns.
-			t.Cleanup(func() { <-done })
 		}
 		return os.Rename(from, to)
 	}
@@ -286,11 +283,22 @@ func TestCloseOutReleasesFeatureLockBeforeRenameWhenPlatformRequires(t *testing.
 	if code != 0 {
 		t.Fatalf("state close = %d, want 0\n%s", code, out)
 	}
-	if !lockFreeAtRename {
-		t.Fatal("the feature lock was still held when the workspace was renamed")
+	if lockFreeAtRename {
+		t.Error("feature writer ran before archive rename completed")
+	}
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Error("late feature writer accepted archived workspace")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("late feature writer did not finish")
 	}
 	if !isFile(filepath.Join(root, "archive", "feat", "state.md")) {
 		t.Fatal("workspace was not archived")
+	}
+	if _, err := os.Lstat(filepath.Join(root, "work", "feat")); !os.IsNotExist(err) {
+		t.Fatalf("late writer recreated workspace: %v", err)
 	}
 }
 

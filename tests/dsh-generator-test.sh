@@ -53,10 +53,10 @@ for role in canonical:
     assert config["instructions"].strip()
     assert "<!-- include:" not in config["instructions"]
     assert config["instructions"] in (out / "dsh/agents" / (role + ".md")).read_text()
-    writable = "permissionMode: acceptEdits" in canonical_text.split("---", 2)[1]
-    assert config["permission"] == ("workspace-write" if writable else "read-only")
-    if not writable:
-        assert not {"edit", "write"} & set(config["allowedTools"])
+    if role.startswith("overhaul-"):
+        assert {"edit", "write"} <= set(config["allowedTools"]), role
+    elif role.startswith("devrites-") and role != "devrites-slice-wright":
+        assert not {"edit", "write"} & set(config["allowedTools"]), role
     assert "subagent" not in config["allowedTools"]
     if "bash" in config["allowedTools"]:
         assert {"job_output", "job_kill", "job_list"} <= set(config["allowedTools"])

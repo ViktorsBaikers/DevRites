@@ -116,7 +116,7 @@ git ls-files --stage -z -- "${PAYLOAD[@]}" \
         exit 1
       fi
       case "$path" in
-        engine/testdata/golden/* | docs/internal/* | scripts/.cache/*) continue ;;
+        engine/dist/* | engine/testdata/golden/* | docs/internal/* | scripts/.cache/*) continue ;;
       esac
       read -r mode object stage extra <<< "$metadata"
       if [[ "$stage" != 0 || -n "${extra:-}" ]]; then

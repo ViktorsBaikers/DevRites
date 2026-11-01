@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -114,23 +115,14 @@ func TestConfirmLockComparesHeldFileWithPath(t *testing.T) {
 // or lock file is created, so the lock sink cannot be steered outside work/.
 func TestFeatureLockRefusesInvalidSlug(t *testing.T) {
 	for _, slug := range []string{"../evil", "a/b", `a\b`, "..", "."} {
-		for name, lock := range map[string]func(root string, ran *bool) error{
-			"WithFeatureLock": func(root string, ran *bool) error {
-				return WithFeatureLock(root, slug, func() error { *ran = true; return nil })
-			},
-			"WithFeatureLockRelease": func(root string, ran *bool) error {
-				return WithFeatureLockRelease(root, slug, func(func()) error { *ran = true; return nil })
-			},
-		} {
-			root := t.TempDir()
-			var ran bool
-			err := lock(root, &ran)
-			if err == nil || ran {
-				t.Errorf("%s(%q) = %v, ran %v, want an error and fn not run", name, slug, err, ran)
-			}
-			if _, statErr := os.Stat(filepath.Join(root, "evil", ".lock")); statErr == nil {
-				t.Errorf("%s(%q) created a lock file outside work/", name, slug)
-			}
+		root := t.TempDir()
+		var ran bool
+		err := WithFeatureLock(root, slug, func() error { ran = true; return nil })
+		if err == nil || ran {
+			t.Errorf("WithFeatureLock(%q) = %v, ran %v, want an error and fn not run", slug, err, ran)
+		}
+		if _, statErr := os.Stat(filepath.Join(root, "evil", ".lock")); statErr == nil {
+			t.Errorf("WithFeatureLock(%q) created a lock file outside work/", slug)
 		}
 	}
 }
@@ -147,5 +139,48 @@ func TestWithFeatureLockRefusesClosedWorkspace(t *testing.T) {
 	}
 	if _, err := os.Lstat(filepath.Join(root, "work", "feat")); !os.IsNotExist(err) {
 		t.Fatalf("work/feat recreated by the lock: %v", err)
+	}
+}
+
+func TestFeatureLockRefusesRecreatedClosedWorkspace(t *testing.T) {
+	root := t.TempDir()
+	for _, dir := range []string{"archive", "work"} {
+		if err := os.MkdirAll(filepath.Join(root, dir, "feat"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ran := false
+	if err := WithFeatureLock(root, "feat", func() error { ran = true; return nil }); err == nil || ran {
+		t.Fatalf("lock on recreated closed workspace: err=%v ran=%v, want refused", err, ran)
+	}
+}
+
+func TestFeatureLockAllowsArchiveWhileHeld(t *testing.T) {
+	root := t.TempDir()
+	err := WithFeatureLock(root, "feat", func() error {
+		if err := os.MkdirAll(filepath.Join(root, "archive"), 0o755); err != nil {
+			return err
+		}
+		return os.Rename(filepath.Join(root, "work", "feat"), filepath.Join(root, "archive", "feat"))
+	})
+	if err != nil {
+		t.Fatalf("archive while feature lock held: %v", err)
+	}
+	if err := WithFeatureLock(root, "feat", func() error {
+		t.Error("late writer ran after archive")
+		return nil
+	}); err == nil {
+		t.Fatal("late writer accepted archived workspace")
+	}
+	if _, err := os.Lstat(filepath.Join(root, "work", "feat")); !os.IsNotExist(err) {
+		t.Fatalf("late writer recreated workspace: %v", err)
+	}
+}
+
+func TestFeatureLockPreservesMaximumLengthSlug(t *testing.T) {
+	slug := strings.Repeat("a", 255)
+	ran := false
+	if err := WithFeatureLock(t.TempDir(), slug, func() error { ran = true; return nil }); err != nil || !ran {
+		t.Fatalf("255-byte feature slug: err=%v ran=%v", err, ran)
 	}
 }

@@ -15,7 +15,7 @@ func TestDispatchBareStatusFoldsCompleteWaves(t *testing.T) {
 		"gone-1": {Phase: "build", State: "abandoned", Roles: map[string]*dispatchRole{"a": {}}},
 	}}
 	for i := range 40 {
-		f.Waves[fmt.Sprintf("done-%02d", i)] = &dispatchWave{Phase: "review", State: "complete", Roles: map[string]*dispatchRole{"a": {Returned: true}}}
+		f.Waves[fmt.Sprintf("done-%02d", i)] = &dispatchWave{Phase: "review", State: "complete", Roles: map[string]*dispatchRole{"a": {Handle: fmt.Sprintf("h-%02d", i), StartedAt: "2026-10-15T10:00:00Z", Returned: true, ReturnedAt: "2026-10-15T10:30:00Z"}}}
 	}
 	if err := saveDispatch(dispatchPath(root, "feat"), f); err != nil {
 		t.Fatal(err)
@@ -30,6 +30,7 @@ func TestDispatchBareStatusFoldsCompleteWaves(t *testing.T) {
 		t.Fatalf("status --all: code=%d\n%s", code, out)
 	}
 	f.Waves["open-1"].State = "complete"
+	f.Waves["open-1"].Roles["a"] = &dispatchRole{Handle: "h-open", StartedAt: "2026-10-15T11:00:00Z", Returned: true, ReturnedAt: "2026-10-15T11:30:00Z"}
 	if err := saveDispatch(dispatchPath(root, "feat"), f); err != nil {
 		t.Fatal(err)
 	}

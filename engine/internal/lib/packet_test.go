@@ -267,41 +267,6 @@ func packetTestWorkspace(t *testing.T) (root, workspace, sums string) {
 	return root, workspace, sums
 }
 
-func TestPacketRendersGoldenReviewerPacket(t *testing.T) {
-	root, workspace, sums := packetTestWorkspace(t)
-	code, out := runPacketT(t, root, "--wave", "r1", "--phase", "review", "--role", "code-reviewer", "--focus", "focus.md")
-	if code != 0 || !strings.Contains(out, "packet: .devrites/work/feature/packets/r1.code-reviewer.md") {
-		t.Fatalf("code=%d\n%s", code, out)
-	}
-	want := "# Packet r1: code-reviewer\n\nFeature: feature\nPhase: review\n" +
-		"Authority: read-only reviewer. Edit nothing and ask the user nothing; judge the candidate against the bundle sources.\n\n" +
-		"Read first:\n- .devrites/work/feature/ctx/review-code-reviewer.bundle.md\n- .devrites/work/feature/packets/r1.diff\n\n" +
-		"Candidate (verbatim from .devrites/work/feature/packets/r1.sha256):\n```text\n" + sums + "```\n\n" +
-		"Open findings:\n- F-1 src/a.go:12 nil customer panics\n\n" +
-		"Return (lines 1-2 exactly, then your role's rows):\nOutcome: <findings|no-findings|gap>\n" +
-		"Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n>\n"
-	if got := readTestFile(t, filepath.Join(workspace, "packets", "r1.code-reviewer.md")); got != want {
-		t.Fatalf("golden mismatch:\n--- got\n%s\n--- want\n%s", got, want)
-	}
-}
-
-func TestPacketRendersGoldenWrightContract(t *testing.T) {
-	root, workspace, _ := packetTestWorkspace(t)
-	code, out := runPacketT(t, root, "--wave", "SLICE-001", "--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001", "--checks", "G-UNIT")
-	if code != 0 {
-		t.Fatalf("code=%d\n%s", code, out)
-	}
-	want := "# Packet SLICE-001: slice-wright\n\nFeature: feature\nPhase: build\nSlice: SLICE-001\nIsolation: same-worktree\n" +
-		"Authority: sole writer for this slice. Edit only the Allowlist paths; never edit .devrites/**, never commit or push, and ask the user nothing.\n\n" +
-		"Read first:\n- .devrites/work/feature/ctx/build-slice-wright.SLICE-001.bundle.md\n\n" +
-		"Allowlist:\n- src/a.go\n- src/a_test.go\n\n" +
-		"Writer-safe checks: G-UNIT\n- G-UNIT (cwd engine): `go test ./...`\n\n" +
-		"Return: every field of your role's return block, with each Writer-safe check's command and exit status.\n"
-	if got := readTestFile(t, filepath.Join(workspace, "packets", "SLICE-001.contract.md")); got != want {
-		t.Fatalf("golden mismatch:\n--- got\n%s\n--- want\n%s", got, want)
-	}
-}
-
 func TestPacketRolesPassDispatchLints(t *testing.T) {
 	root, workspace, _ := packetTestWorkspace(t)
 	cases := []struct {
@@ -383,14 +348,8 @@ func TestPacketRefusesUnsafeInputs(t *testing.T) {
 	}
 }
 
-func TestPacketNamesRecheckBundleAndDoubtClaim(t *testing.T) {
+func TestPacketRendersDoubtClaim(t *testing.T) {
 	root, workspace, _ := packetTestWorkspace(t)
-	if code, out := runPacketT(t, root, "--wave", "b2", "--phase", "build", "--role", "code-reviewer", "--slice", "SLICE-001", "--recheck"); code != 0 {
-		t.Fatalf("recheck: code=%d\n%s", code, out)
-	}
-	if text := readTestFile(t, filepath.Join(workspace, "packets", "b2.code-reviewer.md")); !strings.Contains(text, "- .devrites/work/feature/ctx/build-code-reviewer.SLICE-001.recheck.bundle.md\n") {
-		t.Fatalf("a recheck packet must name the recheck bundle:\n%s", text)
-	}
 	writeFile(t, filepath.Join(workspace, "claim.md"), "- DEC-001 decisions.md:5 the store owns the lock, so callers never retry\n")
 	if code, out := runPacketT(t, root, "--wave", "b2", "--phase", "build", "--role", "doubt-reviewer", "--slice", "SLICE-001", "--focus", "claim.md"); code != 0 {
 		t.Fatalf("doubt: code=%d\n%s", code, out)

@@ -46,10 +46,15 @@ func (r *runner) preflightInstall() error {
 			return err
 		}
 		if !snapshot.missing && r.isPinnedAlias(rel) {
-			// scripts/pin.sh aliases are not in the payload; carry them
-			// forward (hashed) so prune keeps them and uninstall removes them.
+			// Carry pins without adopting edits; only legacy pins need a baseline.
+			if record.Hash == "" {
+				record.Hash = snapshot.hash
+			}
+			if kind := managedConflict(record, snapshot); kind != "" && !r.opts.Force {
+				conflicts = append(conflicts, fmt.Sprintf("%s: %s", kind, rel))
+			}
 			r.addManifest(rel)
-			r.addInstallRecord(rel, snapshot.hash)
+			r.addInstallRecord(rel, record.Hash)
 			continue
 		}
 		if !snapshot.missing {
@@ -101,23 +106,33 @@ func (r *runner) preflightMerges() error {
 		if _, _, err := r.markerMergeNext(m.merge); err != nil {
 			return fmt.Errorf("merge %s: %w", m.merge.TargetRel, err)
 		}
+		if err := r.preflightMarkerOwnership(m.merge.TargetRel, m.merge.MarkerRel, m.merge.MarkerText); err != nil {
+			return err
+		}
 	}
 	if r.opts.WithCodex {
 		if _, err := r.codexConfigNext(); err != nil {
 			return fmt.Errorf("merge %s: %w", hostpack.CodexConfigMerge.TargetRel, err)
+		}
+		merge := hostpack.CodexConfigMerge
+		if err := r.preflightMarkerOwnership(merge.TargetRel, merge.MarkerRel, merge.MarkerText); err != nil {
+			return err
 		}
 	}
 	_, settings, err := r.claudeSettingsNext()
 	if err != nil {
 		return fmt.Errorf("seed claude settings: %w", err)
 	}
-	marker := hostpack.ClaudeSettingsMerge.MarkerRel
+	merge := hostpack.ClaudeSettingsMerge
+	return r.preflightMarkerOwnership(merge.TargetRel, merge.MarkerRel, claudeSettingsMarkerText(r.pendingClaudeSettingsOwnership(settings)))
+}
+
+func (r *runner) preflightMarkerOwnership(target, marker, text string) error {
 	if snapshot := r.preflight[marker]; !snapshot.missing && !r.opts.Force {
 		if _, managed := r.prev[marker]; !managed {
-			text := claudeSettingsMarkerText(r.pendingClaudeSettingsOwnership(settings)) + "\n"
-			sum := sha256.Sum256([]byte(text))
+			sum := sha256.Sum256([]byte(text + "\n"))
 			if snapshot.hash != fmt.Sprintf("sha256:%x", sum[:]) {
-				return fmt.Errorf("cannot merge %s without owning %s; use --force to replace the marker", hostpack.ClaudeSettingsMerge.TargetRel, marker)
+				return fmt.Errorf("cannot merge %s without owning %s; use --force to replace the marker", target, marker)
 			}
 		}
 	}

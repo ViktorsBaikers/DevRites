@@ -112,6 +112,38 @@ for (const placement of ['addOwn', 'addInherited']) {
 const artifactRoot = process.env.DEVRITES_HOST_ARTIFACT_DIR || fileURLToPath(new URL('../pack/generated', import.meta.url));
 const presets = JSON.parse(readFileSync(resolve(artifactRoot, 'dsh/runtime/cordis.patch.yml'), 'utf8'))[0].insert[0].config.presets;
 const configs = presets.map(preset => preset.plugins.find(plugin => plugin.name === 'devrites:role').config);
+const overhaulConfigs = configs.filter(config => config.role.startsWith('overhaul-'));
+assert.ok(overhaulConfigs.length > 0, 'shipped overhaul presets must exist');
+for (const config of [
+  ...overhaulConfigs,
+  ...configs.filter(config => config.role.startsWith('devrites-')
+    && !['devrites-orchestrator', 'devrites-slice-wright'].includes(config.role)),
+]) {
+  const overhaul = config.role.startsWith('overhaul-');
+  for (const parentMode of ['workspace-write', 'read-only']) {
+    const host = runtime(parentMode);
+    host.register('edit');
+    await apply(host.ctx, config);
+    host.create();
+    assert.equal(host.mode(), overhaul ? parentMode : 'read-only', config.role);
+    for (const tool of ['write', 'edit']) {
+      if (overhaul) {
+        assert.ok(host.visible().includes(tool), `${config.role}: ${tool} must remain available`);
+        assert.equal(host.call(tool), undefined, `${config.role}: ${tool} must reach sandbox`);
+      } else {
+        assert.ok(!host.visible().includes(tool), `${config.role}: ${tool} must stay hidden`);
+        assert.match(host.call(tool), /not allowed/, config.role);
+      }
+    }
+    assert.equal(host.mode(), overhaul ? parentMode : 'read-only', config.role);
+    assert.match(host.call('bash', { sandbox_permissions: 'danger-full-access' }),
+      config.allowedTools.includes('bash') ? /escalation/ : /not allowed/, config.role);
+    for (const tool of ['subagent', 'subagent_fork']) {
+      assert.match(host.call(tool), /not allowed/, config.role);
+    }
+    host.dispose();
+  }
+}
 const orchestratorConfig = configs.find(config => config.role === 'devrites-orchestrator');
 for (const mode of ['read-only', 'workspace-write', 'danger-full-access']) {
   const host = runtime(mode);

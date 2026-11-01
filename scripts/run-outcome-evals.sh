@@ -69,6 +69,7 @@ stage_workspace_from() {
 
   python3 - "$project" "$ws" <<'PY'
 from pathlib import Path
+import hashlib
 import re
 import sys
 
@@ -82,6 +83,38 @@ for relative in paths:
     path = project / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("synthetic outcome-eval source\n")
+
+# These copied goldens are synthetic artifacts, not execution evidence for a
+# product workspace. Give their runnable gate an explicitly synthetic origin.
+ledger = workspace / "gates.md"
+text = ledger.read_text()
+gate = re.search(r"(?m)^- \[x\] (G1): (.+)\n((?:  .*\n)*)", text)
+fields = dict(re.findall(r"^  ([A-Z]+): (.+)$", gate.group(3), re.M))
+definition = re.search(r"\bdef=([0-9a-f]{64})\b", fields["EVIDENCE"]).group(1)
+output = "SYNTHETIC outcome-eval fixture; no product command executed.\n"
+output_digest = hashlib.sha256(output.encode()).hexdigest()
+evidence = re.sub(r"output-sha256=[0-9a-f]{64}; output-bytes=\d+",
+                  f"output-sha256={output_digest}; output-bytes={len(output.encode())}",
+                  fields["EVIDENCE"])
+ledger.write_text(text.replace(fields["EVIDENCE"], evidence, 1))
+body = (
+    "DEVRITES-GATE-TRANSCRIPT v2\n"
+    "SYNTHETIC_FIXTURE: outcome-eval only; not product execution proof\n"
+    f"GATE: {gate.group(1)}\nTITLE: {gate.group(2)}\n"
+    f"COMMAND: {fields['CHECK']}\nCWD: {fields['CWD']}\n"
+    f"DEFINITION_SHA256: {definition}\n"
+    "INPUTS: none\nINPUTS_SHA256: none\n"
+    "CANDIDATE_BEFORE: synthetic-outcome-eval\n"
+    "CANDIDATE_AFTER: synthetic-outcome-eval\n"
+    "ATTEMPT: 1\nSTARTED: 2025-01-01T00:00:00Z\nENDED: 2025-01-01T00:00:00Z\n"
+    f"EXIT: 0\nEXPECT: {fields['EXPECT']}\nRESULT: pass\n"
+    f"OUTPUT_SHA256: {output_digest}\nOUTPUT_BYTES: {len(output.encode())}\n"
+    f"REDACTIONS: 0\nTRUNCATED: false\n--- OUTPUT ---\n{output}\n--- END OUTPUT ---\n"
+)
+origin = workspace / "references/gates/G1/synthetic-outcome-eval-a1.log"
+origin.parent.mkdir(parents=True, exist_ok=True)
+origin.write_text(body + "TRANSCRIPT_SHA256: " + hashlib.sha256(body.encode()).hexdigest() + "\n")
+origin.chmod(0o600)
 PY
 
   run_capture env DEVRITES_ROOT="$project" "$ENGINE" check readiness --emit-binding "$slug"
@@ -99,6 +132,26 @@ PY
   for artifact in evidence.md review.md seal.md; do
     replace_once "$ws/$artifact" "__CANDIDATE_SHA256__" "$digest"
   done
+
+  # Follow the native-account fixture pattern in engine/tests/gate_test.go.
+  # The account/result are SYNTHETIC test inputs, never a live reviewer claim.
+  run_capture git -C "$project" init -q
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "stage synthetic repository init failed: $CAPTURED"
+  run_capture git -C "$project" -c user.name=Outcome-Eval -c user.email=outcome-eval@example.invalid -c commit.gpgsign=false -c core.hooksPath=/dev/null commit --allow-empty -qm "SYNTHETIC outcome-eval base"
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "stage synthetic repository base failed: $CAPTURED"
+  run_capture env DEVRITES_ROOT="$project" "$ENGINE" candidate freeze "$slug" --wave synthetic-outcome-candidate --paths src/lib/csv-stream.ts
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "stage synthetic candidate freeze failed: $CAPTURED"
+  local packet="$ws/packets/synthetic-outcome-review.md"
+  local result="$project/synthetic-outcome-review.return.md"
+  printf '# Scope\nSYNTHETIC outcome-eval review of src/lib/csv-stream.ts against AC-001.\n\n' >"$packet"
+  cat "$ws/packets/synthetic-outcome-candidate.sha256" >>"$packet"
+  printf 'Outcome: no-findings\nCounts: critical=0 important=0 gap=0\nScope: SYNTHETIC outcome-eval fixture only; not a live native review.\n' >"$result"
+  run_capture env DEVRITES_ROOT="$project" "$ENGINE" dispatch "$slug" open --phase review --wave synthetic-outcome-review --role code-reviewer --packet "$packet"
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "stage synthetic review open failed: $CAPTURED"
+  run_capture env DEVRITES_ROOT="$project" "$ENGINE" dispatch "$slug" start --wave synthetic-outcome-review --role code-reviewer --handle synthetic-outcome-reviewer
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "stage synthetic review start failed: $CAPTURED"
+  run_capture env DEVRITES_ROOT="$project" "$ENGINE" dispatch "$slug" return --wave synthetic-outcome-review --role code-reviewer --handle synthetic-outcome-reviewer --result "$result"
+  [ "$CAPTURE_CODE" -eq 0 ] || fail "stage synthetic review return failed: $CAPTURED"
 }
 
 stage_workspace() {

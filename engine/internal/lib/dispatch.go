@@ -38,7 +38,20 @@ open --claim-session --claim records one file claim for the wave and fails,
 creating no wave, while a live foreign session holds a path; the return that
 completes the wave releases it, and abandon keeps it unless --release (any
 host-confirmed terminal path without a completing return, such as a stop or a
-refused launch). Re-opening an abandoned wave keeps or replaces its claim.
+refused launch). Wave IDs are single-use, including abandoned waves; retries
+need a fresh ID and never inherit or release an earlier wave's claim.
+Native starts, returns and abandonment retain subsecond timestamps. abandon
+--release also retains host-terminal confirmation, even without a claim or when
+its owned claim was already released; a failed release does not certify termination.
+Finalization requires every launched
+role to settle, and abandoned writers need actual returns or this confirmation.
+An abandoned reviewer or proof-runner still needs a later complete account in
+the same phase, role and slice subject; rerun abandon on a legacy record to
+record reconciliation time first.
+An abandoned writer's unreleased claim blocks overlapping writers across every
+live or archived feature in this repository, even in the same session or after
+TTL expiry, until explicit release or proven host termination.
+return --handle, when supplied, must match the role's recorded host handle.
 status --wave exits
 nonzero until that wave is complete; bare status lists every open, sealed,
 or abandoned wave, folds complete waves into one count line (--all lists
@@ -93,6 +106,8 @@ type dispatchWave struct {
 	Phase           string                   `json:"phase"`
 	State           string                   `json:"state"` // open, sealed, abandoned, complete
 	Reason          string                   `json:"reason,omitempty"`
+	AbandonedAt     string                   `json:"abandoned_at,omitempty"`
+	TerminalAt      string                   `json:"terminal_at,omitempty"`
 	Roles           map[string]*dispatchRole `json:"roles"`
 	Slices          []string                 `json:"slices,omitempty"`
 	ResliceReview   string                   `json:"reslice_review,omitempty"`
@@ -131,7 +146,10 @@ func dispatchPath(root, slug string) string {
 }
 
 func loadDispatch(root, slug string) (*dispatchFile, string, error) {
-	path := dispatchPath(root, slug)
+	return loadDispatchFile(dispatchPath(root, slug))
+}
+
+func loadDispatchFile(path string) (*dispatchFile, string, error) {
 	f := &dispatchFile{Waves: map[string]*dispatchWave{}}
 	data, err := os.ReadFile(path) // #nosec G304 -- path is a validated feature workspace artifact
 	if os.IsNotExist(err) {
@@ -140,16 +158,75 @@ func loadDispatch(root, slug string) (*dispatchFile, string, error) {
 	if err != nil {
 		return nil, path, err
 	}
+	f = &dispatchFile{}
 	if err := json.Unmarshal(data, f); err != nil {
 		return nil, path, fmt.Errorf("dispatch.json is not valid JSON: %w", err)
 	}
 	if f.Waves == nil {
-		f.Waves = map[string]*dispatchWave{}
+		return nil, path, fmt.Errorf("dispatch.json is malformed (missing waves)")
 	}
-	// Fail closed on hand-edited impossible state.
+	// Validate every account before any caller can use or mutate the ledger.
 	for name, w := range f.Waves {
-		if w.Roles == nil || w.State == "" {
-			return nil, path, fmt.Errorf("wave %q is malformed (missing state or roles)", name)
+		if w == nil || strings.TrimSpace(name) == "" || strings.TrimSpace(w.Phase) == "" || len(w.Roles) == 0 ||
+			!slices.Contains([]string{"open", "sealed", "complete", "abandoned"}, w.State) {
+			return nil, path, fmt.Errorf("wave %q is malformed (invalid phase, state or roles)", name)
+		}
+		handles := map[string]bool{}
+		allStarted, allReturned := true, true
+		for role, r := range w.Roles {
+			if r == nil || strings.TrimSpace(role) == "" {
+				return nil, path, fmt.Errorf("wave %q role %q is malformed (missing account)", name, role)
+			}
+			started := r.Handle != ""
+			if started != (r.StartedAt != "") || r.Returned != (r.ReturnedAt != "") ||
+				(r.Returned && !started) || (started && handles[r.Handle]) ||
+				(w.State == "open" && r.Returned) ||
+				((w.State == "sealed" || w.State == "complete") && !started) ||
+				(w.State == "complete" && !r.Returned) {
+				return nil, path, fmt.Errorf("wave %q role %q is malformed (inconsistent start or return)", name, role)
+			}
+			allStarted = allStarted && started
+			allReturned = allReturned && r.Returned
+			if started {
+				start, startErr := time.Parse(time.RFC3339Nano, r.StartedAt)
+				if startErr != nil {
+					return nil, path, fmt.Errorf("wave %q role %q is malformed (invalid start timestamp)", name, role)
+				}
+				if r.Returned {
+					end, endErr := time.Parse(time.RFC3339Nano, r.ReturnedAt)
+					if endErr != nil || end.Before(start) {
+						return nil, path, fmt.Errorf("wave %q role %q is malformed (invalid return timestamp)", name, role)
+					}
+				}
+			}
+			if started {
+				handles[r.Handle] = true
+			}
+		}
+		if (w.State == "open" && allStarted) || (w.State == "sealed" && allReturned) {
+			return nil, path, fmt.Errorf("wave %q is malformed (inconsistent barrier state)", name)
+		}
+		if w.AbandonedAt != "" {
+			if _, err := time.Parse(time.RFC3339Nano, w.AbandonedAt); err != nil || w.State != "abandoned" {
+				return nil, path, fmt.Errorf("wave %q is malformed (invalid abandonment timestamp)", name)
+			}
+		}
+		if w.TerminalAt != "" {
+			terminal, err := time.Parse(time.RFC3339Nano, w.TerminalAt)
+			abandoned, abandonErr := time.Parse(time.RFC3339Nano, w.AbandonedAt)
+			if err != nil || abandonErr != nil || w.State != "abandoned" || terminal.Before(abandoned) {
+				return nil, path, fmt.Errorf("wave %q is malformed (invalid terminal timestamp)", name)
+			}
+			for _, account := range w.Roles {
+				for _, stamp := range []string{account.StartedAt, account.ReturnedAt} {
+					if stamp != "" {
+						at, _ := time.Parse(time.RFC3339Nano, stamp)
+						if terminal.Before(at) {
+							return nil, path, fmt.Errorf("wave %q is malformed (terminal timestamp precedes account)", name)
+						}
+					}
+				}
+			}
 		}
 	}
 	return f, path, nil
@@ -166,7 +243,7 @@ func saveDispatch(path string, f *dispatchFile) error {
 	return state.AtomicWrite(path, data, 0o600)
 }
 
-func nowStamp() string { return time.Now().UTC().Format(time.RFC3339) }
+func nowStamp() string { return time.Now().UTC().Format(time.RFC3339Nano) }
 
 // RunDispatch implements the dispatch wave state machine.
 func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
@@ -259,8 +336,11 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	// an update and strand the wave short of complete.
 	code := 0
 	if err := state.WithFeatureLock(root, slug, func() error {
-		code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, all, claim, stdout, stderr)
-		return nil
+		// Feature → claims is the lock order; never acquire another feature.
+		return state.WithLock(claimsPath(root)+".lock", func() error {
+			code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, all, claim, stdout, stderr)
+			return nil
+		})
 	}); err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
 		return 3
@@ -293,8 +373,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			fmt.Fprint(stderr, dispatchUsage)
 			return 2
 		}
-		prev := getWave()
-		if prev != nil && prev.State != "abandoned" {
+		if prev := getWave(); prev != nil {
 			return fail("wave %q already exists (state %s)", wave, prev.State)
 		}
 		w := &dispatchWave{Phase: phase, State: "open", Roles: map[string]*dispatchRole{}, Slices: sliceIDs}
@@ -315,6 +394,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			if err := lintWrightContractFor(root, slug, contract); err != nil {
 				return fail("BLOCKED: %v", err)
 			}
+			if err := lintPacketDiffs(root, slug, contract, false); err != nil {
+				return fail("BLOCKED: %v", err)
+			}
 		}
 		for _, r := range roles {
 			if isReviewerRole(r) {
@@ -331,6 +413,22 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 				break
 			}
 		}
+		var claimPaths []string
+		if len(claim.paths) > 0 {
+			claimPaths, err = normalizeClaimPaths(claim.paths)
+			if err != nil {
+				return fail("%v", err)
+			}
+		}
+		admissionPaths := slices.Clone(claimPaths)
+		if isWrightWave(w) {
+			admissionPaths = append(admissionPaths, sliceWriteSet(root, slug, w.Slices)...)
+		}
+		if len(claimPaths) == 0 {
+			if err := checkAbandonedWriterClaims(root, admissionPaths); err != nil {
+				return fail("BLOCKED: %v", err)
+			}
+		}
 		if err := openTripwire(root, slug, w, claim.paths); err != nil {
 			return fail("BLOCKED: %v", err)
 		}
@@ -339,15 +437,16 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 				fmt.Fprintln(stderr, "dispatch: --claim-session and --claim go together (--claim-ttl needs both)")
 				return 2
 			}
-			// The claim goes last so a refused open never leaves one behind.
-			id, code := addClaim(root, claim.session, "dispatch wave "+wave, cmp.Or(claim.ttl, claimDefaultTTL), claim.paths, stdout, stderr)
+			if !validSession(claim.session) {
+				fmt.Fprintln(stderr, "claim: --session is required (1-128 chars: letters, digits, - _ . : /)")
+				return 2
+			}
+			// The ledger lock spans admission, claim append, and publication.
+			id, code := claimAddLocked(claimsPath(root), claim.session, "dispatch wave "+wave, cmp.Or(claim.ttl, claimDefaultTTL), claimPaths, admissionPaths, stdout, stderr)
 			if code != 0 {
 				return code
 			}
 			w.Claim, w.ClaimSession = id, claim.session
-		} else if prev != nil {
-			// Inherit the abandoned wave's kept claim so the completing return releases it.
-			w.Claim, w.ClaimSession = prev.Claim, prev.ClaimSession
 		}
 		if project, _, ok := treeProject(root); ok && isBuildWrightWave(w) {
 			// Uncommitted rounds look like additions against HEAD; this snapshot
@@ -358,10 +457,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 				w.Tree = tree
 			}
 		}
-		superseded := prev != nil && prev.Claim != "" && prev.Claim != w.Claim
 		f.Waves[wave] = w
 		if err := saveDispatch(path, f); err != nil {
-			if w.Claim != "" && (prev == nil || w.Claim != prev.Claim) {
+			if w.Claim != "" {
 				_, _ = releaseClaim(root, w.ClaimSession, w.Claim)
 			}
 			return fail("%v", err)
@@ -369,9 +467,6 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		fmt.Fprintf(stdout, "dispatch: wave %s open, %d roles declared\n", wave, len(roles))
 		if err := ensureTreeBaseline(root, slug, stdout); err != nil {
 			fmt.Fprintf(stderr, "dispatch: WARNING: %s not recorded: %v\n", treeBaselineFile, err)
-		}
-		if superseded {
-			releaseWaveClaim(root, wave, prev, stdout, stderr)
 		}
 		for _, line := range rounds {
 			fmt.Fprintln(stdout, line)
@@ -454,6 +549,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		r := w.Roles[role]
 		if r == nil {
 			return fail("role %q not declared in wave %q", role, wave)
+		}
+		if handle != "" && handle != r.Handle {
+			return fail("handle %q does not match role %q's recorded handle %q", handle, role, r.Handle)
 		}
 		if r.Returned {
 			return fail("role %q already returned", role)
@@ -569,14 +667,23 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		already := w.State == "abandoned"
 		w.State = "abandoned"
 		w.Reason = reason
+		if w.AbandonedAt == "" {
+			w.AbandonedAt = nowStamp()
+		}
 		// A timeout or unknown outcome keeps the claim; --release is for any
 		// host-confirmed terminal path without a completing return (a stop or a
 		// refused launch), including a re-run once a timed-out child is confirmed.
 		if claim.release {
 			if w.Claim == "" {
 				fmt.Fprintf(stderr, "dispatch: --release: wave %s holds no claim\n", wave)
+				if w.TerminalAt == "" {
+					w.TerminalAt = nowStamp()
+				}
 			} else if releaseWaveClaim(root, wave, w, stdout, stderr) {
 				w.Claim, w.ClaimSession = "", ""
+				if w.TerminalAt == "" {
+					w.TerminalAt = nowStamp()
+				}
 			}
 		}
 		if err := saveDispatch(path, f); err != nil {
@@ -592,10 +699,36 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 	return 2
 }
 
-// releaseWaveClaim releases w's claim and reports whether it did. A failure
-// only warns: the wave state change does not depend on it.
+// Caller holds the repository claims lock through new-wave publication.
+func checkAbandonedWriterClaims(root string, paths []string) error {
+	if len(paths) == 0 {
+		return nil
+	}
+	latest, _, bad, err := readClaims(claimsPath(root))
+	if err != nil {
+		return err
+	}
+	if bad > 0 {
+		return fmt.Errorf("%d unparsed ledger line(s); cannot rule out an abandoned writer claim", bad)
+	}
+	conflicts, err := retainedWriterConflicts(root, latest, paths, newHolderProbe())
+	if err != nil {
+		return err
+	}
+	if len(conflicts) > 0 {
+		return fmt.Errorf("abandoned writer still holds claim %s on %s; confirm host termination and use dispatch abandon --release before retrying", conflicts[0].ID, strings.Join(conflicts[0].Paths, ","))
+	}
+	return nil
+}
+
+// releaseWaveClaim releases w's claim; explicit terminal abandonment also
+// reconciles a verified prior release. A failure only warns.
 func releaseWaveClaim(root, wave string, w *dispatchWave, stdout, stderr io.Writer) bool {
 	n, err := releaseClaim(root, w.ClaimSession, w.Claim)
+	if w.State == "abandoned" && errors.Is(err, errClaimAlreadyReleased) {
+		fmt.Fprintf(stdout, "dispatch: wave %s claim %s already released\n", wave, w.Claim)
+		return true
+	}
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: WARNING: wave %s claim not released: %v\n", wave, err)
 		return false
@@ -799,7 +932,7 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 		return lines, 0
 	}
 	if review == "" {
-		fmt.Fprintf(stderr, "dispatch: BLOCKED: %s reached %d %s rounds; run a reslice review (acceptance-preserving split or simpler proof seam, or a drift.md entry recording why neither applies) and reopen with --reslice-review <DRIFT-ID>\n",
+		fmt.Fprintf(stderr, "dispatch: BLOCKED: %s reached %d %s rounds; run a reslice review (acceptance-preserving split or simpler proof seam, or a drift.md entry recording why neither applies) and open a fresh wave with --reslice-review <DRIFT-ID>\n",
 			strings.Join(overCap, ","), wrightRoundsPerReview, kind)
 		return nil, 3
 	}

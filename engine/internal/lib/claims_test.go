@@ -427,7 +427,11 @@ func TestClaimHolderSessionExitFreesPathsDespiteLiveShell(t *testing.T) {
 	}
 }
 
-func TestClaimAddRecordsNonShellHolder(t *testing.T) {
+func TestClaimAddRecordsSupportedSessionIdentity(t *testing.T) {
+	host, err := os.Hostname()
+	if err != nil {
+		t.Skip("no hostname")
+	}
 	old := time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)
 	parent := os.Getppid()
 	saved := processTable
@@ -444,8 +448,9 @@ func TestClaimAddRecordsNonShellHolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	var rec claimRecord
-	if err := json.Unmarshal(raw, &rec); err != nil || rec.Holder == nil || rec.Holder.PID != parent {
-		t.Fatalf("holder = %+v, want pid %d (err %v)", rec.Holder, parent, err)
+	want := claimProc{PID: parent, Start: old}
+	if err := json.Unmarshal(raw, &rec); err != nil || rec.Holder == nil || *rec.Holder != want || rec.Host != host {
+		t.Fatalf("host = %q, holder = %+v, want host %q and holder %+v (err %v)", rec.Host, rec.Holder, host, want, err)
 	}
 }
 
@@ -499,5 +504,90 @@ func TestClaimHolderExitFreesPaths(t *testing.T) {
 				t.Fatalf("add: code=%d want %d stderr=%s", code, tc.addOut, errOut)
 			}
 		})
+	}
+}
+
+func TestClaimRetainedWriterRepositoryAuthority(t *testing.T) {
+	saved := processTable
+	processTable = func() map[int]procInfo { return nil }
+	t.Cleanup(func() { processTable = saved })
+	root := claimTestRoot(t)
+	rec := &claimRecord{
+		ID: "cl-retained", Session: "owner", Paths: []string{"pkg/a.go"},
+		ClaimedAt: "2020-01-01T00:00:00Z", ExpiresAt: "2020-01-01T00:01:00Z",
+	}
+	if err := appendClaim(claimsPath(root), rec); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(root, "archive", "feat", "state.md"), "# State\n")
+	writeFile(t, filepath.Join(root, "archive", "feat", "dispatch.json"), `{"waves":{"old":{"phase":"build","state":"abandoned","roles":{"slice-wright":{}},"claim":"cl-retained","claim_session":"owner"}}}`)
+	for _, sub := range []string{"check", "add"} {
+		for _, session := range []string{"owner", "other"} {
+			if code, out, errOut := runClaim(t, root, sub, "--session", session, "pkg/a.go"); code != 3 {
+				t.Errorf("%s same/foreign expired retained claim: code=%d\n%s%s", sub, code, out, errOut)
+			}
+		}
+	}
+	if code, _, errOut := runClaim(t, root, "add", "--session", "owner", "pkg/b.go"); code != 0 {
+		t.Fatalf("disjoint: code=%d %s", code, errOut)
+	}
+	otherRoot := claimTestRoot(t)
+	if code, _, errOut := runClaim(t, otherRoot, "add", "--session", "owner", "pkg/a.go"); code != 0 {
+		t.Fatalf("other physical repo: code=%d %s", code, errOut)
+	}
+	if code, _, errOut := runClaim(t, root, "release", "--session", "owner", "--id", rec.ID); code != 0 {
+		t.Fatalf("release: code=%d %s", code, errOut)
+	}
+	if code, _, errOut := runClaim(t, root, "add", "--session", "owner", "pkg/a.go"); code != 0 {
+		t.Fatalf("released: code=%d %s", code, errOut)
+	}
+}
+
+func TestClaimDotFeatureRetainedWriter(t *testing.T) {
+	saved := processTable
+	processTable = func() map[int]procInfo { return nil }
+	t.Cleanup(func() { processTable = saved })
+	for _, parent := range []string{"work", "archive"} {
+		for _, expired := range []bool{false, true} {
+			for _, session := range []string{"owner", "other"} {
+				for _, sub := range []string{"check", "add"} {
+					t.Run(fmt.Sprintf("%s/expired=%t/%s/%s", parent, expired, session, sub), func(t *testing.T) {
+						root := claimTestRoot(t)
+						expires := time.Now().UTC().Add(time.Hour)
+						if expired {
+							expires = time.Now().UTC().Add(-time.Hour)
+						}
+						rec := &claimRecord{ID: "cl-retained", Session: "owner", Paths: []string{"pkg/a.go"}, ClaimedAt: "2020-01-01T00:00:00Z", ExpiresAt: expires.Format(time.RFC3339)}
+						if err := appendClaim(claimsPath(root), rec); err != nil {
+							t.Fatal(err)
+						}
+						dir := filepath.Join(root, parent, ".feature")
+						writeFile(t, filepath.Join(dir, "state.md"), "# State\n")
+						path := filepath.Join(dir, "dispatch.json")
+						writeFile(t, path, `{"waves":{"old":{"phase":"build","state":"abandoned","roles":{"slice-wright":{}},"claim":"cl-retained","claim_session":"owner"}}}`)
+						claimsBefore, err := os.ReadFile(claimsPath(root))
+						if err != nil {
+							t.Fatal(err)
+						}
+						dispatchBefore, err := os.ReadFile(path)
+						if err != nil {
+							t.Fatal(err)
+						}
+						if code, out, stderr := runClaim(t, root, sub, "--session", session, "pkg/a.go"); code != 3 {
+							t.Errorf("hidden retained writer admitted: code=%d\n%s%s", code, out, stderr)
+						}
+						for file, before := range map[string][]byte{claimsPath(root): claimsBefore, path: dispatchBefore} {
+							after, err := os.ReadFile(file)
+							if err != nil {
+								t.Fatal(err)
+							}
+							if !bytes.Equal(after, before) {
+								t.Errorf("refused %s changed %s", sub, file)
+							}
+						}
+					})
+				}
+			}
+		}
 	}
 }
