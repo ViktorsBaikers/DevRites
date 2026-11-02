@@ -157,8 +157,9 @@ not runtime authorities. See
 
 - New question IDs are `q-YYYY-MM-DD-NNN`. The root scans all same-day headers,
   chooses the next unused suffix, re-reads immediately before append, and
-  recomputes on collision. `state resolve` remains the atomic answer/drop/batch
-  writer; it does not allocate IDs.
+  recomputes on collision. `state resolve` remains the locked, rollback-protected
+  answer/drop/batch writer; it does not allocate IDs. Paired file updates are not
+  a crash-atomic transaction.
 - The root directly owns later-phase Clarify entry/restore cursor edits and AFK
   slice accounting, preserving unrelated Markdown. See
   [`state-schema.md`](state-schema.md).
@@ -187,7 +188,7 @@ The engine provides only:
 - `check seal`: final file completeness and open-human-gate checks, the
   `tasks.md` slice graph, then the readiness-binding recheck, then exact
   candidate bindings after that aggregate gate passes;
-- atomic `state resolve` answer/drop/batch and transactional `state close`;
+- locked, rollback-protected `state resolve` answer/drop/batch and transactional `state close`;
 - secret scanning, version reporting, and local install lifecycle primitives.
 
 A marker or file can satisfy structural presence without proving semantic

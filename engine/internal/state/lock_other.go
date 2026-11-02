@@ -18,6 +18,10 @@ func acquireLock(path string) (*fileLock, error) {
 	if err != nil {
 		return nil, fmt.Errorf("acquire lock: %w", err)
 	}
+	return lockOpened(f, path)
+}
+
+func lockOpened(f *os.File, path string) (*fileLock, error) {
 	return &fileLock{f: f}, nil
 }
 

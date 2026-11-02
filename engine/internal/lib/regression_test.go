@@ -117,6 +117,48 @@ func TestRegressionDetectsProgressLoss(t *testing.T) {
 	}
 }
 
+func TestRegressionUpdateAcceptsOwnerAuthorizedPhaseRepair(t *testing.T) {
+	root, dir := regressionWorkspace(t, "seal")
+	if code, out := checkRegression(t, root, "feat", "--update"); code != 0 {
+		t.Fatalf("seal baseline code=%d out=%s", code, out)
+	}
+	baselinePath := filepath.Join(dir, "regression-baseline.json")
+	before, err := os.ReadFile(baselinePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, "state.md"), "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | build |\n| status | running |\n")
+
+	for i := 0; i < 2; i++ {
+		code, out := checkRegression(t, root, "feat")
+		if code != 3 || !strings.Contains(out, "REGRESSION: phase moved backward: seal -> build") || strings.Contains(out, "REGRESSION-BLESSED") {
+			t.Fatalf("unacknowledged phase loss code=%d out=%s", code, out)
+		}
+	}
+	after, err := os.ReadFile(baselinePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatal("ordinary checks changed baseline")
+	}
+
+	code, out := checkRegression(t, root, "feat", "--update")
+	if code != 0 || !strings.Contains(out, "REGRESSION-BLESSED: phase moved backward: seal -> build") || !strings.Contains(out, "baseline updated") {
+		t.Fatalf("repair checkpoint code=%d out=%s", code, out)
+	}
+	if code, out := checkRegression(t, root, "feat"); code != 0 || !strings.Contains(out, "PASS") {
+		t.Fatalf("post-repair check code=%d out=%s", code, out)
+	}
+	baseline, exists, err := readRegressionBaseline(baselinePath)
+	if err != nil || !exists {
+		t.Fatalf("repaired baseline exists=%t err=%v", exists, err)
+	}
+	if baseline.Phase != "build" {
+		t.Fatalf("repaired baseline phase=%q, want build", baseline.Phase)
+	}
+}
+
 func TestRegressionDetectsRemovedArtifact(t *testing.T) {
 	root, dir := regressionWorkspace(t, "build")
 	if code, _ := checkRegression(t, root, "feat", "--update"); code != 0 {

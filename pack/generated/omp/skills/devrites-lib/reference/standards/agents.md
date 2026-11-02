@@ -68,7 +68,7 @@ Workflow-named skills (e.g. devrites-source-driven) are invoked inline in the ro
 ## Source-writing boundary
 
 Among lifecycle `devrites-*` specialists only (independent Fast exception below):
-omp: only the wright's `tools` allowlist has `edit`/`write`; the root stays source-read-only by instruction. Claude grants only wright `acceptEdits`; Codex root is workspace-capable (children cannot elevate). Wright alone `:workspace`; others `:read-only`. Wright gets the smallest exact project-relative source/test list — no directories/globs, traversal, or `.devrites/**`; no scope widening; root rejects `git diff --name-only` extras. Never patch product source/tests in root, bypass/substitute wright, accept drift, or recreate a dispatch bridge.
+omp: only the wright's `tools` allowlist has `edit`/`write`; `bash` is not a filesystem sandbox. Read-only behavior stays instruction-enforced. Claude grants only wright `acceptEdits`; Codex root is workspace-capable (children cannot elevate). Wright alone `:workspace`; others `:read-only`. Wright gets the smallest exact project-relative source/test list — no directories/globs, traversal, or `.devrites/**`; no scope widening; root rejects `git diff --name-only` extras. Never patch product source/tests in root, bypass/substitute wright, accept drift, or recreate a dispatch bridge.
 
 Independent Fast exception: `/rite-fast` uses its existing `fast-builder` write-capable
 profile, not a `devrites-*` substitute, under the exact Fast roster and lane contract.

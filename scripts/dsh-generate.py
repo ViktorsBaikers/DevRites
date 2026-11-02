@@ -117,7 +117,11 @@ def generate(source, target):
     for path in (target / "skills").rglob("*.md"):
         text = rewrite(path.read_text())
         if path == target / "skills/rite-doctor/SKILL.md":
-            text = text.replace("   File presence without effective loading is `WARN`;", DSH_DOCTOR + "   File presence without effective loading is `WARN`;")
+            anchor = "   File presence without effective loading is `WARN`;"
+            count = text.count(anchor)
+            if count != 1:
+                raise ValueError(f"{path}: expected exactly one DSH doctor insertion anchor, found {count}")
+            text = text.replace(anchor, DSH_DOCTOR + anchor, 1)
         text = re.sub(r"(?<=\S) {2,}$", r"\\", text, flags=re.MULTILINE)
         path.write_text("\n".join(line.rstrip() for line in text.splitlines()).rstrip() + "\n")
     agents = target / "agents"

@@ -31,6 +31,14 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 
 ### Fixed
 
+- Confine question resolution to checked workspaces and restore question/cursor
+  files together when publication fails. Bundle rollback now includes the failing
+  target and reports incomplete restoration.
+- Honor explicitly acknowledged backward-phase repair checkpoints in regression
+  baselines while retaining ordinary regression and empty-acceptance checks.
+- Check Pi/omp native role loading in doctor, clarify instruction-only shell
+  boundaries, and validate OMP invocations plus Codex reference documents.
+
 - Recover exact recorded parallel landings after interrupted lease persistence;
   preserve late worker edits, ignored data, extra commits, and missing-checkout
   Git metadata during cleanup.

@@ -3,10 +3,14 @@ package lib
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/devrites/devrites/internal/fsutil"
 )
 
 const bundleTasks = `# Tasks
@@ -223,5 +227,180 @@ func TestApplyBundleRetiredIDAndCreate(t *testing.T) {
 	}
 	if got, _ := os.ReadFile(filepath.Join(dir, "traceability.md")); string(got) != content {
 		t.Fatalf("create wrote %q", got)
+	}
+}
+
+func TestWriteBundleTargetsRollsBackAttemptedTargets(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		existed bool
+		publish bool
+	}{
+		{"existing after publication", true, true},
+		{"created after publication", false, true},
+		{"existing before publication", true, false},
+		{"created before publication", false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ws, err := os.OpenRoot(t.TempDir())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer ws.Close()
+			targets := []*bundleTarget{
+				{rel: "earlier.md", existed: true, before: []byte("earlier before"), after: []byte("earlier after")},
+				{rel: "created.md", after: []byte("created after")},
+				{rel: "failing.md", existed: tc.existed, after: []byte("failing after")},
+				{rel: "untouched.md", existed: true, before: []byte("untouched before"), after: []byte("untouched after")},
+			}
+			if tc.existed {
+				targets[2].before = []byte("failing before")
+			}
+			for _, target := range targets {
+				if target.existed {
+					if err := ws.WriteFile(target.rel, target.before, 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			failure := errors.New("injected write failure")
+			calls := 0
+			err = writeBundleTargetsWith(ws, targets, func(root *os.Root, rel string, data []byte, perm fs.FileMode) error {
+				calls++
+				failing := calls == 3
+				if !failing || tc.publish {
+					if err := fsutil.WriteFileAtomicIn(root, rel, data, perm); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if failing {
+					return failure
+				}
+				return nil
+			})
+			if !errors.Is(err, failure) || !strings.Contains(err.Error(), "write failing.md") ||
+				!strings.Contains(err.Error(), "attempted files restored") {
+				t.Fatalf("unexpected write error: %v", err)
+			}
+			for _, target := range targets {
+				got, readErr := ws.ReadFile(target.rel)
+				if target.existed {
+					if readErr != nil || !bytes.Equal(got, target.before) {
+						t.Errorf("%s not restored: %q, %v", target.rel, got, readErr)
+					}
+				} else if !errors.Is(readErr, fs.ErrNotExist) {
+					t.Errorf("%s not removed: %q, %v", target.rel, got, readErr)
+				}
+			}
+		})
+	}
+}
+
+func TestWriteBundleTargetsReportsRollbackWriteFailures(t *testing.T) {
+	ws, err := os.OpenRoot(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Close()
+	targets := []*bundleTarget{
+		{rel: "first.md", existed: true, before: []byte("first before"), after: []byte("first after")},
+		{rel: "middle.md", existed: true, before: []byte("middle before"), after: []byte("middle after")},
+		{rel: "last.md", existed: true, before: []byte("last before"), after: []byte("last after")},
+	}
+	for _, target := range targets {
+		if err := ws.WriteFile(target.rel, target.before, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeFailure := errors.New("publication sync failed")
+	firstFailure := errors.New("first restore failed")
+	lastFailure := errors.New("last restore failed")
+	calls := 0
+	err = writeBundleTargetsWith(ws, targets, func(root *os.Root, rel string, data []byte, perm fs.FileMode) error {
+		calls++
+		if calls > len(targets) {
+			switch rel {
+			case "first.md":
+				return firstFailure
+			case "last.md":
+				return lastFailure
+			}
+		}
+		if err := fsutil.WriteFileAtomicIn(root, rel, data, perm); err != nil {
+			t.Fatal(err)
+		}
+		if calls == len(targets) {
+			return writeFailure
+		}
+		return nil
+	})
+	for _, cause := range []error{writeFailure, firstFailure, lastFailure} {
+		if !errors.Is(err, cause) {
+			t.Errorf("error %v does not wrap %v", err, cause)
+		}
+	}
+	if err == nil {
+		t.Fatal("missing write error")
+	}
+	for _, diagnostic := range []string{"write last.md", "rollback incomplete", "rollback first.md", "rollback last.md"} {
+		if !strings.Contains(err.Error(), diagnostic) {
+			t.Errorf("error %q lacks %q", err, diagnostic)
+		}
+	}
+	if strings.Contains(err.Error(), "files restored") {
+		t.Fatalf("error falsely claims restoration: %v", err)
+	}
+	for _, target := range targets {
+		want := target.after
+		if target.rel == "middle.md" {
+			want = target.before
+		}
+		got, readErr := ws.ReadFile(target.rel)
+		if readErr != nil || !bytes.Equal(got, want) {
+			t.Errorf("%s = %q, %v; want %q", target.rel, got, readErr, want)
+		}
+	}
+}
+
+func TestWriteBundleTargetsReportsRollbackRemoveFailure(t *testing.T) {
+	ws, err := os.OpenRoot(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Close()
+	targets := []*bundleTarget{
+		{rel: "earlier.md", after: []byte("earlier after")},
+		{rel: "failing.md", after: []byte("failing after")},
+	}
+	failure := errors.New("publication sync failed")
+	err = writeBundleTargetsWith(ws, targets, func(root *os.Root, rel string, data []byte, perm fs.FileMode) error {
+		if err := fsutil.WriteFileAtomicIn(root, rel, data, perm); err != nil {
+			t.Fatal(err)
+		}
+		if rel == "failing.md" {
+			// A nonempty directory makes rollback removal fail without permission assumptions.
+			if err := root.Remove(rel); err != nil {
+				t.Fatal(err)
+			}
+			if err := root.Mkdir(rel, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := root.WriteFile(filepath.Join(rel, "blocker"), nil, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			return failure
+		}
+		return nil
+	})
+	if !errors.Is(err, failure) || !strings.Contains(err.Error(), "rollback incomplete") ||
+		!strings.Contains(err.Error(), "rollback failing.md") || strings.Contains(err.Error(), "files restored") {
+		t.Fatalf("unexpected write error: %v", err)
+	}
+	var removeErr *os.PathError
+	if !errors.As(err, &removeErr) || filepath.Base(removeErr.Path) != "failing.md" {
+		t.Fatalf("missing removal failure: %v", err)
+	}
+	if _, err := ws.Lstat("earlier.md"); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("earlier target not removed: %v", err)
 	}
 }

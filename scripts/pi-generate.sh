@@ -127,8 +127,8 @@ _pi_map_tools() {
 
 # Generate a pi-subagents Markdown agent from a Claude Code markdown agent.
 # pi-subagents loads project agents from .pi/agents/**/*.md (YAML frontmatter +
-# body). The tools allowlist carries the Claude permission boundary: only
-# devrites-slice-wright, the /overhaul agents (overhaul-*), and /rite-fast fast-builder get write/edit; reviewers stay read-only.
+# body). Only devrites-slice-wright, overhaul-*, and fast-builder get write/edit.
+# Reviewers with bash are read-only by instruction, not filesystem-sandboxed.
 # inheritProjectContext keeps AGENTS.md/CLAUDE.md visible, matching Claude
 # Code subagent semantics. A canonical `skills:` block list passes through.
 gen_pi_agent() {
@@ -205,7 +205,7 @@ This project has DevRites installed for pi.
 - In DevRites guidance, **invoke** means run a skill inline in the current context; **dispatch** means start a fresh agent with `subagent({ agent, task })` (or `runs.run`/`runs.all` in a `workflowScript`), wait for it, and reconcile its result.
 - An asynchronous launch receipt is not a reviewer result or completion. Keep the returned native run/workflow handle and use the public management/status/completion API exposed by the installed tool schema to wait for and collect its terminal result. Reconcile that result before `devrites-engine dispatch ... return`; never re-dispatch to retrieve output. Host configuration may force asynchronous execution even with `async: false`.
 - Routine native result collection uses the exposed public tool; it does not require a bespoke workflow capture helper, private transcripts, or source excavation. Preserve confidentiality and any one-shot limits. Failed, malformed, or unavailable terminal results remain `gap`, never a passed review.
-- Among the lifecycle `devrites-*` specialists, only `devrites-slice-wright` may edit source or tests; every other specialist in that family is read-only by tool allowlist. The shipped profiles are the full role-to-permission map; `/rite-doctor` step 3 checks them. Exact paths are instruction-enforced: put the project-relative paths in the task, wait for the wright, compare its file list and `git diff --name-only` with that contract, and reject any extra path.
+- Among the lifecycle `devrites-*` specialists, only `devrites-slice-wright` may edit source or tests; others lack `edit`/`write`, but `bash` makes read-only behavior instruction-enforced, not a filesystem sandbox. `/rite-doctor` step 3 checks loaded profiles/tools. Exact paths are instruction-enforced: put project-relative paths in the task, wait for the wright, compare its file list and `git diff --name-only` with that contract, and reject extra paths.
 - The explicit `/overhaul` skill ships its own `overhaul-*` agents outside the DevRites lifecycle. They carry the full write tool set, are dispatched only by that skill, and follow its own approval gate and path contracts instead of the lifecycle writer rules above.
 - The explicit `/rite-fast` skill ships its own `fast-*` agents. Only `fast-builder` carries write tools; `fast-planner`, `fast-checker`, and `fast-critic` stay read-only. `/rite-fast` dispatches them itself and applies its own exact-path contracts.
 - DevRites runtime helpers run through the installed `devrites-engine` binary.

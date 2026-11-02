@@ -7,6 +7,7 @@ import json
 import importlib.util
 from pathlib import Path
 import sys
+import tempfile
 
 root, out = map(Path, sys.argv[1:])
 spec = importlib.util.spec_from_file_location("dsh_generate", root / "scripts/dsh-generate.py")
@@ -14,6 +15,28 @@ generator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(generator)
 assert generator.rewrite(".codex/agents/reviewer.toml config.toml Cargo.toml") == ".dsh/agents/reviewer.md config.toml Cargo.toml"
 assert generator.rewrite("devrites-engine context --skills-root .claude/skills x") == "devrites-engine context --skills-root .dsh/skills x"
+anchor = "   File presence without effective loading is `WARN`;"
+canonical_doctor = (root / "pack/.claude/skills/rite-doctor/SKILL.md").read_text()
+assert canonical_doctor.count(anchor) == 1
+with tempfile.TemporaryDirectory() as temporary:
+    source = Path(temporary) / "source"
+    skill = source / "skills/rite-doctor/SKILL.md"
+    skill.parent.mkdir(parents=True)
+    (source / "agents").mkdir()
+    for count in (1, 0, 2):
+        skill.write_text(canonical_doctor.replace(anchor, anchor * count))
+        target = Path(temporary) / f"output-{count}"
+        try:
+            generator.generate(source, target)
+        except ValueError as error:
+            assert count != 1, str(error)
+            assert "expected exactly one DSH doctor insertion anchor" in str(error), str(error)
+            assert f"found {count}" in str(error), str(error)
+        else:
+            assert count == 1, f"generator accepted {count} doctor anchors"
+            generated_doctor = (target / "skills/rite-doctor/SKILL.md").read_text()
+            assert generated_doctor.count(generator.DSH_DOCTOR) == 1
+            assert generated_doctor.count(anchor) == 1
 prefix = "mcp__codebase-memory-mcp__"
 queries = {prefix + name for name in (
     "index_status", "list_projects", "get_graph_schema", "get_architecture",

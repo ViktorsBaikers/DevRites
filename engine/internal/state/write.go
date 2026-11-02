@@ -79,22 +79,63 @@ func WithFeatureLock(root, slug string, fn func() error) error {
 	if !devritespaths.ValidSlug(slug) {
 		return fmt.Errorf("lock feature %q: not a feature slug", slug)
 	}
-	// Keep the lock outside the movable workspace; never unlink it on release.
-	lockDir := filepath.Join(root, ".locks", "features", slug)
-	if err := os.MkdirAll(lockDir, 0o755); err != nil {
+	// The caller-selected root may be new; descendants are created through it.
+	if err := os.MkdirAll(root, 0o755); err != nil {
 		return fmt.Errorf("lock feature %q: %w", slug, err)
 	}
-	return WithLock(filepath.Join(lockDir, ".lock"), func() error {
-		if _, err := os.Lstat(filepath.Join(root, "archive", slug)); err == nil {
-			return fmt.Errorf("lock feature %q: workspace is closed (archived)", slug)
-		} else if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("lock feature %q: %w", slug, err)
-		}
-		if err := os.MkdirAll(featureDir(root, slug), 0o755); err != nil {
-			return fmt.Errorf("lock feature %q: %w", slug, err)
-		}
-		return fn()
-	})
+	selected, err := os.OpenRoot(root)
+	if err != nil {
+		return fmt.Errorf("lock feature %q: %w", slug, err)
+	}
+	defer func() { _ = selected.Close() }()
+	return WithFeatureLockIn(selected, slug, fn)
+}
+
+// WithFeatureLockIn locks a feature within root without following escaping
+// symlinks. The caller retains ownership of root.
+func WithFeatureLockIn(root *os.Root, slug string, fn func() error) error {
+	if !devritespaths.ValidSlug(slug) {
+		return fmt.Errorf("lock feature %q: not a feature slug", slug)
+	}
+	// Keep the lock outside the movable workspace; never unlink it on release.
+	lockDir := filepath.Join(".locks", "features", slug)
+	if err := root.MkdirAll(lockDir, 0o755); err != nil {
+		return fmt.Errorf("lock feature %q: %w", slug, err)
+	}
+	lockPath := filepath.Join(lockDir, ".lock")
+	// Separate atomic creation from opening a concurrent creator's lock.
+	f, err := root.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0o644)
+	if errors.Is(err, fs.ErrExist) {
+		f, err = root.OpenFile(lockPath, os.O_RDWR, 0)
+	}
+	if err != nil {
+		return fmt.Errorf("lock feature %q: %w", slug, err)
+	}
+	l, err := lockOpened(f, filepath.Join(root.Name(), lockPath))
+	if err != nil {
+		return fmt.Errorf("lock feature %q: %w", slug, err)
+	}
+	defer func() { _ = l.release() }()
+	held, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("lock feature %q: %w", slug, err)
+	}
+	current, err := root.Lstat(lockPath)
+	if errors.Is(err, fs.ErrNotExist) || (err == nil && !os.SameFile(held, current)) {
+		return fmt.Errorf("lock feature %q: %w", slug, ErrWorkspaceMoved)
+	}
+	if err != nil {
+		return fmt.Errorf("lock feature %q: %w", slug, err)
+	}
+	if _, err := root.Lstat(filepath.Join("archive", slug)); err == nil {
+		return fmt.Errorf("lock feature %q: workspace is closed (archived)", slug)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("lock feature %q: %w", slug, err)
+	}
+	if err := root.MkdirAll(filepath.Join("work", slug), 0o755); err != nil {
+		return fmt.Errorf("lock feature %q: %w", slug, err)
+	}
+	return fn()
 }
 
 // WithLock runs fn while holding the same exclusive advisory lock as

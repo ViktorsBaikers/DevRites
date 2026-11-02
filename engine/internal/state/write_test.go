@@ -184,3 +184,118 @@ func TestFeatureLockPreservesMaximumLengthSlug(t *testing.T) {
 		t.Fatalf("255-byte feature slug: err=%v ran=%v", err, ran)
 	}
 }
+
+func TestFeatureLockRefusesEscapingParents(t *testing.T) {
+	for _, parent := range []string{"work", ".locks"} {
+		for _, retained := range []bool{false, true} {
+			name := parent + "/path"
+			if retained {
+				name = parent + "/root"
+			}
+			t.Run(name, func(t *testing.T) {
+				dir, external := t.TempDir(), t.TempDir()
+				if err := os.Symlink(external, filepath.Join(dir, parent)); err != nil {
+					t.Skipf("symlink unavailable: %v", err)
+				}
+				root, err := os.OpenRoot(dir)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer func() { _ = root.Close() }()
+				ran := false
+				fn := func() error { ran = true; return nil }
+				if retained {
+					err = WithFeatureLockIn(root, "feat", fn)
+				} else {
+					err = WithFeatureLock(dir, "feat", fn)
+				}
+				if err == nil || ran {
+					t.Fatalf("escaping %s accepted: err=%v ran=%v", parent, err, ran)
+				}
+				entries, err := os.ReadDir(external)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(entries) != 0 {
+					t.Fatalf("escaping %s created external entries: %v", parent, entries)
+				}
+			})
+		}
+	}
+}
+
+func TestWithFeatureLockInCreatesAndRefusesArchivedWorkspace(t *testing.T) {
+	dir := t.TempDir()
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	ran := false
+	if err := WithFeatureLockIn(root, "feat", func() error {
+		ran = true
+		info, err := root.Lstat(filepath.Join("work", "feat"))
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			t.Fatal("workspace is not a directory")
+		}
+		return nil
+	}); err != nil || !ran {
+		t.Fatalf("feature creation: err=%v ran=%v", err, ran)
+	}
+	lockPath := filepath.Join(".locks", "features", "feat", ".lock")
+	before, err := root.Lstat(lockPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ran = false
+	if err := WithFeatureLockIn(root, "feat", func() error { ran = true; return nil }); err != nil || !ran {
+		t.Fatalf("existing feature lock: err=%v ran=%v", err, ran)
+	}
+	after, err := root.Lstat(lockPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(before, after) {
+		t.Fatal("existing feature lock replaced")
+	}
+	if err := root.MkdirAll("archive", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := root.Rename(filepath.Join("work", "feat"), filepath.Join("archive", "feat")); err != nil {
+		t.Fatal(err)
+	}
+	ran = false
+	if err := WithFeatureLockIn(root, "feat", func() error { ran = true; return nil }); err == nil || ran {
+		t.Fatalf("archived feature accepted: err=%v ran=%v", err, ran)
+	}
+	if _, err := root.Lstat(filepath.Join("work", "feat")); !os.IsNotExist(err) {
+		t.Fatalf("archived workspace recreated: %v", err)
+	}
+	if _, err := root.Stat("."); err != nil {
+		t.Fatalf("caller-owned root closed: %v", err)
+	}
+}
+
+func TestWithFeatureLockCreatesMissingRoot(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	ran := false
+	if err := WithFeatureLock(root, "feat", func() error {
+		ran = true
+		info, err := os.Stat(filepath.Join(root, "work", "feat"))
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			t.Fatal("workspace is not a directory")
+		}
+		return nil
+	}); err != nil || !ran {
+		t.Fatalf("feature creation in missing root: err=%v ran=%v", err, ran)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".locks", "features", "feat", ".lock")); err != nil {
+		t.Fatalf("feature lock not created: %v", err)
+	}
+}

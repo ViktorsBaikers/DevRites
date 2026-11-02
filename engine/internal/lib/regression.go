@@ -361,11 +361,6 @@ func updateRegressionBaseline(root, slug, baselinePath string, base regressionBa
 			return 3
 		}
 	}
-	// Keep the phase high-water mark: a baseline never forgets the furthest phase.
-	if hasBaseline && base.PhaseOrdinal > current.PhaseOrdinal {
-		current.PhaseOrdinal = base.PhaseOrdinal
-		current.Phase = base.Phase
-	}
 	next := regressionBaseline{
 		Version:             1,
 		UpdatedAt:           time.Now().UTC().Format(time.RFC3339),
