@@ -2,8 +2,10 @@ package install
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -180,12 +182,12 @@ func TestSharedMergeRetriesAfterContentFailure(t *testing.T) {
 func TestUninstallMergeNeverImportsReplacementRoot(t *testing.T) {
 	t.Setenv("DEVRITES_NO_BINARY", "1")
 	for _, fixture := range []struct {
-		rel, content string
+		rel, content, cleaned string
 	}{
-		{"AGENTS.md", "alpha guidance\n"},
-		{".codex/config.toml", "model = \"alpha\"\n"},
-		{".claude/settings.json", `{"env":{"VALUE":"alpha"}}` + "\n"},
-		{".codex/hooks.json", `{"env":{"VALUE":"alpha"},"hooks":{"Stop":[{"hooks":[{"type":"command","command":"devrites-engine hook stop-gate"}]}]}}` + "\n"},
+		{"AGENTS.md", "alpha guidance\n", "alpha guidance"},
+		{".codex/config.toml", "model = \"alpha\"\n", "model = \"alpha\""},
+		{".claude/settings.json", `{"env":{"VALUE":"alpha"}}` + "\n", `{"env":{"VALUE":"alpha"}}`},
+		{".codex/hooks.json", `{"env":{"VALUE":"alpha"},"hooks":{"Stop":[{"hooks":[{"type":"command","command":"devrites-engine hook stop-gate"}]}]}}` + "\n", `{"env":{"VALUE":"alpha"}}`},
 	} {
 		t.Run(fixture.rel, func(t *testing.T) {
 			base, outside := t.TempDir(), t.TempDir()
@@ -199,33 +201,45 @@ func TestUninstallMergeNeverImportsReplacementRoot(t *testing.T) {
 			installed := testutil.ReadFile(t, filepath.Join(target, filepath.FromSlash(fixture.rel)))
 			foreign := strings.ReplaceAll(installed, "alpha", "beta-private")
 			testutil.WriteFile(t, filepath.Join(outside, filepath.FromSlash(fixture.rel)), foreign)
-			swapped := false
+			attack := newRootReplacementAttack(t, target, held, outside)
 			afterRecheckPath = func(rel string) {
-				if rel != fixture.rel || swapped {
-					return
+				if rel == fixture.rel {
+					attack.attempt()
 				}
-				if err := os.Rename(target, held); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.Symlink(outside, target); err != nil {
-					t.Fatal(err)
-				}
-				swapped = true
 			}
 			t.Cleanup(func() { afterRecheckPath = nil })
 			opts := DefaultOptions(ModeUninstall)
 			opts.Target, opts.KeepBinary = target, true
-			_ = Apply(opts)
+			err := Apply(opts)
 			afterRecheckPath = nil
-			if !swapped {
-				t.Fatal("fixture missed uninstall merge boundary")
-			}
+			attack.assertOutcome(err)
 			if got := testutil.ReadFile(t, filepath.Join(outside, filepath.FromSlash(fixture.rel))); got != foreign {
 				t.Error("uninstall changed replacement-root content")
 			}
-			got := testutil.ReadFile(t, filepath.Join(held, filepath.FromSlash(fixture.rel)))
+			got := testutil.ReadFile(t, filepath.Join(attack.originalPath(), filepath.FromSlash(fixture.rel)))
 			if !strings.Contains(got, "alpha") || strings.Contains(got, "beta-private") {
 				t.Errorf("uninstall imported replacement-root content into original target: %q", got)
+			}
+			if attack.blocked {
+				if _, err := os.Stat(filepath.Join(target, ManifestName)); !os.IsNotExist(err) {
+					t.Fatalf("completed uninstall retained ownership manifest: %v", err)
+				}
+				if strings.HasSuffix(fixture.rel, ".json") {
+					var actual, expected any
+					if err := json.Unmarshal([]byte(got), &actual); err != nil {
+						t.Fatal(err)
+					}
+					if err := json.Unmarshal([]byte(fixture.cleaned), &expected); err != nil {
+						t.Fatal(err)
+					}
+					if !reflect.DeepEqual(actual, expected) {
+						t.Errorf("completed uninstall did not restore user JSON: %q", got)
+					}
+				} else if strings.TrimSpace(got) != fixture.cleaned {
+					t.Errorf("completed uninstall did not restore user content: %q", got)
+				}
+			} else if got != installed {
+				t.Errorf("refused uninstall changed original merge target: %q", got)
 			}
 		})
 	}
