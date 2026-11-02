@@ -2,12 +2,19 @@ package lib
 
 import (
 	"bytes"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
+	"runtime"
 	"strings"
+	"syscall"
 	"testing"
 
+	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/gate"
+	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/testutil"
 )
 
@@ -99,6 +106,197 @@ func resolveWorkspace(t *testing.T, questions string) string {
 	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "questions.md"), questions)
 	testutil.WriteFile(t, filepath.Join(root, "work", "feat", "state.md"), "- Status: running\n- Next step: continue\n- Schema: 4\n")
 	return root
+}
+
+func TestResolveRefusesEscapingWorkParent(t *testing.T) {
+	t.Setenv("DEVRITES_WORKSPACE", "")
+	root := resolveWorkspace(t, "## q-1 blocking\nstatus: open\n")
+	outside := filepath.Join(t.TempDir(), "work")
+	if err := os.Rename(filepath.Join(root, "work"), outside); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "work")); err != nil {
+		t.Fatal(err)
+	}
+	before := observationFiles(t, outside)
+	var stdout, stderr bytes.Buffer
+	if code := Resolve(root, []string{"q-1", "answer"}, &stdout, &stderr); code == 0 {
+		t.Fatal("escaping work parent accepted")
+	}
+	if after := observationFiles(t, outside); !reflect.DeepEqual(before, after) {
+		t.Fatalf("external tree changed:\nbefore: %v\nafter: %v", before, after)
+	}
+}
+
+func TestResolvePinsRootAcrossLockWait(t *testing.T) {
+	for _, topology := range []string{"root", "root-empty", "work", "work-empty", "workspace", "workspace-empty"} {
+		t.Run(topology, func(t *testing.T) {
+			t.Setenv("DEVRITES_WORKSPACE", "")
+			replaced, empty := strings.CutSuffix(topology, "-empty")
+			root := resolveWorkspace(t, "## q-1 blocking\nstatus: open\n")
+			testutil.WriteFile(t, filepath.Join(root, "work", "feat", "state.md"), "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | build |\n| status | awaiting_human |\n| next_action | wait |\n| schema | 4 |\n| question_id | q-1 |\n\n## Log\n")
+			externalRoot := t.TempDir()
+			if !empty {
+				externalRoot = resolveWorkspace(t, "## q-1 blocking\nstatus: open\n")
+			}
+			before := observationFiles(t, externalRoot)
+			selectedBefore := observationFiles(t, filepath.Join(root, "work", "feat"))
+			waiting, release := make(chan struct{}), make(chan struct{})
+			done := make(chan int, 1)
+			var stdout, stderr bytes.Buffer
+			withLock := func(selectedRoot *os.Root, slug string, fn func() error) error {
+				close(waiting)
+				<-release
+				return state.WithFeatureLockIn(selectedRoot, slug, fn)
+			}
+			go func() {
+				done <- resolveWithLock(root, []string{"q-1", "answer"}, &stdout, &stderr, withLock)
+			}()
+			released := false
+			defer func() {
+				if !released {
+					close(release)
+					<-done
+				}
+			}()
+			<-waiting
+			path, target := root, externalRoot
+			switch replaced {
+			case "work":
+				path = filepath.Join(root, "work")
+				if !empty {
+					target = filepath.Join(externalRoot, "work")
+				}
+			case "workspace":
+				path = filepath.Join(root, "work", "feat")
+				if !empty {
+					target = filepath.Join(externalRoot, "work", "feat")
+				}
+			}
+			retained := filepath.Join(t.TempDir(), "retained")
+			renameErr := os.Rename(path, retained)
+			protectedRoot := runtime.GOOS == "windows" && replaced == "root"
+			if protectedRoot {
+				// Windows OpenRoot omits FILE_SHARE_DELETE, preventing root replacement.
+				const sharingViolation = syscall.Errno(32) // ERROR_SHARING_VIOLATION
+				if !errors.Is(renameErr, sharingViolation) {
+					t.Fatalf("root rename = %v, want Windows sharing violation", renameErr)
+				}
+				if _, err := os.Lstat(retained); !errors.Is(err, fs.ErrNotExist) {
+					t.Fatalf("blocked rename created destination: %v", err)
+				}
+				retained = root
+			} else {
+				if renameErr != nil {
+					t.Fatal(renameErr)
+				}
+				if err := os.Symlink(target, path); err != nil {
+					t.Fatal(err)
+				}
+			}
+			close(release)
+			released = true
+			code := <-done
+			if replaced == "root" {
+				if code == 0 {
+					data, err := os.ReadFile(filepath.Join(retained, "work", "feat", "questions.md"))
+					if err != nil || !strings.Contains(string(data), "status: answered") || !strings.Contains(string(data), "answer: answer") {
+						t.Fatalf("selected root not updated: %q, %v", data, err)
+					}
+					data, err = os.ReadFile(filepath.Join(retained, "work", "feat", "state.md"))
+					if err != nil || !strings.Contains(string(data), "| status | running |") || strings.Contains(string(data), "| question_id |") || !strings.Contains(string(data), "resolved q-1") {
+						t.Fatalf("selected cursor did not resume: %q, %v", data, err)
+					}
+				} else {
+					if protectedRoot || code != 1 || stdout.Len() != 0 || !strings.Contains(stderr.String(), state.ErrWorkspaceMoved.Error()) {
+						t.Fatalf("unexpected retained-root refusal: code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+					}
+					if after := observationFiles(t, filepath.Join(retained, "work", "feat")); !reflect.DeepEqual(selectedBefore, after) {
+						t.Fatalf("refused resolve changed selected workspace:\nbefore: %v\nafter: %v", selectedBefore, after)
+					}
+				}
+			} else if code == 0 || stdout.Len() != 0 {
+				t.Fatalf("escaping replacement accepted: code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+			}
+			if after := observationFiles(t, externalRoot); !reflect.DeepEqual(before, after) {
+				t.Fatalf("external tree changed:\nbefore: %v\nafter: %v", before, after)
+			}
+		})
+	}
+}
+
+func TestResolveAcceptsCanonicalWorkspaceOverride(t *testing.T) {
+	for _, relative := range []bool{false, true} {
+		t.Run(map[bool]string{false: "absolute", true: "relative"}[relative], func(t *testing.T) {
+			root := resolveWorkspace(t, "## q-1 blocking\nstatus: open\n")
+			override := filepath.Join(root, "work", "feat")
+			if relative {
+				override = filepath.Join(filepath.Base(root), "work", "feat")
+			}
+			t.Setenv("DEVRITES_WORKSPACE", override)
+			var stdout, stderr bytes.Buffer
+			if code := Resolve(root, []string{"q-1", "answer"}, &stdout, &stderr); code != 0 {
+				t.Fatalf("code=%d stderr=%q", code, stderr.String())
+			}
+			if text := readQuestions(t, root); !strings.Contains(text, "answer: answer") {
+				t.Fatalf("override workspace not updated: %s", text)
+			}
+		})
+	}
+}
+
+func TestResolveRollsBackPairedPublication(t *testing.T) {
+	for _, published := range []bool{false, true} {
+		t.Run(map[bool]string{false: "before-write", true: "after-write"}[published], func(t *testing.T) {
+			root := resolveWorkspace(t, "## q-1 blocking\nstatus: open\n")
+			work := filepath.Join(root, "work", "feat")
+			testutil.WriteFile(t, filepath.Join(work, "state.md"), "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | build |\n| status | awaiting_human |\n| next_action | wait |\n| schema | 4 |\n| question_id | q-1 |\n\n## Log\n")
+			ws, err := os.OpenRoot(work)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = ws.Close() }()
+			before := make(map[string][]byte)
+			for _, name := range []string{"questions.md", "state.md"} {
+				before[name], err = ws.ReadFile(name)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			injected := errors.New("injected state publication failure")
+			failed := false
+			publish := func(ws *os.Root, targets []*bundleTarget) error {
+				if len(targets) != 2 {
+					t.Fatalf("got %d targets, want paired publication", len(targets))
+				}
+				return writeBundleTargetsWith(ws, targets, func(ws *os.Root, name string, data []byte, mode fs.FileMode) error {
+					if name == "state.md" && !failed {
+						failed = true
+						if published {
+							if err := fsutil.WriteFileAtomicIn(ws, name, data, mode); err != nil {
+								return err
+							}
+						}
+						return injected
+					}
+					return fsutil.WriteFileAtomicIn(ws, name, data, mode)
+				})
+			}
+			var stdout, stderr bytes.Buffer
+			if code := resolveMutation(ws, "feat", "answer", "q-1", "answer", false, &stdout, &stderr, publish); code != 1 {
+				t.Fatalf("code=%d, stderr=%q", code, stderr.String())
+			}
+			if !failed || stdout.Len() != 0 || !strings.Contains(stderr.String(), injected.Error()) {
+				t.Fatalf("failed=%v stdout=%q stderr=%q", failed, stdout.String(), stderr.String())
+			}
+			for name, want := range before {
+				got, err := ws.ReadFile(name)
+				if err != nil || !bytes.Equal(got, want) {
+					t.Fatalf("%s not restored: %q, %v", name, got, err)
+				}
+			}
+		})
+	}
 }
 
 func TestResolveHumanFlagRecordsResolverIdentity(t *testing.T) {

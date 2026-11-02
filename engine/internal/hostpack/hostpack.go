@@ -128,7 +128,7 @@ var CodexConfigMerge = MarkerMerge{
 	Begin:      "# BEGIN DEVRITES CODEX PERMISSIONS",
 	End:        "# END DEVRITES CODEX PERMISSIONS",
 	MarkerRel:  ".claude/devrites.codex-config-merge",
-	MarkerText: ".codex/config.toml contains the DevRites read-only-root permission profile.",
+	MarkerText: ".codex/config.toml contains the DevRites workspace-capable root permission profile.",
 }
 
 // HostConfig is a host project config DevRites creates only when absent; an

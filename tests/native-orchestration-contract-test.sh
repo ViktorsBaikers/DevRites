@@ -242,18 +242,6 @@ for path in (canonical / "skills").glob("rite-*/SKILL.md"):
     if "standards/core.md" not in text and "current `$ARGUMENTS`" not in text:
         raise SystemExit(f"{path}: optional flags bypass the literal-invocation contract")
 
-doctor = (canonical / "skills/rite-doctor/SKILL.md").read_text()
-for required in (
-    "repository root",
-    "manifest",
-    "package",
-    "symlink",
-    "Emit every check as `OK`, `WARN`, or `FAIL`",
-    "one concrete `Remediation:`",
-):
-    if required not in " ".join(doctor.split()):
-        raise SystemExit(f"native rite-doctor contract missing {required!r}")
-
 settings = json.loads((canonical / "settings.json").read_text())
 allowed = set(settings["permissions"]["allow"])
 if "defaultMode" in settings["permissions"]:

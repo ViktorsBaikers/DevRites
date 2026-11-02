@@ -9,7 +9,7 @@ Wright alone writes; no agents.
 ## Host gate
 
 Apply [source-writing boundary](skill://devrites-lib/reference/standards/agents.md#source-writing-boundary):
-omp has no permission modes: only the wright's `tools` allowlist has `edit`/`write`, and the root stays source-read-only by instruction. Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root,
+omp has no permission modes: only the wright's `tools` allowlist has `edit`/`write`; `bash` is not a filesystem sandbox. Read-only behavior stays instruction-enforced. Claude grants only the exact wright `acceptEdits`; Codex uses its workspace root,
 the exact `:workspace` wright, and read-only specialists. Never bypass/substitute
 the wright or recreate an engine bridge.
 

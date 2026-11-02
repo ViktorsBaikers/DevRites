@@ -92,6 +92,110 @@ assert len(problems) == 1, problems
 assert "unresolved skill/agent name 'devrites-definitely-missing'" in problems[0], problems
 PY
 
+# Exercise main's installed-host traversal, not only the token scanner.
+run_ok "invocation gate covers OMP and Codex references and mirror gaps" python3 - "$ROOT/scripts/check-invocation-integrity.py" "$T/invocations" <<'PY'
+import contextlib
+import importlib.util
+import io
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+from unittest.mock import patch
+
+spec = importlib.util.spec_from_file_location("invocation_integrity", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+root = Path(sys.argv[2])
+pack = root / "pack/.claude"
+installed = root / "installed"
+
+def put(path, text="# fixture\n"):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+put(pack / "skills/rite-demo/SKILL.md")
+put(pack / "skills/rite-demo/reference/details.md")
+put(pack / "skills/devrites-lib/reference/standards/testing.md")
+put(pack / "skills/devrites-lib/reference/standards/review/README.md")
+put(pack / "agents/devrites-reviewer.md")
+for host in (".agents", ".pi", ".omp"):
+    shutil.copytree(pack / "skills", installed / host / "skills")
+for host in (".pi", ".omp"):
+    shutil.copytree(pack / "agents", installed / host / "agents")
+put(installed / ".codex/agents/devrites-reviewer.toml")
+put(installed / ".pi/prompts/rite-demo.md")
+put(installed / ".omp/commands/rite-demo.md")
+module.PACK = str(pack)
+
+def run_gate(change=None):
+    def install(args, **kwargs):
+        target = Path(args[args.index("--target") + 1])
+        shutil.copytree(installed, target, dirs_exist_ok=True)
+        if change:
+            change(target)
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    output = io.StringIO()
+    with patch.object(module.subprocess, "run", side_effect=install):
+        with contextlib.redirect_stdout(output):
+            status = module.main()
+    return status, output.getvalue()
+
+status, output = run_gate()
+assert status == 0, output
+assert "Claude Code, Codex, pi, and OMP" in output, output
+assert "Devin and DSH not scanned" in output, output
+assert "all harnesses" not in output, output
+
+for surface in (
+    ".agents/skills/rite-demo/reference/details.md",
+    ".omp/skills/rite-demo/SKILL.md",
+    ".omp/skills/rite-demo/reference/details.md",
+    ".omp/agents/devrites-reviewer.md",
+    ".omp/commands/rite-demo.md",
+):
+    status, output = run_gate(
+        lambda target: put(target / surface, "Invoke devrites-definitely-missing.\n")
+    )
+    assert status == 1 and surface in output, output
+    assert "unresolved skill/agent name 'devrites-definitely-missing'" in output, output
+
+for prefix in (".omp/skills/", "skill://"):
+    for rule in ("absent-audit-rule", "review/absent-audit-rule"):
+        status, output = run_gate(lambda target: put(
+            target / ".omp/commands/rite-demo.md",
+            f"Read {prefix}devrites-lib/reference/standards/{rule}.md#section\n",
+        ))
+        assert status == 1 and f"rule ref '{rule}.md' not present" in output, output
+    status, output = run_gate(lambda target: put(
+        target / ".omp/commands/rite-demo.md",
+        f"Read {prefix}devrites-lib/reference/standards/testing.md and "
+        f"{prefix}devrites-lib/reference/standards/review/README.md#section\n",
+    ))
+    assert status == 0, output
+
+for missing, message in (
+    (".omp/skills/rite-demo", "skills not mirrored to OMP"),
+    (".omp/skills/devrites-lib/reference/standards/review/README.md", "rules not mirrored to OMP"),
+    (".omp/agents/devrites-reviewer.md", "agents not mirrored to OMP"),
+    (".omp/commands/rite-demo.md", "OMP commands missing"),
+):
+    def remove(target):
+        path = target / missing
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+    status, output = run_gate(remove)
+    assert status == 1 and message in output, output
+
+status, output = run_gate(lambda target: put(
+    target / ".agents/skills/rite-demo/reference/details.md", "Run /rite-demo.\n",
+))
+assert status == 1 and "Codex mirror uses /rite invocation" in output, output
+PY
+
 # Every supporting reference is size-ratcheted, not only SKILL.md.
 mkdir -p "$T/size/pack/.claude/skills/demo/reference" "$T/size/tests"
 printf '# demo\n[details](reference/details.md)\n' > "$T/size/pack/.claude/skills/demo/SKILL.md"

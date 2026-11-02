@@ -76,10 +76,10 @@ Usage:
                                          Resolve test/lint/vet/build commands from the repository's own wiring
   devrites-engine parallel <subcommand>   Deterministic parallel worktree lease/create/integrate/prune/cleanup
   devrites-engine gates <subcommand> <slug>  Machine-checked gates.md ledger: scaffold/status/run/reverify/lint/precheck/attest/abandon
-  devrites-engine state resolve <qid> "<ans>"  Resolve an open question and update state atomically
+  devrites-engine state resolve <qid> "<ans>"  Resolve an open question with locked, rollback-protected state updates
   devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
   devrites-engine state apply-bundle <slug> <bundle.json>... [--dry-run]
-                                         Validate and apply plan-drafter hunk bundles atomically
+                                         Validate and apply plan-drafter hunk bundles with locked, rollback-protected updates
   devrites-engine state set <slug> <key>=<value>... [--unset <key>]
                                          Write state.md cursor fields atomically (known phase, no return-cursor overwrite)
   devrites-engine state append <slug> <ledger.md> --heading "<text>" --body-file <path|->

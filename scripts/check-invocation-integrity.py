@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Invocation-integrity gate: every skill/rule an agent or skill NAMES must resolve, both harnesses.
+"""Invocation-integrity gate for Claude Code, Codex, pi, and OMP.
 
 `check-cross-refs.py` validates markdown links. This validates the thing it can't: a **bare
 skill-name invocation** (`$devrites-frontend-craft`, `Skill(devrites-source-driven)`, "invoke the
 `devrites-api-interface` skill") and a **rule read** (`.claude/skills/devrites-lib/reference/standards/security.md`) must each point
-at something that exists (on Claude Code AND on the Codex/pi-translated trees) or the agent
-calls into the void at runtime. Also asserts the Claude→Codex and Claude→pi skill/rule
-mirrors are complete.
+at something that exists on each covered host or the agent calls into the void at runtime.
+Also asserts installed skill/rule mirrors and pi/OMP agent and command mirrors are complete.
+Devin and DSH are not scanned by this gate.
 
-Self-contained: installs DevRites into a temp dir to get the Codex tree, sweeps, cleans up.
+Self-contained: installs DevRites into a temp dir to get host trees, sweeps, cleans up.
 Run: python3 scripts/check-invocation-integrity.py    (exit 0 clean, 1 on any unresolved reference)
 """
 
@@ -46,7 +46,8 @@ DOCUMENTED_NONEXISTENT = {"rite-use"}
 
 SKILL_TOK = re.compile(r"\$?\b(devrites-[a-z0-9-]+|rite-[a-z0-9-]+)\b")
 RULE_REF = re.compile(
-    r"(?:\.claude/skills/devrites-lib/reference/standards|\.agents/skills/devrites-lib/reference/standards|\.pi/skills/devrites-lib/reference/standards)/([a-z0-9-]+)\.md"
+    r"(?:\.(?:claude|agents|pi|omp)/skills/|skill://)"
+    r"devrites-lib/reference/standards/([A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*)\.md"
 )
 CODEX_SLASH_RITE = re.compile(
     r"(^|[^A-Za-z0-9_./-])/(rite(?:-[a-z0-9-]+)?)([^A-Za-z0-9_-]|$)"
@@ -57,6 +58,14 @@ def names(pattern, strip):
     return {
         os.path.basename(p)[:-strip] if strip else os.path.basename(p)
         for p in glob.glob(pattern)
+    }
+
+
+def rule_names(skills):
+    root = os.path.join(skills, "devrites-lib/reference/standards")
+    return {
+        os.path.relpath(p, root)[:-3]
+        for p in glob.glob(f"{root}/**/*.md", recursive=True)
     }
 
 
@@ -114,19 +123,19 @@ def main():
             return 1
 
         claude_skills = names(f"{PACK}/skills/*", 0)
-        claude_rules = names(f"{PACK}/skills/devrites-lib/reference/standards/*.md", 3)
+        claude_rules = rule_names(f"{PACK}/skills")
         claude_agents = names(f"{PACK}/agents/*.md", 3)
         codex_skills = names(f"{target}/.agents/skills/*", 0)
-        codex_rules = names(
-            f"{target}/.agents/skills/devrites-lib/reference/standards/*.md", 3
-        )
+        codex_rules = rule_names(f"{target}/.agents/skills")
         codex_agents = names(f"{target}/.codex/agents/*.toml", 5)
         pi_skills = names(f"{target}/.pi/skills/*", 0)
-        pi_rules = names(
-            f"{target}/.pi/skills/devrites-lib/reference/standards/*.md", 3
-        )
+        pi_rules = rule_names(f"{target}/.pi/skills")
         pi_agents = names(f"{target}/.pi/agents/*.md", 3)
         pi_prompts = names(f"{target}/.pi/prompts/*.md", 3)
+        omp_skills = names(f"{target}/.omp/skills/*", 0)
+        omp_rules = rule_names(f"{target}/.omp/skills")
+        omp_agents = names(f"{target}/.omp/agents/*.md", 3)
+        omp_commands = names(f"{target}/.omp/commands/*.md", 3)
 
         problems, mirror = [], []
         if claude_skills != codex_skills:
@@ -153,6 +162,20 @@ def main():
         }
         if not public_rites <= pi_prompts:
             mirror.append(f"pi prompts missing: {sorted(public_rites - pi_prompts)}")
+        if claude_skills != omp_skills:
+            mirror.append(
+                f"skills not mirrored to OMP: {sorted(claude_skills ^ omp_skills)}"
+            )
+        if claude_rules != omp_rules:
+            mirror.append(
+                f"rules not mirrored to OMP: {sorted(claude_rules ^ omp_rules)}"
+            )
+        if claude_agents != omp_agents:
+            mirror.append(
+                f"agents not mirrored to OMP: {sorted(claude_agents ^ omp_agents)}"
+            )
+        if not public_rites <= omp_commands:
+            mirror.append(f"OMP commands missing: {sorted(public_rites - omp_commands)}")
 
         # Claude side
         for f in glob.glob(f"{PACK}/agents/*.md") + glob.glob(
@@ -161,7 +184,7 @@ def main():
             scan(f, claude_skills | claude_agents, claude_rules, problems)
         # Codex side
         for f in glob.glob(f"{target}/.codex/agents/*.toml") + glob.glob(
-            f"{target}/.agents/skills/**/SKILL.md", recursive=True
+            f"{target}/.agents/skills/**/*.md", recursive=True
         ):
             scan(f, codex_skills | codex_agents, codex_rules, problems)
             scan_codex_sigils(f, problems)
@@ -172,10 +195,18 @@ def main():
             + glob.glob(f"{target}/.pi/prompts/*.md")
         ):
             scan(f, pi_skills | pi_agents, pi_rules, problems)
+        # OMP side (slash commands and skill:// references are native).
+        for f in (
+            glob.glob(f"{target}/.omp/agents/*.md")
+            + glob.glob(f"{target}/.omp/skills/**/*.md", recursive=True)
+            + glob.glob(f"{target}/.omp/commands/*.md")
+        ):
+            scan(f, omp_skills | omp_agents, omp_rules, problems)
 
         print(
             f"invocation-integrity: {len(claude_skills)} skills / {len(claude_rules)} rules / "
-            f"{len(claude_agents)} agents, mirrored to Codex and pi; scanned agents + skills, all harnesses."
+            f"{len(claude_agents)} agents; scanned Claude Code, Codex, pi, and OMP "
+            "agents + skills + pi prompts + OMP commands. Devin and DSH not scanned."
         )
         for m in mirror:
             print("  MIRROR: " + m)
@@ -185,7 +216,7 @@ def main():
             print("INVOCATION-INTEGRITY: FAIL")
             return 1
         print(
-            "INVOCATION-INTEGRITY: PASS: every named skill/rule resolves on all harnesses."
+            "INVOCATION-INTEGRITY: PASS: every named skill/rule resolves on Claude Code, Codex, pi, and OMP."
         )
         return 0
     finally:

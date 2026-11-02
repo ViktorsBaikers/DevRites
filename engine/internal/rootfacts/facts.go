@@ -257,6 +257,17 @@ func inspectWorkspaceState(facts *Facts) {
 	if root == "" {
 		return
 	}
+	work := filepath.Join(root, "work")
+	if info, err := os.Lstat(work); err == nil && info.Mode()&os.ModeSymlink != 0 && !safepath.WithinResolved(work, root) {
+		facts.Hazards = append(facts.Hazards, Hazard{
+			ID:          "DRV-WORKSPACE-SYMLINK-ESCAPE",
+			Severity:    "error",
+			Message:     fmt.Sprintf("workspace path %q resolves outside the selected root", work),
+			Remediation: fmt.Sprintf("rm %s", shellQuote(work)),
+			Refuse:      true,
+		})
+		return
+	}
 	entries, err := os.ReadDir(filepath.Join(root, "work"))
 	if err == nil {
 		for _, entry := range entries {

@@ -437,20 +437,37 @@ func checkBundleResult(targets []*bundleTarget, retired map[string]bool) []strin
 	return problems
 }
 
-// writeBundleTargets writes every target atomically and, if one write fails,
-// restores the files already written so the workspace never holds half a
-// bundle.
+// writeBundleTargets writes every target atomically. A failed write may already
+// have published its bytes, so rollback covers every attempted target and reports
+// any restoration failures.
 func writeBundleTargets(ws *os.Root, targets []*bundleTarget) error {
+	return writeBundleTargetsWith(ws, targets, fsutil.WriteFileAtomicIn)
+}
+
+func writeBundleTargetsWith(ws *os.Root, targets []*bundleTarget, write func(*os.Root, string, []byte, fs.FileMode) error) error {
 	for i, target := range targets {
-		if err := fsutil.WriteFileAtomicIn(ws, filepath.FromSlash(target.rel), target.after, 0o644); err != nil {
-			for _, done := range targets[:i] {
+		if err := write(ws, filepath.FromSlash(target.rel), target.after, 0o644); err != nil {
+			writeErr := fmt.Errorf("write %s: %w", target.rel, err)
+			var rollbackErrors []error
+			for j := i; j >= 0; j-- {
+				done := targets[j]
+				var rollbackErr error
 				if done.existed {
-					_ = fsutil.WriteFileAtomicIn(ws, filepath.FromSlash(done.rel), done.before, 0o644)
+					rollbackErr = write(ws, filepath.FromSlash(done.rel), done.before, 0o644)
 				} else {
-					_ = ws.Remove(filepath.FromSlash(done.rel))
+					rollbackErr = ws.Remove(filepath.FromSlash(done.rel))
+					if errors.Is(rollbackErr, fs.ErrNotExist) {
+						rollbackErr = nil
+					}
+				}
+				if rollbackErr != nil {
+					rollbackErrors = append(rollbackErrors, fmt.Errorf("rollback %s: %w", done.rel, rollbackErr))
 				}
 			}
-			return fmt.Errorf("write %s: %w (earlier files restored)", target.rel, err)
+			if len(rollbackErrors) > 0 {
+				return errors.Join(writeErr, fmt.Errorf("rollback incomplete: %w", errors.Join(rollbackErrors...)))
+			}
+			return fmt.Errorf("%w (attempted files restored)", writeErr)
 		}
 	}
 	return nil

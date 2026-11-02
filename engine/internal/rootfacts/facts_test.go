@@ -9,6 +9,31 @@ import (
 	"testing"
 )
 
+func TestResolveRefusesEscapingWorkParent(t *testing.T) {
+	t.Setenv("DEVRITES_WORKSPACE", "")
+	project := t.TempDir()
+	root := filepath.Join(project, ".devrites")
+	outside := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(outside, "feat"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "ACTIVE"), []byte("feat\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "work")); err != nil {
+		t.Fatal(err)
+	}
+	for _, override := range []string{"", root, project} {
+		facts, err := ResolveFrom(project, override)
+		if !errors.Is(err, ErrUnsafeRoot) || !facts.Refuses() || hazard(facts, "DRV-WORKSPACE-SYMLINK-ESCAPE") == nil {
+			t.Fatalf("override=%q: facts=%+v err=%v", override, facts, err)
+		}
+	}
+}
+
 func TestResolveNormalCheckoutAndOrdinaryAbsence(t *testing.T) {
 	repo := initRepository(t, filepath.Join(t.TempDir(), "repo"))
 	root := filepath.Join(repo, ".devrites")

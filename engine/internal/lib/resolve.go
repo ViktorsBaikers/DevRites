@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devrites/devrites/internal/fsutil"
+	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/workflow"
@@ -25,11 +25,24 @@ import (
 //	0  resolved         2  no active workspace      3  qid not found
 //	4  qid not open      5  bad arguments
 func Resolve(root string, args []string, stdout, stderr io.Writer) int {
+	return resolveWithLock(root, args, stdout, stderr, state.WithFeatureLockIn)
+}
+
+func resolveWithLock(root string, args []string, stdout, stderr io.Writer, withLock func(*os.Root, string, func() error) error) int {
 	slug := activeSlug(root)
 	if slug == "" {
 		return fail(stderr, "No active workspace. Run "+workflow.ForVerb("spec").Both()+" <feature> first.", 2)
 	}
-	work := featureDir(root, slug)
+	work, err := devritespaths.ExistingFeatureDirChecked(root, slug)
+	if err != nil {
+		return fail(stderr, err.Error(), 2)
+	}
+	// Pin the selected root before waiting; workspace paths may change meanwhile.
+	selectedRoot, err := os.OpenRoot(root)
+	if err != nil {
+		return fail(stderr, err.Error(), 2)
+	}
+	defer func() { _ = selectedRoot.Close() }()
 	qfile := filepath.Join(work, "questions.md")
 	sfile := filepath.Join(work, "state.md")
 	if !isFile(qfile) {
@@ -79,8 +92,13 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	code := 0
-	if err := state.WithFeatureLock(root, slug, func() error {
-		code = resolveMutation(slug, mode, qid, payload, qfile, sfile, human, stdout, stderr)
+	if err := withLock(selectedRoot, slug, func() error {
+		ws, err := selectedRoot.OpenRoot(filepath.Join("work", slug))
+		if err != nil {
+			return err
+		}
+		defer func() { _ = ws.Close() }()
+		code = resolveMutation(ws, slug, mode, qid, payload, human, stdout, stderr, writeBundleTargets)
 		return nil
 	}); err != nil {
 		return fail(stderr, err.Error(), 1)
@@ -88,7 +106,7 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func resolveMutation(slug, mode, qid, payload, qfile, sfile string, human bool, stdout, stderr io.Writer) int {
+func resolveMutation(ws *os.Root, slug, mode, qid, payload string, human bool, stdout, stderr io.Writer, publish func(*os.Root, []*bundleTarget) error) int {
 	type resolution struct{ qid, status, text string }
 	var entries []resolution
 	switch mode {
@@ -125,15 +143,13 @@ func resolveMutation(slug, mode, qid, payload, qfile, sfile string, human bool, 
 	if len(entries) == 0 {
 		return 0
 	}
-	// #nosec G304 -- questions.md path inside the feature workspace
-	qdata, err := os.ReadFile(qfile)
+	qdata, err := ws.ReadFile("questions.md")
 	if err != nil {
-		return fail(stderr, "questions.md missing at "+qfile, 2)
+		return fail(stderr, fmt.Sprintf("read questions.md: %v", err), 2)
 	}
-	// #nosec G304 -- state.md path inside the feature workspace
-	sdata, err := os.ReadFile(sfile)
+	sdata, err := ws.ReadFile("state.md")
 	if err != nil {
-		return fail(stderr, fmt.Sprintf("read state %s: %v", sfile, err), 1)
+		return fail(stderr, fmt.Sprintf("read state.md: %v", err), 1)
 	}
 	lines := splitLinesNoTrailing(qdata)
 	nextState := sdata
@@ -147,13 +163,14 @@ func resolveMutation(slug, mode, qid, payload, qfile, sfile string, human bool, 
 			return fail(stderr, err.Error(), 1)
 		}
 	}
-	if err := fsutil.WriteFileAtomic(qfile, joinRecords(lines), 0o644); err != nil {
-		return fail(stderr, err.Error(), 1)
+	targets := []*bundleTarget{
+		{rel: "questions.md", before: qdata, existed: true, after: joinRecords(lines)},
 	}
 	if !bytes.Equal(nextState, sdata) {
-		if err := fsutil.WriteFileAtomic(sfile, nextState, 0o644); err != nil {
-			return fail(stderr, fmt.Sprintf("update state %s: %v", sfile, err), 1)
-		}
+		targets = append(targets, &bundleTarget{rel: "state.md", before: sdata, existed: true, after: nextState})
+	}
+	if err := publish(ws, targets); err != nil {
+		return fail(stderr, err.Error(), 1)
 	}
 	switch mode {
 	case "answer":

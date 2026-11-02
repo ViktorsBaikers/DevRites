@@ -143,11 +143,15 @@ self-contained updater.
   against the durable `regression-baseline.json` high-water mark. A lost fact
   prints `REGRESSION: <detail>` and exits `3`. `--update` rewrites the baseline
   under the feature lock at a durable checkpoint and prints each regression it
-  blesses as `REGRESSION-BLESSED`; with no baseline recorded the check reports
-  `unproven` and exits `0`. Recommended placement: compare on a cold resume or
-  scheduled wake before acting on durable state, ratchet after a landed slice
-  checkpoint or phase advance, and treat `BLOCKED` at Seal as NO-GO; `--update`
-  never excuses an unreconciled regression.
+  blesses as `REGRESSION-BLESSED`. A deliberate owner-authorized repair checkpoint
+  may accept a backward phase along with other acknowledged facts: the current
+  phase becomes the new baseline. Ordinary checks never bless losses or change
+  the baseline. If the update would remove every checked acceptance criterion and
+  met gate, `--allow-empty` is also required. With no baseline recorded the check
+  reports `unproven` and exits `0`. Recommended placement: compare on a cold
+  resume or scheduled wake before acting on durable state, ratchet after a landed
+  slice checkpoint or phase advance, and treat `BLOCKED` at Seal as NO-GO.
+  Never use automatic updates to hide an unreconciled regression.
 - `check continuation [slug]` prints `continuation: required` and
   `invoke: <next_action>` when `.devrites/AFK` is present, `status` is
   `running`, no question cursor is set, no blocking or escalating question is
@@ -254,8 +258,12 @@ without it any `answered_by:` line in the resolved block, whatever its indentati
 `state close` transactionally archives a shipped workspace and clears matching
 `ACTIVE`.
 
-The mutating forms share the engine's root-safety, locking, and atomic-write
-boundary.
+Mutations share root-safety checks, feature locks, and atomic per-file writes.
+`state resolve` and `state apply-bundle` restore attempted files after returned
+publication errors; `rollback incomplete` identifies files needing inspection
+and recovery. These multi-file operations are not crash-atomic: process
+termination can leave partial updates, and unlocked readers can see intermediate
+state. Inspect both artifacts before resuming after an interrupted publication.
 
 The root scans and rechecks `questions.md` to allocate the next unused qid,
 manages Clarify return fields without rewriting unrelated Markdown, charges an
