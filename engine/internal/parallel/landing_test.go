@@ -220,6 +220,42 @@ func TestRawLeaseCannotFabricateLandingReceipt(t *testing.T) {
 	}
 }
 
+func TestRawLeaseIntegratedRowsRequireCurrentEvidence(t *testing.T) {
+	integrated := LeaseSlice{ID: "slice-a", WrightStatus: WrightIntegrated, TransferCommit: "abcdef0"}
+	pending := integrated
+	pending.WrightStatus = WrightPending
+	green := integrated
+	green.WrightStatus = WrightGreen
+	renamed := integrated
+	renamed.ID = "slice-b"
+	moved := integrated
+	moved.Workspace = "child"
+	changed := integrated
+	changed.TransferCommit = "abcdef1"
+	for _, tc := range []struct {
+		name    string
+		current *Lease
+		next    Lease
+		allowed bool
+	}{
+		{"new lease", nil, Lease{Slices: []LeaseSlice{integrated}}, false},
+		{"added row", &Lease{}, Lease{Slices: []LeaseSlice{integrated}}, false},
+		{"pending promotion", &Lease{Slices: []LeaseSlice{pending}}, Lease{Slices: []LeaseSlice{integrated}}, false},
+		{"green promotion", &Lease{Slices: []LeaseSlice{green}}, Lease{Slices: []LeaseSlice{integrated}}, false},
+		{"renamed row", &Lease{Slices: []LeaseSlice{integrated}}, Lease{Slices: []LeaseSlice{integrated, renamed}}, false},
+		{"moved row", &Lease{Slices: []LeaseSlice{integrated}}, Lease{Slices: []LeaseSlice{integrated, moved}}, false},
+		{"changed evidence", &Lease{Slices: []LeaseSlice{integrated}}, Lease{Slices: []LeaseSlice{changed}}, false},
+		{"legacy roundtrip", &Lease{Slices: []LeaseSlice{integrated}}, Lease{Slices: []LeaseSlice{integrated}}, true},
+		{"explicit status compatibility", &Lease{Status: StatusRunning, Slices: []LeaseSlice{pending}}, Lease{Status: StatusComplete, Slices: []LeaseSlice{pending}}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := protectRawLease(tc.current, &tc.next); (err == nil) != tc.allowed {
+				t.Fatalf("allowed=%t, got %v", tc.allowed, err)
+			}
+		})
+	}
+}
+
 func TestLegacyLeaseNeverInfersHistoricalLanding(t *testing.T) {
 	repo, _ := rollingLease(t)
 	tc := greenSlice(t, repo, "slice-a", "src/a.go", "A")

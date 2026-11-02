@@ -1,7 +1,7 @@
 BINARY  := devrites
 DIST    := dist
-# darwin/amd64 kept for Intel Macs; the five targets the release matrix ships.
-PLATFORMS := darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64
+# darwin/amd64 kept for Intel Macs; the six targets the release matrix ships.
+PLATFORMS := darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64 windows/arm64
 
 .PHONY: build test test-race vet quality govulncheck lint cover crosscompile clean
 

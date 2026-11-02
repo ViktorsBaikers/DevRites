@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/devrites/devrites/internal/gate"
+	"github.com/devrites/devrites/internal/testutil"
 )
 
 // driftWorkspace builds a workspace with every required readiness input.
@@ -21,6 +22,7 @@ func driftWorkspace(t *testing.T) (root, featureDir string) {
 	} {
 		writeFile(t, filepath.Join(featureDir, name), "# "+name+"\n\ncontent\n")
 	}
+	writeFile(t, filepath.Join(featureDir, "gates.md"), testutil.CanonicalGatesMarkdown)
 	return root, featureDir
 }
 

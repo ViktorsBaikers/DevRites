@@ -61,6 +61,8 @@ type stats struct {
 type runner struct {
 	opts              Options
 	target            string
+	targetInfo        fs.FileInfo
+	targetRoot        *os.Root
 	payload           string
 	payloadFS         fs.FS
 	source            string
@@ -246,6 +248,10 @@ func Apply(opts Options) error {
 		return fmt.Errorf("prepare installer: %w", err)
 	}
 	if opts.Mode == ModeUninstall {
+		if err := r.openTargetRoot(); err != nil {
+			return err
+		}
+		defer r.closeTargetRoot()
 		return r.uninstall()
 	}
 	if err := r.install(); err != nil {
@@ -297,25 +303,73 @@ func newRunner(opts Options) (*runner, error) {
 		}
 	}
 	r := &runner{
-		opts:      opts,
-		target:    target,
-		payload:   payload,
-		payloadFS: os.DirFS(payload),
-		source:    source,
-		prev:      map[string]managedRecord{},
-		records:   map[string]string{},
-		preflight: map[string]pathSnapshot{},
+		opts:       opts,
+		target:     target,
+		targetInfo: info,
+		payload:    payload,
+		payloadFS:  os.DirFS(payload),
+		source:     source,
+		prev:       map[string]managedRecord{},
+		records:    map[string]string{},
+		preflight:  map[string]pathSnapshot{},
 	}
 	if opts.Mode != ModeUninstall {
 		if err := r.validatePayload(); err != nil {
 			return nil, fmt.Errorf("validate payload: %w", err)
 		}
 	}
-	r.prev, err = readManifest(filepath.Join(target, ManifestName))
+	if err := r.openTargetRoot(); err != nil {
+		return nil, err
+	}
+	defer r.closeTargetRoot()
+	data, err := r.readConfined(filepath.Join(target, ManifestName))
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("read manifest %s: %w", ManifestName, err)
+	}
+	r.prev, _, err = parseManifestData(data)
 	if err != nil {
 		return nil, err
 	}
 	return r, nil
+}
+
+func (r *runner) openTargetRoot() error {
+	root, err := os.OpenRoot(r.target)
+	if err != nil {
+		return err
+	}
+	info, err := root.Stat(".")
+	if err != nil || r.targetInfo == nil || !os.SameFile(r.targetInfo, info) {
+		_ = root.Close()
+		return fmt.Errorf("install target changed before operation: %s", r.target)
+	}
+	r.targetRoot = root
+	return nil
+}
+
+func (r *runner) closeTargetRoot() {
+	if r.targetRoot != nil {
+		_ = r.targetRoot.Close()
+		r.targetRoot = nil
+	}
+}
+
+func (r *runner) checkTargetIdentity() error {
+	info, err := os.Stat(r.target)
+	if err != nil || r.targetInfo == nil || !os.SameFile(r.targetInfo, info) {
+		return fmt.Errorf("install target changed during operation: %s", r.target)
+	}
+	return nil
+}
+
+func (r *runner) pruneEmptyDirs(start string) {
+	for start != r.target && start != filepath.Dir(start) {
+		rel, err := filepath.Rel(r.target, start)
+		if err != nil || r.targetRoot == nil || r.targetRoot.Remove(rel) != nil {
+			return
+		}
+		start = filepath.Dir(start)
+	}
 }
 
 func inferSourceDir() string {
@@ -388,18 +442,6 @@ func isGlobalTarget(target string) bool {
 		}
 	}
 	return false
-}
-
-func pruneEmptyDirs(start, stop string) {
-	for {
-		if start == stop || start == filepath.Dir(start) || start == string(os.PathSeparator) {
-			return
-		}
-		if err := os.Remove(start); err != nil {
-			return
-		}
-		start = filepath.Dir(start)
-	}
 }
 
 func exists(path string) bool {

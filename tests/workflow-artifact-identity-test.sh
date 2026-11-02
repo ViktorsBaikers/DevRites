@@ -4737,7 +4737,7 @@ def check_actual_engine_separation(root: Path) -> None:
         workspace.mkdir(parents=True)
         (fixture / ".devrites/ACTIVE").write_text("demo\n")
         source_workspace = SCRIPT.parent / "fixtures" / "workflow-artifact-identity-evidence-workspace"
-        readiness_files = ["spec.md", "decision-coverage.md", "architecture.md", "plan.md", "tasks.md", "traceability.md", "test-plan.md"]
+        readiness_files = ["spec.md", "decision-coverage.md", "architecture.md", "plan.md", "tasks.md", "traceability.md", "test-plan.md", "gates.md"]
         for name in readiness_files:
             source = source_workspace / name
             require(source.is_file(), f"readiness fixture source: {name}")

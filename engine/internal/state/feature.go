@@ -63,12 +63,13 @@ func regularFileExists(path string) bool {
 	return err == nil && info.Mode().IsRegular()
 }
 
-func firstPhaseWord(value string) string {
+// CanonicalPhase reads the leading phase name, ignoring case and trailing annotations.
+func CanonicalPhase(value string) Phase {
 	word := strings.ToLower(strings.TrimSpace(value))
 	if i := strings.IndexAny(word, " 	"); i > 0 {
 		word = word[:i]
 	}
-	return word
+	return Phase(word)
 }
 
 // blankOrHash reports whether a trimmed line carries no meaningful content: it

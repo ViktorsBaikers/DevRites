@@ -31,6 +31,7 @@ DR_ENGINE_PATH=""; DR_ENGINE_TMP=""
 trap dr_cleanup_engine EXIT
 trap 'exit 1' HUP INT TERM
 dr_acquire_engine "$SELF_DIR" uninstall "$DEVRITES_REPO" || { echo "error: could not acquire devrites-engine${DR_ACQUIRE_FAILURE:+ ($DR_ACQUIRE_FAILURE)}." >&2; exit 1; }
+dr_stage_uninstall_engine || { echo "error: ${DR_ACQUIRE_FAILURE:-could not stage devrites-engine for Windows uninstall}." >&2; exit 1; }
 ENGINE="$DR_ENGINE_PATH"
 export DEVRITES_ENGINE_CLI="$ENGINE"
 "$ENGINE" uninstall --source-dir "$SELF_DIR" "$@"

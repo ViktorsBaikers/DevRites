@@ -111,15 +111,24 @@ func manifestOK(run, genDir string) ([]string, map[string]any, error) {
 		return nil, nil, err
 	}
 	var errs []string
-	files, revs := ovio.Obj(m["files"]), ovio.Obj(m["revisions"])
-	check := func(src map[string]any) error {
+	files, revs, receipts := ovio.Obj(m["files"]), ovio.Obj(m["revisions"]), ovio.Obj(m["receipts"])
+	if receipts == nil {
+		errs = append(errs, "manifest: receipts must record admitted receipt digests")
+	}
+	dispatch, err := ovio.LoadObject(join(genDir, "dispatch.json"))
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, it := range ovio.List(dispatch["attempts"]) {
+		attempt := ovio.Obj(it)
+		if str(attempt, "status") == "admitted" && str(receipts, str(attempt, "receipt")) == "" {
+			errs = append(errs, "manifest: admitted receipt digest missing: "+str(attempt, "receipt"))
+		}
+	}
+	check := func(src map[string]any, base string) error {
 		for _, rel := range sortedKeys(src) {
-			base := run
-			if _, ok := files[rel]; ok {
-				base = genDir
-			}
 			p := join(base, rel)
-			ok := isFile(p)
+			ok := inside(base, rel) && isFile(p)
 			if ok {
 				d, err := sha(p)
 				if err != nil {
@@ -133,10 +142,13 @@ func manifestOK(run, genDir string) ([]string, map[string]any, error) {
 		}
 		return nil
 	}
-	if err := check(files); err != nil {
+	if err := check(files, genDir); err != nil {
 		return nil, nil, err
 	}
-	if err := check(revs); err != nil {
+	if err := check(revs, run); err != nil {
+		return nil, nil, err
+	}
+	if err := check(receipts, run); err != nil {
 		return nil, nil, err
 	}
 	return errs, m, nil
@@ -273,13 +285,22 @@ func publish(run string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	revs := map[string]any{}
+	revs, receipts := map[string]any{}, map[string]any{}
+	settledReceipts := map[string]string{}
 	if prevDir != "" {
 		pmErrs, pm, err := manifestOK(run, prevDir)
 		if err != nil {
 			return 0, err
 		}
 		errs = append(errs, pmErrs...)
+		for rel, digest := range ovio.Obj(pm["receipts"]) {
+			receipts[rel] = digest
+			rc, err := ovio.LoadObject(join(run, rel))
+			if err != nil {
+				return 0, err
+			}
+			settledReceipts[Repr([]any{rc["task_id"], rc["attempt_id"]})] = rel
+		}
 		prevRevs := ovio.Obj(pm["revisions"])
 		for _, rel := range sortedKeys(prevRevs) {
 			p := join(run, rel)
@@ -307,6 +328,29 @@ func publish(run string, stdout, stderr io.Writer) (int, error) {
 			return 0, err
 		}
 		revs["revisions/"+e.Name()] = d
+	}
+	dispatch, err := ovio.LoadObject(join(tmp, "dispatch.json"))
+	if err != nil {
+		return 0, err
+	}
+	for _, it := range ovio.List(dispatch["attempts"]) {
+		attempt := ovio.Obj(it)
+		rel := str(attempt, "receipt")
+		if str(attempt, "status") != "admitted" || !inside(run, rel) || !isFile(join(run, rel)) {
+			continue
+		}
+		if prior, settled := settledReceipts[Repr([]any{attempt["task_id"], attempt["attempt_id"]})]; settled && prior != rel {
+			errs = append(errs, "settled admitted attempt changed receipt: "+PyStr(attempt["task_id"])+"#"+PyStr(attempt["attempt_id"]))
+			continue
+		}
+		if _, settled := receipts[rel]; settled {
+			continue
+		}
+		digest, err := sha(join(run, rel))
+		if err != nil {
+			return 0, err
+		}
+		receipts[rel] = digest
 	}
 	if len(errs) > 0 {
 		for _, e := range errs {
@@ -342,7 +386,7 @@ func publish(run string, stdout, stderr io.Writer) (int, error) {
 		previous = prev
 	}
 	manifest := map[string]any{"schema": "overhaul.manifest/1", "generation": gen, "previous": previous,
-		"files": files, "revisions": revs}
+		"files": files, "revisions": revs, "receipts": receipts}
 	if err := ovio.WriteJSON(join(tmp, "manifest.json"), manifest, 0o644); err != nil {
 		return 0, err
 	}

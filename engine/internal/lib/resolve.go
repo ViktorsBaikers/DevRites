@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -67,7 +68,7 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 		mode = "answer"
 		qid = first
 		payload = argAt(args, 1)
-		if payload == "" {
+		if strings.TrimSpace(payload) == "" {
 			return fail(stderr, "Answer text required for "+qid, 5)
 		}
 	}
@@ -79,7 +80,7 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 
 	code := 0
 	if err := state.WithFeatureLock(root, slug, func() error {
-		code = resolveMutation(mode, qid, payload, qfile, sfile, human, stdout, stderr)
+		code = resolveMutation(slug, mode, qid, payload, qfile, sfile, human, stdout, stderr)
 		return nil
 	}); err != nil {
 		return fail(stderr, err.Error(), 1)
@@ -87,38 +88,20 @@ func Resolve(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func resolveMutation(mode, qid, payload, qfile, sfile string, human bool, stdout, stderr io.Writer) int {
+func resolveMutation(slug, mode, qid, payload, qfile, sfile string, human bool, stdout, stderr io.Writer) int {
+	type resolution struct{ qid, status, text string }
+	var entries []resolution
 	switch mode {
 	case "answer":
-		if code := resolveQuestion(qfile, qid, "answered", payload, human, stderr); code != 0 {
-			return code
-		}
-		if err := clearAwaiting(sfile, qid); err != nil {
-			return fail(stderr, err.Error(), 1)
-		}
-		fmt.Fprintf(stdout, "Resolved: %s\n", qid)
-		fmt.Fprintf(stdout, "Status:   answered\n")
-		fmt.Fprintf(stdout, "Workspace: questions.md + state.md updated.\n")
+		entries = append(entries, resolution{qid, "answered", payload})
 	case "drop":
-		if code := resolveQuestion(qfile, qid, "dropped", payload, human, stderr); code != 0 {
-			return code
-		}
-		if err := clearAwaiting(sfile, qid); err != nil {
-			return fail(stderr, err.Error(), 1)
-		}
-		fmt.Fprintf(stdout, "Dropped:  %s\n", qid)
-		fmt.Fprintf(stdout, "Reason:   %s\n", payload)
-		fmt.Fprintf(stdout, "Workspace: questions.md + state.md updated.\n")
+		entries = append(entries, resolution{qid, "dropped", payload})
 	case "batch":
 		// #nosec G304 -- operator-passed --batch file argument
 		data, err := os.ReadFile(payload)
 		if err != nil {
 			return fail(stderr, "Batch file not found: "+payload, 5)
 		}
-		// Every line is parsed and applied in memory first, so a bad line
-		// leaves questions.md untouched instead of half-resolved.
-		type batchEntry struct{ qid, status, text string }
-		var entries []batchEntry
 		for _, line := range batchLines(data) {
 			line = strings.TrimSpace(line)
 			if line == "" || strings.HasPrefix(line, "#") {
@@ -133,27 +116,56 @@ func resolveMutation(mode, qid, payload, qfile, sfile string, human bool, stdout
 			if !ok || bid == "" || strings.HasPrefix(bid, "-") {
 				return fail(stderr, "Malformed batch line (want `<qid>: <answer>` or `--drop <qid>: <reason>`): "+line, 5)
 			}
-			entries = append(entries, batchEntry{bid, status, strings.TrimPrefix(text, " ")})
-		}
-		// #nosec G304 -- questions.md path inside the feature workspace
-		qdata, err := os.ReadFile(qfile)
-		if err != nil {
-			return fail(stderr, "questions.md missing at "+qfile, 2)
-		}
-		lines := splitLinesNoTrailing(qdata)
-		for _, entry := range entries {
-			var code int
-			if lines, code = applyResolution(lines, entry.qid, entry.status, entry.text, human, stderr); code != 0 {
-				return code
+			if status == "answered" && strings.TrimSpace(text) == "" {
+				return fail(stderr, "Answer text required for "+bid, 5)
 			}
+			entries = append(entries, resolution{bid, status, strings.TrimPrefix(text, " ")})
 		}
-		if err := fsutil.WriteFileAtomic(qfile, joinRecords(lines), 0o644); err != nil {
+	}
+	if len(entries) == 0 {
+		return 0
+	}
+	// #nosec G304 -- questions.md path inside the feature workspace
+	qdata, err := os.ReadFile(qfile)
+	if err != nil {
+		return fail(stderr, "questions.md missing at "+qfile, 2)
+	}
+	// #nosec G304 -- state.md path inside the feature workspace
+	sdata, err := os.ReadFile(sfile)
+	if err != nil {
+		return fail(stderr, fmt.Sprintf("read state %s: %v", sfile, err), 1)
+	}
+	lines := splitLinesNoTrailing(qdata)
+	nextState := sdata
+	// Prepare both artifacts for every entry before publishing either file.
+	for _, entry := range entries {
+		var code int
+		if lines, code = applyResolution(lines, entry.qid, entry.status, entry.text, human, stderr); code != 0 {
+			return code
+		}
+		if nextState, err = clearAwaiting(nextState, entry.qid, slug); err != nil {
 			return fail(stderr, err.Error(), 1)
 		}
+	}
+	if err := fsutil.WriteFileAtomic(qfile, joinRecords(lines), 0o644); err != nil {
+		return fail(stderr, err.Error(), 1)
+	}
+	if !bytes.Equal(nextState, sdata) {
+		if err := fsutil.WriteFileAtomic(sfile, nextState, 0o644); err != nil {
+			return fail(stderr, fmt.Sprintf("update state %s: %v", sfile, err), 1)
+		}
+	}
+	switch mode {
+	case "answer":
+		fmt.Fprintf(stdout, "Resolved: %s\n", qid)
+		fmt.Fprintf(stdout, "Status:   answered\n")
+		fmt.Fprintf(stdout, "Workspace: questions.md + state.md updated.\n")
+	case "drop":
+		fmt.Fprintf(stdout, "Dropped:  %s\n", qid)
+		fmt.Fprintf(stdout, "Reason:   %s\n", payload)
+		fmt.Fprintf(stdout, "Workspace: questions.md + state.md updated.\n")
+	case "batch":
 		for _, entry := range entries {
-			if err := clearAwaiting(sfile, entry.qid); err != nil {
-				return fail(stderr, err.Error(), 1)
-			}
 			if entry.status == "dropped" {
 				fmt.Fprintf(stdout, "Dropped:  %s: %s\n", entry.qid, entry.text)
 			} else {
@@ -213,29 +225,6 @@ func clockNow() time.Time {
 
 // nowUTC returns the current time as an ISO-8601 UTC timestamp.
 func nowUTC() string { return clockNow().UTC().Format("2006-01-02T15:04:05Z") }
-
-// resolveQuestion rewrites the <qid> block in questions.md so it records the new
-// status, answer, and answered-at time in one pass. With human set it also records
-// answered_by: human; without it any answered_by line in the block, whatever its
-// indentation or case, is removed, so
-// an identity written before the resolve cannot survive it. Returns 0, or 3 (qid
-// not found) / 4 (qid not open), writing the message on failure.
-func resolveQuestion(qfile, qid, status, answer string, human bool, stderr io.Writer) int {
-	// #nosec G304 -- questions.md path inside the feature workspace
-	data, err := os.ReadFile(qfile)
-	if err != nil {
-		return fail(stderr, "questions.md missing at "+qfile, 2)
-	}
-	updated, code := applyResolution(splitLinesNoTrailing(data), qid, status, answer, human, stderr)
-	if code != 0 {
-		return code
-	}
-	if err := fsutil.WriteFileAtomic(qfile, joinRecords(updated), 0o644); err != nil {
-		return fail(stderr, err.Error(), 1)
-	}
-
-	return 0
-}
 
 // applyResolution rewrites the <qid> block in the questions.md lines in memory.
 // Returns 0, or 3 (qid not found) / 4 (qid not open), writing the message on
@@ -350,100 +339,97 @@ var (
 	logHdrRe   = regexp.MustCompile(`^## Log`)
 )
 
-// clearAwaiting resumes the workflow after a question is resolved: when state.md's
-// "Awaiting human" block or cursor question_id references qid, it drops that block, flips Status back to
-// running, clears the Next step, and appends a Log entry. It is a no-op when the
-// workspace is not waiting on this question.
-func clearAwaiting(sfile, qid string) error {
-	// #nosec G304 -- state.md path inside the feature workspace
-	data, err := os.ReadFile(sfile)
-	if err != nil {
-		return fmt.Errorf("read state %s: %w", sfile, err)
-	}
+// clearAwaiting removes only matching wait representations. Another question
+// keeps the workspace paused; otherwise the canonical phase resumes on SOURCE.
+func clearAwaiting(data []byte, qid, slug string) ([]byte, error) {
 	lines := splitLinesNoTrailing(data)
 	visible, err := structuralLines(data)
 	if err != nil {
-		return fmt.Errorf("read state %s: %w", sfile, err)
+		return nil, fmt.Errorf("read state: %w", err)
 	}
-	resumePolicy, _ := state.PolicyFor(state.PhaseBuild)
-	if rawPhase, ok := state.CursorField(lines, state.CursorPhase); ok {
-		if fields := strings.Fields(strings.ToLower(rawPhase)); len(fields) > 0 {
-			if policy, known := state.PolicyFor(state.Phase(fields[0])); known && policy.ResumeVerb != "" {
-				resumePolicy = policy
-			}
-		}
-	}
-	resumeCommand := workflow.ForVerb(resumePolicy.ResumeVerb)
-	// First check whether the awaiting block references this question at all.
-	inAw := false
-	var awaitingLines []string
-	for _, line := range visible {
-		switch {
-		case awaitingRe.MatchString(line):
-			inAw = true
-			continue
-		case inAw && hdrSpaceRe.MatchString(line):
-			inAw = false
-		}
-		if inAw {
-			awaitingLines = append(awaitingLines, line)
-		}
-	}
-	waitingOn, _ := state.CursorField(awaitingLines, state.CursorQuestionID)
-	cursorWaits := false
-	if waitingOn != qid {
-		// `state set question_id=<qid>` records the wait in the cursor table
-		// instead of an Awaiting human block.
-		if cursorQID, _ := state.CursorField(lines, state.CursorQuestionID); cursorQID != qid {
-			return nil
-		}
-		cursorWaits = true
-	}
-
-	// Rewrite: drop the awaiting block, reset Status/Next step, log the resolution.
-	ts := nowUTC()
 	var out []string
-	inAw, inLog, logAppended := false, false, false
-	for i, original := range lines {
+	matched, otherWait := false, false
+	inLog, logAt := false, -1
+	for i := 0; i < len(lines); i++ {
 		line := visible[i]
-		if awaitingRe.MatchString(line) {
-			inAw = true
-			continue
-		}
-		if inAw && hdrSpaceRe.MatchString(line) {
-			inAw = false
-		}
-		if inAw {
-			continue
-		}
-		switch {
-		case logHdrRe.MatchString(line):
-			out = append(out, original)
-			inLog = true
-			continue
-		case inLog && hdrSpaceRe.MatchString(line):
-			if !logAppended {
-				out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePolicy.Target, qid))
-				logAppended = true
+		if inLog && hdrSpaceRe.MatchString(line) {
+			if logAt < 0 {
+				logAt = len(out)
 			}
 			inLog = false
-			out = append(out, original)
+		}
+		if logHdrRe.MatchString(line) {
+			inLog = true
+		}
+		if awaitingRe.MatchString(line) {
+			end := i + 1
+			for end < len(lines) && !hdrSpaceRe.MatchString(visible[end]) {
+				end++
+			}
+			blockMatches, blockConflicts := false, false
+			for j := i + 1; j < end; j++ {
+				if waitingOn, ok := state.CursorField(visible[j:j+1], state.CursorQuestionID); ok && waitingOn != "" {
+					if waitingOn == qid {
+						blockMatches = true
+					} else {
+						blockConflicts = true
+					}
+				}
+			}
+			if blockMatches && blockConflicts {
+				return nil, fmt.Errorf("state has conflicting question IDs in Awaiting human")
+			}
+			if blockMatches {
+				matched = true
+			} else {
+				otherWait = true
+				out = append(out, lines[i:end]...)
+			}
+			i = end - 1
 			continue
 		}
-		out = append(out, original)
+		if waitingOn, ok := state.CursorField(visible[i:i+1], state.CursorQuestionID); ok && waitingOn != "" {
+			if waitingOn == qid {
+				matched = true
+				continue
+			}
+			otherWait = true
+		}
+		out = append(out, lines[i])
 	}
-	if inLog && !logAppended {
-		out = append(out, fmt.Sprintf("- %s %s: resolved %s", ts, resumePolicy.Target, qid))
+	if !matched {
+		return data, nil
 	}
-	if cursorWaits {
-		out = state.DeleteCursorField(out, state.CursorQuestionID)
+	rawPhase, _ := state.CursorField(lines, state.CursorPhase)
+	fields := strings.Fields(strings.ToLower(rawPhase))
+	var resumePolicy state.PhasePolicy
+	known := false
+	if len(fields) > 0 {
+		resumePolicy, known = state.PolicyFor(state.Phase(fields[0]))
 	}
-	out, _ = state.SetCursorField(out, state.CursorStatus, "running")
-	out, _ = state.SetCursorField(out, state.CursorNextAction, "(resume: `"+resumeCommand.Both()+"` to continue the workflow)")
-	if err := fsutil.WriteFileAtomic(sfile, joinRecords(out), 0o644); err != nil {
-		return fmt.Errorf("update state %s: %w", sfile, err)
+	if !known || resumePolicy.ResumeVerb == "" {
+		return nil, fmt.Errorf("cannot resume unknown or terminal phase %q", rawPhase)
 	}
-	return nil
+	if inLog && logAt < 0 {
+		logAt = len(out)
+	}
+	if logAt >= 0 {
+		out = append(out, "")
+		copy(out[logAt+1:], out[logAt:])
+		out[logAt] = fmt.Sprintf("- %s %s: resolved %s", nowUTC(), resumePolicy.Target, qid)
+	}
+	if !otherWait {
+		action := workflow.ForVerb(resumePolicy.ResumeVerb).SourceInvocation(slug)
+		out = state.UpsertCursorField(out, state.CursorStatus, "running")
+		out = state.UpsertCursorField(out, state.CursorNextAction, action)
+		if got, _ := state.CursorField(out, state.CursorStatus); got != "running" {
+			return nil, fmt.Errorf("cannot update state status")
+		}
+		if got, _ := state.CursorField(out, state.CursorNextAction); got != action {
+			return nil, fmt.Errorf("cannot update state next_action")
+		}
+	}
+	return joinRecords(out), nil
 }
 
 // joinRecords joins lines with newlines and terminates the last one, so a rewritten

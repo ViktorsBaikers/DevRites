@@ -1,3 +1,0 @@
-exit 4
---- stderr ---
-qid not open (already answered/dropped): q-1

@@ -288,6 +288,12 @@ npx devrites@latest uninstall
 npx devrites@latest uninstall --keep-binary
 ```
 
+On Windows, use `npx devrites@latest uninstall` or the Bash `uninstall.sh`
+launcher to remove the shared engine binary. These launchers run a private
+temporary copy so Windows can delete the original installed executable.
+Direct `devrites-engine uninstall` cannot delete its own running image and
+refuses before changing project files; use the launcher or `--keep-binary`.
+
 Run `npx devrites@latest --help` for common flags and
 `npx devrites@latest <command> --help` for command-specific flags.
 
@@ -387,6 +393,10 @@ blocks uninstall and dropped-host pruning, including dry runs, before writes.
 Existing files retain their permission bits. Claude permission ownership is
 recorded before settings replacement, so interrupted merges retain the records
 needed to remove installer-added grants on retry and uninstall.
+User-pinned aliases keep their recorded ownership hashes; refreshing does not
+silently adopt local edits. Shared-config marker collisions fail before writes.
+Legacy hook cleanup matches known shipped commands, not user commands that merely
+mention DevRites.
 Marker-merged files keep user content outside the DevRites block, and
 `.devrites/` runtime state stays in place. `update` reuses the install flags
 recorded in the manifest; flags you pass explicitly win and are recorded. The installer refuses symlinks, junctions, and paths that
@@ -395,8 +405,11 @@ escape the target.
 The optional shared `devrites-engine` binary is the only artifact installed
 outside the project. Before replacement, the staged release binary must report
 the requested version; after installation, the binary at its final path must
-report it again in a new process. The installer keeps a backup until the
-second check passes and restores it on failure.
+report it again in a new process. The selected binary is installed after merge
+preflight but before project payload and version publication, so binary failure
+leaves an ordinary update retry possible. The installer keeps a backup until the
+second check passes and restores it on failure. If restoration also fails, it
+retains the backup and reports its recovery path.
 
 `devrites-engine update` resolves the latest stable release, acquires its
 bundle and platform binary, and hands local paths to the downloaded engine, so
@@ -548,6 +561,9 @@ npm run validate
 npm test
 (cd engine && go test ./... -count=1)
 ```
+
+Native Windows launcher integration tests also require Node and Git for Windows
+(including Git Bash). They exercise the real installed engine through both launchers.
 
 Canonical pack changes belong in `pack/.claude/`. Rebuild host payloads with
 `bash scripts/build-host-artifacts.sh` instead of editing `pack/generated/`.

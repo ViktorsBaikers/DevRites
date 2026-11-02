@@ -12,12 +12,19 @@ import (
 
 func (r *runner) uninstall() error {
 	mf := filepath.Join(r.target, ManifestName)
-	entries, err := readManifestList(mf)
+	data, err := r.readConfined(mf)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("read manifest %s: %w", mf, err)
+	}
+	_, entries, err := parseManifestData(data)
 	if err != nil {
 		return err
 	}
 	if len(entries) == 0 {
 		return fmt.Errorf("no DevRites manifest at %s - nothing to uninstall", mf)
+	}
+	if err := r.preflightBinaryRemoval(); err != nil {
+		return err
 	}
 	fmt.Fprintln(r.opts.Stdout, "DevRites uninstaller")
 	fmt.Fprintf(r.opts.Stdout, "  target  : %s\n", r.target)
@@ -99,6 +106,15 @@ func (r *runner) uninstall() error {
 			r.stats.missing++
 		}
 	}
+	if !r.opts.DryRun {
+		for _, d := range dirs {
+			r.pruneEmptyDirs(d)
+		}
+	}
+	// Keep ownership available for a retry if the external binary cannot be removed.
+	if err := r.removeBinary(); err != nil {
+		return fmt.Errorf("remove engine binary: %w", err)
+	}
 	if r.opts.DryRun {
 		fmt.Fprintf(r.opts.Stdout, "  [remove] %s\n", ManifestName)
 	} else {
@@ -106,13 +122,7 @@ func (r *runner) uninstall() error {
 			return err
 		}
 		_ = r.removeConfined(mf)
-		dirs = append(dirs, filepath.Dir(mf))
-		for _, d := range dirs {
-			pruneEmptyDirs(d, r.target)
-		}
-	}
-	if err := r.removeBinary(); err != nil {
-		return fmt.Errorf("remove engine binary: %w", err)
+		r.pruneEmptyDirs(filepath.Dir(mf))
 	}
 	fmt.Fprintln(r.opts.Stdout)
 	if r.opts.DryRun {
@@ -141,7 +151,7 @@ func (r *runner) dryRunStripMarker(tree map[string][]byte, merge hostpack.Manage
 	write := func(data []byte) error { tree[path] = data; return nil }
 	remove := func() error { tree[path] = nil; return nil }
 	if merge.MarkerRel == hostpack.LegacyCodexHooksMerge.MarkerRel {
-		return stripHooksWith(path, write, remove)
+		return r.stripHooksWith(path, write, remove)
 	}
 	if merge.TargetRel == hostpack.ClaudeSettingsMerge.TargetRel {
 		return r.stripClaudeSettingsWith(path, write, remove)

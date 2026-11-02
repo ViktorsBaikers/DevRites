@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/fsutil"
@@ -77,57 +76,34 @@ func AppendLog(path, record string) error {
 // is released automatically even if the process dies mid-operation (crash-safe);
 // see lock_unix.go / lock_other.go.
 func WithFeatureLock(root, slug string, fn func() error) error {
-	lockPath, err := featureLockPath(root, slug)
-	if err != nil {
-		return err
+	if !devritespaths.ValidSlug(slug) {
+		return fmt.Errorf("lock feature %q: not a feature slug", slug)
 	}
-	return WithLock(lockPath, fn)
+	// Keep the lock outside the movable workspace; never unlink it on release.
+	lockDir := filepath.Join(root, ".locks", "features", slug)
+	if err := os.MkdirAll(lockDir, 0o755); err != nil {
+		return fmt.Errorf("lock feature %q: %w", slug, err)
+	}
+	return WithLock(filepath.Join(lockDir, ".lock"), func() error {
+		if _, err := os.Lstat(filepath.Join(root, "archive", slug)); err == nil {
+			return fmt.Errorf("lock feature %q: workspace is closed (archived)", slug)
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("lock feature %q: %w", slug, err)
+		}
+		if err := os.MkdirAll(featureDir(root, slug), 0o755); err != nil {
+			return fmt.Errorf("lock feature %q: %w", slug, err)
+		}
+		return fn()
+	})
 }
 
 // WithLock runs fn while holding the same exclusive advisory lock as
 // WithFeatureLock, keyed on lockPath, for shared ledgers outside one feature.
 func WithLock(lockPath string, fn func() error) error {
-	return withLock(lockPath, func(func()) error { return fn() })
-}
-
-// WithFeatureLockRelease is WithFeatureLock for a caller that must drop the lock
-// before fn returns, for example because the platform refuses to rename the
-// directory that holds the open lock file. fn receives release, which is safe to
-// call more than once; the lock is also released when fn returns.
-func WithFeatureLockRelease(root, slug string, fn func(release func()) error) error {
-	lockPath, err := featureLockPath(root, slug)
-	if err != nil {
-		return err
-	}
-	return withLock(lockPath, fn)
-}
-
-// featureLockPath validates slug and creates the feature directory, returning
-// the lock file path inside it. A closed workspace (work/<slug> gone, archive/<slug>
-// present) is refused rather than resurrected by a late lock.
-func featureLockPath(root, slug string) (string, error) {
-	if !devritespaths.ValidSlug(slug) {
-		return "", fmt.Errorf("lock feature %q: not a feature slug", slug)
-	}
-	dir := featureDir(root, slug)
-	if _, err := os.Lstat(dir); errors.Is(err, fs.ErrNotExist) {
-		if _, archErr := os.Lstat(filepath.Join(root, "archive", slug)); archErr == nil {
-			return "", fmt.Errorf("lock feature %q: workspace is closed (archived)", slug)
-		}
-	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", fmt.Errorf("lock feature %q: %w", slug, err)
-	}
-	return filepath.Join(dir, ".lock"), nil
-}
-
-func withLock(lockPath string, fn func(release func()) error) error {
 	l, err := acquireLock(lockPath)
 	if err != nil {
 		return fmt.Errorf("lock %s: %w", lockPath, err)
 	}
-	var once sync.Once
-	release := func() { once.Do(func() { _ = l.release() }) }
-	defer release()
-	return fn(release)
+	defer func() { _ = l.release() }()
+	return fn()
 }

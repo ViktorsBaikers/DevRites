@@ -1,3 +1,0 @@
-exit 2
---- stderr ---
-No active workspace. Run /rite-spec (Claude) / $rite-spec (Codex) <feature> first.

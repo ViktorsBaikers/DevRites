@@ -316,23 +316,25 @@ var (
 	specAcceptanceClaimRE       = regexp.MustCompile(`(?im)^\s{0,3}#{1,6}\s+.*acceptance criteria|\bAC-\d+\b`)
 )
 
-// specClaimsAcceptance reports whether structural (unfenced) spec text looks
+// specClaimsAcceptance reports whether spec prose looks
 // like it carries acceptance criteria, so a parse that finds none is a defect
 // in the spec rather than a spec with nothing to map.
 func specClaimsAcceptance(spec []byte) bool {
-	structural, err := markdowntext.Structural(spec)
+	structural, err := markdowntext.Prose(spec)
 	return err == nil && specAcceptanceClaimRE.Match(structural)
 }
 
-// specUnreadAcceptanceProblems names acceptance text the parser skips: ids that
-// are not exactly three digits and acceptance headings after the first
-// canonical one, which would otherwise escape the coverage check.
+// specUnreadAcceptanceProblems names acceptance text the parser skips:
+// noncanonical ids/headings and declarations outside the canonical section.
 func specUnreadAcceptanceProblems(spec []byte) []string {
-	structural, err := markdowntext.Structural(spec)
+	structural, err := markdowntext.Prose(spec)
 	if err != nil {
 		return nil
 	}
 	var problems []string
+	for _, id := range state.AcceptanceDeclarationsOutsideSection(spec) {
+		problems = append(problems, fmt.Sprintf("spec.md declares %s outside the first `## Acceptance criteria` section, so the gate does not check it", id))
+	}
 	seen := map[string]bool{}
 	readHeading := false
 	for _, line := range strings.Split(string(structural), "\n") {

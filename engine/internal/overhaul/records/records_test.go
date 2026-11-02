@@ -59,11 +59,33 @@ func newFixture(t *testing.T) *fixture {
 	dir := t.TempDir()
 	f := &fixture{t: t, repo: filepath.Join(dir, "repo"), run: filepath.Join(dir, "run")}
 	write(t, filepath.Join(f.repo, "src/a.py"), "print('a')\n")
-	write(t, filepath.Join(f.run, "revisions/rubric-r1.json"), J{"schema": "overhaul.rubric/1", "rev": 1, "controls": L{J{"id": "C-1"}}})
+	write(t, filepath.Join(f.run, "revisions/rubric-r1.json"), calculatorRubric())
 	f.writePlan(L{task("T-1", L{}, "src/a.py"), task("T-2", L{"T-1"}, "src/b.py")})
 	write(t, filepath.Join(f.run, "evidence/red.log"), "red\n")
-	write(t, filepath.Join(f.run, "receipts/R-1.json"), J{})
+	write(t, filepath.Join(f.run, "receipts/R-1.json"), receipt("T-1", "A1", "implementer", "patch"))
+	write(t, filepath.Join(f.run, "receipts/R-V1.json"), receipt("T-1", "V1", "verifier", "verdict"))
 	return f
+}
+
+func receipt(taskID, attemptID, role, outcome string) J {
+	return J{"schema": "overhaul.receipt/1", "run_id": "run-1", "task_id": taskID, "attempt_id": attemptID,
+		"role": role, "lane": "backend", "snapshot": "alpha", "outcome": outcome,
+		"started_at": "2026-01-01T00:00:00Z", "finished_at": "2026-01-01T00:01:00Z"}
+}
+
+func calculatorRubric() J {
+	controls := L{}
+	for _, domain := range ovio.Domains {
+		id := "C-" + domain
+		if domain == "correctness" {
+			id = "C-1"
+		}
+		controls = append(controls, J{"id": id, "domain": domain, "lanes": L{"backend"},
+			"weight": 5, "hard_gate": false, "evaluation": "executed"})
+	}
+	return J{"schema": "overhaul.rubric/1", "rev": 1, "lanes": L{"backend"}, "controls": controls,
+		"domains": J{"correctness": 20, "security": 20, "reliability": 15, "performance": 15,
+			"tests": 10, "architecture": 10, "ux": 5, "operations": 5}}
 }
 
 func (f *fixture) writePlan(tasks L) {
@@ -88,7 +110,7 @@ func (f *fixture) records() map[string]J {
 		"evidence.json": {"schema": "overhaul.evidence/1", "items": L{J{"id": "E-1", "path": "evidence/red.log",
 			"sha256": digest(f.t, filepath.Join(f.run, "evidence/red.log"))}}},
 		"dispatch.json": {"schema": "overhaul.dispatch/1", "attempts": L{J{"task_id": "T-1", "attempt_id": "A1",
-			"role": "implementer", "status": "admitted", "authorized_by": "AP-1", "receipt": "receipts/R-1.json",
+			"role": "implementer", "lane": "backend", "snapshot": "alpha", "status": "admitted", "authorized_by": "AP-1", "receipt": "receipts/R-1.json",
 			"changed_paths": L{"src/a.py"}}}},
 		"approval.json": {"schema": "overhaul.approval/1", "events": L{J{"id": "AP-1", "kind": "approve",
 			"status": "active", "tasks": L{"T-1"}, "plan_rev": 1, "quote": "yes, fix T-1", "channel": "conversation",
@@ -154,6 +176,12 @@ func approval(r map[string]J) J { return r["approval.json"]["events"].(L)[0].(J)
 func attempts(r map[string]J) L { return r["dispatch.json"]["attempts"].(L) }
 
 func addAttempt(r map[string]J, a J) {
+	if _, ok := a["lane"]; !ok {
+		a["lane"] = "backend"
+	}
+	if _, ok := a["snapshot"]; !ok {
+		a["snapshot"] = "alpha"
+	}
 	r["dispatch.json"]["attempts"] = append(attempts(r), a)
 }
 
@@ -190,17 +218,59 @@ func TestPublishThenValidate(t *testing.T) {
 
 func cell(r map[string]J) J { return r["coverage.json"]["applicability"].(L)[0].(J) }
 
-// scorecard records a scorecard with the given gates and points run.json at its rubric.
-func scorecard(r map[string]J, gates J) {
+// scorecard uses real calculator inputs; callers may then corrupt its output to
+// exercise record-level rejection of an inconsistent claim.
+func scorecard(f *fixture, r map[string]J, gates J) {
+	f.t.Helper()
 	r["run.json"]["revisions"].(J)["rubric"] = J{"rev": 1, "file": "revisions/rubric-r1.json"}
-	r["scorecard.json"] = J{"schema": "overhaul.scorecard/1", "gates": gates}
+	results := J{}
+	for _, item := range calculatorRubric()["controls"].(L) {
+		results[item.(J)["id"].(string)] = J{"status": "PASS", "evidence": L{"E-1"}}
+	}
+	for _, item := range r["findings.json"]["findings"].(L) {
+		finding := item.(J)
+		if openFinding[ovio.Str(finding["status"])] {
+			for _, control := range ovio.List(finding["controls"]) {
+				results[ovio.Str(control)] = J{"status": "FAIL", "evidence": L{"E-1"}}
+			}
+		}
+	}
+	r["results-candidate.json"] = J{"schema": "overhaul.results/1", "subject": "candidate",
+		"fingerprint": strings.Repeat("a", 64), "rubric_digest": digest(f.t, filepath.Join(f.run, "revisions/rubric-r1.json")),
+		"results": results}
+	records := J{}
+	for name, status := range gates {
+		if name != "G-THRESHOLDS" {
+			records[name] = J{"status": status, "evidence": L{"E-1"}, "approval": "AP-1"}
+		}
+	}
+	r["gates.json"] = J{"mode": "remediation", "gates": records}
+	dir := f.t.TempDir()
+	for _, name := range []string{"results-candidate.json", "gates.json"} {
+		write(f.t, filepath.Join(dir, name), r[name])
+	}
+	var out, errs bytes.Buffer
+	if code := score.Run([]string{"--rubric", filepath.Join(f.run, "revisions/rubric-r1.json"),
+		"--results", filepath.Join(dir, "results-candidate.json"), "--gates", filepath.Join(dir, "gates.json"),
+		"--out", filepath.Join(dir, "scorecard.json")}, &out, &errs); code != 0 {
+		f.t.Fatalf("score: %d %s%s", code, out.String(), errs.String())
+	}
+	card, err := ovio.LoadObject(filepath.Join(dir, "scorecard.json"))
+	if err != nil {
+		f.t.Fatal(err)
+	}
+	r["scorecard.json"] = card
+	r["run.json"]["readiness_verdict"] = card["readiness_verdict"]
 }
 
 // ready makes r a finished repair run that meets its targets: a complete,
 // passing scorecard backed by the records, with gates overriding statuses.
 func ready(f *fixture, r map[string]J, gates J) {
 	reviewed(f, r, "applicable")
-	finding(r)["severity"] = "low"
+	delete(finding(r), "severity")
+	finding(r)["status"] = "rejected"
+	finding(r)["history"] = L{J{"status": "candidate"}, J{"status": "confirmed"},
+		J{"status": "rejected", "reason": "E-1 disproves the candidate"}}
 	all := J{}
 	for _, g := range score.GateIDs(true) {
 		all[g] = "PASS"
@@ -208,7 +278,7 @@ func ready(f *fixture, r map[string]J, gates J) {
 	for g, st := range gates {
 		all[g] = st
 	}
-	scorecard(r, all)
+	scorecard(f, r, all)
 	r["scorecard.json"]["readiness_verdict"] = "MEETS_TARGETS"
 	r["run.json"]["readiness_verdict"] = "MEETS_TARGETS"
 	r["run.json"]["execution_outcome"] = "READY_FOR_USER_REVIEW"
@@ -218,7 +288,9 @@ func ready(f *fixture, r map[string]J, gates J) {
 // reviewed records one applicability cell in state st, backed by a receipt that
 // checked its domain, and a fully reviewed range for the fixture's file.
 func reviewed(f *fixture, r map[string]J, st string) {
-	write(f.t, filepath.Join(f.run, "receipts/R-dom.json"), J{"outcome": "no-findings", "domains_checked": L{"correctness"}})
+	rc := receipt("W-1", "A1", "reviewer", "no-findings")
+	rc["domains_checked"], rc["inspected"] = L{"correctness"}, L{J{"path": "src/a.py", "start": 1, "end": 1}}
+	write(f.t, filepath.Join(f.run, "receipts/R-dom.json"), rc)
 	addAttempt(r, J{"task_id": "W-1", "attempt_id": "A1", "role": "reviewer", "status": "admitted", "receipt": "receipts/R-dom.json"})
 	r["coverage.json"]["applicability"] = L{J{"domain": "correctness", "component": "api", "lane": "backend",
 		"state": st, "reason": "no GUI", "receipts": L{"receipts/R-dom.json"}}}
@@ -229,7 +301,7 @@ func reviewed(f *fixture, r map[string]J, st string) {
 func TestSingleGenerationRules(t *testing.T) {
 	verifiedHistory := L{J{"status": "candidate"}, J{"status": "confirmed"}, J{"status": "approved-for-fix"},
 		J{"status": "in-progress"}, J{"status": "fixed-unverified"}, J{"status": "verified"}}
-	verifier := J{"task_id": "T-1", "attempt_id": "V1", "role": "verifier", "status": "admitted", "receipt": "receipts/R-1.json"}
+	verifier := J{"task_id": "T-1", "attempt_id": "V1", "role": "verifier", "status": "admitted", "receipt": "receipts/R-V1.json"}
 	cases := []struct {
 		name   string
 		mutate func(f *fixture, r map[string]J)
@@ -264,14 +336,14 @@ func TestSingleGenerationRules(t *testing.T) {
 		{"live writers case alias", func(f *fixture, r map[string]J) {
 			addAttempt(r, J{"task_id": "T-1", "attempt_id": "A2", "role": "implementer", "status": "running", "authorized_by": "AP-1", "write_paths": L{"src/a.py"}})
 			addAttempt(r, J{"task_id": "T-1", "attempt_id": "A3", "role": "implementer", "status": "unknown", "authorized_by": "AP-1", "write_paths": L{"SRC/A.PY"}})
-		}, "single writer: T-1#A2 and T-1#A3 both hold SRC/A.PY"},
+		}, "single writer: T-1#A2 and T-1#A3 both hold"},
 		{"live writers symlink alias", func(f *fixture, r map[string]J) {
 			if err := os.Symlink("a.py", filepath.Join(f.repo, "src/link.py")); err != nil {
 				f.t.Fatal(err)
 			}
 			addAttempt(r, J{"task_id": "T-1", "attempt_id": "A2", "role": "implementer", "status": "running", "authorized_by": "AP-1", "write_paths": L{"src/a.py"}})
 			addAttempt(r, J{"task_id": "T-1", "attempt_id": "A3", "role": "implementer", "status": "dispatched", "authorized_by": "AP-1", "write_paths": L{"src/link.py"}})
-		}, "single writer: T-1#A2 and T-1#A3 both hold src/link.py"},
+		}, "single writer: T-1#A2 and T-1#A3 both hold"},
 		{"settled writers may share a path", func(f *fixture, r map[string]J) {
 			addAttempt(r, J{"task_id": "T-1", "attempt_id": "A2", "role": "implementer", "status": "running", "authorized_by": "AP-1", "write_paths": L{"src/a.py"}})
 			addAttempt(r, J{"task_id": "T-1", "attempt_id": "A3", "role": "implementer", "status": "cancelled", "authorized_by": "AP-1", "write_paths": L{"src/a.py"}})
@@ -342,7 +414,7 @@ func TestSingleGenerationRules(t *testing.T) {
 			addAttempt(r, verifier)
 		}, ""},
 		{"verified_by names receipt", func(f *fixture, r map[string]J) {
-			finding(r)["status"], finding(r)["history"], finding(r)["verified_by"] = "verified", verifiedHistory, "receipts/R-1.json"
+			finding(r)["status"], finding(r)["history"], finding(r)["verified_by"] = "verified", verifiedHistory, "receipts/R-V1.json"
 			addAttempt(r, verifier)
 		}, ""},
 		{"plan file must match rev", func(f *fixture, r map[string]J) {
@@ -419,9 +491,7 @@ func TestSingleGenerationRules(t *testing.T) {
 				"sha256": digest(f.t, filepath.Join(f.run, "revisions/rubric-r1.json"))}
 		}, "readiness_verdict differs"},
 		{"scorecard consistent", func(f *fixture, r map[string]J) {
-			r["scorecard.json"] = J{"readiness_verdict": "NOT_ASSESSED"}
-			r["run.json"]["revisions"].(J)["rubric"] = J{"rev": 1, "file": "revisions/rubric-r1.json",
-				"sha256": digest(f.t, filepath.Join(f.run, "revisions/rubric-r1.json"))}
+			scorecard(f, r, J{})
 		}, ""},
 		{"schema tag and enum", func(f *fixture, r map[string]J) {
 			r["cycles.json"]["schema"] = "overhaul.cycle/1"
@@ -446,48 +516,50 @@ func TestSingleGenerationRules(t *testing.T) {
 			r["results-candidate.json"] = J{"schema": "overhaul.results/1", "results": J{"C-1": J{"status": "PASS"}}}
 		}, "finding F-1: control C-1 is PASS in results-candidate.json while the finding is confirmed"},
 		{"critical-high gate against open finding", func(f *fixture, r map[string]J) {
-			scorecard(r, J{"G-NO-CRITICAL-HIGH": "PASS"})
+			scorecard(f, r, J{"G-NO-CRITICAL-HIGH": "PASS"})
 		}, "G-NO-CRITICAL-HIGH is PASS but finding F-1 is confirmed high"},
 		{"serious-lead gate against open lead", func(f *fixture, r map[string]J) {
 			r["findings.json"]["findings"] = append(r["findings.json"]["findings"].(L), J{"id": "F-2", "fingerprint": "fp-2",
 				"kind": "defect", "scope_origin": "pre-existing", "status": "candidate", "domain": "security",
 				"potential_impact": "critical", "history": L{J{"status": "candidate"}}})
-			scorecard(r, J{"G-NO-OPEN-SERIOUS-LEAD": "PASS"})
+			scorecard(f, r, J{"G-NO-OPEN-SERIOUS-LEAD": "PASS"})
 		}, "G-NO-OPEN-SERIOUS-LEAD is PASS but lead F-2 is open with potential impact critical"},
-		{"coverage gate without matrix", func(f *fixture, r map[string]J) { scorecard(r, J{"G-COVERAGE": "PASS"}) },
+		{"coverage gate without matrix", func(f *fixture, r map[string]J) { scorecard(f, r, J{"G-COVERAGE": "PASS"}) },
 			"G-COVERAGE is PASS without an applicability matrix"},
 		{"coverage gate with blocked cell", func(f *fixture, r map[string]J) {
 			reviewed(f, r, "blocked")
-			scorecard(r, J{"G-COVERAGE": "PASS"})
+			scorecard(f, r, J{"G-COVERAGE": "PASS"})
 		}, "applicability ['correctness', 'api', 'backend'] is blocked"},
 		{"coverage gate with unchecked domain", func(f *fixture, r map[string]J) {
 			reviewed(f, r, "applicable")
 			cell(r)["receipts"] = L{"receipts/R-1.json"}
-			scorecard(r, J{"G-COVERAGE": "PASS"})
+			scorecard(f, r, J{"G-COVERAGE": "PASS"})
 		}, "no admitted, non-gap receipt of applicability ['correctness', 'api', 'backend'] lists correctness in domains_checked"},
 		{"coverage gate with unreviewed range", func(f *fixture, r map[string]J) {
 			reviewed(f, r, "applicable")
 			r["coverage.json"]["files"] = L{J{"path": "src/a.py", "eligible": true, "ranges": L{J{"start": 1, "end": 1, "state": "tool-scanned"}}}}
-			scorecard(r, J{"G-COVERAGE": "PASS"})
+			scorecard(f, r, J{"G-COVERAGE": "PASS"})
 		}, "eligible file src/a.py has unreviewed ranges"},
 		{"coverage gate with rejected receipt", func(f *fixture, r map[string]J) {
 			reviewed(f, r, "applicable")
 			attempts(r)[len(attempts(r))-1].(J)["status"] = "rejected"
-			scorecard(r, J{"G-COVERAGE": "PASS"})
+			scorecard(f, r, J{"G-COVERAGE": "PASS"})
 		}, "no admitted, non-gap receipt of applicability"},
 		{"coverage gate with gap receipt", func(f *fixture, r map[string]J) {
 			reviewed(f, r, "applicable")
-			write(f.t, filepath.Join(f.run, "receipts/R-dom.json"), J{"outcome": "gap", "domains_checked": L{"correctness"}})
-			scorecard(r, J{"G-COVERAGE": "PASS"})
+			rc := receipt("W-1", "A1", "reviewer", "gap")
+			rc["domains_checked"] = L{"correctness"}
+			write(f.t, filepath.Join(f.run, "receipts/R-dom.json"), rc)
+			scorecard(f, r, J{"G-COVERAGE": "PASS"})
 		}, "no admitted, non-gap receipt of applicability"},
 		{"coverage gate counts empty files", func(f *fixture, r map[string]J) {
 			reviewed(f, r, "applicable")
 			r["coverage.json"]["files"] = L{J{"path": "src/a.py", "eligible": true, "lines": 0}}
-			scorecard(r, J{"G-COVERAGE": "PASS"})
+			scorecard(f, r, J{"G-COVERAGE": "PASS"})
 		}, ""},
 		{"coverage gate backed by records", func(f *fixture, r map[string]J) {
 			reviewed(f, r, "applicable")
-			scorecard(r, J{"G-COVERAGE": "PASS"})
+			scorecard(f, r, J{"G-COVERAGE": "PASS"})
 		}, ""},
 		{"unknown applicability state", func(f *fixture, r map[string]J) {
 			reviewed(f, r, "maybe")

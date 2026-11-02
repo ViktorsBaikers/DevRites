@@ -43,6 +43,22 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
   workspaces or reviving their controller leases.
 - Execute Autocomplete's global frontier at cold Prove/Vet/Review and native wait
   boundaries; preserve frozen candidates, standalone scope, and non-green gates.
+- Preserve selected workspace identity across native command forms, resolver
+  resumes, and handoffs; reject empty answers and invalid wait transitions before
+  publishing question changes.
+- Keep candidate and next-step observations read-only, and retain unfinished Build
+  and Polish work even when their required documents already exist.
+- Confine installer reads and mutations to the validated project root; acquire
+  shared-marker ownership before changing configuration, replay disabled-host
+  update flags, and reject linked pin destinations outside the project.
+- Preserve uninstall ownership after binary-removal failures so ordinary retries
+  work without touching another installation. Stage Windows launcher uninstalls
+  outside the installed image; refuse direct self-removal before project changes.
+- Bind Overhaul scorecards to current calculator inputs and admitted receipts to
+  immutable generation hashes; require complete writer reservations and
+  lane-matched coverage proof.
+- Serialize Overhaul's shared-tree writer observation windows without filtering
+  away unauthorized changes; retain parallel read-only review on immutable inputs.
 
 ## [7.2.8](https://github.com/ViktorsBaikers/DevRites/compare/v7.2.7...v7.2.8) (2026-10-31)
 

@@ -70,8 +70,8 @@ and every admission and settlement is recorded before the run leaves `RUNNING`
    revision as a new file under `revisions/`; never rewrite an existing one.
 3. Render views into the staged generation with `devrites-engine overhaul render`.
 4. `devrites-engine overhaul records publish <run>` validates the staged generation
-   against the previous one, writes `manifest.json` (SHA-256 of every generation file
-   and every revision), renames the directory, then replaces `CURRENT` last.
+   against the previous one, writes `manifest.json` (SHA-256 of every generation file,
+   revision and admitted receipt), renames the directory, then replaces `CURRENT` last.
 5. Any reader runs `validate <run>` first. A mismatch between `CURRENT`, the manifest
    and file bytes is a mixed generation: stop applying and republish.
 
@@ -79,6 +79,16 @@ A crash leaves an incomplete `g<N+1>.tmp` or a complete `g<N+1>` not yet current
 `validate` reports both, `stage` refuses until you inspect it, and the previous
 generation stays intact. One atomic rename is not a transaction; readers verify
 digests.
+
+Publishing first seals each admitted receipt's exact bytes in `manifest.receipts`.
+Later generations retain those digests and each settled task/attempt's original
+receipt path, even when the attempt leaves the dispatch ledger. Receipt changes
+invalidate both `validate` and the next `publish`; a caller's new path or digest
+cannot replace settled authority. Preserve the original receipt and record new work
+as a new attempt. A manifest without receipt bindings is not trusted.
+`admit receipt` remains read-only: settlement is recorded in the stage and sealed by
+`publish`, not by changing the current generation during admission.
+
 Give run files restrictive permissions, redact secrets before storing evidence, and
 never store credentials, tokens or private keys.
 
@@ -122,20 +132,23 @@ for needs-validation, evidence for decided findings, `verified_by` naming an adm
 verifier attempt, repository-relative locations (external ones are labels, never
 host paths); `revisions.plan.file` equal to `revisions/plan-r<rev>.json`, required
 once approvals or writers exist; plan digest pins; known, acyclic dependencies;
-allowed paths that are exact files inside the repository (no `*` or `?`, no
+non-empty arrays of allowed paths that are exact files inside the repository (no `*` or `?`, no
 directories, no `.git` component or run-area path in any letter case or through a
 symlink, no symlink or traversal escape); a separate verifier role;
 approval and `accept-degradation` events with quote and trusted channel, approvals
 matching the plan digest, closure and current revision, none active after a later
-stop; a scorecard only with `revisions.rubric` and the same verdict as `run.json`;
+stop; a scorecard only with `revisions.rubric`, the same verdict as `run.json`, and
+`inputs` digests matching the exact selected rubric, results and gates bytes;
 `READY_FOR_USER_REVIEW` only with a scorecard whose verdict is `MEETS_TARGETS`, and
 `COMPLETED_WITH_APPROVED_DEGRADATION` only with `MEETS_TARGETS_WITH_APPROVED_DEGRADATION`,
 each listing every audit gate (plus every repair gate outside assessment-only runs) as
 `PASS` or `NOT_APPLICABLE` (`G-CONCURRENCY` may be `WAIVED_OPERATIONAL` for the degraded outcome);
 no approval or writer in an assessment-only run; unchanged `run_id`, `repo_root`,
 `mode` and `assessment_only`; writers authorized for their task; one live writer
-per path (case-folded, symlink-resolved); every attempt `admitted`, `rejected` or
-`cancelled` once the outcome leaves `RUNNING` (`timed-out` and `unknown` are not settled); one outcome per approved task at the end;
+per authoritative task path (case-folded, symlink-resolved), reserving the whole
+approved `allowed_paths` scope even when `write_paths` is omitted or narrower;
+every attempt `admitted`, `rejected` or `cancelled` once the outcome leaves `RUNNING`
+(`timed-out` and `unknown` are not settled); one outcome per approved task at the end;
 a coverage denominator that never shrinks; append-only cycles, findings history and
 approval events; immutable revisions; view stamps; manifest integrity; stale stages
 and interrupted publishes. Across records: every finding's `domain` is a score key;
@@ -146,8 +159,10 @@ inside the run; coverage ranges use the seven coverage states; a scorecard's
 `G-NO-CRITICAL-HIGH` PASS needs no open critical or high finding,
 `G-NO-OPEN-SERIOUS-LEAD` PASS no open lead with critical or high potential impact,
 and `G-COVERAGE` PASS a non-empty matrix with no blocked cell, every applicable cell
-closed by an admitted, non-gap receipt whose `domains_checked` lists its domain, and every range of
-every eligible file reviewed or excluded.
+closed by an admitted, non-gap receipt whose `domains_checked` lists its domain and
+whose lane matches the cell, with receipt schema, run, task, attempt, role, lane and
+snapshot matching the admitted dispatch identity; every range of every eligible file
+reviewed or excluded.
 
 Receipt admission and quote anchoring live in `devrites-engine overhaul admit`
 ([`orchestration.md`](orchestration.md#admission-tool)).

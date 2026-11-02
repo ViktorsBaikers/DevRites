@@ -3,6 +3,7 @@ package lib
 import (
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -34,10 +35,8 @@ func (s *contextSources) read(name string) ([]byte, error) {
 	if source, ok := s.files[name]; ok {
 		return source.data, source.err
 	}
-	var source contextSource
-	if source.err = contextParents(s.dir, name); source.err == nil {
-		source.data, source.err = readBoundedRegularFile(filepath.Join(s.dir, name), workspaceArtifactLimit)
-	}
+	source := contextSource{}
+	source.data, source.err = readContextArtifact(s.dir, name)
 	if source.err != nil {
 		source.err = fmt.Errorf("workspace artifact %s: %w", name, source.err)
 	}
@@ -46,6 +45,64 @@ func (s *contextSources) read(name string) ([]byte, error) {
 	}
 	s.files[name] = source
 	return source.data, source.err
+}
+
+// Acquire workspace leaves through a confined root, not a checked absolute path.
+func readContextArtifact(dir, name string) ([]byte, error) {
+	if !filepath.IsLocal(name) {
+		return nil, fmt.Errorf("workspace artifact %q escapes workspace", name)
+	}
+	if err := contextParents(dir, name); err != nil {
+		return nil, err
+	}
+	ws, err := os.OpenRoot(dir)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = ws.Close() }()
+	before, err := ws.Lstat(name)
+	if err != nil {
+		return nil, err
+	}
+	if !before.Mode().IsRegular() {
+		return nil, errors.New("artifact is not a regular file")
+	}
+	if before.Size() < 0 || before.Size() > workspaceArtifactLimit {
+		return nil, fmt.Errorf("artifact exceeds %s limit", byteLimitName(workspaceArtifactLimit))
+	}
+	file, err := ws.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = file.Close() }()
+	opened, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !opened.Mode().IsRegular() || opened.Size() != before.Size() || !os.SameFile(before, opened) {
+		return nil, errors.New("artifact changed type while opening")
+	}
+	body, err := io.ReadAll(io.LimitReader(file, workspaceArtifactLimit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(body)) > workspaceArtifactLimit {
+		return nil, fmt.Errorf("artifact exceeds %s limit", byteLimitName(workspaceArtifactLimit))
+	}
+	after, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	current, err := ws.Lstat(name)
+	if err != nil {
+		return nil, err
+	}
+	if !after.Mode().IsRegular() || after.Size() != opened.Size() || after.Size() != int64(len(body)) ||
+		!os.SameFile(opened, after) || !current.Mode().IsRegular() || !os.SameFile(opened, current) ||
+		current.Size() != after.Size() {
+		return nil, errors.New("artifact changed size or type while reading")
+	}
+	return body, nil
 }
 
 // Reject even in-workspace parent links: managed paths name actual directories.
@@ -168,4 +225,31 @@ func publishContext(featureDir string, opts contextOpts, body []byte) (out strin
 		return out, false, err
 	}
 	return out, false, nil
+}
+
+// Caller holds the feature lock; a wave/role read-set is never replaced.
+func retainPacketContext(workspace, name string, body []byte) error {
+	rel := filepath.Join("packets", name)
+	if err := contextParents(workspace, rel); err != nil {
+		return err
+	}
+	prior, err := (&contextSources{dir: workspace}).read(rel)
+	if err == nil {
+		if !bytes.Equal(prior, body) {
+			return fmt.Errorf("%s already retains a different context; render the new read-set under a new wave", rel)
+		}
+		return nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	ws, err := os.OpenRoot(workspace)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = ws.Close() }()
+	if err := ws.MkdirAll("packets", 0o755); err != nil {
+		return err
+	}
+	return fsutil.WriteFileAtomicIn(ws, rel, body, 0o600)
 }

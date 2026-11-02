@@ -10,18 +10,20 @@ type Command struct {
 	Verb   string
 	Claude string
 	Codex  string
+	Skill  string
 }
 
-// ForVerb returns the Claude and Codex forms for a public rite verb. The empty
+// ForVerb returns native invocation forms for a public rite verb. The empty
 // verb returns an empty command so callers can omit suggestions safely.
 func ForVerb(verb string) Command {
 	verb = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(verb, "/"), "$"))
+	verb = strings.TrimPrefix(verb, "skill:")
 	verb = strings.TrimPrefix(verb, "rite-")
 	if verb == "" {
 		return Command{}
 	}
 	name := "rite-" + verb
-	return Command{Verb: verb, Claude: "/" + name, Codex: "$" + name}
+	return Command{Verb: verb, Claude: "/" + name, Codex: "$" + name, Skill: "/skill:" + name}
 }
 
 // ForAction extracts the first explicit rite invocation from a cursor action.
@@ -29,11 +31,31 @@ func ForVerb(verb string) Command {
 func ForAction(action string) Command {
 	for _, field := range strings.Fields(action) {
 		field = strings.Trim(field, "`'\"()[]{}<>,.;:")
-		if strings.HasPrefix(field, "/rite-") || strings.HasPrefix(field, "$rite-") {
+		if strings.HasPrefix(field, "/rite-") || strings.HasPrefix(field, "$rite-") || strings.HasPrefix(field, "/skill:rite-") {
 			return ForVerb(field)
 		}
 	}
 	return Command{}
+}
+
+// SourceIsFirstArgument distinguishes workspace slugs from phase-local
+// slice/mode/scope/target arguments. Plan's optional source follows its mode.
+func (c Command) SourceIsFirstArgument() bool {
+	switch c.Verb {
+	case "", "build", "plan", "review", "polish":
+		return false
+	default:
+		return true
+	}
+}
+
+// SourceInvocation renders an executable cursor command, never display prose.
+// Commands without a slug argument retain the caller's selected SOURCE.
+func (c Command) SourceInvocation(source string) string {
+	if source != "" && c.SourceIsFirstArgument() {
+		return c.Claude + " " + source
+	}
+	return c.Claude
 }
 
 // Both renders a command in host-neutral prose for engine stderr/stdout messages.

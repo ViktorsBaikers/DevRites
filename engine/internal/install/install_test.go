@@ -919,7 +919,6 @@ exit 42
 	opts.Stderr = &bytes.Buffer{}
 	err := Apply(opts)
 	if err == nil ||
-		!strings.Contains(err.Error(), "local update payload") ||
 		!strings.Contains(err.Error(), "missing claude/skills") ||
 		!strings.Contains(err.Error(), payload) {
 		t.Fatalf("update error = %v, want actionable missing payload error", err)

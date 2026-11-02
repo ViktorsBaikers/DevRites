@@ -16,6 +16,10 @@ import (
 )
 
 func (r *runner) install() error {
+	if err := r.openTargetRoot(); err != nil {
+		return err
+	}
+	defer r.closeTargetRoot()
 	fmt.Fprintln(r.opts.Stdout, "DevRites installer")
 	fmt.Fprintf(r.opts.Stdout, "  target : %s\n", r.target)
 	fmt.Fprintf(r.opts.Stdout, "  payload: %s\n", r.payload)
@@ -42,6 +46,10 @@ func (r *runner) install() error {
 	}
 	if err := r.preflightInstall(); err != nil {
 		return err
+	}
+	// Complete binary installation before changing payload ownership or version.
+	if err := r.installBinary(); err != nil {
+		return fmt.Errorf("install engine binary: %w", err)
 	}
 
 	for _, tree := range hostpack.InstallTrees(r.opts.WithSkills, r.opts.WithAgents, r.opts.WithCodex, r.opts.WithOmp, r.opts.WithPi, r.opts.WithDevin, r.opts.WithDsh) {
@@ -105,9 +113,6 @@ func (r *runner) install() error {
 		if err := r.writeManifest(); err != nil {
 			return fmt.Errorf("write manifest: %w", err)
 		}
-	}
-	if err := r.installBinary(); err != nil {
-		return fmt.Errorf("install engine binary: %w", err)
 	}
 
 	fmt.Fprintln(r.opts.Stdout)
@@ -218,19 +223,32 @@ func (r *runner) installData(data []byte, rel string) error {
 	return nil
 }
 
-// writeConfined writes dest, which must lie under the install target, through
-// a root opened on the target so a directory component replaced by a symlink
-// after the path recheck cannot redirect the write.
+func (r *runner) readConfined(path string) ([]byte, error) {
+	rel, err := filepath.Rel(r.target, path)
+	if err != nil {
+		return nil, err
+	}
+	if r.targetRoot != nil {
+		return r.targetRoot.ReadFile(rel)
+	}
+	root, err := os.OpenRoot(r.target)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = root.Close() }()
+	return root.ReadFile(rel)
+}
+
+// writeConfined uses the operation's validated root, not its mutable pathname.
 func (r *runner) writeConfined(dest string, data []byte, perm fs.FileMode) error {
 	rel, err := filepath.Rel(r.target, dest)
 	if err != nil {
 		return err
 	}
-	root, err := os.OpenRoot(r.target)
-	if err != nil {
-		return err
+	root := r.targetRoot
+	if root == nil {
+		return fmt.Errorf("install target is not open")
 	}
-	defer func() { _ = root.Close() }()
 	if info, err := root.Stat(rel); err == nil {
 		perm = info.Mode().Perm()
 	} else if !os.IsNotExist(err) {
@@ -239,18 +257,16 @@ func (r *runner) writeConfined(dest string, data []byte, perm fs.FileMode) error
 	return fsutil.WriteFileAtomicIn(root, rel, data, perm)
 }
 
-// removeConfined removes dest, which must lie under the install target,
-// through a root opened on the target.
+// removeConfined uses the same retained root as writes and managed reads.
 func (r *runner) removeConfined(dest string) error {
 	rel, err := filepath.Rel(r.target, dest)
 	if err != nil {
 		return err
 	}
-	root, err := os.OpenRoot(r.target)
-	if err != nil {
-		return err
+	root := r.targetRoot
+	if root == nil {
+		return fmt.Errorf("install target is not open")
 	}
-	defer func() { _ = root.Close() }()
 	return root.Remove(rel)
 }
 
@@ -285,11 +301,10 @@ func (r *runner) seedDevrites() error {
 		fmt.Fprintln(r.opts.Stdout, "  [seed] .devrites/ACTIVE (runtime state - preserved on uninstall)")
 		return nil
 	}
-	if err := os.MkdirAll(filepath.Dir(active), 0o755); err != nil {
+	if err := r.targetRoot.MkdirAll(".devrites", 0o755); err != nil {
 		return fmt.Errorf("create %s: %w", filepath.Dir(active), err)
 	}
-	// #nosec G304 -- active path is the operator-selected install dir (O_EXCL create)
-	f, err := os.OpenFile(active, os.O_CREATE|os.O_EXCL, 0o644)
+	f, err := r.targetRoot.OpenFile(filepath.Join(".devrites", "ACTIVE"), os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		if os.IsExist(err) {
 			return nil
@@ -342,7 +357,7 @@ func (r *runner) relinquishEditedHostConfigs() (map[string]bool, error) {
 func (r *runner) seedHostConfig(config hostpack.HostConfig) error {
 	if _, managed := r.prev[config.Rel]; !managed {
 		// #nosec G304 -- fixed host config path under the operator target
-		data, err := os.ReadFile(filepath.Join(r.target, filepath.FromSlash(config.Rel)))
+		data, err := r.readConfined(filepath.Join(r.target, filepath.FromSlash(config.Rel)))
 		if err == nil && string(data) != config.Content {
 			if !strings.Contains(string(data), config.Applied) {
 				fmt.Fprintf(r.opts.Stderr, "warning: %s exists and was not changed; to hide duplicate DevRites skills in %s, add: %s\n", config.Rel, config.Host, config.Advice)
@@ -408,7 +423,7 @@ func (r *runner) pruneDropped() error {
 			if err := r.removeConfined(dead); err != nil && !os.IsNotExist(err) {
 				return fmt.Errorf("remove %s: %w", rel, err)
 			}
-			pruneEmptyDirs(filepath.Dir(dead), r.target)
+			r.pruneEmptyDirs(filepath.Dir(dead))
 			fmt.Fprintf(r.opts.Stdout, "  [%s] %s\n", action, rel)
 		}
 		r.stats.pruned++

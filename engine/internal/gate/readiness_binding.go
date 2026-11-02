@@ -1,15 +1,18 @@
 package gate
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"hash"
+	"io"
 	"regexp"
+	"slices"
 	"strings"
 
+	"github.com/devrites/devrites/internal/acceptance"
 	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/state"
 )
@@ -17,7 +20,7 @@ import (
 const (
 	readinessBindingLabel   = "Readiness inputs SHA-256: "
 	readinessBindingDomain  = "devrites-readiness-inputs"
-	readinessBindingVersion = "1"
+	readinessBindingVersion = "2"
 )
 
 type readinessInput struct {
@@ -37,10 +40,13 @@ var readinessInputs = [...]readinessInput{
 	{logical: "design-brief.md"},
 	{logical: "ai-spec.md"},
 	{logical: ".devrites/principles.md"},
+	{logical: acceptance.GatesFile},
 }
 
 // ReadinessBinding returns the exact line Vet records in eng-review.md.
 // Explicit sources resolve live first, then safely archived planning bytes.
+// Gate definitions are bound independently of proof progress. Older bindings
+// omitted those definitions and require normal re-Vet, never automatic refresh.
 func ReadinessBinding(root, slug string) (string, error) {
 	observation, err := state.ObserveReferencedWorkspace(root, slug)
 	if err != nil {
@@ -50,10 +56,6 @@ func ReadinessBinding(root, slug string) (string, error) {
 }
 
 func readinessBindingFromObservation(observation *state.WorkspaceObservation) (string, error) {
-	return bindReadinessInputs(observation, true)
-}
-
-func bindReadinessInputs(observation *state.WorkspaceObservation, blankProgress bool) (string, error) {
 	digest := sha256.New()
 	writeReadinessField(digest, readinessBindingDomain)
 	writeReadinessField(digest, readinessBindingVersion)
@@ -63,7 +65,7 @@ func bindReadinessInputs(observation *state.WorkspaceObservation, blankProgress 
 		if err != nil {
 			return "", err
 		}
-		if blankProgress && input.logical == "traceability.md" {
+		if input.logical == "traceability.md" {
 			content = withoutProgressCells(content)
 		}
 		writeReadinessField(digest, string(input.logical))
@@ -85,18 +87,51 @@ func retainedReadinessInput(observation *state.WorkspaceObservation, input readi
 	}
 	switch fact.State() {
 	case state.ArtifactAbsent:
-		if input.required {
+		required := input.required
+		if input.logical == acceptance.GatesFile {
+			phase, err := observation.DeclaredPhase()
+			if err != nil {
+				return nil, false, err
+			}
+			policy, _ := state.PolicyFor(phase)
+			required = policyRequires(policy, input.logical)
+		}
+		if required {
 			return nil, false, fmt.Errorf("readiness input %s is missing", input.logical)
 		}
 		return nil, false, nil
 	case state.ArtifactEmpty, state.ArtifactPresent:
-		return fact.Bytes(), true, nil
+		content := fact.Bytes()
+		if input.logical == acceptance.GatesFile {
+			content, err := normalizedReadinessGates(content)
+			return content, true, err
+		}
+		return content, true, nil
 	case state.ArtifactMalformed, state.ArtifactUnsafe, state.ArtifactUnreadable:
 		diagnostic, _ := fact.Diagnostic()
 		return nil, false, readinessDiagnosticError(diagnostic)
 	default:
 		return nil, false, fmt.Errorf("readiness input %s cannot be inspected", input.logical)
 	}
+}
+
+// Vet approves obligations, not their checkbox, evidence, or progress prose.
+func normalizedReadinessGates(content []byte) ([]byte, error) {
+	doc := acceptance.ParseLedger(string(content))
+	if len(doc.Errors) > 0 {
+		return nil, fmt.Errorf("readiness input gates.md is malformed: %s", strings.Join(doc.Errors, "; "))
+	}
+	slices.SortFunc(doc.Gates, func(a, b *acceptance.Gate) int {
+		return strings.Compare(a.ID, b.ID)
+	})
+	var normalized bytes.Buffer
+	writeReadinessLength(&normalized, uint64(len(doc.Gates)))
+	for _, gate := range doc.Gates {
+		for _, field := range [...]string{gate.ID, gate.Title, gate.Check, gate.Expect, gate.Cwd, gate.Inputs, gate.Run} {
+			writeReadinessField(&normalized, field)
+		}
+	}
+	return normalized.Bytes(), nil
 }
 
 func readinessDiagnostics(observation *state.WorkspaceObservation) []state.ArtifactDiagnostic {
@@ -115,12 +150,6 @@ func readinessDiagnostics(observation *state.WorkspaceObservation) []state.Artif
 
 func verifyReadinessBinding(observation *state.WorkspaceObservation) (string, error) {
 	expected, err := readinessBindingFromObservation(observation)
-	if err != nil {
-		return "", err
-	}
-	// A line recorded over the raw bytes, before progress cells were blanked,
-	// still verifies while those bytes are unchanged.
-	legacy, err := bindReadinessInputs(observation, false)
 	if err != nil {
 		return "", err
 	}
@@ -144,7 +173,7 @@ func verifyReadinessBinding(observation *state.WorkspaceObservation) (string, er
 			continue
 		}
 		attempts++
-		if line == expected || line == legacy {
+		if line == expected {
 			matches++
 		}
 	}
@@ -155,9 +184,9 @@ func verifyReadinessBinding(observation *state.WorkspaceObservation) (string, er
 }
 
 // ReadinessInputDigest is one readiness input's content identity at a moment
-// in time. The aggregate binding answers "did anything change"; the per-input
-// digest answers "which artifact changed", which is what a drift diagnosis and
-// a re-vet route need.
+// in time (canonical definitions only for gates.md). The aggregate binding
+// answers "did anything change"; the per-input digest answers "which artifact
+// changed", which is what a drift diagnosis and a re-vet route need.
 type ReadinessInputDigest struct {
 	Path    string `json:"path"`
 	Present bool   `json:"present"`
@@ -322,12 +351,12 @@ func policyRequires(policy state.PhasePolicy, name state.ArtifactPath) bool {
 	return false
 }
 
-func writeReadinessField(digest hash.Hash, value string) {
+func writeReadinessField(digest io.Writer, value string) {
 	writeReadinessLength(digest, uint64(len(value)))
 	_, _ = digest.Write([]byte(value))
 }
 
-func writeReadinessLength(digest hash.Hash, value uint64) {
+func writeReadinessLength(digest io.Writer, value uint64) {
 	var encoded [8]byte
 	binary.BigEndian.PutUint64(encoded[:], value)
 	_, _ = digest.Write(encoded[:])

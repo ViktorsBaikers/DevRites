@@ -11,7 +11,8 @@ import (
 var (
 	acceptanceHeadingRE = regexp.MustCompile(`(?i)^##\s+Acceptance criteria\s*$`)
 	canonicalACRE       = regexp.MustCompile(`\bAC-\d{3}\b`)
-	h2HeadingRE         = regexp.MustCompile(`^##\s+`)
+	acceptanceEndRE     = regexp.MustCompile(`^#{1,2}\s+`)
+	acDeclarationRE     = regexp.MustCompile("^\\s*(?:#{1,6}\\s+|[-+*]\\s+(?:\\[[ xX]\\]\\s+)?|\\d+[.)]\\s+|\\|\\s*)?(?:\\*\\*|__|`)?(AC-\\d{3})(?:\\*\\*|__|`)?(?:\\s*[:|]|[ \\t]+[-–—])")
 )
 
 // AcceptanceMapResult is the deterministic ID-presence check from spec.md
@@ -50,11 +51,40 @@ func ParseAcceptanceMap(spec, tasks, testPlan []byte, requireTasks, requireTestP
 }
 
 func acceptanceSection(spec []byte) string {
-	structural, err := markdowntext.Structural(spec)
+	structural, err := markdowntext.Prose(spec)
 	if err != nil {
 		return ""
 	}
 	lines := strings.Split(strings.ReplaceAll(string(structural), "\r\n", "\n"), "\n")
+	start, end := acceptanceSectionBounds(lines)
+	if start < 0 {
+		return ""
+	}
+	return strings.Join(lines[start:end], "\n")
+}
+
+// AcceptanceDeclarationsOutsideSection identifies definitions, not prose
+// references, that the canonical section parser would otherwise silently skip.
+func AcceptanceDeclarationsOutsideSection(spec []byte) []string {
+	structural, err := markdowntext.Prose(spec)
+	if err != nil {
+		return nil
+	}
+	lines := strings.Split(strings.ReplaceAll(string(structural), "\r\n", "\n"), "\n")
+	start, end := acceptanceSectionBounds(lines)
+	var ids []string
+	for i, line := range lines {
+		if start >= 0 && i >= start && i < end {
+			continue
+		}
+		if match := acDeclarationRE.FindStringSubmatch(line); match != nil {
+			ids = append(ids, match[1])
+		}
+	}
+	return ids
+}
+
+func acceptanceSectionBounds(lines []string) (int, int) {
 	start := -1
 	for i, line := range lines {
 		if acceptanceHeadingRE.MatchString(strings.TrimSpace(line)) {
@@ -63,16 +93,16 @@ func acceptanceSection(spec []byte) string {
 		}
 	}
 	if start < 0 {
-		return ""
+		return -1, -1
 	}
 	end := len(lines)
 	for i := start; i < len(lines); i++ {
-		if h2HeadingRE.MatchString(lines[i]) {
+		if acceptanceEndRE.MatchString(strings.TrimSpace(lines[i])) {
 			end = i
 			break
 		}
 	}
-	return strings.Join(lines[start:end], "\n")
+	return start, end
 }
 
 func uniqueCanonicalACs(text string) []string {

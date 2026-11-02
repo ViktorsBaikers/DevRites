@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devrites/devrites/internal/hostpack"
 	"github.com/devrites/devrites/internal/release"
 )
 
@@ -64,9 +63,6 @@ func runUpdate(opts Options) error {
 	payload, err := filepath.Abs(opts.PayloadDir)
 	if err != nil {
 		return fmt.Errorf("resolve payload %s: %w", opts.PayloadDir, err)
-	}
-	if err := hostpack.ValidatePayload(os.DirFS(payload), true, true, true, true, true); err != nil {
-		return fmt.Errorf("local update payload under %s is invalid: %w", payload, err)
 	}
 	installFlags := manifestHeader(mf, "devrites-flags")
 	next := DefaultOptions(ModeInstall)

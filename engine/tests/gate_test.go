@@ -64,18 +64,6 @@ func TestReadinessBlocksAbsentRequiredArtifactExactCLIContract(t *testing.T) {
 	}
 }
 
-func TestReadinessEmitBindingPassesExactCLIContract(t *testing.T) {
-	root := filepath.Join(t.TempDir(), ".devrites")
-	const slug = "binding-success"
-	writeCompleteGateCLIWorkspace(t, root, slug, state.PhaseBuild, state.PhaseBuild, "none\n")
-
-	out, errOut, code := runDevrites(t, root, "check", "readiness", "--emit-binding", slug)
-	const wantOut = "Readiness inputs SHA-256: 72cf891ac97737493a27ead330a827e93c28d8e7e0103e4e972fa35fdcaa8158\n"
-	if code != 0 || out != wantOut || errOut != "" {
-		t.Fatalf("code=%d stdout=%q stderr=%q, want code=0 stdout=%q stderr empty", code, out, errOut, wantOut)
-	}
-}
-
 func TestReadinessBlocksStaleBindingExactCLIContract(t *testing.T) {
 	root := filepath.Join(t.TempDir(), ".devrites")
 	const slug = "stale-readiness"
@@ -635,6 +623,7 @@ func newFinalSealRepo(t *testing.T) (string, string) {
 	root := filepath.Join(project, ".devrites")
 	dir := filepath.Join(root, "work", "final")
 	initGitRepo(t, project)
+	runGit(t, project, "commit", "--allow-empty", "-q", "-m", "test: empty final candidate base")
 	for name, body := range map[string]string{
 		"state.md":             "| phase | seal |\n| status | running |\n",
 		"brief.md":             "# Brief\n\nFinal seal aggregate.\n",
@@ -681,6 +670,27 @@ No-findings: checked the aggregate order and exit mapping.
 			t.Fatal(err)
 		}
 		testutil.WriteFile(t, path, string(body)+"\nCandidate SHA-256: "+digest+"\n")
+	}
+	// Retain a synthetic native reviewer account, not only the prose roster.
+	if out, errOut, code := runDevrites(t, root, "candidate", "freeze", "final", "--wave", "fixture-candidate", "--paths", "source.go"); code != 0 {
+		t.Fatalf("freeze fixture candidate: exit=%d stdout=%q stderr=%q", code, out, errOut)
+	}
+	sums, err := os.ReadFile(filepath.Join(dir, "packets", "fixture-candidate.sha256"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	packet := filepath.Join(dir, "packets", "fixture-review.md")
+	testutil.WriteFile(t, packet, "# Scope\nSynthetic fixture review of source.go against AC-001.\n\n"+string(sums))
+	result := filepath.Join(t.TempDir(), "fixture-review.return.md")
+	testutil.WriteFile(t, result, "Outcome: no-findings\nCounts: critical=0 important=0 gap=0\nScope: synthetic final Seal fixture only.\n")
+	for _, args := range [][]string{
+		{"open", "--phase", "review", "--wave", "fixture-review", "--role", "code-reviewer", "--packet", packet},
+		{"start", "--wave", "fixture-review", "--role", "code-reviewer", "--handle", "synthetic-fixture-reviewer"},
+		{"return", "--wave", "fixture-review", "--role", "code-reviewer", "--handle", "synthetic-fixture-reviewer", "--result", result},
+	} {
+		if out, errOut, code := runDevrites(t, root, append([]string{"dispatch", "final"}, args...)...); code != 0 {
+			t.Fatalf("native fixture account %v: exit=%d stdout=%q stderr=%q", args, code, out, errOut)
+		}
 	}
 	gitCommitAll(t, project, "test: final seal fixture")
 	return project, root

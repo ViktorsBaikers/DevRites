@@ -259,3 +259,9 @@ written. `G-THRESHOLDS` and `G-MANDATORY` are computed; `validate` rejects a
 scorecard whose `G-NO-CRITICAL-HIGH`, `G-NO-OPEN-SERIOUS-LEAD` or `G-COVERAGE` PASS
 contradicts `findings.json` or `coverage.json`, and a control recorded PASS while a
 linked finding is still open ([`records.md`](records.md#enforced-versus-review-only)).
+`publish` and `validate` bind `scorecard.json.inputs.{rubric_sha256,results_sha256,gates_sha256}`
+to the exact file bytes read by the calculator: `run.json.revisions.rubric.file`,
+the selected generation's `results-candidate.json` when present (otherwise
+`results-baseline.json`), and that generation's `gates.json`. Calculate from those
+paths before publication. Missing or mismatched inputs reject the generation;
+records never recalculate a card or replace its digests to make it current.

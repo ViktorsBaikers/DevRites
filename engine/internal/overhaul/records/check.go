@@ -575,6 +575,9 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 					}
 				}
 			}
+			if paths, ok := t["allowed_paths"].([]any); !ok || len(paths) == 0 {
+				add("task %s: allowed_paths must be a non-empty array of exact paths", ts)
+			}
 			for _, p := range ovio.List(t["allowed_paths"]) {
 				if why := BadPath(p, repo); why != "" {
 					add("task %s: allowed path %s %s", ts, Repr(p), why)
@@ -724,11 +727,30 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 	for _, it := range att {
 		x := ovio.Obj(it)
 		xid, status := PyStr(x["task_id"])+"#"+PyStr(x["attempt_id"]), str(x, "status")
+		for _, k := range []string{"task_id", "attempt_id", "role"} {
+			if str(x, k) == "" {
+				add("attempt %s: %s must be a non-empty string", xid, k)
+			}
+		}
 		if !attemptState[status] {
 			add("attempt %s: bad status", xid)
 		}
-		if set("returned", "admitted", "rejected")[status] && !(str(x, "receipt") != "" && isFile(join(run, str(x, "receipt")))) {
-			add("attempt %s: receipt file missing", xid)
+		if set("returned", "admitted", "rejected")[status] && !(str(x, "receipt") != "" && inside(run, str(x, "receipt")) && isFile(join(run, str(x, "receipt")))) {
+			add("attempt %s: receipt file missing or outside run dir", xid)
+		}
+		if status == "admitted" && inside(run, str(x, "receipt")) && isFile(join(run, str(x, "receipt"))) {
+			rc, err := ovio.LoadObject(join(run, str(x, "receipt")))
+			if err != nil {
+				return nil, err
+			}
+			if !eq(rc["schema"], "overhaul.receipt/1") || str(rj, "run_id") == "" || !eq(rc["run_id"], rj["run_id"]) {
+				add("attempt %s: admitted receipt has wrong schema or run", xid)
+			}
+			for _, k := range []string{"task_id", "attempt_id", "role", "lane", "snapshot"} {
+				if str(x, k) == "" || !eq(rc[k], x[k]) {
+					add("attempt %s: admitted receipt %s differs from dispatch or is missing", xid, k)
+				}
+			}
 		}
 		if !set("admitted", "rejected", "cancelled")[status] {
 			unsettled = append(unsettled, xid)
@@ -739,7 +761,7 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 		if assessmentOnly {
 			add("attempt %s: writer dispatched in an assessment-only run", xid)
 		}
-		if (status == "dispatched" || status == "running") && !approved.has(x["task_id"]) {
+		if live[status] && !approved.has(x["task_id"]) {
 			add("attempt %s: writer task is not in the active approval", xid)
 		}
 		if !granted[Repr(x["authorized_by"])].has(x["task_id"]) {
@@ -756,12 +778,30 @@ func Check(run, genDir, prevDir string) ([]string, error) {
 			add("attempt %s: admitted changes outside allowed paths %s", xid, Repr(extra.sorted()))
 		}
 		if live[status] {
-			for _, p := range ovio.List(x["write_paths"]) {
+			paths, ok := tasks[Repr(x["task_id"])]["allowed_paths"].([]any)
+			if !ok || len(paths) == 0 {
+				add("attempt %s: live writer needs an authoritative task scope", xid)
+			}
+			// Reserve the approved task's whole scope, never a worker's narrower claim.
+			for _, p := range paths {
 				k := strings.ToLower(realpath(join(repo, ovio.Str(p))))
-				if prev, ok := liveWrites[k]; ok {
+				if prev, ok := liveWrites[k]; ok && prev != xid {
 					add("single writer: %s and %s both hold %s", prev, xid, PyStr(p))
 				}
 				liveWrites[k] = xid
+			}
+			if declared, exists := x["write_paths"]; exists {
+				declaredPaths, ok := declared.([]any)
+				if !ok {
+					add("attempt %s: write_paths must be an array of exact paths", xid)
+				}
+				for _, p := range declaredPaths {
+					if why := BadPath(p, repo); why != "" {
+						add("attempt %s: write path %s %s", xid, Repr(p), why)
+					} else if liveWrites[strings.ToLower(realpath(join(repo, ovio.Str(p))))] != xid {
+						add("attempt %s: write path %s is outside the authoritative task scope", xid, Repr(p))
+					}
+				}
 			}
 		}
 	}

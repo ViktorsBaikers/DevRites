@@ -236,6 +236,11 @@ func readTranscript(dir *os.Root, name string) ([]byte, error) {
 }
 
 func validOrigin(raw string, gate *Gate, evidence []string) bool {
+	return validTranscript(raw, gate, evidence)
+}
+
+// validTranscript validates complete executed records; evidence additionally binds ledger proof.
+func validTranscript(raw string, gate *Gate, evidence []string) bool {
 	const footer = "TRANSCRIPT_SHA256: "
 	end := strings.LastIndex(raw, footer)
 	if end < 0 || raw[end:] != footer+OutputDigest(raw[:end])+"\n" {
@@ -261,13 +266,24 @@ func validOrigin(raw string, gate *Gate, evidence []string) bool {
 	for key, want := range map[string]string{
 		"GATE": transcriptMetadata(gate.ID), "TITLE": transcriptMetadata(gate.Title),
 		"COMMAND": transcriptMetadata(gate.Check), "CWD": transcriptMetadata(valueOr(gate.Cwd, ".")),
-		"EXPECT": transcriptMetadata(gate.Expect), "DEFINITION_SHA256": evidence[1],
-		"INPUTS": transcriptMetadata(valueOr(gate.Inputs, "none")), "INPUTS_SHA256": valueOr(evidence[4], "none"),
-		"RESULT": "pass", "EXIT": "0", "OUTPUT_SHA256": evidence[2], "OUTPUT_BYTES": evidence[3],
+		"EXPECT": transcriptMetadata(gate.Expect), "DEFINITION_SHA256": DefinitionDigest(gate),
+		"INPUTS": transcriptMetadata(valueOr(gate.Inputs, "none")),
+		"RESULT": "pass", "EXIT": "0",
 	} {
 		if got, exists := fields[key]; !exists || got != want {
 			return false
 		}
+	}
+	if evidence != nil && (fields["DEFINITION_SHA256"] != evidence[1] || fields["OUTPUT_SHA256"] != evidence[2] ||
+		fields["OUTPUT_BYTES"] != evidence[3] || fields["INPUTS_SHA256"] != valueOr(evidence[4], "none")) {
+		return false
+	}
+	if fields["INPUTS_SHA256"] != "none" && !transcriptDigestRE.MatchString(fields["INPUTS_SHA256"]) {
+		return false
+	}
+	bytes, err := strconv.ParseInt(fields["OUTPUT_BYTES"], 10, 64)
+	if err != nil || bytes < 0 || !transcriptDigestRE.MatchString(fields["OUTPUT_SHA256"]) {
+		return false
 	}
 	started, err := time.Parse(time.RFC3339Nano, fields["STARTED"])
 	if err != nil || started.IsZero() {
@@ -286,7 +302,10 @@ func validOrigin(raw string, gate *Gate, evidence []string) bool {
 		return false
 	}
 	truncated, err := strconv.ParseBool(fields["TRUNCATED"])
-	return err == nil && len(output) <= maxTranscriptOutput && (!truncated || len(output) == maxTranscriptOutput)
+	if err != nil || len(output) > maxTranscriptOutput || (truncated && len(output) != maxTranscriptOutput) {
+		return false
+	}
+	return redactions != 0 || truncated || (bytes == int64(len(output)) && fields["OUTPUT_SHA256"] == OutputDigest(output))
 }
 
 func exitLabel(outcome RunOutcome) string {

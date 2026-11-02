@@ -201,8 +201,13 @@ read-only (`GIT_OPTIONAL_LOCKS=0`, `diff.autoRefreshIndex=false`, no external di
 drivers or textconv, fixed `a/` `b/` prefixes), never stashes, never commits and
 leaves `.git/index` byte-identical; it refuses an index with unmerged entries.
 Submodules and nested repositories are recorded as boundaries, never read. The plan
-pins the baseline manifest digest, so approval binds it. Use `state` before and
-`delta` after each writer attempt to observe exactly the paths that attempt changed.
+pins the baseline manifest digest, so approval binds it. Per-attempt `state`/`delta`
+observe whole-repository changes, not writer attribution. Serialize each shared-root
+target-mutating writer from its before-capture through stopping, after-capture and
+receipt admission before starting another writer, even for disjoint task paths.
+Preserve the full delta, including user changes; changes outside the approved task
+scope reject admission rather than being filtered out. Read-only review and
+verification may overlap on immutable inputs when their resources permit.
 
 Re-fingerprint before each edit and after each check. When user edits touch an
 assigned path or its decisive assumptions (`verify` reports changes outside

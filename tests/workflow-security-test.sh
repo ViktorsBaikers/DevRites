@@ -571,6 +571,70 @@ finds "dispatch shell substitution in run" "$TMP/dispatch-shell-substitution.yml
 finds "dispatch input with spaced run key" "$TMP/dispatch-key-spacing.yml" "workflow_dispatch input appears directly in run"
 clean "dispatch input transported through env" "$TMP/dispatch-input-via-env.yml"
 
+# A sibling env mapping is not part of run, regardless of scalar style.
+for style in inline literal folded named; do
+  case "$style" in
+    inline) command='      - run: printf "%s\n" "$MODEL"' ;;
+    literal) command=$'      - run: |\n          printf "%s\\n" "$MODEL"' ;;
+    folded) command=$'      - run: >-\n          printf "%s\\n"\n          "$MODEL"' ;;
+    named) command=$'      - name: Safe input\n        run: printf "%s\\n" "$MODEL"' ;;
+  esac
+  {
+    printf 'permissions: {contents: read}\njobs:\n  safe:\n    steps:\n%s\n' "$command"
+    printf '%s\n' '        env:' '          MODEL: ${{ inputs.model }}'
+  } > "$TMP/dispatch-env-after-$style.yml"
+  clean "dispatch env after $style run" "$TMP/dispatch-env-after-$style.yml"
+done
+
+# Parse run values, including YAML quoting, flow mappings and aliases.
+for style in quoted-key flow alias escaped folded; do
+  case "$style" in
+    quoted-key) command='      - "run": echo "${{ inputs.model }}"' ;;
+    flow) command="      - {run: 'echo \"\${{ github.event.inputs.model }}\"'}" ;;
+    alias) command=$'      - env:\n          COMMAND: &command echo "${{ inputs.model }}"\n        run: *command' ;;
+    escaped) command='      - run: "echo \u0024{{ inputs.model }}"' ;;
+    folded) command=$'      - run: >-\n          echo "${{\n          github.event.inputs.model }}"' ;;
+  esac
+  printf 'permissions: {contents: read}\njobs:\n  unsafe:\n    steps:\n%s\n' "$command" > "$TMP/dispatch-run-$style.yml"
+  finds "dispatch direct input in $style run" "$TMP/dispatch-run-$style.yml" "$TMP/dispatch-run-$style.yml: job unsafe step 1: workflow_dispatch input appears directly in run"
+done
+
+cat > "$TMP/dispatch-format-brace.yml" <<'EOF'
+permissions: {contents: read}
+jobs:
+  unsafe:
+    steps:
+      - run: echo "${{ format('{0}', inputs.message) }}"
+EOF
+finds "dispatch input after format brace" "$TMP/dispatch-format-brace.yml" "workflow_dispatch input appears directly in run"
+
+cat > "$TMP/dispatch-format-close.yml" <<'EOF'
+permissions: {contents: read}
+jobs:
+  unsafe:
+    steps:
+      - run: echo "${{ format('}} {0}', github.event.inputs.message) }}"
+EOF
+finds "dispatch input after quoted expression close" "$TMP/dispatch-format-close.yml" "workflow_dispatch input appears directly in run"
+
+cat > "$TMP/dispatch-format-escaped-quote.yml" <<'EOF'
+permissions: {contents: read}
+jobs:
+  unsafe:
+    steps:
+      - run: echo "${{ format('it''s }} {0}', inputs.message) }}"
+EOF
+finds "dispatch input after escaped expression quote" "$TMP/dispatch-format-escaped-quote.yml" "workflow_dispatch input appears directly in run"
+
+cat > "$TMP/dispatch-constant-expression.yml" <<'EOF'
+permissions: {contents: read}
+jobs:
+  safe:
+    steps:
+      - run: echo "${{ format('it''s }} {0}', 'constant') }} inputs.message"
+EOF
+clean "constant expression with literal inputs outside it" "$TMP/dispatch-constant-expression.yml"
+
 # Release auth: NPM_TOKEN may only come from GitHub Actions secrets (no literals).
 CIYML="$HERE/../.github/workflows/ci.yml"
 if grep -n "NPM_TOKEN: \${{ secrets.NPM_TOKEN }}" "$CIYML" >/dev/null; then

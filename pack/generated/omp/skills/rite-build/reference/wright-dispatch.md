@@ -99,26 +99,26 @@ Same-worktree multi-writer / root-emulated worktrees stay forbidden.
 
 ## Run
 
-Same-worktree (non-isolated) dispatch claims before writing: the `dispatch open`
-below adds `--claim-session <id>`, one `--claim <path>` per task path, and
-`--claim-ttl <minutes>` sized to the write; it runs the
-`claim check --session <id> <task-paths>` test, and a live foreign holder fails the
-open with no wave and no claim and stops the dispatch, per
-[`agents.md`](skill://devrites-lib/reference/standards/agents.md). `.devrites/**`
-is never a task path; see [Workflow Artifact admission](skill://devrites-lib/reference/standards/workflow-artifacts.md).
+Before same-tree writing, `dispatch open` adds `--claim-session <id>`,
+`--claim <path>` per task path, and `--claim-ttl <minutes>` sized to the write.
+It runs `claim check --session <id> <task-paths>`. Live foreign or abandoned
+unreleased/nonterminal claims (even same-session/expired) refuse without a wave
+or new claim, per [`agents.md`](skill://devrites-lib/reference/standards/agents.md).
+`.devrites/**` is never a task path; see [Workflow Artifact admission](skill://devrites-lib/reference/standards/workflow-artifacts.md).
 Render the contract with `devrites-engine packet <slug> --wave <wave> --phase build
 --role slice-wright --slice <SLICE-ID> [--checks <G-ID,...>] [--focus <file>]` (it
 writes the linted same-worktree `packets/<wave>.contract.md`; a native-worktree pilot
-writes its own contract with `Isolation`, `worktree_base`, and subject) and hand the wright that text verbatim. Reviewers read
-that file, so `--focus` rows state each defect to fix with its anchor, never a reviewer's verdict,
-count, or pass status ("code review is no-findings" voids the next review). Ask the host
-for the exact writer in fresh context; a repair round on the same slice whose
-returned wright the host can still continue goes to that wright on its existing
-handle instead, so it does not re-read the slice from scratch. Wait, and track it
-through the launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
-<slice-id> --role slice-wright --slice <SLICE-ID> --contract <file>` (it refuses a
+writes its own contract with `Isolation`, `worktree_base`, and subject). Give it
+verbatim. Reviewers read it: `--focus` names defect + anchor, never a prior
+verdict, count, or pass claim. Ask the exact writer in fresh context; a repair
+may continue the returned wright's existing handle if the host supports it,
+avoiding a reread. Track the launch barrier — `devrites-engine dispatch <slug> open --phase build --wave
+<wave-id> --role slice-wright --slice <SLICE-ID> --contract <file>` (it refuses a
 contract that forbids writer-safe checks or names none), then `start` with the host handle
-(the last start seals the wave) and `return` on completion (auto-records dispatch/return metrics). Every 5 wright
+(the last start seals the wave) and `return --wave <wave-id> --role slice-wright
+--handle <id>` on completion (auto-records dispatch/return metrics). Every wave ID
+is single-use: use a fresh ID for each repair or retry, even after abandonment;
+the earlier wave keeps its handles, history, and any unreleased claim. Every 5 wright
 rounds on one slice, `open` blocks for a reslice review. First re-admit each
 finding still driving rounds under the Proportionality rule of
 [agents.md § Result admission](skill://devrites-lib/reference/standards/agents.md#result-admission): one without a broken anchor or a reachable trigger becomes a
@@ -129,7 +129,7 @@ open findings move to the new slice owning their paths), or record
 `## <DRIFT-ID> — <SLICE-ID> reslice review` with why no smaller split exists and
 a spec trace of the slice's obligations (hardening no AC/INV/PROH requires moves to
 a sibling slice dependents do not need, still gated before Seal), and
-reopen with `--reslice-review <DRIFT-ID>`. Same-worktree stays one writer.
+open a fresh wave with `--reslice-review <DRIFT-ID>`. Same-worktree stays one writer.
 Never run two writers in one worktree, mix isolated and same-worktree writers,
 or substitute a generic agent. Sanctioned parallel dispatch uses one exact
 wright per worktree, source-local `slice-wright.<SLICE-ID>` roles and starts

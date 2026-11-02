@@ -63,11 +63,20 @@ func (r *runner) installBinary() error {
 	if err != nil {
 		return err
 	}
+	removeBackup := true
 	if backup != "" {
-		defer func() { _ = os.Remove(backup) }()
+		defer func() {
+			if removeBackup {
+				_ = os.Remove(backup)
+			}
+		}()
 	}
 	if err := fsutil.WriteFileAtomic(dest, data, 0o755); err != nil {
 		if restoreErr := restoreBinary(dest, backup, oldMode, hadOld); restoreErr != nil {
+			removeBackup = false
+			if backup != "" {
+				restoreErr = fmt.Errorf("%w (previous binary retained at %s)", restoreErr, backup)
+			}
 			return fmt.Errorf("install binary: %v; restore previous binary: %w", err, restoreErr)
 		}
 		return err
@@ -75,6 +84,10 @@ func (r *runner) installBinary() error {
 	_ = os.Chmod(dest, 0o755)
 	if _, err := verifyEngineBinary(dest, tag, 30*time.Second); err != nil {
 		if restoreErr := restoreBinary(dest, backup, oldMode, hadOld); restoreErr != nil {
+			removeBackup = false
+			if backup != "" {
+				restoreErr = fmt.Errorf("%w (previous binary retained at %s)", restoreErr, backup)
+			}
 			return fmt.Errorf("verify installed engine binary: %v; restore previous binary: %w", err, restoreErr)
 		}
 		if hadOld {
@@ -173,6 +186,44 @@ func (r *runner) acquireBinary(tag string) (string, func(), error) {
 	return path, func() {}, nil
 }
 
+func (r *runner) preflightBinaryRemoval() error {
+	if runtime.GOOS != "windows" || r.opts.DryRun || r.opts.KeepBinary || !r.opts.WithBinary || os.Getenv("DEVRITES_NO_BINARY") == "1" {
+		return nil
+	}
+	for _, path := range binaryCandidates() {
+		info, err := os.Lstat(path)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("inspect engine binary %s: %w", path, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			info, err = os.Stat(path)
+			if os.IsNotExist(err) {
+				return nil
+			}
+			if err != nil {
+				return fmt.Errorf("inspect engine binary %s: %w", path, err)
+			}
+		}
+		executable, err := os.Executable()
+		if err != nil {
+			return fmt.Errorf("locate running engine binary: %w", err)
+		}
+		running, err := os.Stat(executable)
+		if err != nil {
+			return fmt.Errorf("inspect running engine binary %s: %w", executable, err)
+		}
+		if os.SameFile(info, running) {
+			return fmt.Errorf("cannot remove running engine binary %s on Windows; use npx devrites@latest uninstall --target %q or --keep-binary", path, r.target)
+		}
+		// Removal stops at the first existing candidate, even if another is running.
+		return nil
+	}
+	return nil
+}
+
 func (r *runner) removeBinary() error {
 	if r.opts.KeepBinary {
 		fmt.Fprintln(r.opts.Stdout, "  kept the global devrites-engine binary (--keep-binary).")
@@ -187,17 +238,24 @@ func (r *runner) removeBinary() error {
 		return nil
 	}
 	for _, p := range binaryCandidates() {
-		if p == "" || !exists(p) {
-			continue
-		}
 		if r.opts.DryRun {
+			if _, err := os.Lstat(p); err != nil {
+				if os.IsNotExist(err) {
+					continue
+				}
+				return fmt.Errorf("inspect engine binary %s: %w", p, err)
+			}
 			fmt.Fprintf(r.opts.Stdout, "  [remove] %s (global engine binary)\n", p)
 			continue
 		}
-		if err := os.Remove(p); err == nil {
-			fmt.Fprintf(r.opts.Stdout, "  [remove] %s\n", p)
-			return nil
+		if err := os.Remove(p); err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return fmt.Errorf("remove %s: %w", p, err)
 		}
+		fmt.Fprintf(r.opts.Stdout, "  [remove] %s\n", p)
+		return nil
 	}
 	return nil
 }
@@ -220,10 +278,10 @@ func engineBinaryName() string {
 }
 
 func binaryCandidates() []string {
-	candidates := []string{}
 	if dir := os.Getenv("DEVRITES_BIN_DIR"); dir != "" {
-		candidates = append(candidates, filepath.Join(dir, engineBinaryName()))
+		return []string{filepath.Join(dir, engineBinaryName())}
 	}
+	candidates := []string{}
 	home, _ := os.UserHomeDir()
 	if home != "" {
 		candidates = append(candidates, filepath.Join(home, ".local", "bin", engineBinaryName()))

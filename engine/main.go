@@ -334,6 +334,21 @@ func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Write
 		fmt.Fprintln(stdout, binding)
 		return exitOK
 	}
+	if kind == gate.Seal {
+		code := exitBlocked
+		if err := state.WithFeatureLock(root, args[0], func() error {
+			code = cmdGateLocked(root, kind, args, stdout, stderr)
+			return nil
+		}); err != nil {
+			fmt.Fprintf(stderr, "seal: BLOCKED: %v\n", err)
+			return exitBlocked
+		}
+		return code
+	}
+	return cmdGateLocked(root, kind, args, stdout, stderr)
+}
+
+func cmdGateLocked(root string, kind gate.Kind, args []string, stdout, stderr io.Writer) int {
 	result, err := gate.Check(kind, root, args[0])
 	if err != nil {
 		fmt.Fprintf(stderr, "devrites: %v\n", err)
@@ -367,6 +382,10 @@ func cmdGate(root string, kind gate.Kind, args []string, stdout, stderr io.Write
 		}
 		if err := lib.VerifyReleaseUnion(root, args[0]); err != nil {
 			fmt.Fprintf(stdout, "release-union: BLOCKED: %v\n", err)
+			return sealBlocked()
+		}
+		if err := lib.CheckFinalPrerequisites(root, args[0]); err != nil {
+			fmt.Fprintf(stdout, "final-prerequisites: BLOCKED: %v\n", err)
 			return sealBlocked()
 		}
 		code := lib.EvidenceFresh(root, []string{args[0]}, stdout, stderr)

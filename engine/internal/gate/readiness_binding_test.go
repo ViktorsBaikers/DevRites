@@ -77,7 +77,7 @@ func TestReadinessBindingBindsOnlyStableBuildInputs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, name := range []string{"state.md", "questions.md", "decisions.md", "assumptions.md", "eng-review.md", "evidence.md", "review.md", "seal.md", "handoff.md", "gates.md", "ambient.md"} {
+	for _, name := range []string{"state.md", "questions.md", "decisions.md", "assumptions.md", "eng-review.md", "evidence.md", "review.md", "seal.md", "handoff.md", "ambient.md"} {
 		// state.md stays a valid v5 workspace when mutated: the schema row is
 		// part of the contract, not part of the bound inputs.
 		body := "# Mutable\n\nChanged outside the stable contract.\n"
@@ -98,7 +98,7 @@ func TestReadinessBindingBindsOnlyStableBuildInputs(t *testing.T) {
 func TestReadinessBindingGoldenDigest(t *testing.T) {
 	root := t.TempDir()
 	writeReadinessFixture(t, root, "golden", "build")
-	const want = "Readiness inputs SHA-256: 6a0d4991d86f5a0e78333289840b5fb1a123adbb18b53243b1af34fcffcf1961"
+	const want = "Readiness inputs SHA-256: 0e22e2fc6f0c56d09afd92f969ec8f5627b9a70f8856d88e467a70304b015362"
 	if got := mustReadinessBinding(t, root, "golden"); got != want {
 		t.Fatalf("ReadinessBinding()=%q, want %q", got, want)
 	}
@@ -418,6 +418,7 @@ func TestReadinessBindingObservationUsesRetainedBytes(t *testing.T) {
 
 	testutil.WriteFile(t, filepath.Join(workspace, "spec.md"), "# Spec\n\nChanged after observation.\n")
 	testutil.WriteFile(t, filepath.Join(workspace, "strategy.md"), "# Strategy\n\nAdded after observation.\n")
+	testutil.WriteFile(t, filepath.Join(workspace, "gates.md"), "# Gates\n\n- [ ] G2: changed after observation\n")
 	after, err := readinessBindingFromObservation(observation)
 	if err != nil {
 		t.Fatal(err)
@@ -601,36 +602,23 @@ func TestReadinessBindingIgnoresTraceabilityProgressCells(t *testing.T) {
 	}
 	testutil.WriteFile(t, path, table("001", "pending", "planned"))
 	vetted := mustReadinessBinding(t, root, "progress")
-	observation, err := state.ObserveWorkspace(root, "progress")
-	if err != nil {
-		t.Fatal(err)
-	}
-	legacy, err := bindReadinessInputs(observation, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if legacy == vetted {
-		t.Fatal("raw binding should differ when traceability has progress cells")
-	}
+	testutil.WriteFile(t, filepath.Join(workspace, "eng-review.md"), "# Engineering review\n\n"+vetted+"\n")
 
 	testutil.WriteFile(t, path, table("001", "EVID-001 `a\\|b`", "observed pass"))
 	if got := mustReadinessBinding(t, root, "progress"); got != vetted {
 		t.Fatalf("progress-only change altered binding: got %q want %q", got, vetted)
+	}
+	result, err := Check(Readiness, root, "progress")
+	if err != nil || result.Blocked {
+		t.Fatalf("progress-only change invalidated Vet: result=%+v error=%v", result, err)
 	}
 	testutil.WriteFile(t, path, table("001, 002", "EVID-001", "observed pass"))
 	if got := mustReadinessBinding(t, root, "progress"); got == vetted {
 		t.Fatal("slice change did not alter binding")
 	}
 
-	// A line recorded before progress cells were excluded still verifies
-	// while traceability.md is byte-identical to what Vet bound.
-	testutil.WriteFile(t, path, table("001", "pending", "planned"))
-	testutil.WriteFile(t, filepath.Join(workspace, "eng-review.md"), "# Engineering review\n\n"+legacy+"\n")
-	observation, err = state.ObserveWorkspace(root, "progress")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := verifyReadinessBinding(observation); err != nil {
-		t.Fatalf("legacy raw binding rejected: %v", err)
+	result, err = Check(Readiness, root, "progress")
+	if err != nil || !result.Blocked || result.ReasonID != reason.GateReadinessStale {
+		t.Fatalf("slice change reused old Vet: result=%+v error=%v", result, err)
 	}
 }

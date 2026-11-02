@@ -56,3 +56,29 @@ func TestStructuralRejectsCorruptText(t *testing.T) {
 		}
 	}
 }
+
+func TestProseFenceCommentsStayLiteral(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		input  string
+		output string
+	}{
+		{"info", "~~~html <!--\nAC-999\n~~~\nAC-001\n", "            \n      \n   \nAC-001\n"},
+		{"body", "~~~html\n<!-- AC-999\n~~~\nAC-001\n", "       \n           \n   \nAC-001\n"},
+		{"active comment", "<!--\n~~~html\n-->\nAC-001\n", "    \n       \n   \nAC-001\n"},
+		{"visible edges", "prefix <!-- hidden --> suffix\n`<!--` inline\n~~~html <!--\n-->\n~~~\nAC-001\n", "prefix                 suffix\n`<!--` inline\n            \n   \n   \nAC-001\n"},
+		{"CRLF", "~~~html <!--\r\nAC-999\r\n~~~\r\nAC-001\r\n", "            \r\n      \r\n   \r\nAC-001\r\n"},
+		{"list", "- item\n\n  ~~~html <!--\n  AC-999\n  ~~~\nAC-001\n", "- item\n\n              \n        \n     \nAC-001\n"},
+		{"marker list", "- ~~~html <!--\n  AC-999\n  ~~~\nAC-001\n", "-             \n        \n     \nAC-001\n"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Prose([]byte(test.input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(got) != test.output {
+				t.Fatalf("Prose() = %q, want %q", got, test.output)
+			}
+		})
+	}
+}

@@ -16,6 +16,48 @@ import (
 	"testing"
 )
 
+func TestFeatureLockSerializesRootAliases(t *testing.T) {
+	root := t.TempDir()
+	alias := filepath.Join(t.TempDir(), "alias")
+	if err := os.Symlink(root, alias); err != nil {
+		t.Skipf("root symlink unavailable: %v", err)
+	}
+	counter := filepath.Join(root, "work", "feat", "count")
+	if err := WithFeatureLock(root, "feat", func() error {
+		return os.WriteFile(counter, []byte("0"), 0o644)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	for i := range 40 {
+		lockRoot := root
+		if i%2 == 0 {
+			lockRoot = alias
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := WithFeatureLock(lockRoot, "feat", func() error {
+				raw, err := os.ReadFile(counter)
+				if err != nil {
+					return err
+				}
+				n, err := strconv.Atoi(string(raw))
+				if err != nil {
+					return err
+				}
+				return os.WriteFile(counter, []byte(strconv.Itoa(n+1)), 0o644)
+			}); err != nil {
+				t.Errorf("alias writer: %v", err)
+			}
+		}()
+	}
+	wg.Wait()
+	if raw, err := os.ReadFile(counter); err != nil || string(raw) != "40" {
+		t.Fatalf("alias counter = %q, %v; want 40", raw, err)
+	}
+}
+
 // TestAppendLogConcurrentNoInterleaveNoLoss spawns many concurrent appenders,
 // each writing a distinct small record, and asserts every record landed exactly
 // once and intact: no interleaving, no lost writes.

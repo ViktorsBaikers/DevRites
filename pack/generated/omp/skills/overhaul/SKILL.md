@@ -143,10 +143,14 @@ deployment, or anything the user did not start with this command.
    reconfirmation otherwise), the re-hashed plan digest, the task closure, the current
    plan revision, no later stop, and for PR or branch scope a checked-out `HEAD` equal
    to the pinned head. Record it in `approval.json`.
-2. Execute the approved DAG with [`overhaul-implementer`](.omp/agents/overhaul-implementer.md): one
-   writer per path, independent frontend and backend tasks concurrently, TDD per
-   [`references/repair-and-measurement.md`](references/repair-and-measurement.md).
-   Admit patches only when observed changed paths equal the contract.
+2. Execute the approved DAG with [`overhaul-implementer`](.omp/agents/overhaul-implementer.md)
+   and TDD per [`references/repair-and-measurement.md`](references/repair-and-measurement.md).
+   Serialize shared-repository target writes, even for independent frontend/backend
+   tasks: whole-repository before-capture → target writer stops → full delta →
+   receipt admission, then start the next writer. Preserve one owner per physical
+   task path; admit only observed changes within the approved contract. Read-only
+   reviews and verification may overlap on immutable inputs when resources permit
+   ([observation windows](references/orchestration.md#single-writer-budgets-and-cancellation)).
 3. Verify each fix independently (`repair-verify`), test the assembled candidate,
    remeasure approved targets, rescore, publish, and follow the convergence table in
    [`references/lifecycle.md`](references/lifecycle.md) — continuing automatically

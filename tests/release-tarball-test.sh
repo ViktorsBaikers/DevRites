@@ -12,6 +12,8 @@ copy_release_source() {
   for item in pack engine scripts docs install.sh uninstall.sh update.sh README.md CHANGELOG.md LICENSE SECURITY.md NOTICE.md CODE_OF_CONDUCT.md CODEOWNERS package.json; do
     [[ ! -e "$ROOT/$item" ]] || cp -R "$ROOT/$item" "$destination/"
   done
+  mkdir -p "$destination/engine/dist"
+  printf 'prior cross-compile output\n' >"$destination/engine/dist/devrites-prior"
   (
     cd "$destination"
     git init -q

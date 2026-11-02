@@ -52,9 +52,9 @@ func TestHandoffEmitsResumeRecord(t *testing.T) {
 func TestHandoffInflightWavesAndResumeMetric(t *testing.T) {
 	root, featureDir := newWorkspace(t, "build")
 	writeFile(t, filepath.Join(featureDir, "dispatch.json"), `{"waves":{
- "r1":{"phase":"build","state":"sealed","roles":{"code-reviewer":{"handle":"h1","returned":true},"test-analyst":{"handle":"h2"}},"slices":["SLICE-002"]},
+ "r1":{"phase":"build","state":"sealed","roles":{"code-reviewer":{"handle":"h1","started":"2026-10-15T10:00:00Z","returned":true,"returned_at":"2026-10-15T10:30:00Z"},"test-analyst":{"handle":"h2","started":"2026-10-15T10:00:00Z"}},"slices":["SLICE-002"]},
  "r2":{"phase":"build","state":"open","roles":{"slice-wright":{}}},
- "r0":{"phase":"vet","state":"complete","roles":{"x":{"returned":true}}}}}`)
+ "r0":{"phase":"vet","state":"complete","roles":{"x":{"handle":"h0","started":"2026-10-15T09:00:00Z","returned":true,"returned_at":"2026-10-15T09:30:00Z"}}}}}`)
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	if code := RunHandoff(root, []string{"feat"}, stdout, stderr); code != 0 {
 		t.Fatalf("code=%d err=%s", code, stderr.String())

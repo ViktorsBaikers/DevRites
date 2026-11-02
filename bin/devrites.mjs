@@ -2,10 +2,10 @@
 // devrites - npx entry point for the engine-owned DevRites installer.
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, createReadStream, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { chmodSync, copyFileSync, createReadStream, existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { open } from 'node:fs/promises';
 import { constants as osConstants, tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -108,6 +108,31 @@ function runEngine(command, args, env) {
   });
 }
 
+function windowsInstalledEngine() {
+  const dirs = (process.env.PATH || '').split(';');
+  if (process.env.NoDefaultCurrentDirectoryInExePath === undefined) dirs.unshift(process.cwd());
+  for (const dir of dirs) {
+    if (!dir) continue;
+    const candidate = resolve(dir.replace(/^"|"$/g, ''), 'devrites-engine.exe');
+    try {
+      if (statSync(candidate, { throwIfNoEntry: false })?.isFile()) return candidate;
+    } catch {}
+  }
+  return null;
+}
+
+function stageWindowsUninstall(engine) {
+  if (!engine || command !== 'uninstall' || process.platform !== 'win32' || temporaryDirs.has(dirname(engine))) return engine;
+  try {
+    // Windows cannot unlink the running installed image; launch a private copy.
+    const staged = join(privateTempDir(), 'devrites-engine.exe');
+    copyFileSync(engine, staged);
+    return staged;
+  } catch (error) {
+    throw new Error(`could not stage devrites-engine for Windows uninstall: ${error.message}`);
+  }
+}
+
 async function acquireEngine() {
   const repo = process.env.DEVRITES_REPO || 'ViktorsBaikers/DevRites';
   const tag = normalizeReleaseTag(process.env.DEVRITES_REF || pkgVersion());
@@ -123,7 +148,8 @@ async function acquireEngine() {
     acquisitionFailure = `${envEngine} reports version '${got}', want ${tag}`;
     return null;
   }
-  if (command === 'uninstall' && spawnSync('devrites-engine', ['uninstall', '-h'], { stdio: 'ignore' }).status === 0) return 'devrites-engine';
+  const installedEngine = command === 'uninstall' && process.platform === 'win32' ? windowsInstalledEngine() : 'devrites-engine';
+  if (command === 'uninstall' && installedEngine && spawnSync(installedEngine, ['uninstall', '-h'], { stdio: 'ignore' }).status === 0) return installedEngine;
 
   // A git checkout's payload can be ahead of the published engine of the same
   // version, so a checkout builds its own engine before downloading one.
@@ -135,7 +161,7 @@ async function acquireEngine() {
   const built = checkout ? null : buildEngine(tag);
   if (built) return built;
 
-  if (command === 'uninstall') return 'devrites-engine';
+  if (command === 'uninstall') return installedEngine;
   const probe = spawnSync('devrites-engine', ['version'], { encoding: 'utf8' });
   if (!probe.error && probe.status === 0 && String(probe.stdout).trim().replace(/^v/, '') === tag.slice(1)) return 'devrites-engine';
   return null;
@@ -316,7 +342,7 @@ if (first && SUBCOMMAND_ALIASES.has(first)) {
 
 let engine;
 try {
-  engine = await acquireEngine();
+  engine = stageWindowsUninstall(await acquireEngine());
 } catch (error) {
   console.error(`devrites: ${error.message}`);
   process.exit(1);
