@@ -42,7 +42,7 @@ func resolveWithLock(root string, args []string, stdout, stderr io.Writer, withL
 	if err != nil {
 		return fail(stderr, err.Error(), 2)
 	}
-	defer selectedRoot.Close()
+	defer func() { _ = selectedRoot.Close() }()
 	qfile := filepath.Join(work, "questions.md")
 	sfile := filepath.Join(work, "state.md")
 	if !isFile(qfile) {
@@ -97,7 +97,7 @@ func resolveWithLock(root string, args []string, stdout, stderr io.Writer, withL
 		if err != nil {
 			return err
 		}
-		defer ws.Close()
+		defer func() { _ = ws.Close() }()
 		code = resolveMutation(ws, slug, mode, qid, payload, human, stdout, stderr, writeBundleTargets)
 		return nil
 	}); err != nil {

@@ -246,7 +246,7 @@ func TestWriteBundleTargetsRollsBackAttemptedTargets(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer ws.Close()
+			defer func() { _ = ws.Close() }()
 			targets := []*bundleTarget{
 				{rel: "earlier.md", existed: true, before: []byte("earlier before"), after: []byte("earlier after")},
 				{rel: "created.md", after: []byte("created after")},
@@ -301,7 +301,7 @@ func TestWriteBundleTargetsReportsRollbackWriteFailures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 	targets := []*bundleTarget{
 		{rel: "first.md", existed: true, before: []byte("first before"), after: []byte("first after")},
 		{rel: "middle.md", existed: true, before: []byte("middle before"), after: []byte("middle after")},
@@ -367,7 +367,7 @@ func TestWriteBundleTargetsReportsRollbackRemoveFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 	targets := []*bundleTarget{
 		{rel: "earlier.md", after: []byte("earlier after")},
 		{rel: "failing.md", after: []byte("failing after")},

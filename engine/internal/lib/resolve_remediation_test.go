@@ -7,7 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/devrites/devrites/internal/fsutil"
@@ -132,6 +134,7 @@ func TestResolvePinsRootAcrossLockWait(t *testing.T) {
 			t.Setenv("DEVRITES_WORKSPACE", "")
 			replaced, empty := strings.CutSuffix(topology, "-empty")
 			root := resolveWorkspace(t, "## q-1 blocking\nstatus: open\n")
+			testutil.WriteFile(t, filepath.Join(root, "work", "feat", "state.md"), "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | build |\n| status | awaiting_human |\n| next_action | wait |\n| schema | 4 |\n| question_id | q-1 |\n\n## Log\n")
 			externalRoot := t.TempDir()
 			if !empty {
 				externalRoot = resolveWorkspace(t, "## q-1 blocking\nstatus: open\n")
@@ -171,11 +174,25 @@ func TestResolvePinsRootAcrossLockWait(t *testing.T) {
 				}
 			}
 			retained := filepath.Join(t.TempDir(), "retained")
-			if err := os.Rename(path, retained); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.Symlink(target, path); err != nil {
-				t.Fatal(err)
+			renameErr := os.Rename(path, retained)
+			protectedRoot := runtime.GOOS == "windows" && replaced == "root"
+			if protectedRoot {
+				// Windows OpenRoot omits FILE_SHARE_DELETE, preventing root replacement.
+				const sharingViolation = syscall.Errno(32) // ERROR_SHARING_VIOLATION
+				if !errors.Is(renameErr, sharingViolation) {
+					t.Fatalf("root rename = %v, want Windows sharing violation", renameErr)
+				}
+				if _, err := os.Lstat(retained); !errors.Is(err, fs.ErrNotExist) {
+					t.Fatalf("blocked rename created destination: %v", err)
+				}
+				retained = root
+			} else {
+				if renameErr != nil {
+					t.Fatal(renameErr)
+				}
+				if err := os.Symlink(target, path); err != nil {
+					t.Fatal(err)
+				}
 			}
 			close(release)
 			released = true
@@ -183,11 +200,15 @@ func TestResolvePinsRootAcrossLockWait(t *testing.T) {
 			if replaced == "root" {
 				if code == 0 {
 					data, err := os.ReadFile(filepath.Join(retained, "work", "feat", "questions.md"))
-					if err != nil || !strings.Contains(string(data), "answer: answer") {
+					if err != nil || !strings.Contains(string(data), "status: answered") || !strings.Contains(string(data), "answer: answer") {
 						t.Fatalf("selected root not updated: %q, %v", data, err)
 					}
+					data, err = os.ReadFile(filepath.Join(retained, "work", "feat", "state.md"))
+					if err != nil || !strings.Contains(string(data), "| status | running |") || strings.Contains(string(data), "| question_id |") || !strings.Contains(string(data), "resolved q-1") {
+						t.Fatalf("selected cursor did not resume: %q, %v", data, err)
+					}
 				} else {
-					if code != 1 || stdout.Len() != 0 || !strings.Contains(stderr.String(), state.ErrWorkspaceMoved.Error()) {
+					if protectedRoot || code != 1 || stdout.Len() != 0 || !strings.Contains(stderr.String(), state.ErrWorkspaceMoved.Error()) {
 						t.Fatalf("unexpected retained-root refusal: code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 					}
 					if after := observationFiles(t, filepath.Join(retained, "work", "feat")); !reflect.DeepEqual(selectedBefore, after) {
@@ -234,7 +255,7 @@ func TestResolveRollsBackPairedPublication(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer ws.Close()
+			defer func() { _ = ws.Close() }()
 			before := make(map[string][]byte)
 			for _, name := range []string{"questions.md", "state.md"} {
 				before[name], err = ws.ReadFile(name)

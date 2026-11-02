@@ -34,6 +34,8 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 - Confine question resolution to checked workspaces and restore question/cursor
   files together when publication fails. Bundle rollback now includes the failing
   target and reports incomplete restoration.
+- Verify Windows root-handle rename protection in resolution race tests while
+  preserving replacement coverage on platforms that permit renaming open roots.
 - Honor explicitly acknowledged backward-phase repair checkpoints in regression
   baselines while retaining ordinary regression and empty-acceptance checks.
 - Check Pi/omp native role loading in doctor, clarify instruction-only shell
