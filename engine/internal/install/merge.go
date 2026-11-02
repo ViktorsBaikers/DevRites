@@ -50,7 +50,7 @@ const (
 )
 
 func (r *runner) claudeSettingsMarkerLines() []string {
-	data, err := os.ReadFile(filepath.Join(r.target, filepath.FromSlash(hostpack.ClaudeSettingsMerge.MarkerRel)))
+	data, err := r.readConfined(filepath.Join(r.target, filepath.FromSlash(hostpack.ClaudeSettingsMerge.MarkerRel)))
 	if err != nil {
 		return nil
 	}
@@ -134,18 +134,24 @@ func (r *runner) mergeMarkerFile(merge hostpack.MarkerMerge) error {
 			}
 		}
 		fmt.Fprintf(r.opts.Stdout, "  [merge] %s (%s)\n", merge.TargetRel, verb)
-	} else {
-		dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
-		if err := r.writeConfined(dest, next, 0o644); err != nil {
-			return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
-		}
-		// Multiple marker blocks can share one target (AGENTS.md carries both
-		// the Codex and pi blocks).
-		if err := r.refreshPreflight(merge.TargetRel); err != nil {
-			return err
-		}
+		return r.installMarker(merge.MarkerRel, merge.MarkerText)
 	}
-	return r.installMarker(merge.MarkerRel, merge.MarkerText)
+	if err := r.installMarker(merge.MarkerRel, merge.MarkerText); err != nil {
+		return err
+	}
+	if r.records[merge.MarkerRel] == "" {
+		return fmt.Errorf("cannot merge %s without owning %s; use --force to replace the marker", merge.TargetRel, merge.MarkerRel)
+	}
+	if err := r.recheckPath(merge.TargetRel); err != nil {
+		return err
+	}
+	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
+	if err := r.writeConfined(dest, next, 0o644); err != nil {
+		return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
+	}
+	// Multiple marker blocks can share one target (AGENTS.md carries both
+	// the Codex and pi blocks).
+	return r.refreshPreflight(merge.TargetRel)
 }
 
 // markerMergeNext returns the merged target bytes and the current bytes
@@ -156,8 +162,7 @@ func (r *runner) markerMergeNext(merge hostpack.MarkerMerge) ([]byte, []byte, er
 		return nil, nil, fmt.Errorf("read payload %s: %w", merge.PayloadRel, err)
 	}
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
-	// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
-	current, readErr := os.ReadFile(dest)
+	current, readErr := r.readConfined(dest)
 	if errors.Is(readErr, fs.ErrNotExist) {
 		return block, nil, nil
 	}
@@ -208,11 +213,20 @@ func (r *runner) mergeCodexConfig() error {
 	if err != nil {
 		return err
 	}
+	if err := r.installMarker(merge.MarkerRel, merge.MarkerText); err != nil {
+		return err
+	}
+	if r.records[merge.MarkerRel] == "" {
+		return fmt.Errorf("cannot merge %s without owning %s; use --force to replace the marker", merge.TargetRel, merge.MarkerRel)
+	}
+	if err := r.recheckPath(merge.TargetRel); err != nil {
+		return err
+	}
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
 	if err := r.writeConfined(dest, next, 0o644); err != nil {
 		return fmt.Errorf("cannot write %s: %w", merge.TargetRel, err)
 	}
-	return r.installMarker(merge.MarkerRel, merge.MarkerText)
+	return nil
 }
 
 // codexConfigNext returns the merged .codex/config.toml without writing it.
@@ -227,8 +241,7 @@ func (r *runner) codexConfigNext() ([]byte, error) {
 	}
 	dest := filepath.Join(r.target, filepath.FromSlash(merge.TargetRel))
 	var current []byte
-	// #nosec G304 -- dest joins the operator target with a fixed manifest-relative record
-	if data, readErr := os.ReadFile(dest); readErr == nil {
+	if data, readErr := r.readConfined(dest); readErr == nil {
 		// Drop a UTF-8 BOM: the block may go at offset 0, and a BOM after
 		// it is invalid TOML.
 		data = bytes.TrimPrefix(data, utf8BOM)
@@ -423,7 +436,7 @@ func (r *runner) claudeSettingsNext() (map[string]any, claudeSettingsMerge, erro
 	}
 	current := map[string]any{}
 	state := claudeSettingsMerge{created: r.claudeSettingsCreated()}
-	if data, readErr := readJSON(dest); readErr == nil {
+	if data, readErr := r.readJSON(dest); readErr == nil {
 		current = data
 	} else if errors.Is(readErr, fs.ErrNotExist) {
 		state.created = true
@@ -443,13 +456,13 @@ func (r *runner) seedClaudeSettings() error {
 }
 
 func (r *runner) stripHooksConfined(path string) error {
-	return stripHooksWith(path, func(data []byte) error {
+	return r.stripHooksWith(path, func(data []byte) error {
 		return r.writeConfined(path, data, 0o644)
 	}, func() error { return r.removeConfined(path) })
 }
 
-func stripHooksWith(path string, write func([]byte) error, remove func() error) error {
-	current, err := readJSON(path)
+func (r *runner) stripHooksWith(path string, write func([]byte) error, remove func() error) error {
+	current, err := r.readJSON(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil
@@ -475,7 +488,7 @@ func (r *runner) stripClaudeSettings(path string) error {
 }
 
 func (r *runner) stripClaudeSettingsWith(path string, write func([]byte) error, remove func() error) error {
-	current, err := readJSON(path)
+	current, err := r.readJSON(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil
@@ -495,14 +508,13 @@ func (r *runner) stripClaudeSettingsWith(path string, write func([]byte) error, 
 }
 
 func (r *runner) stripMarkerConfined(path, begin, end string) error {
-	return stripMarkerWith(path, begin, end, func(data []byte) error {
+	return r.stripMarkerWith(path, begin, end, func(data []byte) error {
 		return r.writeConfined(path, data, 0o644)
 	}, func() error { return r.removeConfined(path) })
 }
 
-func stripMarkerWith(path, begin, end string, write func([]byte) error, remove func() error) error {
-	// #nosec G304 -- managed file path from the install manifest
-	data, err := os.ReadFile(path)
+func (r *runner) stripMarkerWith(path, begin, end string, write func([]byte) error, remove func() error) error {
+	data, err := r.readConfined(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -536,9 +548,8 @@ func hasTopLevelTOMLKey(data []byte, key string) bool {
 	return found
 }
 
-func readJSON(path string) (map[string]any, error) {
-	// #nosec G304 -- engine-written workspace or metadata JSON
-	data, err := os.ReadFile(path)
+func (r *runner) readJSON(path string) (map[string]any, error) {
+	data, err := r.readConfined(path)
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", path, err)
 	}

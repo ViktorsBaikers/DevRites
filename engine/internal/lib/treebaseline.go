@@ -249,7 +249,6 @@ func CheckTreeBaseline(root, slug string) error {
 		return fmt.Errorf("tree baseline: %w", err)
 	}
 	if len(flagged) > 0 {
-		recordUnattributed(root, slug, cursorPhase(root, slug), flagged)
 		return errors.New(unattributedMessage(slug, flagged))
 	}
 	return nil

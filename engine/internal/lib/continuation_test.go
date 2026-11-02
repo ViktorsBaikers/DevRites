@@ -17,7 +17,7 @@ func TestContinuationRequiredForRunningVetEdge(t *testing.T) {
 | --- | --- |
 | phase | vet |
 | status | running |
-| next_action | /rite-vet boxset-m00a-closure |
+| next_action | /rite-vet feat |
 `)
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	code := RunCheckContinuation(root, []string{"feat"}, stdout, stderr)
@@ -27,7 +27,7 @@ func TestContinuationRequiredForRunningVetEdge(t *testing.T) {
 	out := stdout.String()
 	for _, want := range []string{
 		"continuation: required\n",
-		"invoke: /rite-vet boxset-m00a-closure\n",
+		"invoke: /rite-vet feat\n",
 		"reason: AFK status=running internal phase edge\n",
 	} {
 		if !strings.Contains(out, want) {

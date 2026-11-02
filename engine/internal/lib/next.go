@@ -16,11 +16,11 @@ import (
 	"github.com/devrites/devrites/internal/workflow"
 )
 
-// RunNext prints the minimal remaining lifecycle path: the first phase whose
-// required artifacts are not all present, plus advisory skips for phases whose
-// remaining work is vacuous (e.g. clarify with zero open questions). Advisory
-// only — the rite still owns the decision to advance — except the root-edit
-// tripwire, which exits 3 while an unattributed product edit is in the tree.
+// RunNext prints the minimal remaining lifecycle path using artifact presence
+// where it proves completion, retaining phases that add no required artifact.
+// Advisory only — the rite still owns the decision to advance — except the
+// root-edit tripwire, which exits 3 while an unattributed product edit is in the
+// tree. Observation never records lifecycle metrics.
 func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 	slug, code, err := ActiveSlug(root, args)
 	if err != nil {
@@ -55,6 +55,7 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
+	fmt.Fprintf(stdout, "source: %s\n", slug)
 	fmt.Fprintf(stdout, "current: %s\n", report.Phase)
 	if report.Complete() {
 		fmt.Fprintln(stdout, "current-status: complete")
@@ -69,7 +70,6 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "blocked: tree baseline: %v\n", err)
 		exit = 3
 	} else if len(flagged) > 0 {
-		recordUnattributed(root, slug, string(report.Phase), flagged)
 		fmt.Fprintf(stdout, "blocked: %s\n", unattributedMessage(slug, flagged))
 		exit = 3
 	}
@@ -94,7 +94,7 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		var missing []string
 		if i == currentIdx {
-			if report.Complete() {
+			if report.Complete() && (currentIdx == 0 || addsArtifact(policies[currentIdx-1], policy) || policy.Target == state.PhaseConverge) {
 				continue
 			}
 			missing = report.MissingFiles
@@ -114,7 +114,7 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 			}
 		}
 		fmt.Fprintf(stdout, "next-phase: %s\n", policy.Target)
-		fmt.Fprintf(stdout, "next-command: %s\n", renderNextCommand(policy))
+		fmt.Fprintf(stdout, "next-command: %s\n", renderNextCommand(policy, slug))
 		if policy.BlocksOpenQuestions && openQuestions > 0 && policy.Target != state.PhaseClarify {
 			fmt.Fprintf(stdout, "blocked: %d open question(s) gate this phase\n", openQuestions)
 		}
@@ -153,12 +153,12 @@ func printPlanBatch(stdout io.Writer, root, slug string) {
 	fmt.Fprintf(stdout, "select-command: %s\n", planSelectCommand(filepath.Dir(root), slug, capN))
 }
 
-func renderNextCommand(policy state.PhasePolicy) string {
+func renderNextCommand(policy state.PhasePolicy, slug string) string {
 	verb := policy.ResumeVerb
 	if verb == "" {
 		return "(no resume command)"
 	}
-	return workflow.ForVerb(verb).Claude
+	return workflow.ForVerb(verb).SourceInvocation(slug)
 }
 
 func printSkips(stdout io.Writer, skips []string) {

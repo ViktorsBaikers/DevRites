@@ -215,6 +215,35 @@ dr_acquire_engine() {
   return 1
 }
 
+# Stage only external Windows uninstall engines; the launcher removes the copy
+# after exit, leaving the configured global image unloaded and removable.
+dr_stage_uninstall_engine() {
+  case "$(uname -s 2>/dev/null)" in
+    MINGW*|MSYS*|CYGWIN*) : ;;
+    *) return 0 ;;
+  esac
+  if [ -n "${DR_ENGINE_TMP:-}" ] && [ "$DR_ENGINE_PATH" = "$DR_ENGINE_TMP/devrites-engine" ]; then
+    return 0
+  fi
+  if [ -z "${DR_ENGINE_TMP:-}" ]; then
+    _dr_old_umask="$(umask)"
+    umask 077
+    DR_ENGINE_TMP="$(mktemp -d "${TMPDIR:-/tmp}/devrites-engine-bootstrap.XXXXXX" 2>/dev/null)" || {
+      umask "$_dr_old_umask"
+      DR_ENGINE_TMP=""
+      DR_ACQUIRE_FAILURE="could not stage devrites-engine for Windows uninstall: temporary directory creation failed"
+      return 1
+    }
+    umask "$_dr_old_umask"
+  fi
+  _dr_uninstall_engine="$DR_ENGINE_TMP/devrites-engine-uninstall.exe"
+  if ! cp -- "$DR_ENGINE_PATH" "$_dr_uninstall_engine" || ! chmod +x "$_dr_uninstall_engine"; then
+    DR_ACQUIRE_FAILURE="could not stage devrites-engine for Windows uninstall: executable copy failed"
+    return 1
+  fi
+  DR_ENGINE_PATH="$_dr_uninstall_engine"
+}
+
 # True when $1 holds every file the engine requires from a host payload: the
 # union of hostpack.RequiredPayload for all hosts plus each host's standards.
 dr_payload_complete() {

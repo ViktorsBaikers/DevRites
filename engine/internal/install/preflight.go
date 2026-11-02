@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/devrites/devrites/internal/hostpack"
-	"github.com/devrites/devrites/internal/safepath"
 )
 
 func (r *runner) preflightInstall() error {
@@ -264,10 +263,17 @@ func (r *runner) installMergeTargets() []string {
 
 func (r *runner) rememberPath(rel string) (pathSnapshot, error) {
 	rel = filepath.ToSlash(rel)
+	if r.targetInfo == nil {
+		info, err := os.Stat(r.target)
+		if err != nil {
+			return pathSnapshot{}, err
+		}
+		r.targetInfo = info
+	}
 	if snapshot, ok := r.preflight[rel]; ok {
 		return snapshot, nil
 	}
-	snapshot, err := inspectManagedPath(r.target, rel)
+	snapshot, err := r.inspectManagedPath(rel)
 	if err != nil {
 		return pathSnapshot{}, err
 	}
@@ -279,7 +285,7 @@ func (r *runner) rememberPath(rel string) (pathSnapshot, error) {
 // verified write (marker merge, strip). Needed when several managed merges
 // share one target such as AGENTS.md.
 func (r *runner) refreshPreflight(rel string) error {
-	snap, err := inspectManagedPath(r.target, rel)
+	snap, err := r.inspectManagedPath(rel)
 	if err != nil {
 		return err
 	}
@@ -288,12 +294,15 @@ func (r *runner) refreshPreflight(rel string) error {
 }
 
 func (r *runner) recheckPath(rel string) error {
+	if err := r.checkTargetIdentity(); err != nil {
+		return err
+	}
 	rel = filepath.ToSlash(rel)
 	before, ok := r.preflight[rel]
 	if !ok {
 		return fmt.Errorf("path %s was not preflighted", rel)
 	}
-	now, err := inspectManagedPath(r.target, rel)
+	now, err := r.inspectManagedPath(rel)
 	if err != nil {
 		return err
 	}
@@ -302,6 +311,9 @@ func (r *runner) recheckPath(rel string) error {
 	}
 	if afterRecheckPath != nil {
 		afterRecheckPath(rel)
+		if err := r.checkTargetIdentity(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -310,20 +322,35 @@ func (r *runner) recheckPath(rel string) error {
 // recheck and the write that follows it.
 var afterRecheckPath func(rel string)
 
+func (r *runner) inspectManagedPath(rel string) (pathSnapshot, error) {
+	if r.targetRoot != nil {
+		return inspectManagedPathIn(r.targetRoot, rel)
+	}
+	return inspectManagedPath(r.target, rel)
+}
+
 func inspectManagedPath(target, rel string) (pathSnapshot, error) {
+	root, err := os.OpenRoot(target)
+	if err != nil {
+		return pathSnapshot{}, err
+	}
+	defer func() { _ = root.Close() }()
+	return inspectManagedPathIn(root, rel)
+}
+
+func inspectManagedPathIn(root *os.Root, rel string) (pathSnapshot, error) {
 	native := filepath.FromSlash(rel)
 	if !filepath.IsLocal(native) {
 		return pathSnapshot{}, fmt.Errorf("refusing unsafe managed path %q", rel)
 	}
-	dest := filepath.Join(target, native)
-	if !safepath.WithinResolved(dest, target) {
-		return pathSnapshot{}, fmt.Errorf("refusing managed path outside target: %s", rel)
+	if root == nil {
+		return pathSnapshot{}, fmt.Errorf("install target is not open")
 	}
-	walk := target
+	walk := ""
 	parts := strings.Split(native, string(filepath.Separator))
 	for _, part := range parts {
 		walk = filepath.Join(walk, part)
-		info, err := os.Lstat(walk)
+		info, err := root.Lstat(walk)
 		if os.IsNotExist(err) {
 			return pathSnapshot{missing: true}, nil
 		}
@@ -334,7 +361,7 @@ func inspectManagedPath(target, rel string) (pathSnapshot, error) {
 			return pathSnapshot{}, fmt.Errorf("refusing symlink or junction in managed path: %s", rel)
 		}
 	}
-	info, err := os.Lstat(dest)
+	info, err := root.Lstat(native)
 	if os.IsNotExist(err) {
 		return pathSnapshot{missing: true}, nil
 	}
@@ -344,8 +371,7 @@ func inspectManagedPath(target, rel string) (pathSnapshot, error) {
 	if !info.Mode().IsRegular() {
 		return pathSnapshot{}, fmt.Errorf("refusing non-regular managed path: %s", rel)
 	}
-	// #nosec G304 -- managed path snapshot; regular-file check above
-	f, err := os.Open(dest)
+	f, err := root.Open(native)
 	if err != nil {
 		return pathSnapshot{}, fmt.Errorf("read managed path %s: %w", rel, err)
 	}

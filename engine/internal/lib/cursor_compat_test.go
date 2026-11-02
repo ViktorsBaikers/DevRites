@@ -1,8 +1,6 @@
 package lib
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -35,7 +33,6 @@ func TestOfficialBulletCursorAndKeyAliasesRemainReadable(t *testing.T) {
 }
 
 func TestClearAwaitingSupportsCanonicalCursor(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "state.md")
 	state := canonicalCursor + `
 ## Awaiting human
 | Key | Value |
@@ -44,14 +41,7 @@ func TestClearAwaitingSupportsCanonicalCursor(t *testing.T) {
 | gate | blocking |
 `
 	state = strings.Replace(state, "| status | running |", "| status | awaiting_human |", 1)
-	if err := os.WriteFile(path, []byte(state), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := clearAwaiting(path, "Q-001"); err != nil {
-		t.Fatal(err)
-	}
-	raw, err := os.ReadFile(path)
+	raw, err := clearAwaiting([]byte(state), "Q-001", "alpha")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,22 +49,14 @@ func TestClearAwaitingSupportsCanonicalCursor(t *testing.T) {
 	if strings.Contains(text, "## Awaiting human") || !strings.Contains(text, "| status | running |") {
 		t.Fatalf("canonical awaiting state was not cleared:\n%s", text)
 	}
-	if !strings.Contains(text, "$rite-temper") || strings.Contains(text, "$rite-build") {
+	if !strings.Contains(text, "| next_action | /rite-temper alpha |") {
 		t.Fatalf("canonical awaiting state resumed the wrong phase:\n%s", text)
 	}
 }
 
 func TestClearAwaitingSupportsCursorQuestionID(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "state.md")
 	state := strings.Replace(canonicalCursor, "| status | running |", "| status | awaiting_human |\n| question_id | Q-001 |", 1)
-	if err := os.WriteFile(path, []byte(state), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := clearAwaiting(path, "Q-001"); err != nil {
-		t.Fatal(err)
-	}
-	raw, err := os.ReadFile(path)
+	raw, err := clearAwaiting([]byte(state), "Q-001", "alpha")
 	if err != nil {
 		t.Fatal(err)
 	}

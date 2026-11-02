@@ -24,6 +24,7 @@
 #
 # Safety:
 #   - Refuses to write inside global Claude/Codex homes (DevRites is project-local only).
+#   - Rejects linked managed ancestors and alias leaves before add/remove mutations.
 #   - Refuses to overwrite a non-alias skill at .claude/skills/<alias>/.
 #   - Refuses if <target> is not a known rite-* skill in the target's pack.
 #   - Manifest-managed: pinned wrappers are recorded in .claude/devrites.manifest
@@ -72,6 +73,17 @@ dr_is_global_codex "$TARGET" && dr_die "refusing to operate on ~/.codex: DevRite
 SKILLS_DIR="$TARGET/.claude/skills"
 CODEX_SKILLS_DIR="$TARGET/.agents/skills"
 MF="$TARGET/$DR_MANIFEST_NAME"
+
+# Canonicalizing the project must not authorize linked managed ancestors.
+for managed_root in .claude .claude/skills .agents .agents/skills; do
+  managed_path="$TARGET/$managed_root"
+  [ ! -L "$managed_path" ] || dr_die "$managed_path is linked: refusing to operate outside managed project directories"
+  if [ -e "$managed_path" ]; then
+    [ -d "$managed_path" ] || dr_die "$managed_path is not a managed directory"
+    canonical_path="$(dr_abspath_dir "$managed_path")" || dr_die "cannot resolve $managed_path"
+    [ "$canonical_path" = "$managed_path" ] || dr_die "$managed_path resolves outside its managed project directory"
+  fi
+done
 
 [ -d "$SKILLS_DIR" ] || dr_die "no .claude/skills at $TARGET: run install.sh first?"
 [ -f "$MF" ]         || dr_die "no manifest at $MF: run install.sh first?"
@@ -221,12 +233,9 @@ do_remove() {
   CODEX_ALIAS_FILE="$CODEX_ALIAS_DIR/SKILL.md"
   CODEX_ALIAS_REL=".agents/skills/$ALIAS/SKILL.md"
 
-  [ -f "$ALIAS_FILE" ]      || dr_die "no pinned alias at $ALIAS_FILE"
-  is_pinned_alias "$ALIAS"  || dr_die "$ALIAS_FILE exists but is not a pinned alias: refusing to remove"
-
-  if path_exists "$CODEX_ALIAS_FILE"; then
-    is_pinned_alias_file "$CODEX_ALIAS_FILE" || dr_die "$CODEX_ALIAS_FILE exists but is not a pinned alias: refusing to remove"
-  fi
+  preflight_alias_destination "$ALIAS_DIR" "$ALIAS_FILE"
+  preflight_alias_destination "$CODEX_ALIAS_DIR" "$CODEX_ALIAS_FILE"
+  [ -f "$ALIAS_FILE" ] || dr_die "no pinned alias at $ALIAS_FILE"
 
   PIN_TMP="$(mktemp -d "$SKILLS_DIR/.devrites-pin.XXXXXX")"
   manifest_without "$MF" "$PIN_TMP/manifest" "$ALIAS_REL" "$CODEX_ALIAS_REL"

@@ -83,10 +83,13 @@ file's body as its instructions; record that fallback in `run.json` capabilities
 ## Concurrent waves
 
 Use a bounded pool: at most 6 active read-only workers (reviewers, verifiers,
-critics) unless the user or host sets another limit; writers stay one per path. The limit counts nested and tool-launched model agents; workers never
-delegate further. A timed-out, cancelled-but-unconfirmed or `unknown` worker keeps
-its slot until it reaches a verified terminal state. Test runners, browsers and compilers obey a separate recorded
-CPU/memory/process budget.
+critics) unless the user or host sets another limit. Target-mutating writer attempts
+on one repository run serially, including their complete observation and admission
+windows; path-disjoint tasks do not isolate a shared repository. The limit counts
+nested and tool-launched model agents; workers never delegate further. A timed-out,
+cancelled-but-unconfirmed or `unknown` worker keeps its slot until it reaches a
+verified terminal state. Test runners, browsers and compilers obey a separate
+recorded CPU/memory/process budget.
 
 After the short shared snapshot and component-map preflight:
 
@@ -104,19 +107,22 @@ After the short shared snapshot and component-map preflight:
    Launch the gap wave a critic names as soon as it names it, alongside that wave's
    verifiers, instead of waiting for them; every wave still runs, and reconciliation
    still waits until every attempt is terminal.
-5. Synchronize only at snapshot establishment, shared-contract decisions, final
-   reconciliation, approval, combined-candidate verification and completion. A
-   question blocking one lane never stalls unrelated work in another.
+5. Read-only waves synchronize only at snapshot establishment, shared-contract
+   decisions, final reconciliation, approval, combined-candidate verification and
+   completion. A question blocking one lane never stalls unrelated read-only work
+   in another. Shared-repository target writes use the exclusive windows below.
 
 Record in `dispatch.json`, per attempt: wave, role, lane, profiles, snapshot,
 `dispatched_at` (coordinator clock), and the worker's own `started_at` and
 `finished_at`. Concurrency is proven only by overlapping worker intervals for the
 frontend and backend attempts of one wave. Never invent timestamps or claim
-parallelism the receipts do not show. Parallel writes additionally need approved,
-path-independent tasks; contracts, schemas, lockfiles, generators and shared
-components impose real ordering. Benchmarks sharing CPU, browser, database, network
-or caches run in exclusive measurement windows (see
-[`repair-and-measurement.md`](repair-and-measurement.md#measurement-windows)).
+parallelism the receipts do not show. Read-only review and verification may overlap
+on immutable inputs when their resources permit. Approved, path-independent tasks
+still serialize target mutation on a shared repository: whole-repository deltas
+cannot attribute overlapping writes to individual attempts. Contracts, schemas,
+lockfiles, generators and shared components impose further ordering. Benchmarks
+sharing CPU, browser, database, network or caches run in exclusive measurement
+windows (see [`repair-and-measurement.md`](repair-and-measurement.md#measurement-windows)).
 
 ## Dispatch packets
 
@@ -239,15 +245,20 @@ Reconcile only after every attempt of the wave is terminal:
 ## Single writer, budgets and cancellation
 
 - One active writer per physical target path, including symlink and case aliases;
-  the validator enforces this over `dispatch.json`. This is a coordination rule, not
-  an operating-system lock; the coordinator also compares fingerprints before and
-  after every writer.
-- Before admitting a patch, check its expected input hashes and the observed changed
-  paths against the task's exact allowed paths. Observe them per attempt: run
-  `devrites-engine overhaul snapshot state <repo> <before.json>` just before dispatch and
-  `devrites-engine overhaul snapshot delta <before.json> <repo>` after it, and pass that output to
-  `devrites-engine overhaul admit receipt --observed`. Never derive them from `git status`, which
-  also lists the user's own edits. Extra paths are rejected, never merged later.
+  the validator reserves each live writer's complete approved task scope, not a
+  narrower `write_paths` claim. This is a coordination rule, not an operating-system
+  lock or permission to overlap target writes on one repository.
+- Serialize the shared repository's entire target-mutating attempt window: capture
+  `devrites-engine overhaul snapshot state <repo> <before.json>` immediately before
+  dispatch, wait for the writer to stop, capture
+  `devrites-engine overhaul snapshot delta <before.json> <repo>`, and finish receipt
+  admission before the next target writer starts. The delta reports the whole
+  repository, including concurrent user edits; retain every observed path and reject
+  changes outside the task's exact allowed paths. Never filter sibling paths or
+  derive observations from `git status`. Path-disjoint writes still share this
+  observation resource. Read-only workers may overlap on immutable inputs where
+  resource use permits; checks that mutate the target repository also need this
+  exclusive window.
 - Use only providers and models the user approved; record the actual selection and
   any fallback. Independence means a separate context and evidence, not a
   different paid model. Never escalate to an unapproved provider to raise a score.

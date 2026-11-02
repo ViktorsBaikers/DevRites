@@ -638,9 +638,9 @@ func TestNextDoesNotSkipPhasesWithoutNewArtifacts(t *testing.T) {
 	}
 }
 
-func TestNextSkipsConditionalConvergeAfterBuild(t *testing.T) {
-	root, featureDir := newWorkspace(t, string(state.PhaseBuild))
-	policy, _ := state.PolicyFor(state.PhaseBuild)
+func TestNextSkipsCompletedConditionalConverge(t *testing.T) {
+	root, featureDir := newWorkspace(t, string(state.PhaseConverge))
+	policy, _ := state.PolicyFor(state.PhaseConverge)
 	for _, artifact := range policy.RequiredArtifacts {
 		if artifact != state.LedgerFile {
 			writeFile(t, filepath.Join(featureDir, string(artifact)), "x\n")
@@ -650,9 +650,9 @@ func TestNextSkipsConditionalConvergeAfterBuild(t *testing.T) {
 	if code := RunNext(root, []string{"feat"}, stdout, stderr); code != 0 {
 		t.Fatalf("code=%d err=%s", code, stderr.String())
 	}
-	// /rite-build hands off to /rite-prove; converge is a recovery phase.
-	if out := stdout.String(); !strings.Contains(out, "next-phase: prove\n") || !strings.Contains(out, "converge (artifacts complete)") {
-		t.Fatalf("want prove with converge skipped:\n%s", out)
+	// Converge remains conditional recovery, not mandatory artifactless work.
+	if out := stdout.String(); !strings.Contains(out, "next-phase: prove\n") {
+		t.Fatalf("want prove after completed conditional converge:\n%s", out)
 	}
 }
 

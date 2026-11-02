@@ -142,9 +142,13 @@ dispatched in task-ID order; a failed or blocked task keeps its dependents block
 Order correctness and security work before dependent performance or refactor work; keep dependency migrations separate from unrelated optimizations so gains stay
 attributable; give each shared physical file, generated source, lockfile or
 interface one write owner with explicit ordering; let a shared-contract change land
-only with evidence from both consumers. Independent frontend and backend tasks may
-run concurrently. A task like "improve architecture", "optimize queries" or "add
-tests" with no concrete failing case and acceptance evidence is not approvable.
+only with evidence from both consumers. Serialize target-mutating attempts on one
+repository, including independent frontend/backend tasks: whole-repository
+before-capture → target writer stops → full delta → receipt admission, then dispatch
+the next writer. Read-only reviews and verification may overlap on immutable inputs
+when resources permit ([observation windows](orchestration.md#single-writer-budgets-and-cancellation)).
+A task like "improve architecture", "optimize queries" or "add tests" with no concrete
+failing case and acceptance evidence is not approvable.
 Each task names the oracle its kind requires
 ([`repair-and-measurement.md`](repair-and-measurement.md#oracles-by-finding-kind)).
 Rejected and deferred findings stay visible and keep failing their controls.
@@ -211,9 +215,12 @@ Dispatch only the deficient areas and their dependencies: frontend deficits to t
 frontend engineer plus relevant craft, performance, security or proof specialists;
 backend deficits to the backend engineer plus data, concurrency, security or proof
 specialists; boundary deficits to both producer and consumer owners. When both sides
-have deficits, dispatch them concurrently. When one side alone is affected, do not
-spawn an idle other-side repair to manufacture overlap; reuse unaffected evidence
-only after a recorded freshness check. Final cross-lane checks stay mandatory.
+have deficits, dispatch independent read-only investigation and verification
+concurrently on immutable inputs where resources permit; queue shared-repository
+target writes through the exclusive capture → writer stop → delta → admission
+windows above. When one side alone is affected, do not spawn an idle other-side
+repair to manufacture overlap; reuse unaffected evidence only after a recorded
+freshness check. Final cross-lane checks stay mandatory.
 
 Each new assignment carries the previous attempt's actual evidence, current deficit
 IDs, a falsifiable hypothesis or the exact missing observation, why the next action

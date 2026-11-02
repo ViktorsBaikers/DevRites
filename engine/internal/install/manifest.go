@@ -19,11 +19,6 @@ func readManifest(path string) (map[string]managedRecord, error) {
 	return records, err
 }
 
-func readManifestList(path string) ([]string, error) {
-	_, entries, err := parseManifest(path)
-	return entries, err
-}
-
 func parseManifest(path string) (map[string]managedRecord, []string, error) {
 	// #nosec G304 -- install manifest under the operator-selected target
 	data, err := os.ReadFile(path)
@@ -33,6 +28,10 @@ func parseManifest(path string) (map[string]managedRecord, []string, error) {
 		}
 		return nil, nil, fmt.Errorf("read manifest %s: %w", path, err)
 	}
+	return parseManifestData(data)
+}
+
+func parseManifestData(data []byte) (map[string]managedRecord, []string, error) {
 	hashes := map[string]string{}
 	var out []string
 	for _, line := range strings.Split(string(data), "\n") {

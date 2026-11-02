@@ -67,6 +67,83 @@ cmp -s "$T/manifest-before-failed-remove" "$T/.claude/devrites.manifest" \
   && ok "failed pin remove leaves the manifest unchanged" \
   || no "failed pin remove corrupted the manifest"
 
+# Existing managed ancestors must never redirect pin writes outside the project.
+for ancestor in .agents .agents/skills .claude .claude/skills; do
+  for operation in add remove; do
+    project="$T/alpha"
+    outside="$HOME/beta"
+    rm -rf "$project" "$outside" "$T/outside-before"
+    mkdir -p "$project/.claude/skills/rite-build" "$project/.agents/skills"
+    printf 'build skill\n' > "$project/.claude/skills/rite-build/SKILL.md"
+    printf '# fixture manifest\n' > "$project/.claude/devrites.manifest"
+    bash "$ROOT/scripts/pin.sh" --target "$project" add alpha rite-build >/dev/null 2>&1 \
+      || no "ancestor setup pin failed"
+    cp "$project/.claude/devrites.manifest" "$T/manifest-before"
+    mv "$project/$ancestor" "$outside"
+    ln -s "$outside" "$project/$ancestor"
+    cp -R "$outside" "$T/outside-before"
+    pin_args=(add beta rite-build)
+    [ "$operation" = remove ] && pin_args=(remove alpha)
+    if bash "$ROOT/scripts/pin.sh" --target "$project" "${pin_args[@]}" >/dev/null 2>&1; then
+      no "pin $operation accepted linked $ancestor"
+    else
+      ok "pin $operation rejects linked $ancestor"
+    fi
+    diff -r "$T/outside-before" "$outside" >/dev/null 2>&1 \
+      && ok "pin $operation preserves outside $ancestor bytes" \
+      || no "pin $operation changed outside $ancestor bytes"
+    cmp -s "$T/manifest-before" "$project/.claude/devrites.manifest" \
+      && ok "pin $operation preserves manifest with linked $ancestor" \
+      || no "pin $operation changed manifest with linked $ancestor"
+  done
+done
+
+for leaf in claude-directory claude-file codex-directory codex-file; do
+  project="$T/alpha"
+  outside="$HOME/beta"
+  rm -rf "$project" "$outside" "$T/outside-before"
+  mkdir -p "$project/.claude/skills/rite-build" "$project/.agents/skills" "$outside"
+  printf 'build skill\n' > "$project/.claude/skills/rite-build/SKILL.md"
+  printf '# fixture manifest\n' > "$project/.claude/devrites.manifest"
+  bash "$ROOT/scripts/pin.sh" --target "$project" add alpha rite-build >/dev/null 2>&1 \
+    || no "leaf setup pin failed"
+  cp "$project/.claude/devrites.manifest" "$T/manifest-before"
+  case "$leaf" in
+    claude-*) destination="$project/.claude/skills/alpha" ;;
+    codex-*) destination="$project/.agents/skills/alpha" ;;
+  esac
+  case "$leaf" in
+    *-file) destination="$destination/SKILL.md" ;;
+  esac
+  mv "$destination" "$outside/alpha"
+  ln -s "$outside/alpha" "$destination"
+  cp -R "$outside" "$T/outside-before"
+  if bash "$ROOT/scripts/pin.sh" --target "$project" remove alpha >/dev/null 2>&1; then
+    no "pin remove accepted linked $leaf"
+  else
+    ok "pin remove rejects linked $leaf"
+  fi
+  diff -r "$T/outside-before" "$outside" >/dev/null 2>&1 \
+    && ok "pin remove preserves outside $leaf bytes" \
+    || no "pin remove changed outside $leaf bytes"
+  [ -L "$destination" ] && ok "pin remove preserves $leaf link" || no "pin remove deleted $leaf link"
+  cmp -s "$T/manifest-before" "$project/.claude/devrites.manifest" \
+    && ok "pin remove preserves manifest with linked $leaf" \
+    || no "pin remove changed manifest with linked $leaf"
+done
+
+project="$T/alpha"
+rm -rf "$project"
+mkdir -p "$project/.claude/skills/rite-build"
+printf 'build skill\n' > "$project/.claude/skills/rite-build/SKILL.md"
+printf '# fixture manifest\n' > "$project/.claude/devrites.manifest"
+ln -s "$project" "$T/project-alias"
+bash "$ROOT/scripts/pin.sh" --target "$T/project-alias" add alpha rite-build >/dev/null 2>&1 \
+  && ok "Claude-only pin permits canonical project alias" || no "Claude-only pin through project alias failed"
+bash "$ROOT/scripts/pin.sh" --target "$T/project-alias" remove alpha >/dev/null 2>&1 \
+  && ok "Claude-only unpin permits canonical project alias" || no "Claude-only unpin through project alias failed"
+[ ! -e "$project/.agents" ] && ok "Claude-only pin leaves Codex absent" || no "Claude-only pin created Codex directory"
+
 bash "$ROOT/scripts/check-no-global-writes.sh" >/dev/null 2>&1 && ok "check-no-global-writes passed" || no "check-no-global-writes failed"
 
 echo ""

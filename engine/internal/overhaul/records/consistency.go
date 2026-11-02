@@ -115,6 +115,24 @@ func consistency(run, genDir string, R map[string]map[string]any, add func(strin
 	if err != nil {
 		return err
 	}
+	inputs := ovio.Obj(sc["inputs"])
+	for _, input := range []struct{ key, file string }{
+		{"rubric_sha256", join(run, str(ovio.Obj(ovio.Obj(R["run.json"]["revisions"])["rubric"]), "file"))},
+		{"results_sha256", join(genDir, results)},
+		{"gates_sha256", join(genDir, "gates.json")},
+	} {
+		if !isFile(input.file) {
+			add("scorecard: %s input is missing", input.key)
+			continue
+		}
+		digest, err := sha(input.file)
+		if err != nil {
+			return err
+		}
+		if !eq(inputs[input.key], digest) {
+			add("scorecard: %s does not match the selected calculator input", input.key)
+		}
+	}
 	gates := ovio.Obj(sc["gates"])
 	claims := func(g string) bool { return str(gates, g) == "PASS" }
 	for _, it := range fs {
@@ -131,10 +149,10 @@ func consistency(run, genDir string, R map[string]map[string]any, add func(strin
 	if !claims("G-COVERAGE") {
 		return nil
 	}
-	admitted := map[string]bool{}
+	admitted := map[string]map[string]any{}
 	for _, it := range ovio.List(R["dispatch.json"]["attempts"]) {
 		if x := ovio.Obj(it); str(x, "status") == "admitted" {
-			admitted[str(x, "receipt")] = true
+			admitted[str(x, "receipt")] = x
 		}
 	}
 	if len(cells) == 0 {
@@ -147,8 +165,8 @@ func consistency(run, genDir string, R map[string]map[string]any, add func(strin
 		case "blocked":
 			add("scorecard: G-COVERAGE is PASS but applicability %s is blocked", key)
 		case "applicable":
-			if !checkedBy(run, str(c, "domain"), ovio.List(c["receipts"]), admitted) {
-				add("scorecard: G-COVERAGE is PASS but no admitted, non-gap receipt of applicability %s lists %s in domains_checked", key, str(c, "domain"))
+			if !checkedBy(run, str(c, "domain"), str(c, "lane"), ovio.List(c["receipts"]), admitted) {
+				add("scorecard: G-COVERAGE is PASS but no admitted, non-gap receipt of applicability %s lists %s in domains_checked for its lane", key, str(c, "domain"))
 			}
 		}
 	}
@@ -169,16 +187,24 @@ func consistency(run, genDir string, R map[string]map[string]any, add func(strin
 	return nil
 }
 
-// checkedBy reports whether any admitted, non-gap receipt records domain in
-// domains_checked.
-func checkedBy(run, domain string, receipts []any, admitted map[string]bool) bool {
+// checkedBy requires the receipt's domain and lane to match the cell and its
+// identity to match the admitted dispatch attempt.
+func checkedBy(run, domain, lane string, receipts []any, admitted map[string]map[string]any) bool {
 	for _, r := range receipts {
 		p := ovio.Str(r)
-		if !admitted[p] || !inside(run, p) || !isFile(join(run, p)) {
+		attempt := admitted[p]
+		if attempt == nil || str(attempt, "lane") != lane || !inside(run, p) || !isFile(join(run, p)) {
 			continue
 		}
 		rc, err := ovio.LoadObject(join(run, p))
 		if err != nil || str(rc, "outcome") == "gap" {
+			continue
+		}
+		matches := true
+		for _, k := range []string{"task_id", "attempt_id", "role", "lane", "snapshot"} {
+			matches = matches && str(attempt, k) != "" && eq(rc[k], attempt[k])
+		}
+		if !matches {
 			continue
 		}
 		if slices.ContainsFunc(ovio.List(rc["domains_checked"]), func(d any) bool { return d == any(domain) }) {

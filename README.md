@@ -288,6 +288,12 @@ npx devrites@latest uninstall
 npx devrites@latest uninstall --keep-binary
 ```
 
+On Windows, use `npx devrites@latest uninstall` or the Bash `uninstall.sh`
+launcher to remove the shared engine binary. These launchers run a private
+temporary copy so Windows can delete the original installed executable.
+Direct `devrites-engine uninstall` cannot delete its own running image and
+refuses before changing project files; use the launcher or `--keep-binary`.
+
 Run `npx devrites@latest --help` for common flags and
 `npx devrites@latest <command> --help` for command-specific flags.
 
@@ -555,6 +561,9 @@ npm run validate
 npm test
 (cd engine && go test ./... -count=1)
 ```
+
+Native Windows launcher integration tests also require Node and Git for Windows
+(including Git Bash). They exercise the real installed engine through both launchers.
 
 Canonical pack changes belong in `pack/.claude/`. Rebuild host payloads with
 `bash scripts/build-host-artifacts.sh` instead of editing `pack/generated/`.
