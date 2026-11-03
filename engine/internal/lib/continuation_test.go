@@ -129,3 +129,41 @@ func TestHandoffPrintsContinuationVerdict(t *testing.T) {
 func cursor(phase, status, next string) string {
 	return "# State\n\n## Cursor\n| Key | Value |\n| --- | --- |\n| phase | " + phase + " |\n| status | " + status + " |\n| next_action | " + next + " |\n"
 }
+
+func TestContinuationVetReadyKeepsExistingGates(t *testing.T) {
+	for _, tc := range []struct {
+		name, phase, status, next, extra, questions string
+		required                                    bool
+		refused                                     bool
+	}{
+		{name: "ready Vet", phase: "vet", status: "ready", next: "/rite-build SLICE-001", required: true},
+		{name: "ready with question", phase: "vet", status: "ready", next: "/rite-build SLICE-001", extra: "| question_id | Q-001 |\n"},
+		{name: "ready with human gate", phase: "vet", status: "ready", next: "/rite-build SLICE-001", questions: "## Q-001\nstatus: open\ngate: blocking\n"},
+		{name: "awaiting human", phase: "vet", status: "awaiting_human", next: "/rite-build SLICE-001"},
+		{name: "other ready phase", phase: "plan", status: "ready", next: "/rite-vet feat"},
+		{name: "Ship not approval", phase: "vet", status: "ready", next: "/rite-ship feat"},
+		{name: "controller not phase approval", phase: "vet", status: "ready", next: "/rite-autocomplete"},
+		{name: "foreign cursor", phase: "vet", status: "ready", next: "/rite-vet other", refused: true},
+		{name: "malformed cursor", phase: "vet", status: "ready", next: "/rite-build --parallel nope", refused: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, dir := newWorkspace(t, tc.phase)
+			writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 2\n")
+			writeFile(t, filepath.Join(dir, "state.md"), cursor(tc.phase, tc.status, tc.next)+tc.extra)
+			if tc.questions != "" {
+				writeFile(t, filepath.Join(dir, "questions.md"), tc.questions)
+			}
+			var out, errOut bytes.Buffer
+			code := RunCheckContinuation(root, []string{"feat"}, &out, &errOut)
+			if tc.refused {
+				if code == 0 || strings.Contains(out.String(), "continuation: required") {
+					t.Fatalf("unsafe cursor accepted: %d %s %s", code, &out, &errOut)
+				}
+				return
+			}
+			if code != 0 || strings.Contains(out.String(), "continuation: required") != tc.required {
+				t.Fatalf("ready verdict: %d %s %s", code, &out, &errOut)
+			}
+		})
+	}
+}

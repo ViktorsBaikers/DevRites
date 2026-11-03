@@ -48,7 +48,7 @@ func rootModeFor(command string, args []string) rootMode {
 			return rootLenient
 		}
 		return rootUnused
-	case "orient", "next", "context", "metrics", "dispatch", "handoff", "note", "packet":
+	case "orient", "next", "frontier", "context", "metrics", "dispatch", "handoff", "note", "packet":
 		return rootStrictUsage
 	case "candidate":
 		if subcommand == "freeze" {

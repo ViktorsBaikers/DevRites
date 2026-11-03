@@ -134,8 +134,8 @@ func TestAuditDispatchWrongHandleCannotCompleteOrReleaseClaim(t *testing.T) {
 	if code, out, stderr := runClaim(t, root, "check", "--session", "foreign", "pkg/a.go"); code != 0 {
 		t.Errorf("correct return retained claim: code=%d\n%s%s", code, out, stderr)
 	}
-	if code, out := runDispatchT(t, root, "return", "--wave", "current", "--role", role, "--handle", "H2", "--result", result); code != 3 {
-		t.Errorf("duplicate return accepted: code=%d\n%s", code, out)
+	if code, out := runDispatchT(t, root, "return", "--wave", "current", "--role", role, "--handle", "H2", "--result", result); code != 0 {
+		t.Errorf("matching completed return replay refused: code=%d\n%s", code, out)
 	}
 }
 
@@ -549,6 +549,146 @@ func TestAuditDispatchNativeRapidSettlement(t *testing.T) {
 type auditDispatchWriteFunc func([]byte) (int, error)
 
 func (f auditDispatchWriteFunc) Write(p []byte) (int, error) { return f(p) }
+
+func TestAuditDispatchFinalReturnReconcilesClaimRelease(t *testing.T) {
+	for _, mode := range []string{"release-failure", "already-released"} {
+		t.Run(mode, func(t *testing.T) {
+			root, featureDir := newWorkspace(t, "build")
+			const role = "code-reviewer"
+			const body = "Outcome: no-findings\nCounts: critical=0 important=0\n"
+			result := filepath.Join(t.TempDir(), "return.md")
+			writeFile(t, result, body)
+			for _, args := range [][]string{
+				{"open", "--phase", "build", "--wave", "review", "--role", role, "--packet", reviewerPacketPath(t), "--claim-session", "owner", "--claim", "pkg/a.go"},
+				{"start", "--wave", "review", "--role", role, "--handle", "review-host"},
+			} {
+				if code, out := runDispatchT(t, root, args...); code != 0 {
+					t.Fatalf("%v: code=%d\n%s", args, code, out)
+				}
+			}
+			before, _, err := loadDispatch(root, "feat")
+			if err != nil {
+				t.Fatal(err)
+			}
+			id := before.Waves["review"].Claim
+			claimPath := claimsPath(root)
+			moved := claimPath + ".saved"
+			interrupted := false
+			var out bytes.Buffer
+			writer := auditDispatchWriteFunc(func(p []byte) (int, error) {
+				if !interrupted && bytes.Contains(p, []byte("returned (wave review complete)")) {
+					if err := os.Rename(claimPath, moved); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.Mkdir(claimPath, 0o755); err != nil {
+						t.Fatal(err)
+					}
+					interrupted = true
+				}
+				return out.Write(p)
+			})
+			replay := []string{"return", "--wave", "review", "--role", role, "--handle", "review-host", "--result", result}
+			code := RunDispatch(root, append([]string{"feat"}, replay...), writer, &out)
+			if !interrupted {
+				t.Fatalf("premise: final return never reached claim release: code=%d\n%s", code, &out)
+			}
+			if err := os.Remove(claimPath); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Rename(moved, claimPath); err != nil {
+				t.Fatal(err)
+			}
+			if code != 3 || !strings.Contains(out.String(), "claim not released") {
+				t.Errorf("final return hid claim release failure: code=%d\n%s", code, &out)
+			}
+			committed, _, err := loadDispatch(root, "feat")
+			if err != nil {
+				t.Fatal(err)
+			}
+			w := committed.Waves["review"]
+			if w == nil || w.State != "complete" || !w.Roles[role].Returned || w.Roles[role].ReturnedAt == "" || w.Claim != id || w.ClaimSession != "owner" {
+				t.Fatalf("failed release lost the committed return or claim identity: %+v", w)
+			}
+			latest, _, _, err := readClaims(claimPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if latest[id] == nil || latest[id].Released {
+				t.Fatal("injected release failure did not retain the live claim")
+			}
+			if code, stdout, stderr := runClaim(t, root, "check", "--session", "foreign", "pkg/a.go"); code != 3 {
+				t.Fatalf("failed release dropped claim exclusion: code=%d\n%s%s", code, stdout, stderr)
+			}
+			stored := filepath.Join(featureDir, "packets", "review-"+role+".return.md")
+			metrics := filepath.Join(featureDir, MetricsFile)
+			snapshots := map[string]string{}
+			for _, path := range []string{dispatchPath(root, "feat"), stored, metrics, claimPath} {
+				snapshots[path] = readTestFile(t, path)
+			}
+			if snapshots[stored] != body || strings.Count(snapshots[metrics], `"event":"return"`) != 1 {
+				t.Fatalf("first return did not retain exactly one result and metric: result=%q metrics=%s", snapshots[stored], snapshots[metrics])
+			}
+			for _, identity := range [][2]string{{"test-analyst", "review-host"}, {role, "wrong-host"}, {role, ""}} {
+				args := []string{"return", "--wave", "review", "--role", identity[0], "--result", result}
+				if identity[1] != "" {
+					args = append(args, "--handle", identity[1])
+				}
+				if code, out := runDispatchT(t, root, args...); code != 3 {
+					t.Errorf("unmatched replay identity %v accepted: code=%d\n%s", identity, code, out)
+				}
+				for path, data := range snapshots {
+					if got := readTestFile(t, path); got != data {
+						t.Errorf("unmatched replay identity %v changed %s", identity, path)
+					}
+				}
+			}
+			if mode == "already-released" {
+				if code, stdout, stderr := runClaim(t, root, "release", "--session", "owner", "--id", id); code != 0 {
+					t.Fatalf("public release: code=%d\n%s%s", code, stdout, stderr)
+				}
+				snapshots[claimPath] = readTestFile(t, claimPath)
+			}
+			if code, out := runDispatchT(t, root, replay...); code != 0 || strings.Contains(out, "claim not released") {
+				t.Errorf("matching replay did not reconcile release: code=%d\n%s", code, out)
+			}
+			latest, _, _, err = readClaims(claimPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if latest[id] == nil || !latest[id].Released {
+				t.Error("matching completed return replay left its claim live")
+			}
+			if code, stdout, stderr := runClaim(t, root, "check", "--session", "foreign", "pkg/a.go"); code != 0 {
+				t.Errorf("reconciled return still blocks another owner: code=%d\n%s%s", code, stdout, stderr)
+			}
+			after, _, err := loadDispatch(root, "feat")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := after.Waves["review"]; got == nil || got.State != "complete" || got.Roles[role] == nil || *got.Roles[role] != *w.Roles[role] {
+				t.Errorf("matching replay changed the original return identity or timestamps: %+v", got)
+			}
+			for _, path := range []string{stored, metrics} {
+				if got := readTestFile(t, path); got != snapshots[path] {
+					t.Errorf("matching replay rewrote %s", path)
+				}
+			}
+			if mode == "already-released" && readTestFile(t, claimPath) != snapshots[claimPath] {
+				t.Error("reconciliation appended another release for an already released claim")
+			}
+			snapshots[dispatchPath(root, "feat")] = readTestFile(t, dispatchPath(root, "feat"))
+			snapshots[claimPath] = readTestFile(t, claimPath)
+			if code, out := runDispatchT(t, root, replay...); code != 0 || strings.Contains(out, "claim not released") {
+				t.Errorf("already reconciled replay is not idempotent: code=%d\n%s", code, out)
+			}
+			for path, data := range snapshots {
+				if got := readTestFile(t, path); got != data {
+					t.Errorf("idempotent replay changed %s", path)
+				}
+			}
+		})
+	}
+}
 
 func TestAuditDispatchTerminalReleaseReconcilesCommittedClaim(t *testing.T) {
 	for _, mode := range []string{"public-release", "save-failure"} {

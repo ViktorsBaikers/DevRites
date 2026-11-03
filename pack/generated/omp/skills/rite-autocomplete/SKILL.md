@@ -88,9 +88,9 @@ next sequence continuation through Vet in a second session, then stop.
 
 1. **Orient and parse.** Resolve source per [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding); when a workspace exists,
    require its `state.md` and read its cursor; a fresh idea starts empty at step 2.
-   Before phase-local cold recovery, execute the bounded
-   [global frontier pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier);
-   retain this source's return cursor and pending reviewer handles.
+   After normalizing arguments below, run `devrites-engine frontier <source>`
+   before phase-local cold recovery; execute its actions under the shared
+   [global frontier pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
    Before honoring `blocked` with terminal `next_action`,
    reconcile retained consumptive evidence and fingerprint attempts from
    `drift.md`/`evidence.md`; a retained fingerprint below its cap resumes offline
@@ -104,7 +104,7 @@ next sequence continuation through Vet in a second session, then stop.
    Normalize current arguments to idea, `ship_preflight: yes|no`,
    `max_slices: unlimited`, `parallel: N|default`, `profile: standard|full`,
    and `cross_model: yes|no`.
-   **Completion:** normalized state is unambiguous and no sentinel or workspace file has been written.
+   **Completion:** arguments and source authority are unambiguous; local cursor and pending handles remain intact.
 2. **Specify and clarify.** Run `devrites-interview`, `/rite-spec`, and
    `/rite-clarify` as one window. `open` material coverage never arms
    AFK. **Completion:** `Decision coverage: CLEAR` is durable.
@@ -121,12 +121,12 @@ next sequence continuation through Vet in a second session, then stop.
    `/rite-build` batch loop → `/rite-prove` → `/rite-polish` →
    `/rite-review` → `/rite-seal`. Read and execute each skill; durable files, not
    chat, carry state. Apply the mutable post-vet budget before first Build.
-   Execute the shared [global frontier pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
-   at phase entry, before recovery, on returns and before native waits, not only
-   during Build or after Seal. Preserve source-local phase cursors; Autocomplete
-   retains repository scheduling. Apply its protected validation window before
-   landings/checkpoints and account admission. Pass resolved `--parallel N` to
-   Build under its one global cap and existing admission/isolation gates.
+   Run `devrites-engine frontier <source>` at phase entry, before recovery,
+   on returns and before native waits; execute the shared
+   [global frontier pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier),
+   not merely its report. Autocomplete retains repository scheduling and local
+   cursors. Apply its protected validation window and pass resolved `--parallel N`
+   to Build under the same global cap and admission/isolation gates.
    **Completion:** loop reaches Seal GO or persists a valid stop before any later phase.
 5. **Apply stops.** At every gate use
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:

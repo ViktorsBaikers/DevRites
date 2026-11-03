@@ -10,6 +10,7 @@ import (
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/gate"
+	"github.com/devrites/devrites/internal/markdowntext"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/workflow"
 )
@@ -44,7 +45,21 @@ func RunCheckContinuation(root string, args []string, stdout, stderr io.Writer) 
 		fmt.Fprintf(stderr, "check continuation: %v\n", err)
 		return 2
 	}
+	var frontier []string
+	if afkPresent(root) {
+		frontier, err = FrontierLines(root, slug)
+		if err != nil {
+			fmt.Fprintf(stderr, "check continuation: frontier: %v\n", err)
+			return 2
+		}
+		if !verdict.Required && len(frontier) > 0 && frontier[0] == "frontier: actionable" {
+			verdict = continuationVerdict{Required: true, Invoke: "/rite-autocomplete", Source: slug, Reason: "global frontier requires native preparation, authority review, or selection; no Ship approval"}
+		}
+	}
 	writeContinuation(stdout, verdict)
+	for _, line := range frontier {
+		fmt.Fprintln(stdout, line)
+	}
 	return 0
 }
 
@@ -59,12 +74,16 @@ func classifyContinuation(root, slug string) (continuationVerdict, error) {
 	}
 	invoke, internal, err := internalPhaseEdge(report.NextAction, slug)
 	if err != nil {
-		return continuationVerdict{}, err
+		if !frontierBoundSpec(root, slug, report.NextAction) {
+			return continuationVerdict{}, err
+		}
+		// A successor Spec belongs to the global controller, never this source's phase invocation.
+		invoke, internal = "", false
 	}
 	if !afkPresent(root) {
 		return continuationVerdict{Reason: "no AFK sentinel"}, nil
 	}
-	if report.Status != "running" {
+	if report.Status != "running" && !(report.Phase == state.PhaseVet && report.Status == "ready") {
 		if report.Status == "" {
 			return continuationVerdict{Reason: "status unset"}, nil
 		}
@@ -75,7 +94,17 @@ func classifyContinuation(root, slug string) (continuationVerdict, error) {
 	if err != nil {
 		return continuationVerdict{}, err
 	}
-	if qid, ok := state.CursorField(strings.Split(string(data), "\n"), state.CursorQuestionID); ok && strings.TrimSpace(qid) != "" {
+	structural, err := markdowntext.Structural(data)
+	if err != nil {
+		return continuationVerdict{Reason: "malformed source cursor; native normalization required"}, nil
+	}
+	cursorLines := strings.Split(string(structural), "\n")
+	for _, key := range []string{state.CursorPhase, state.CursorStatus, state.CursorNextAction, state.CursorQuestionID} {
+		if _, _, err := frontierField(cursorLines, key); err != nil {
+			return continuationVerdict{Reason: err.Error() + "; native normalization required"}, nil
+		}
+	}
+	if qid, ok := state.CursorField(cursorLines, state.CursorQuestionID); ok && strings.TrimSpace(qid) != "" {
 		return continuationVerdict{Reason: "question cursor set"}, nil
 	}
 	// #nosec G304 -- questions.md inside the checked feature workspace
@@ -93,7 +122,7 @@ func classifyContinuation(root, slug string) (continuationVerdict, error) {
 	if !internal {
 		return continuationVerdict{Reason: "next_action is not an internal phase edge"}, nil
 	}
-	return continuationVerdict{Required: true, Invoke: invoke, Source: slug, Reason: "AFK status=running internal phase edge"}, nil
+	return continuationVerdict{Required: true, Invoke: invoke, Source: slug, Reason: "AFK status=" + report.Status + " internal phase edge"}, nil
 }
 
 func afkPresent(root string) bool {

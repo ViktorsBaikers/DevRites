@@ -167,6 +167,19 @@ func controllerLease(root, controller string) (*repositoryLease, error) {
 	return found, nil
 }
 
+// ControllerLease returns the retained repository controller without changing its lease.
+// A lease in another checkout requires recovery at that explicit control root.
+func ControllerLease(repoRoot string) (string, *Lease, error) {
+	found, err := controllerLease(repoRoot, "")
+	if err != nil || found == nil {
+		return "", nil, err
+	}
+	if found.root != resolvedPath(repoRoot) {
+		return "", nil, fmt.Errorf("repository controller lease retained by %s at %s; recover at its explicit root", found.controller, found.root)
+	}
+	return found.controller, found.lease, nil
+}
+
 // WorkspaceLeased protects both controller and source workspaces until cleanup.
 // devritesRoot is explicit; closeout holds WithControlLock through its rename.
 func WorkspaceLeased(devritesRoot, workspace string) (bool, error) {

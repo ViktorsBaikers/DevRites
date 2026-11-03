@@ -350,3 +350,70 @@ func TestContinuationReasonCannotHideForeignOrMultipleInvocations(t *testing.T) 
 		})
 	}
 }
+
+func TestContinuationBoundSuccessorUsesOriginalSource(t *testing.T) {
+	for _, command := range []string{"/rite-spec", "$rite-spec", "/skill:rite-spec"} {
+		t.Run(command, func(t *testing.T) {
+			root, work := continuationWorkspace(t, "done", "shipped", command+" beta")
+			writeFile(t, filepath.Join(work, "state.md"), cursor("done", "shipped", command+" beta")+"| sequence_position | 1 |\n| sequence_workspaces_remaining | 1 |\n")
+			writeFile(t, filepath.Join(root, "ACTIVE"), "unrelated\n")
+			before := frontierSnapshot(t, root)
+			var out, errOut bytes.Buffer
+			if code := RunCheckContinuation(root, []string{"alpha"}, &out, &errOut); code != 0 {
+				t.Fatalf("%d: %s", code, &errOut)
+			}
+			for _, want := range []string{"continuation: required", "invoke: /rite-autocomplete\n", "source: alpha\n", "frontier-prepare: /rite-spec 'beta' source=alpha"} {
+				if !strings.Contains(out.String(), want) {
+					t.Fatalf("missing %q:\n%s", want, &out)
+				}
+			}
+			for path, content := range before {
+				raw, err := os.ReadFile(path)
+				if err != nil || string(raw) != content {
+					t.Fatalf("source observation mutated %s: %v", path, err)
+				}
+			}
+			if _, err := os.Stat(filepath.Join(root, "work", "beta")); !os.IsNotExist(err) {
+				t.Fatal("successor workspace created")
+			}
+		})
+	}
+}
+
+func TestContinuationRefusesUnboundSuccessor(t *testing.T) {
+	for _, tc := range []struct {
+		name, action, fields, afk string
+		existing                  bool
+		duplicate                 bool
+	}{
+		{name: "ordinary foreign Spec", action: "/rite-spec beta"},
+		{name: "foreign Vet with sequence", action: "/rite-vet beta", fields: "| sequence_position | 1 |\n"},
+		{name: "malformed Spec", action: "/rite-spec beta --unknown", fields: "| sequence_position | 1 |\n"},
+		{name: "second invocation in reason", action: "/rite-spec beta — then /rite-vet beta", fields: "| sequence_position | 1 |\n"},
+		{name: "negative remaining", action: "/rite-spec beta", fields: "| sequence_position | 1 |\n| sequence_workspaces_remaining | -1 |\n"},
+		{name: "unknown remaining", action: "/rite-spec beta", fields: "| sequence_position | 1 |\n| sequence_workspaces_remaining | unknown |\n"},
+		{name: "remaining exhausted", action: "/rite-spec beta", fields: "| sequence_position | 1 |\n| sequence_workspaces_remaining | 0 |\n"},
+		{name: "sequence opted out", action: "/rite-spec beta", fields: "| sequence_position | 1 |\n", afk: "continue_sequence: false\n"},
+		{name: "conflicting live successor", action: "/rite-spec beta", fields: "| sequence_position | 1 |\n", existing: true},
+		{name: "duplicate successor identity", action: "/rite-spec beta", fields: "| sequence_position | 1 |\n", duplicate: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, work := continuationWorkspace(t, "done", "shipped", tc.action)
+			writeFile(t, filepath.Join(work, "state.md"), cursor("done", "shipped", tc.action)+tc.fields)
+			if tc.afk != "" {
+				writeFile(t, filepath.Join(root, "AFK"), tc.afk)
+			}
+			if tc.existing {
+				frontierFixture(t, root, "work", "different", "alpha", "done", "shipped", "", 2, "0")
+			}
+			if tc.duplicate {
+				frontierFixture(t, root, "work", "beta", "alpha", "done", "shipped", "", 2, "0")
+				frontierFixture(t, root, "archive", "beta", "alpha", "done", "shipped", "", 2, "0")
+			}
+			var out, errOut bytes.Buffer
+			if code := RunCheckContinuation(root, []string{"alpha"}, &out, &errOut); code == 0 || errOut.Len() == 0 || out.Len() != 0 {
+				t.Fatalf("unbound successor accepted: %d %s %s", code, &out, &errOut)
+			}
+		})
+	}
+}

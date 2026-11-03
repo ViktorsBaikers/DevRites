@@ -16,10 +16,12 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -162,13 +164,13 @@ func binaryNameFor(goos, goarch string) (string, error) {
 }
 
 func fetchJSON(ctx context.Context, rawURL string, out any) error {
-	resp, err := get(ctx, rawURL)
+	resp, err := get(ctx, rawURL, true)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return fmt.Errorf("%s returned %s", resp.Request.URL.Redacted(), resp.Status)
+		return responseError(resp)
 	}
 	if resp.ContentLength > maxJSONBytes {
 		return fmt.Errorf("JSON response exceeds %d bytes", maxJSONBytes)
@@ -228,13 +230,13 @@ func downloadVerified(ctx context.Context, rawURL, destination, filename string,
 }
 
 func download(ctx context.Context, rawURL, destination string, maxBytes int64, mode fs.FileMode) error {
-	resp, err := get(ctx, rawURL)
+	resp, err := get(ctx, rawURL, false)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return fmt.Errorf("%s returned %s", resp.Request.URL.Redacted(), resp.Status)
+		return responseError(resp)
 	}
 	if resp.ContentLength > maxBytes {
 		return fmt.Errorf("download exceeds %d bytes", maxBytes)
@@ -274,7 +276,7 @@ func download(ctx context.Context, rawURL, destination string, maxBytes int64, m
 	return nil
 }
 
-func get(ctx context.Context, rawURL string) (*http.Response, error) {
+func get(ctx context.Context, rawURL string, authenticate bool) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("build release request: %w", err)
@@ -284,7 +286,92 @@ func get(ctx context.Context, rawURL string) (*http.Response, error) {
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", "devrites-engine")
+	if authenticate && isGitHubAPI(req.URL) {
+		token, err := githubToken(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+	}
 	return httpClient.Do(req)
+}
+
+func isGitHubAPI(u *url.URL) bool {
+	return u != nil && u.User == nil && strings.EqualFold(u.Scheme, "https") &&
+		(strings.EqualFold(u.Host, "api.github.com") || strings.EqualFold(u.Host, "api.github.com:443"))
+}
+
+// credentialOutput bounds untrusted helper output without accepting a truncated token.
+type credentialOutput struct {
+	data [4096]byte
+	n    int
+}
+
+func (out *credentialOutput) Write(p []byte) (int, error) {
+	if len(p) > len(out.data)-out.n {
+		return 0, errors.New("GitHub credential helper output exceeds limit")
+	}
+	out.n += copy(out.data[out.n:], p)
+	return len(p), nil
+}
+
+// githubToken follows gh's environment precedence without requiring gh to be installed.
+func githubToken(ctx context.Context) (string, error) {
+	token := os.Getenv("GH_TOKEN")
+	if token == "" {
+		token = os.Getenv("GITHUB_TOKEN")
+	}
+	if token == "" {
+		lookupCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(lookupCtx, "gh", "auth", "token", "--hostname", "github.com")
+		cmd.Env = append(os.Environ(), "GH_PROMPT_DISABLED=1", "GIT_TERMINAL_PROMPT=0")
+		cmd.Stderr = io.Discard
+		cmd.WaitDelay = 100 * time.Millisecond
+		var output credentialOutput
+		cmd.Stdout = &output
+		err := cmd.Run()
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+		if err != nil {
+			return "", nil
+		}
+		token = strings.TrimSpace(string(output.data[:output.n]))
+	}
+	for _, char := range token {
+		if char < '!' || char > '~' {
+			return "", errors.New("invalid GitHub credential; check GH_TOKEN, GITHUB_TOKEN, or gh auth login --hostname github.com")
+		}
+	}
+	return token, nil
+}
+
+func responseError(resp *http.Response) error {
+	message := fmt.Sprintf("release request returned HTTP %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+	switch resp.StatusCode {
+	case http.StatusUnauthorized, http.StatusForbidden:
+		message += "; check GH_TOKEN/GITHUB_TOKEN (environment tokens take precedence) or run gh auth login --hostname github.com"
+	case http.StatusTooManyRequests:
+		message += "; GitHub API rate limit reached; use GH_TOKEN/GITHUB_TOKEN or gh auth login --hostname github.com, or wait before retrying"
+	}
+	if resp.StatusCode == http.StatusForbidden && resp.Header.Get("X-RateLimit-Remaining") == "0" {
+		message += "; GitHub API rate limit reached"
+	}
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests {
+		if reset, err := strconv.ParseInt(resp.Header.Get("X-RateLimit-Reset"), 10, 64); err == nil && reset >= 0 && reset <= 253402300799 {
+			message += "; rate limit resets at " + time.Unix(reset, 0).UTC().Format(time.RFC3339)
+		}
+		retry := resp.Header.Get("Retry-After")
+		if seconds, err := strconv.ParseUint(retry, 10, 32); err == nil {
+			message += fmt.Sprintf("; retry after %d seconds", seconds)
+		} else if date, err := http.ParseTime(retry); err == nil {
+			message += "; retry after " + date.UTC().Format(time.RFC3339)
+		}
+	}
+	return errors.New(message)
 }
 
 func validateURL(u *url.URL) error {
@@ -303,6 +390,10 @@ func validateURL(u *url.URL) error {
 }
 
 func checkRedirect(req *http.Request, via []*http.Request) error {
+	// net/http forwards sensitive headers to subdomains; GitHub tokens must not follow.
+	if !isGitHubAPI(req.URL) {
+		req.Header.Del("Authorization")
+	}
 	if len(via) >= 10 {
 		return errors.New("stopped after 10 redirects")
 	}

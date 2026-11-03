@@ -160,7 +160,6 @@ for text, required in (
         "can never arm them",
         "profile: standard|full",
         "cross_model: yes|no",
-        "no sentinel or workspace file has been written",
         "one-write AFK contract",
         "existing sentinel byte-for-byte",
         "leftover `max_parallel: 1`",

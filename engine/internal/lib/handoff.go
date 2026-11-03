@@ -89,12 +89,9 @@ func RunHandoff(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "missing_required: %s\n", strings.Join(report.MissingFiles, ", "))
 	}
 	fmt.Fprintf(stdout, "read_next: %s\n", strings.Join(readNext(featureDir), ", "))
-	verdict, err := classifyContinuation(root, slug)
-	if err != nil {
-		fmt.Fprintf(stderr, "handoff: continuation: %v\n", err)
-		return 2
+	if code := RunCheckContinuation(root, []string{slug}, stdout, stderr); code != 0 {
+		return code
 	}
-	writeContinuation(stdout, verdict)
 	if resume {
 		recordMetric(root, slug, string(report.Phase), "resume", "root", 0)
 	}

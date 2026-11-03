@@ -419,7 +419,7 @@ func TestPooledSelectKeepsReadyWorkAndDiagnostics(t *testing.T) {
 		}
 	}
 	root := t.TempDir()
-	code, out, errOut := runCLI(t, "", "select", "--root", root, "--slug", "owner", "--cap", "2", "--from-plan", "--workspaces", "missing,wrong,child,owner,stale")
+	code, out, errOut := runCLI(t, "", "select", "--root", root, "--slug", "owner", "--cap", "2", "--from-plan", "--workspaces", "owner,missing,wrong,child,stale")
 	if code != ExitOK || !strings.Contains(out, "slices=SLICE-001,child/SLICE-001") {
 		t.Fatalf("unavailable candidate erased ready pool: code=%d out=%s stderr=%s", code, out, errOut)
 	}
@@ -430,6 +430,11 @@ func TestPooledSelectKeepsReadyWorkAndDiagnostics(t *testing.T) {
 		if !strings.Contains(errOut, reason) {
 			t.Fatalf("lost workspace diagnostic %q: %s", reason, errOut)
 		}
+	}
+	calls = nil
+	code, out, errOut = runCLI(t, "", "select", "--root", root, "--slug", "owner", "--cap", "2", "--from-plan", "--workspaces", "child")
+	if code != ExitOK || out != "select: n_eff=1 mode=serial slices=child/SLICE-001\n" || strings.Join(calls, ",") != "child" {
+		t.Fatalf("controller added outside explicit pool: calls=%v code=%d out=%s stderr=%s", calls, code, out, errOut)
 	}
 	for _, args := range [][]string{
 		{"--workspaces", "owner,child"},

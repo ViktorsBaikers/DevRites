@@ -73,6 +73,10 @@ func runPathDisjoint(args []string, stdin io.Reader, stdout, stderr io.Writer) i
 	return ExitOK
 }
 
+// FrontierNotices exposes related work without broadening source-local selection.
+// main wires it from lib to avoid an import cycle.
+var FrontierNotices func(root, slug string) ([]string, error)
+
 func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	root := ""
 	slug := ""
@@ -148,21 +152,18 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 			return ExitUsage
 		}
 		if sawWorkspaces {
-			order := []string{slug}
+			order := strings.Split(workspaces, ",")
 			seen := make(map[string]bool)
 			if err := validateSlug(slug); err != nil {
 				fmt.Fprintf(stderr, "parallel select: %v\n", err)
 				return ExitUsage
 			}
-			for _, target := range strings.Split(workspaces, ",") {
+			for _, target := range order {
 				if err := validateSlug(target); err != nil || seen[target] {
 					fmt.Fprintf(stderr, "parallel select: invalid or duplicate workspace %q\n", target)
 					return ExitUsage
 				}
 				seen[target] = true
-				if target != slug {
-					order = append(order, target)
-				}
 			}
 			if _, err := controllerLease(root, slug); err != nil {
 				fmt.Fprintf(stderr, "parallel select: %v\n", err)
@@ -199,6 +200,16 @@ func cmdSelect(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 				slices = append(slices, ready...)
 			}
 		} else {
+			if FrontierNotices != nil {
+				notices, err := FrontierNotices(root, slug)
+				for _, notice := range notices {
+					fmt.Fprintln(stderr, notice)
+				}
+				if err != nil {
+					fmt.Fprintf(stderr, "parallel select: frontier: %v\n", err)
+					return ExitBlocked
+				}
+			}
 			if PlanReady == nil {
 				fmt.Fprintln(stderr, "parallel select: --from-plan is unavailable in this build")
 				return ExitBlocked

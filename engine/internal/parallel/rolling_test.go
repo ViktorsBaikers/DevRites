@@ -329,6 +329,120 @@ func TestIntegrateSliceRefuses(t *testing.T) {
 	})
 }
 
+func TestFailedIntegrateAllowsIndependentRefill(t *testing.T) {
+	failedLease := func(t *testing.T) (string, string, string) {
+		t.Helper()
+		repo, base := rollingLease(t)
+		if _, err := Add(AddOpts{Root: repo, Slug: rollSlug, Capacity: 2}); err != nil {
+			t.Fatal(err)
+		}
+		tipA := landSlice(t, repo, "slice-a", "src/a.go", "A")
+		wt := WorkerWorktreePath(repo, rollBatch, "slice-b")
+		if err := os.WriteFile(filepath.Join(wt, "README.md"), []byte("stray\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		gitOk(t, wt, "add", "README.md")
+		greenSlice(t, repo, "slice-b", "src/b.go", "B")
+		if _, _, err := Integrate(IntegrateOpts{Root: repo, Slug: rollSlug, Slice: "slice-b", ApplyToControl: true}); err == nil || !strings.Contains(err.Error(), "exact-path proof failed") {
+			t.Fatalf("bad B transfer: %v", err)
+		}
+		if lease := readLeaseT(t, repo); lease.Status != StatusIntegrateFailed || lease.ControlTip != tipA || lease.Capacity != 2 {
+			t.Fatalf("failed lease: %+v", lease)
+		}
+		return repo, base, tipA
+	}
+
+	t.Run("capacity only preserves failure", func(t *testing.T) {
+		repo, _, tipA := failedLease(t)
+		before := readLeaseT(t, repo)
+		code, _, stderr := runCLI(t, "[]", "add", "--root", repo, "--slug", rollSlug, "--cap", "3", "--json", "-")
+		if code != ExitOK {
+			t.Fatalf("capacity-only add: code=%d err=%q", code, stderr)
+		}
+		after := readLeaseT(t, repo)
+		if after.Capacity != 3 || after.Status != StatusIntegrateFailed || after.N != before.N || after.ControlTip != tipA || sliceByID(t, after, "slice-b").TransferCommit != sliceByID(t, before, "slice-b").TransferCommit {
+			t.Fatalf("capacity update changed failed work: %+v", after)
+		}
+		if gitOk(t, repo, "rev-parse", "HEAD") != tipA {
+			t.Fatal("capacity update moved control")
+		}
+	})
+
+	t.Run("selected independent worker lands while failed proof stays enforced", func(t *testing.T) {
+		repo, base, tipA := failedLease(t)
+		ready := []SlicePaths{{ID: "slice-c", Paths: []string{"src/c.go"}}}
+		_, picks, running, err := SelectForSlug(repo, rollSlug, 2, ready)
+		if err != nil || running != 1 || len(picks) != 1 || picks[0].ID != "slice-c" {
+			t.Fatalf("select independent C: picks=%+v running=%d err=%v", picks, running, err)
+		}
+		if _, err := Add(AddOpts{Root: repo, Slug: rollSlug, Slices: picks}); err != nil {
+			t.Fatalf("add selected independent C: %v", err)
+		}
+		lease := readLeaseT(t, repo)
+		if c := sliceByID(t, lease, "slice-c"); c.BaseSHA != tipA || lease.Capacity != 2 || lease.Status != StatusIntegrateFailed || sliceByID(t, lease, "slice-b").WrightStatus != WrightGreen {
+			t.Fatalf("refill changed active worker or base: %+v", lease)
+		}
+		tipC := landSlice(t, repo, "slice-c", "src/c.go", "C")
+		if parent := gitOk(t, repo, "rev-parse", tipC+"^"); parent != tipA {
+			t.Fatalf("C parent=%s want %s", parent, tipA)
+		}
+		if _, _, err := Integrate(IntegrateOpts{Root: repo, Slug: rollSlug, Slice: "slice-b", ApplyToControl: true}); err == nil || !strings.Contains(err.Error(), "exact-path proof failed") {
+			t.Fatalf("refill bypassed B proof: %v", err)
+		}
+		if gitOk(t, repo, "rev-parse", "HEAD") != tipC {
+			t.Fatal("failed B retry moved control")
+		}
+		wt := WorkerWorktreePath(repo, rollBatch, "slice-b")
+		gitOk(t, wt, "checkout", base, "--", "README.md")
+		gitOk(t, wt, "commit", "-m", "remove stray path from transfer")
+		if _, err := RecordGreen(repo, rollSlug, "slice-b", gitOk(t, wt, "rev-parse", "HEAD")); err != nil {
+			t.Fatal(err)
+		}
+		tipB, lease, err := Integrate(IntegrateOpts{Root: repo, Slug: rollSlug, Slice: "slice-b", ApplyToControl: true})
+		if err != nil {
+			t.Fatalf("corrected B proof: %v", err)
+		}
+		if lease.Status != StatusComplete || gitOk(t, repo, "rev-parse", tipB+"^") != tipC || gitOk(t, repo, "rev-parse", "HEAD") != tipB {
+			t.Fatalf("corrected B did not finish rolling lease: %+v", lease)
+		}
+	})
+
+	for _, guard := range []string{"overlap", "unexpected control tip", "pending landing"} {
+		t.Run(guard, func(t *testing.T) {
+			var repo, want string
+			paths := []string{"src/c.go"}
+			if guard == "pending landing" {
+				repo, _ = pendingLandingT(t, false)
+				want = "pending"
+			} else {
+				repo, _, _ = failedLease(t)
+				if guard == "overlap" {
+					paths = []string{"src/b.go"}
+					want = "overlap"
+				} else {
+					gitOk(t, repo, "commit", "--allow-empty", "-m", "external control movement")
+					want = "refusing to rewind"
+				}
+			}
+			path, err := LeasePath(repo, rollSlug)
+			if err != nil {
+				t.Fatal(err)
+			}
+			before := mustRead(t, path)
+			head := gitOk(t, repo, "rev-parse", "HEAD")
+			if _, err := Add(AddOpts{Root: repo, Slug: rollSlug, Slices: []SlicePaths{{ID: "slice-c", Paths: paths}}}); err == nil || !strings.Contains(err.Error(), want) {
+				t.Fatalf("add must retain %s guard: %v", guard, err)
+			}
+			if mustRead(t, path) != before || gitOk(t, repo, "rev-parse", "HEAD") != head {
+				t.Fatal("refused refill changed lease or control")
+			}
+			if _, err := os.Stat(WorkerWorktreePath(repo, rollBatch, "slice-c")); !os.IsNotExist(err) {
+				t.Fatalf("refused refill created C: %v", err)
+			}
+		})
+	}
+}
+
 // TestIntegrateSliceProvesAgainstOwnBase proves a refill slice's exact-path
 // proof diffs from the control tip it was cut from: against the batch base its
 // diff would also show the earlier landing's path and be refused.
