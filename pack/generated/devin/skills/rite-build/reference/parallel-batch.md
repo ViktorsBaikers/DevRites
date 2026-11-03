@@ -4,11 +4,11 @@
 
 Opt-in only. Default `/rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.md).
 
-Autocomplete first executes shared
-[`parallel-workspaces.md`](../../devrites-lib/reference/parallel-workspaces.md):
-it owns global admission, authorized source discovery and controller routing.
-The local selection below applies to standalone Build; mixed selection uses
-that reference and then this same per-slice review/repair/integration lifecycle.
+Autocomplete runs `devrites-engine frontier <source>` and executes shared
+[`parallel-workspaces.md`](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier):
+it owns preparation, global admission and controller routing. Standalone Build
+stays source-local; frontier notices from `parallel select --from-plan` do not
+expand its picks. Autocomplete consumes `frontier-select-command`, then this lifecycle.
 
 ## Entry
 
@@ -161,8 +161,8 @@ means controller; CLI lease `--slice` uses source-qualified foreign keys.
    (imperative summary, never a slice id). Staging branch, durable exact landing
    intent, then FF; retry the same operation after interrupted persistence.
    The engine reconciles only that recorded landing and refuses unrelated
-   HEAD/ref movement. Conflict → `integrate-failed`; classify under repair rounds
-   (siblings stay in place).
+   HEAD/ref movement. Conflict → `integrate-failed`; repair in place, retaining
+   slot/paths while independent safe landings/refill continue.
    Never integrate because a wright returned.
 7. Each landing: FF control (the branch that held `HEAD` when the batch started —
    often `main`/`master`, otherwise whatever the user was on) by one local commit,

@@ -52,6 +52,8 @@ An abandoned writer's unreleased claim blocks overlapping writers across every
 live or archived feature in this repository, even in the same session or after
 TTL expiry, until explicit release or proven host termination.
 return --handle, when supplied, must match the role's recorded host handle.
+Completed return replay requires the exact recorded role and --handle and only
+reconciles claim release; failed release exits nonzero without undoing the return.
 status --wave exits
 nonzero until that wave is complete; bare status lists every open, sealed,
 or abandoned wave, folds complete waves into one count line (--all lists
@@ -150,32 +152,36 @@ func loadDispatch(root, slug string) (*dispatchFile, string, error) {
 }
 
 func loadDispatchFile(path string) (*dispatchFile, string, error) {
-	f := &dispatchFile{Waves: map[string]*dispatchWave{}}
 	data, err := os.ReadFile(path) // #nosec G304 -- path is a validated feature workspace artifact
 	if os.IsNotExist(err) {
-		return f, path, nil
+		return &dispatchFile{Waves: map[string]*dispatchWave{}}, path, nil
 	}
 	if err != nil {
 		return nil, path, err
 	}
-	f = &dispatchFile{}
+	f, err := decodeDispatch(data)
+	return f, path, err
+}
+
+func decodeDispatch(data []byte) (*dispatchFile, error) {
+	f := &dispatchFile{}
 	if err := json.Unmarshal(data, f); err != nil {
-		return nil, path, fmt.Errorf("dispatch.json is not valid JSON: %w", err)
+		return nil, fmt.Errorf("dispatch.json is not valid JSON: %w", err)
 	}
 	if f.Waves == nil {
-		return nil, path, fmt.Errorf("dispatch.json is malformed (missing waves)")
+		return nil, fmt.Errorf("dispatch.json is malformed (missing waves)")
 	}
 	// Validate every account before any caller can use or mutate the ledger.
 	for name, w := range f.Waves {
 		if w == nil || strings.TrimSpace(name) == "" || strings.TrimSpace(w.Phase) == "" || len(w.Roles) == 0 ||
 			!slices.Contains([]string{"open", "sealed", "complete", "abandoned"}, w.State) {
-			return nil, path, fmt.Errorf("wave %q is malformed (invalid phase, state or roles)", name)
+			return nil, fmt.Errorf("wave %q is malformed (invalid phase, state or roles)", name)
 		}
 		handles := map[string]bool{}
 		allStarted, allReturned := true, true
 		for role, r := range w.Roles {
 			if r == nil || strings.TrimSpace(role) == "" {
-				return nil, path, fmt.Errorf("wave %q role %q is malformed (missing account)", name, role)
+				return nil, fmt.Errorf("wave %q role %q is malformed (missing account)", name, role)
 			}
 			started := r.Handle != ""
 			if started != (r.StartedAt != "") || r.Returned != (r.ReturnedAt != "") ||
@@ -183,19 +189,19 @@ func loadDispatchFile(path string) (*dispatchFile, string, error) {
 				(w.State == "open" && r.Returned) ||
 				((w.State == "sealed" || w.State == "complete") && !started) ||
 				(w.State == "complete" && !r.Returned) {
-				return nil, path, fmt.Errorf("wave %q role %q is malformed (inconsistent start or return)", name, role)
+				return nil, fmt.Errorf("wave %q role %q is malformed (inconsistent start or return)", name, role)
 			}
 			allStarted = allStarted && started
 			allReturned = allReturned && r.Returned
 			if started {
 				start, startErr := time.Parse(time.RFC3339Nano, r.StartedAt)
 				if startErr != nil {
-					return nil, path, fmt.Errorf("wave %q role %q is malformed (invalid start timestamp)", name, role)
+					return nil, fmt.Errorf("wave %q role %q is malformed (invalid start timestamp)", name, role)
 				}
 				if r.Returned {
 					end, endErr := time.Parse(time.RFC3339Nano, r.ReturnedAt)
 					if endErr != nil || end.Before(start) {
-						return nil, path, fmt.Errorf("wave %q role %q is malformed (invalid return timestamp)", name, role)
+						return nil, fmt.Errorf("wave %q role %q is malformed (invalid return timestamp)", name, role)
 					}
 				}
 			}
@@ -204,32 +210,32 @@ func loadDispatchFile(path string) (*dispatchFile, string, error) {
 			}
 		}
 		if (w.State == "open" && allStarted) || (w.State == "sealed" && allReturned) {
-			return nil, path, fmt.Errorf("wave %q is malformed (inconsistent barrier state)", name)
+			return nil, fmt.Errorf("wave %q is malformed (inconsistent barrier state)", name)
 		}
 		if w.AbandonedAt != "" {
 			if _, err := time.Parse(time.RFC3339Nano, w.AbandonedAt); err != nil || w.State != "abandoned" {
-				return nil, path, fmt.Errorf("wave %q is malformed (invalid abandonment timestamp)", name)
+				return nil, fmt.Errorf("wave %q is malformed (invalid abandonment timestamp)", name)
 			}
 		}
 		if w.TerminalAt != "" {
 			terminal, err := time.Parse(time.RFC3339Nano, w.TerminalAt)
 			abandoned, abandonErr := time.Parse(time.RFC3339Nano, w.AbandonedAt)
 			if err != nil || abandonErr != nil || w.State != "abandoned" || terminal.Before(abandoned) {
-				return nil, path, fmt.Errorf("wave %q is malformed (invalid terminal timestamp)", name)
+				return nil, fmt.Errorf("wave %q is malformed (invalid terminal timestamp)", name)
 			}
 			for _, account := range w.Roles {
 				for _, stamp := range []string{account.StartedAt, account.ReturnedAt} {
 					if stamp != "" {
 						at, _ := time.Parse(time.RFC3339Nano, stamp)
 						if terminal.Before(at) {
-							return nil, path, fmt.Errorf("wave %q is malformed (terminal timestamp precedes account)", name)
+							return nil, fmt.Errorf("wave %q is malformed (terminal timestamp precedes account)", name)
 						}
 					}
 				}
 			}
 		}
 	}
-	return f, path, nil
+	return f, nil
 }
 
 func saveDispatch(path string, f *dispatchFile) error {
@@ -543,7 +549,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 
 	case "return":
 		w := getWave()
-		if w == nil || w.State != "sealed" {
+		if w == nil || (w.State != "sealed" && w.State != "complete") {
 			return fail("wave %q is not sealed (state %s)", wave, waveState(w))
 		}
 		r := w.Roles[role]
@@ -552,6 +558,15 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		}
 		if handle != "" && handle != r.Handle {
 			return fail("handle %q does not match role %q's recorded handle %q", handle, role, r.Handle)
+		}
+		if w.State == "complete" {
+			if !r.Returned || handle == "" || r.Handle == "" || w.Claim == "" {
+				return fail("completed wave %q needs a returned role, its recorded --handle, and an owned claim to reconcile", wave)
+			}
+			if !releaseWaveClaim(root, wave, w, stdout, stderr) {
+				return 3
+			}
+			return 0
 		}
 		if r.Returned {
 			return fail("role %q already returned", role)
@@ -594,8 +609,8 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if all {
 			absorbWave(root, slug, w, stderr)
 		}
-		if all && w.Claim != "" {
-			releaseWaveClaim(root, wave, w, stdout, stderr)
+		if all && w.Claim != "" && !releaseWaveClaim(root, wave, w, stdout, stderr) {
+			return 3
 		}
 		if stored != "" {
 			head, _, _ := strings.Cut(note, " slice=")
@@ -721,11 +736,11 @@ func checkAbandonedWriterClaims(root string, paths []string) error {
 	return nil
 }
 
-// releaseWaveClaim releases w's claim; explicit terminal abandonment also
-// reconciles a verified prior release. A failure only warns.
+// releaseWaveClaim releases w's claim or reconciles a verified prior release.
+// Callers surface failure without undoing the recorded return or abandonment.
 func releaseWaveClaim(root, wave string, w *dispatchWave, stdout, stderr io.Writer) bool {
 	n, err := releaseClaim(root, w.ClaimSession, w.Claim)
-	if w.State == "abandoned" && errors.Is(err, errClaimAlreadyReleased) {
+	if errors.Is(err, errClaimAlreadyReleased) {
 		fmt.Fprintf(stdout, "dispatch: wave %s claim %s already released\n", wave, w.Claim)
 		return true
 	}
@@ -914,20 +929,20 @@ func admitWrightRounds(root, slug string, f *dispatchFile, w *dispatchWave, revi
 	if kind == "wright" {
 		lines = append(lines, "dispatch: ADVISORY: wright contract reminder: name the writer-safe checks the wright runs (syntax/type/lint, unit and self-check suites, a narrow local smoke) and never forbid them; only artifact-producing, consumptive, or full canonical gates stay root-owned")
 	}
+	if kind == "wright" {
+		if refusal := wrightFanoutRefusal(w); refusal != "" {
+			fmt.Fprintln(stderr, refusal)
+			return nil, 3
+		}
+		if refusal := widerBatchRefusal(root, slug, w.Slices); refusal != "" {
+			fmt.Fprintln(stderr, refusal)
+			return nil, 3
+		}
+	}
 	if len(overCap) == 0 {
 		if review != "" {
 			fmt.Fprintf(stderr, "dispatch: --reslice-review given but no slice has reached its %d-round cap\n", wrightRoundsPerReview)
 			return nil, 2
-		}
-		if kind == "wright" {
-			if refusal := wrightFanoutRefusal(w); refusal != "" {
-				fmt.Fprintln(stderr, refusal)
-				return nil, 3
-			}
-			if refusal := widerBatchRefusal(root, slug, w.Slices); refusal != "" {
-				fmt.Fprintln(stderr, refusal)
-				return nil, 3
-			}
 		}
 		return lines, 0
 	}

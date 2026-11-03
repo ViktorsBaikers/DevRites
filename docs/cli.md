@@ -43,6 +43,7 @@ devrites-engine observe summary <slug>
 devrites-engine orient <slug>
 devrites-engine observe slice <slug> <SLICE-ID>
 devrites-engine next [slug]
+devrites-engine frontier [slug]
 devrites-engine handoff [slug] [--resume]
 devrites-engine recall --paths <p1,p2,...> [--limit n]
 devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>] [--whole]
@@ -89,6 +90,21 @@ the downloaded engine. This avoids asking an old engine to validate a newer payl
 downloading assets. `--source-dir` and `--payload-dir` remain the advanced local
 update path for npm, shell, source-checkout, and test callers; a local `--check`
 needs only `--source-dir`.
+
+Release metadata requests to the exact HTTPS `api.github.com` origin use the
+first available credential: `GH_TOKEN`, then `GITHUB_TOKEN`, then optional
+`gh auth token --hostname github.com`. The helper is noninteractive, bounded to
+three seconds and 4 KiB of output; missing, failed, timed-out, or oversized helper
+output does not prevent an unauthenticated request. GitHub CLI is not required.
+An explicitly supplied invalid credential fails; the updater does not silently
+retry under another identity. Credentials are never sent to release assets or
+off-origin redirects. Same-origin GitHub API redirects may retain them.
+
+On a headless machine, run `gh auth login --hostname github.com --web`, then use
+the displayed device code in a browser on another device. Do not put credential
+values in commands, examples, logs, or support reports. `--force` permits
+managed-file replacement, not authentication or rate-limit bypass. Authenticated
+requests can still be rate-limited; wait before retrying when necessary.
 
 ## npm adapter
 
@@ -153,12 +169,17 @@ self-contained updater.
   slice checkpoint or phase advance, and treat `BLOCKED` at Seal as NO-GO.
   Never use automatic updates to hide an unreconciled regression.
 - `check continuation [slug]` prints `continuation: required` and
-  `invoke: <next_action>` when `.devrites/AFK` is present, `status` is
-  `running`, no question cursor is set, no blocking or escalating question is
-  open, and `next_action` is an internal phase command (`/rite-vet`,
-  `/rite-build`, not `/rite-ship`). Otherwise it prints `continuation: clear`.
-  Exit `0` either way: `required` means invoke that command, not pause for a
-  human. `handoff` prints the same lines.
+  `invoke: <next_action>` when `.devrites/AFK` is a regular file, `status` is
+  `running` (or specifically `phase=vet,status=ready`), no question cursor is
+  set, no blocking or escalating question is open, and `next_action` is a valid
+  internal phase command, not `/rite-ship`. Other ready statuses do not inherit
+  this exception. It also reports the sequence frontier: when the local cursor
+  is clear but related work needs native preparation, it can print
+  `continuation: required` with `invoke: /rite-autocomplete` and the original
+  source identity. Waiting, human-blocked, or completed work alone does not
+  require continuation. Neither result authorizes Ship, overrides a human gate,
+  or declares an unvetted workspace Build-ready. Successful verdicts exit `0`;
+  malformed or ambiguous state fails visibly. `handoff` prints the same lines.
 - `check drift <slug>` attributes readiness-input drift to the exact artifact.
   `--record` snapshots per-input SHA-256 digests into `readiness-inputs.json`
   under the feature lock after Vet records the aggregate binding; a later
@@ -230,6 +251,62 @@ belong to the active skill and exact native agents. Normative spec grammar is
 checked by the root's explicit native re-read checklist. Repository build,
 test, lint, typecheck, schema, and release commands belong to that repository
 or CI.
+
+## Sequence frontier
+
+`devrites-engine frontier [slug]` is a read-only structural report across the
+source's recorded sequence. An explicit slug may name a live or archived
+workspace. Without one, the command uses the selected source; if `ACTIVE` is
+absent, recovery requires a unique archived terminal sequence tip with an exact
+recorded native `/rite-spec <next>` edge. Multiple possible sources fail as ambiguous;
+folder names and numeric suffixes are not authority.
+
+The report emits:
+
+- `frontier: actionable|waiting|blocked|clear`, or `frontier: none` for a
+  non-sequence source.
+- `frontier-source: <slug>` and `frontier-workspace:` rows naming each related
+  workspace's `location=live|archive|missing`, `action=inspect|prepare|repair|wait|complete`,
+  and reason. Archived intermediaries do not hide live descendants, and archived
+  workspaces never become writer candidates.
+  Running or execution-unknown dispatch roles wait; completed writer returns
+  without durable acceptance require native inspection, not another writer launch.
+- `frontier-select-command:` with an explicit `parallel select --from-plan
+  --workspaces ...` command when a live controller is available. Selection still
+  enforces current readiness, recorded dependencies and independence, retained
+  leases, path conflicts, and the repository-wide capacity. `frontier-picks:`
+  names eligible source-qualified slices; `frontier-selection: blocked` names a
+  selection refusal. These are observations, not writer launches.
+  The explicit pool excludes retained dispatch and human/question/scope-held
+  sources; their workspace rows remain visible. `--workspaces` is the exact
+  candidate list; `--slug` identifies the controller, not an implicit candidate.
+  Legacy per-source slice counters never reduce the global writer cap or exclude
+  independent children; recorded workspace-opening limits still apply.
+- `frontier-prepare:` for a recorded next Spec cursor or an unambiguous next entry
+  in an exact position/workspace table, or `frontier-review-sequence:` artifact
+  paths when remaining work or conflicting sequence maps require native review.
+
+Relations come from exact recorded `sequence_parent` edges, not name prefixes.
+Conflicting identities, cycles, malformed related state, or invalid declared
+sequence positions are refused. Missing or stale planning is a repair action,
+not permission to build. Continuation flags and remaining counts constrain new
+workspace preparation without silently discarding existing children.
+Conflicting or amended sequence maps suppress missing-workspace preparation even
+with a recorded Spec cursor until native authority normalization resolves them;
+valid existing live descendants remain visible and eligible for guarded selection.
+
+Under AFK, `next`, `handoff`, and `check continuation` expose the same frontier.
+A source-local `parallel select --from-plan` without `--workspaces` also prints
+the report to stderr, preserving its machine-readable selection on stdout and
+source-local picks: reporting another workspace never silently admits it.
+Native Autocomplete must inspect the returned preparation and review
+actions, read the approved roadmap and recorded restrictions, then invoke the
+owning Spec/Plan/Vet steps or explicit mixed selection. Path disjointness alone
+does not establish semantic independence or lift a planning-only restriction.
+
+The engine does not invoke models, create workspaces, change `ACTIVE`, resolve
+semantic authority, or grant Ship approval. These outputs guide the native host;
+they cannot guarantee that an arbitrary host follows the workflow.
 
 ## Acceptance ledger
 

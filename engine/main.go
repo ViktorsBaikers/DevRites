@@ -26,6 +26,7 @@ Usage:
   devrites-engine install [flags]          Install DevRites skills, agents, and host configuration
   devrites-engine update [flags]           Update an existing DevRites install in place
   devrites-engine uninstall [flags]        Remove a DevRites install, preserving runtime state
+  devrites-engine frontier [slug]          Discover related ready work and native preparation without writes
   devrites-engine check candidate <slug>   Validate and hash the closed project candidate
   devrites-engine check readiness <slug>   Check required files, tasks.md graph, and Build-input binding
   devrites-engine check readiness --emit-binding <slug>  Emit the stable Build-input binding for Vet
@@ -126,6 +127,7 @@ func init() {
 	// parallel cannot import lib (lib imports it), so `parallel select --from-plan` gets the plan-derived ready set through this hook.
 	parallel.PlanReady = lib.PlanReady
 	parallel.WorkspaceReady = lib.WorkspaceReady
+	parallel.FrontierNotices = lib.FrontierNotices
 	// `gates precheck` runs `check windows` through this hook for the same reason.
 	acceptance.WindowsCheck = lib.RunCheckWindows
 	// ...and `gates precheck --slice` learns which writer gates to skip.
@@ -169,6 +171,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return cmdOrient(root, args[1:], stdout, stderr)
 	case "next":
 		return lib.RunNext(root, args[1:], stdout, stderr)
+	case "frontier":
+		return lib.RunFrontier(root, args[1:], stdout, stderr)
 	case "handoff":
 		return lib.RunHandoff(root, args[1:], stdout, stderr)
 	case "recall":

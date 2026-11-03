@@ -189,7 +189,7 @@ func shouldPrintHelp(args []string) bool {
 		return true
 	}
 	switch args[0] {
-	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate", "overhaul", "next", "dispatch", "secret-scan", "open-visual", "recall", "packet", "candidate":
+	case "check", "state", "observe", "parallel", "gates", "claim", "detect", "note", "metrics", "handoff", "context", "orient", "migrate", "overhaul", "next", "frontier", "dispatch", "secret-scan", "open-visual", "recall", "packet", "candidate":
 		return len(args) >= 2 && args[1] == "help"
 	default:
 		return false
@@ -231,6 +231,8 @@ func commandHelp(args []string) (string, bool) {
 		return orientUsage, true
 	case "next":
 		return nextUsage, true
+	case "frontier":
+		return "usage: devrites-engine frontier [slug]", true
 	case "handoff":
 		return handoffUsage, true
 	case "recall":

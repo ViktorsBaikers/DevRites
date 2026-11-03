@@ -604,6 +604,91 @@ func TestDispatchNeverRefusesFullBatchWave(t *testing.T) {
 	}
 }
 
+func TestDispatchResliceReviewPreservesFanoutGuards(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		roles   []string
+		slices  []string
+		refusal string
+	}{
+		{"one role for two slices", []string{"slice-wright"}, []string{"SLICE-002", "SLICE-003"}, "slice-wright.<SLICE-ID>"},
+		{"narrow repair", []string{"slice-wright"}, []string{"SLICE-002"}, "picks SLICE-002,SLICE-003"},
+		{"full fanout", []string{"slice-wright.SLICE-002", "slice-wright.SLICE-003"}, []string{"SLICE-002", "SLICE-003"}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, featureDir := planWorkspace(t)
+			writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")
+			contract := wrightContractPath(t)
+			mustRun := func(args ...string) {
+				t.Helper()
+				if code, out := runDispatchT(t, root, args...); code != 0 {
+					t.Fatalf("%v: code=%d\n%s", args, code, out)
+				}
+			}
+			for i := 1; i <= 5; i++ {
+				wave := "r" + string(rune('0'+i))
+				mustRun("open", "--phase", "build", "--wave", wave, "--role", "slice-wright.SLICE-002", "--role", "slice-wright.SLICE-003", "--slice", "SLICE-002", "--slice", "SLICE-003", "--contract", contract)
+				for _, id := range []string{"SLICE-002", "SLICE-003"} {
+					mustRun("start", "--wave", wave, "--role", "slice-wright."+id, "--handle", wave+"-"+id)
+				}
+				for _, id := range []string{"SLICE-002", "SLICE-003"} {
+					mustRun("return", "--wave", wave, "--role", "slice-wright."+id, "--handle", wave+"-"+id)
+				}
+			}
+			if _, batch, err := planBatch(root, "feat", 3); err != nil || !slices.Equal(batch, []string{"SLICE-002", "SLICE-003"}) {
+				t.Fatalf("premise: independent work remains ready: batch=%v err=%v", batch, err)
+			}
+			writeFile(t, filepath.Join(featureDir, "drift.md"), "# Drift\n\n## D-006 — SLICE-002 SLICE-003 reslice review: no smaller acceptance-preserving split\n")
+			before := readTestFile(t, dispatchPath(root, "feat"))
+			metricsBefore := readTestFile(t, filepath.Join(featureDir, MetricsFile))
+			args := []string{"open", "--phase", "build", "--wave", "r6", "--contract", contract, "--reslice-review", "D-006", "--claim-session", "owner", "--claim", "src/b.go"}
+			for _, role := range tc.roles {
+				args = append(args, "--role", role)
+			}
+			for _, id := range tc.slices {
+				args = append(args, "--slice", id)
+			}
+			code, out := runDispatchT(t, root, args...)
+			if tc.refusal != "" {
+				if code != 3 || !strings.Contains(out, tc.refusal) {
+					t.Errorf("reslice review bypassed fanout guard: code=%d\n%s", code, out)
+				}
+				if after := readTestFile(t, dispatchPath(root, "feat")); after != before {
+					t.Error("refused sixth round changed dispatch history or consumed the review")
+				}
+				if after := readTestFile(t, filepath.Join(featureDir, MetricsFile)); after != metricsBefore {
+					t.Error("refused sixth round changed metrics")
+				}
+				if _, err := os.Stat(claimsPath(root)); !os.IsNotExist(err) {
+					t.Errorf("refused sixth round created a claim ledger: %v", err)
+				}
+				return
+			}
+			if code != 0 || !strings.Contains(out, "SLICE-002 wright round 6") || !strings.Contains(out, "SLICE-003 wright round 6") {
+				t.Fatalf("proper fanout with a valid review must open: code=%d\n%s", code, out)
+			}
+			f, _, err := loadDispatch(root, "feat")
+			if err != nil {
+				t.Fatal(err)
+			}
+			w := f.Waves["r6"]
+			if w == nil || w.State != "open" || w.ResliceReview != "D-006" || !slices.Equal(w.ResliceReviewed, tc.slices) || len(w.Roles) != 2 {
+				t.Fatalf("sixth round did not retain fanout and review: %+v", w)
+			}
+			for _, id := range tc.slices {
+				mustRun("start", "--wave", "r6", "--role", "slice-wright."+id, "--handle", "r6-"+id)
+			}
+			for _, id := range tc.slices {
+				mustRun("return", "--wave", "r6", "--role", "slice-wright."+id, "--handle", "r6-"+id)
+			}
+			mustRun("status", "--wave", "r6")
+			if code, out, stderr := runClaim(t, root, "check", "--session", "foreign", "src/b.go"); code != 0 {
+				t.Errorf("completed full fanout retained claim: code=%d\n%s%s", code, out, stderr)
+			}
+		})
+	}
+}
+
 func TestDispatchRefusesRepairWhileNewPicksRemain(t *testing.T) {
 	root, _ := planWorkspace(t)
 	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 3\n")

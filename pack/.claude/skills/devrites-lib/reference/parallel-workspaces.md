@@ -37,17 +37,16 @@ handles before admitting more work; status queried via ACTIVE/source reports the
 actual retained controller even after ordered handoff. Another retained
 controller is not bypassable; no extra cursor pointer is needed.
 
-The existing `--parallel N` is one global active-writer cap across all sources:
+The existing `--parallel N` is one global active-writer cap, not a target guarantee:
 explicit invocation value, else AFK `max_parallel`, else retained lease capacity
 on resume, else 10. Explicit 1 means one writer, not one writer per workspace.
-Review queues obey host capacity and existing reviewer caps separately; they never
-erase required specialist accounts.
+Review queues obey host capacity and existing reviewer caps separately; neither
+capacity nor a Reslice cap waiver waives required named-role fanout or proof gates.
 
-Discover only recorded forward sequence continuations through `sequence_parent`
-and the parent's recorded objectives. Honor `continue_sequence: false`, opening
-budget and human bounded requests. Charge each opening once; reuse prepared
-children and their cursor rather than re-specifying or charging them again.
-An unrelated directory or user-mentioned slug is not automatic enrollment.
+Use the engine frontier below for recorded source-related sequence membership.
+Honor `continue_sequence: false`, opening budget and human bounded requests.
+Charge each opening once; reuse prepared children and their cursor.
+Unrelated directories or user-mentioned slugs are not automatic enrollment.
 Respect workspace claims: a live lookahead owner retains its artifacts until
 release/terminal reconciliation. Root alone writes workspace artifacts; leaves
 never write `.devrites/**`.
@@ -116,35 +115,37 @@ returns scheduling to Autocomplete; its source-local phase/recovery return curso
 and pending native reviewer handles remain intact. This is not a second phase
 controller or a persistent frontier artifact.
 
-1. Re-read controller lease, per-source state/questions/readiness and authorized
-   sequence. Examine every recorded authorized source once per pass, not only
-   the owner's next local slice or first blocked child. Prepare absent targets
-   through authorized native Spec → Clarify → Temper → Define/Plan → Vet; repair
-   and re-Vet current readiness of prepared targets now, not after owner Seal.
-   Assess actual source gates, claims and explicit planning/Build restrictions
-   before routing. Owner-local red/human/access gates withhold that owner or its
-   actual consumers, not independent authorized planning; true whole-run safety,
-   access and claim constraints still bind. Retain concrete actions or blockers
+1. Run `devrites-engine frontier <source>` before local recovery or selection.
+   This read-only report names the related pool, preparation/repair actions and
+   blockers; it neither authorizes work nor changes the source's local cursor.
+   For `frontier-prepare` and `frontier-workspace` prepare/repair actions, execute
+   authorized native Spec → Clarify → Temper → Define/Plan → affected Vet now,
+   not after owner Seal. Check source gates, claims and planning/Build restrictions.
+   For `frontier-review-sequence`, read the named approved roadmap/artifacts:
+   native authority normalization must record the exact continuation through its
+   owning decision/phase before rerunning frontier. Ambiguous legacy prose,
+   positive remaining budget and path disjointness never imply permission.
+   Retain unresolved authority blockers; continue independent authorized work.
+   Owner-local red/human/access gates withhold that owner and actual consumers;
+   whole-run safety/access/claim constraints still bind. Record actions/blockers
    in existing source artifacts under normal write authority.
-   Yield a child at its pending reviewer/phase boundary back to this controller;
-   never recursively wait for child completion while parent returns are pending.
-   Reconcile available parent returns before another pass. A native wait is
-   justified only after concrete authorized actions/blockers across the pool
-   have been examined; reading later phase skills is not pending Plan/Vet work.
-   If an explicit/AFK capacity change differs from retained capacity, reconcile it
-   before selection using `parallel add --root <repo> --slug <controller> --cap N --json -`
-   with stdin `[]`. This changes capacity only, not workers or a complete lease's
-   status. A decrease below active count refuses: pause admissions and drain to
-   the requested count, then retry; never cancel workers to meet a lower cap.
-   A pending landing is recovery, not free capacity: retry the exact recorded
-   integrate before admission; unrelated HEAD/ref movement remains blocked.
-2. Query the mixed pool in stable sequence order, controller first (the ordered
-   ACTIVE owner may now differ):
-   `devrites-engine parallel select --root <repo> --slug <controller> --from-plan --workspaces <controller,authorized-source,...> --cap N`.
-   `--workspaces` is an internal data-source parameter, not a user feature flag.
-   Read all notices and route repair/waits to their source. Existing running slots
-   and paths seed selection globally. Zero new picks with live writers means keep
-   planning/reviewing or wait, not Prove for those unfinished sources.
+   Yield children at pending reviewer/phase boundaries; reconcile available
+   parent returns before another pass. Reporting actions or reading phase skills
+   is not executing preparation/Vet. Wait only after authorized actions across
+   the pool have run or reached concrete pending handles/blockers.
+2. Reconcile explicit/AFK capacity changes with
+   `parallel add --root <repo> --slug <controller> --cap N --json -`, stdin `[]`.
+   This changes capacity only. Below active count, pause admissions, drain and
+   retry; never cancel workers to meet a lower cap. Recover a pending recorded
+   landing before admission; unrelated HEAD/ref movement remains blocked.
+   Rerun frontier after preparation/repair or capacity changes. Execute returned
+   `frontier-select-command` with only authorized live `--workspaces`: this exact
+   candidate list includes the `--slug` controller only when eligible. This is
+   internal, not a new user flag. `frontier: none` retains source-local routing.
+   Source-local `parallel select --from-plan` notices neither select globally nor
+   expand picks. Route notices to their source; running slots/paths seed mixed
+   selection globally. Zero picks with live writers means continue planning/review
+   or wait, not Prove for unfinished sources.
 3. Preflight selected slices against their SOURCE workspace with Build's normal
    slice/readiness/precondition, exact-path and runtime-isolation gates. Early
    foreign Build always uses isolated workers. For cap>1 on a capable host,
@@ -160,9 +161,9 @@ controller or a persistent frontier artifact.
    landing: defer control mutations while frozen validation is pending. Outside
    that window, land each individually green sibling through Build review/proof
    and `parallel integrate --slice <key>`; refill immediately from the whole pool.
-   A red sibling repairs in place and holds its slot/paths; it does not delay
-   independent safe landings. Never satisfy a producer edge on writer return or
-   green-but-unlanded work.
+   A red or `integrate-failed` sibling retains its slot/paths for repair; it does
+   not halt independent safe landings/refill. A pending landing intent still
+   requires exact recovery above. Only durable integration satisfies producer edges.
    After worker-bound review/proof and source bookkeeping finish, prune only
    verified clean integrated checkouts with `parallel prune --root <repo>
    --slug <controller>`. Retain transfer refs/lease identities; dirty or ignored

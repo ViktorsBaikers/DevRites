@@ -73,6 +73,16 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "blocked: %s\n", unattributedMessage(slug, flagged))
 		exit = 3
 	}
+	if afkPresent(root) {
+		lines, err := FrontierLines(root, slug)
+		if err != nil {
+			fmt.Fprintf(stderr, "next: frontier: %v\n", err)
+			return 2
+		}
+		for _, line := range lines {
+			fmt.Fprintln(stdout, line)
+		}
+	}
 	if report.Phase == state.PhaseBuild {
 		printPlanBatch(stdout, root, slug)
 	}

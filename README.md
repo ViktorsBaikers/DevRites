@@ -273,6 +273,15 @@ no-recommendation questions still pause. When bounded recovery runs out,
 agents record a technical blocker instead of asking you. The full contract is
 in [`afk-hitl.md`](pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md).
 
+`devrites-engine frontier [slug]` reports the recorded sequence across live and
+archived workspaces without changing `ACTIVE`, creating workspaces, or launching
+agents. It distinguishes preparation, repair, waiting, and completed work, and
+prints an explicit mixed-workspace selection command when available. A source-local
+`parallel select --from-plan` exposes that frontier but still selects only its own
+workspace unless `--workspaces` is supplied. Native Autocomplete owns preparation
+and semantic admission; the report is neither Build readiness nor Ship approval.
+See the [frontier contract](docs/cli.md#sequence-frontier).
+
 ## Install, update, and remove
 
 ```bash
@@ -418,6 +427,17 @@ pack and binary. `update --check` compares versions without downloading
 release assets. If an older engine reports `missing codex/hooks.json` or asks
 for `--source-dir`, use the npm or verified shell route once to reach a
 release with the self-contained updater.
+
+GitHub release API authentication uses `GH_TOKEN`, then `GITHUB_TOKEN`, then an
+optional, bounded, noninteractive `gh auth token --hostname github.com` lookup.
+GitHub CLI is not required. Credentials go only to the exact GitHub API origin,
+never release assets or off-origin redirects. Explicit invalid credentials fail
+instead of silently falling back to another identity. For a headless machine,
+run `gh auth login --hostname github.com --web` and complete its device-code flow
+in a browser on another device. Do not paste credentials into commands, logs, or
+support reports. `--force` controls managed-file replacement; it does not bypass
+GitHub authentication or rate limits. If authentication does not clear a rate
+limit, wait before retrying.
 
 `/rite-upgrade` is the separate, preservation-first route for reconciling an
 unfinished workspace; it never migrates cursor format or invents historical

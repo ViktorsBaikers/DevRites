@@ -74,12 +74,12 @@ Workspace files, not chat, carry state. Read/execute each phase skill:
 | 10 | `/rite-seal` | GO/NO-GO; no Git |
 | 11 | `/rite-ship` | only after GO; `--ship` never authorizes Git; stop at literal-GO/native approval |
 
-At every phase entry, before cold/local recovery, on reviewer/planning returns and
-before native waits, Autocomplete executes the bounded
-[global frontier pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
-Keep source-local return cursors and pending handles; apply its protected
-validation window before accepting accounts or landing work. This scheduling
-precedes owner Seal and does not change ordered handoff below.
+At phase entry, before cold/local recovery, on landing/reviewer/planning returns
+and before native waits, run `devrites-engine frontier <source>` and execute the
+shared [global frontier pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
+Its report requires authorized preparation/Vet and mixed selection, not a pause.
+Preserve local cursors, pending handles and protected validation windows;
+scheduling precedes owner Seal without changing ordered handoff below.
 
 Check [stop-conditions.md](stop-conditions.md) before advancing. Discard stale
 pass evidence after source edits. Re-read the selected source before each phase per [phase target binding](../../devrites-lib/reference/parallel-workspaces.md#phase-target-binding). On a cold resume or

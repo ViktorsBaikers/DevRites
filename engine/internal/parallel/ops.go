@@ -217,8 +217,8 @@ type AddOpts struct {
 	Capacity int
 }
 
-// Add refills freed slots of a running lease: each new slice gets a worktree
-// from the current control tip, under the same path-disjoint and cap rules as
+// Add refills freed slots of a running, integrate-failed, or complete lease:
+// each new slice gets a worktree from the current control tip, under the same path-disjoint and cap rules as
 // the slices still active. Landed (integrated) slices no longer claim paths.
 // An explicit Capacity with no Slices changes only the bound, not lease status.
 func Add(opts AddOpts) (lease *Lease, err error) {
@@ -262,8 +262,8 @@ func addLocked(opts AddOpts) (*Lease, error) {
 	if opts.Capacity == 0 {
 		opts.Capacity = leaseCapacity(lease)
 	}
-	if lease.Status != StatusRunning && lease.Status != StatusComplete {
-		return nil, fmt.Errorf("add requires status=running|complete (have %s)", lease.Status)
+	if lease.Status != StatusRunning && lease.Status != StatusIntegrateFailed && lease.Status != StatusComplete {
+		return nil, fmt.Errorf("add requires status=running|integrate-failed|complete (have %s)", lease.Status)
 	}
 	head, err := revParse(opts.Root, expectedControl(lease))
 	if err != nil {
@@ -329,7 +329,9 @@ func addLocked(opts AddOpts) (*Lease, error) {
 	lease.Slices = append(lease.Slices, made...)
 	lease.N = len(lease.Slices)
 	lease.Capacity = opts.Capacity
-	lease.Status = StatusRunning
+	if lease.Status == StatusComplete {
+		lease.Status = StatusRunning
+	}
 	if err := WriteLease(leasePath, lease); err != nil {
 		rollback()
 		return nil, err

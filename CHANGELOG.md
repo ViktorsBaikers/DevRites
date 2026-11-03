@@ -34,9 +34,26 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
   parallel controller, with rolling landings and refills across workspace sources.
 - Prune clean integrated worker checkouts without discarding transfer branches,
   proof identities, retained lease rows, or running siblings.
+- Add read-only `frontier [slug]` reporting across recorded live and archived
+  sequence workspaces, with scoped preparation/repair/wait actions, explicit
+  mixed-workspace selection, and ambiguous-source refusal. Source-local selection
+  exposes the frontier without silently admitting other workspaces.
 
 ### Fixed
 
+- Use `GH_TOKEN`, then `GITHUB_TOKEN`, then optional bounded noninteractive GitHub
+  CLI credential lookup for release API requests. Keep credentials off release
+  assets and off-origin redirects, fail explicit invalid credentials, and document
+  headless login and rate-limit recovery without exposing tokens.
+- Continue AFK from the narrow Vet-ready state and from actionable global native
+  preparation, preserving human gates, source cursors, and separate Ship approval.
+- Allow independent refill and capacity reconciliation after a parallel integration
+  failure without clearing its failure status or weakening pending-landing,
+  control-tip, overlap, capacity, or proof guards.
+- Enforce wright fanout and wider-batch guards even when a reslice review admits
+  another round window.
+- Recover a completed dispatch wave's retained claim through an exact recorded
+  return handle after claim-release failure, without replaying result admission.
 - Confine question resolution to checked workspaces and restore question/cursor
   files together when publication fails. Bundle rollback now includes the failing
   target and reports incomplete restoration.
