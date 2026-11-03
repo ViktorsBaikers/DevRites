@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.3.4](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.3...v7.3.4) (2026-11-03)
+
+### Fixed
+
+* **devrites:** restore global frontier and authenticated updates ([#207](https://github.com/ViktorsBaikers/DevRites/issues/207)) ([05cb719](https://github.com/ViktorsBaikers/DevRites/commit/05cb7198330b7ffa4d7176fc8398ff5a86b13f45))
+
 ## [7.3.3](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.2...v7.3.3) (2026-11-02)
 
 ### Fixed
