@@ -4,11 +4,11 @@
 
 Opt-in only. Default `/rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.md).
 
-Autocomplete runs `devrites-engine frontier <source>` and executes shared
-[`parallel-workspaces.md`](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier):
-it owns preparation, global admission and controller routing. Standalone Build
-stays source-local; frontier notices from `parallel select --from-plan` do not
-expand its picks. Autocomplete consumes `frontier-select-command`, then this lifecycle.
+Autocomplete executes the shared [global pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
+before local writers: actual immediate-successor preparation or narrow disclosed
+deferral, then global cohort admission. Consume fresh dispatch-return scheduling.
+Standalone Build stays local; select notices never broaden its picks. A placeholder
+is not preparation; one successor pipelines safely without preparing the whole roadmap.
 
 ## Entry
 
@@ -17,13 +17,15 @@ expand its picks. Autocomplete consumes `frontier-select-command`, then this lif
 | omitted / `--parallel 1` | Serial one-slice |
 | `--parallel N` (**2≤N≤10**) | N is a **cap**, not a quota: run the largest eligible set ≤ N |
 | non-integer / `N≤0` / `N>10` | Hard refuse (no silent clamp) |
-| Autocomplete `--parallel N` | N is the cap for this run; leftover sentinel `max_parallel` is ignored, then `/rite-autocomplete` writes or replaces only `max_parallel: N` |
+| Autocomplete `--parallel N` | Global cap for this run; controller entry upserts mode and explicit capacity, preserving other AFK fields |
 | Autocomplete, no flag | Same path, cap from sentinel `max_parallel` else 10; serial only when ineligible |
 
 AFK caps `N`. Charge each green sibling once after its successful landing;
 rejected/unlanded work charges zero, without undoing prior landed accounting.
 `parallel create` refuses another retained repository controller.
-Reconcile retained repair-round artifacts by exact causal fingerprint before honoring a stored blocked status/verdict. Blocked status, round count, or distinct finding alone cannot stop cold resume: establish missing or stale review coverage under step 4; repair unless a stop condition remains evidenced.
+Cold resume reconciles retained repair artifacts by exact fingerprint. A blocked
+label, round count or distinct finding alone does not stop: establish current
+review coverage under step 4 and repair unless a genuine stop remains.
 
 ## Dynamic selection and re-batching
 
@@ -89,14 +91,14 @@ Before `parallel select`, add each slice's hidden write surfaces (list owner:
 snapshot directory, formatter sweep — and compare paths case-folded
 (`src/Api.ts` = `src/api.ts`); `--from-plan` adds the manifest/lockfile for a package.
 Slices colliding on either run serially; the rest
-stay eligible. Record `serial: <ids> — <surface>` in `evidence.md`. Under AFK
-with `max_parallel ≥ 2`, `dispatch open` refuses a build wright wave narrower
-than the from-plan batch until that wave holds the other picks or `serial:`
-names each skipped one. Repairing a slice, or a slice already in the lease,
-does not waive them. A `serial:` reason that only says the skipped slice is
-repairing, already started, or in a wave does not count. HITL is never refused. **Failing
-case:** two slices each add a dependency, run in parallel, and integrate fails or
-lands a broken lockfile.
+stay eligible. Record `serial: <ids> — <surface>` in `evidence.md`. AFK cap≥2
+refuses narrower Build-wright waves until other picks are started/reserved or
+each skipped pick has a substantive serial reason. Repairing/already-started/in-wave
+alone is not a reason. Controller admission also includes ready foreign picks:
+only exact `serial: child/SLICE-001 — <reason>` can defer that foreign lane; bare
+`SLICE-001` is local. Preparation `frontier-blocked:` cannot waive ready Build
+picks or safety gates. Qualified unsupported-isolation deferral preserves truthful
+owner dispatch/ordered handoff, never early same-tree foreign Build. HITL stays unchanged.
 
 ## Control vs workers
 

@@ -10,6 +10,7 @@ Autocomplete chains existing `/rite-*` workflows without routine-phase pauses. A
 ## Arm AFK once
 
 ```yaml
+mode: autocomplete
 allow_gates: [advisory, validating]
 # max_slices / max_agents / max_minutes / max_review_queue omitted: unlimited
 # continue_sequence: false         # opt out; default chains after Seal GO
@@ -20,18 +21,15 @@ allow_gates: [advisory, validating]
 # notify: "<cmd>"
 ```
 
-Read existing sentinel first. Preserve valid bytes, except
-when this invocation contains `--parallel N`: then write or replace only
-`max_parallel: N` and leave every other key unchanged. Stop if the sentinel is
-malformed. Do not stop because it names `max_slices` / `max_agents` /
-`max_minutes` / `max_review_queue` or only `[advisory]`. If absent, write it
-once after clarity, and include `max_parallel: N` when that flag is present.
-Without the flag, seed a newly created sentinel from retained global lease capacity
-when present; otherwise use fresh-run default 10. Never replace a valid existing
-sentinel's capacity from lease/default. Never write `max_slices` from `--max-slices`.
-It is otherwise read-only: never rewrite it after Vet or reset it on resume. Leftover `expires_at` is ignored
-and never rewritten. **Failing case:** leftover `max_parallel: 1` keeps the run
-serial after `--parallel 5`.
+Read existing AFK first. On each explicit Autocomplete invocation, upsert only
+`mode: autocomplete` and, if supplied, `max_parallel: N`; preserve other fields.
+Missing mode retains standalone AFK behavior until that explicit entry. Invalid
+or duplicate mode fails closed; mode grants neither phase nor action authority.
+If absent, create AFK after clarity with the mode above; capacity is explicit N,
+else retained global lease capacity, else 10. Preserve existing capacity without
+the flag. Nested phases/wakes leave AFK unchanged: no `max_slices` flag seeding,
+expiry rewrite or reset. Legacy slice/agent/time/review limits do not stop this
+controller. **Failing case:** `--parallel 5` retains `max_parallel: 1`.
 
 ### Derive the mutable post-vet budget
 
@@ -41,15 +39,14 @@ remaining. AFK configuration itself stays unchanged.
 
 ### Admit each unattended cycle
 
-Before each phase, review fan-out, recovery, or writer dispatch: cheapest
-readiness check first; reject overlap. Do not stop on `max_agents`,
-`max_minutes`, or `max_review_queue`. Count every leaf result. New activations reset activation-local counters, retaining durable slice/recovery state.
-
-[Build return](../../rite-build/reference/output.md#caller-owned-continuation).
-Pass `--parallel N`; ignore leftover cap/headroom, remaining-0,
-and `--max-slices` stops. Agent-invented dispatch, wait, tool-call, or turn budgets are not stop conditions.
-An explicit human request to pause or run only a bounded subset still wins.
-Path collisions serialize work; they do not end the run.
+Before each phase, fan-out, recovery or writer: run cheap readiness and reject
+overlap. Before Build admission, execute the shared immediate-successor
+preparation/deferral and global cohort rules; local readiness alone is insufficient.
+Count every leaf result. Explicit activations reset activation-local counters,
+not durable slice/recovery state. Pass resolved `--parallel N` to
+[Build](../../rite-build/reference/output.md#caller-owned-continuation).
+Ignored legacy budgets, tool-call counts and local serial constraints are not
+whole-run stops; an explicit human bounded request still wins.
 Resolve ranked validating/blocking picks via `devrites-engine state resolve`;
 never hand `/rite-resolve` to the user. Escalating, irreversible-risk, access, blocking
 without recommendations, and Seal judgment (`slice: seal`) still pause.
@@ -72,12 +69,12 @@ Workspace files, not chat, carry state. Read/execute each phase skill:
 | 10 | `/rite-seal` | GO/NO-GO; no Git |
 | 11 | `/rite-ship` | only after GO; `--ship` never authorizes Git; stop at literal-GO/native approval |
 
-At phase entry, before cold/local recovery, on landing/reviewer/planning returns
-and before native waits, run `devrites-engine frontier <source>` and execute the
-shared [global frontier pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
-Its report requires authorized preparation/Vet and mixed selection, not a pause.
-Preserve local cursors, pending handles and protected validation windows;
-scheduling precedes owner Seal without changing ordered handoff below.
+At phase entry, before local recovery or waits, execute the
+[global pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
+Consume the fresh frontier emitted after a recorded `dispatch return`; after
+landing, planning/artifact changes or capacity updates, rerun frontier. Execute
+authorized preparation/selection, preserving pending handles, local cursors and
+protected validation windows. Reporting or creating a placeholder is not progress.
 
 Check [stop-conditions.md](stop-conditions.md) before advancing. Discard stale
 pass evidence after source edits. Re-read the selected source before each phase per [phase target binding](../../devrites-lib/reference/parallel-workspaces.md#phase-target-binding). On a cold resume or
@@ -90,19 +87,14 @@ floor; `--update` never excuses an unreconciled regression.
 
 ## Sequence continuation
 
-Unless `continue_sequence: false`, while sequence budget remains
-([sentinel](../../devrites-lib/reference/standards/afk-hitl.md#sequence-continuation-continue_sequence-max_workspaces)),
-step 10 does not end the run: leave the sealed workspace unshipped with its
-`Next step: /rite-ship`, then invoke the next recorded continuation
-(`/rite-spec <parent>-<n> "<objective>"` from the parent's `decisions.md` sequence)
-and re-enter step 1. Spend one workspace per opened continuation.
-
-For an already prepared child, do not re-specify. Follow
-[`parallel-workspaces.md`](../../devrites-lib/reference/parallel-workspaces.md)
-while the owner is still running: honor claims, repair/re-Vet stale readiness,
-and admit only explicitly independent/dependency-satisfied isolated work.
-ACTIVE changes to the child only at normal ordered handoff after the owner Seal;
-resume its durable cursor without a second controller or another opening charge.
+With a recorded successor, opening budget and no opt-out, Seal GO stays internal:
+leave the owner sealed/unshipped with `/rite-ship`, then resume the prepared child
+or invoke its authorized native Spec. Sequence authority follows the
+[shared grammar](../../devrites-lib/reference/workspace-artifact-schema.md#what-each-file-owns),
+not invented slugs. Charge an opening once; preparation may pipeline before Seal,
+one immediate successor per admitted source, not the whole roadmap at once.
+Reuse the child's durable cursor and controller. ACTIVE changes only at normal
+ordered handoff; early planning or isolated independent Build does not advance it.
 
 Before invoking a continuation, require durable `state.md`
 `sequence_workspaces_remaining > 0`; if absent, first write
@@ -156,18 +148,16 @@ and park it after three escalations while independent work continues.
 
 ## Continuous caller obligation
 
-Green slice/phase checkpoints consume their recorded `next_action` internally;
-only the caller replies finally at completion or a genuine stop.
-Before a reply, `devrites-engine check continuation` must print `continuation: clear`; `required` means invoke `invoke:` now.
-No user-facing reply is permitted while durable state contains agent-owned
-`NEEDS_REPLAN`, an intermediate Plan/Vet action, a distinct retained
-Critical/Important fingerprint below its cap or with an escalation left, runnable
-work independent of a parked fingerprint, or an open blocking question that
-already names a ranked recommended option. Invoke the next internal repair or
-`devrites-engine state resolve` immediately, unless that writer already hit the
-[resolver-failure stop](stop-conditions.md#other-stop-classes). **Failing case:**
-`state resolve` exits 1 on every call and the loop re-invokes it without end. A narrow reviewer closing one finding and exposing another
-Critical/Important invariant is progress, not exhaustion.
+Before replying, run `devrites-engine check continuation`: `required` means
+consume `invoke:` now; only `clear` permits a final reply. Under controller mode,
+actionable normalization, successor preparation or foreign work precedes local
+Build. Local-only reconciliation, repair, picks or discharged scheduling deferrals
+retain the owning phase edge, not recursive `/rite-autocomplete`.
+Agent-owned NEEDS_REPLAN, budgeted Critical/Important recovery, independent work
+or a recommended blocking answer stays internal. Invoke repair or `state resolve`
+unless the [resolver-failure stop](stop-conditions.md#other-stop-classes) applies.
+A distinct invariant is progress, not exhaustion; repeated failed resolver calls
+without correction are not progress.
 
 The number of completed repair/Vet cycles, context pressure, compaction, session
 duration, and nested completion never turn checkpoints into handoffs. Persist and

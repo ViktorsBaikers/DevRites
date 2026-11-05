@@ -35,7 +35,7 @@ workflow strategy.
 | `orient <slug>` | Alias for `observe summary`. |
 | `observe slice <slug> <SLICE-ID>` | Print one `SLICE-###` section of `tasks.md` so Build reads a slice, not the file. |
 | `next [slug]` | Print the minimal remaining lifecycle path plus advisory skips; in Build also `eligible_now:`, `batch:` and the `select-command:` (`parallel select --root <project> --slug <slug> --cap N --from-plan`, N = AFK max_parallel else 10) that reproduces the batch. Prints `blocked: unattributed root edit: ...` after `open-questions:` and exits `3` while the ADR-0038 tripwire flags a product path; the rest of the output still prints. |
-| `frontier [slug]` | Read-only report across exact recorded sequence relations, including archived intermediaries and live descendants. Emits `frontier: actionable\|waiting\|blocked\|clear` (`none` for a non-sequence source), `frontier-source:`, and `frontier-workspace:` rows with location, `inspect\|prepare\|repair\|wait\|complete` action, and reason. Emits `frontier-select-command:`, `frontier-picks:`, `frontier-selection: blocked`, `frontier-prepare:`, or `frontier-review-sequence:` where applicable. Explicit slug may be archived; absent ACTIVE recovery requires a unique archived terminal tip with a recorded native Spec edge, otherwise refuses ambiguity. Never changes ACTIVE, restores archives, creates workspaces, or launches writers. Native preparation and semantic admission remain required; see [sequence frontier](../cli.md#sequence-frontier). |
+| `frontier [slug]` | Read-only report across exact recorded sequence relations, including archived intermediaries and live descendants. Emits `frontier: actionable\|waiting\|blocked\|clear` (`none` for a non-sequence source), `frontier-source:`, and `frontier-workspace:` rows with location, `inspect\|prepare\|repair\|wait\|complete` action, and reason. Emits `frontier-select-command:`, `frontier-picks:`, `frontier-selection: blocked`, `frontier-prepare:`, or `frontier-review-sequence:` where applicable. Explicit slug may be archived; absent ACTIVE recovery requires a unique archived terminal tip with a recorded native Spec edge, otherwise refuses ambiguity. One explicit `roadmap.md` owner anywhere in the related live/archive chain may supersede historical maps for scheduling: both `Sequence root:` and `Decision:` headers, a unique owner-local decision heading, and one contiguous position/workspace table must match recorded identities and successors. Either header claims this format; invalid authority fails closed without legacy fallback. Headerless maps retain legacy parsing. Native normalization preserves historical bytes; structural identity is not semantic approval. Never changes ACTIVE, restores archives, creates workspaces, or launches writers. Native preparation and semantic admission remain required; see [sequence frontier](../cli.md#sequence-frontier). |
 | `handoff [slug] [--resume]` | Emit the deterministic resume record: cursor fields, `awaiting_human`, open `questions.md` gate kinds, the `gates.md` reduction with unmet/stale/abandoned ids, `decisions.md` dead ends, in-flight dispatch waves (`inflight_wave:` lines: phase, state, pending roles, slices), missing required files, the canonical read-next order, and the same `continuation:` lines as `check continuation`. Read-only unless `--resume`, which appends one `resume` event (role root) to `metrics.jsonl`; `metrics summary` then reports minutes from each resume to the next dispatch. The `/rite-handoff` spine and the compaction-fallback entry point. |
 | `recall --paths <p1,p2,...> [--limit n]` | Read-time query over `.devrites/archive/`: list archived features whose `touched-files.md` candidate manifest covers a queried project-relative path (exact or directory prefix, case-folded), ranked by overlap count, then newest archive-directory mtime, then slug (default 10 features). Each feature prints up to 8 `archive/<slug>/<file>:<line>` pointers, then `+N more`: `decisions.md` `DEC-###` entries and `## Carry-forward constraints` bullets whose `Files:` overlap (or a constraint naming no files), plus `review.md`/`seal.md`/`drift.md` lines that mention a queried path; fenced examples are ignored. Never writes, caches, or indexes (no metric either); symlinked archive entries are refused. An unreadable archive file prints `unreadable:` and the scan continues. Exit `0` (including `recall: no archive`), `1` invalid archive directory, `2` usage. |
 | `context [slug] (--phase <p>\|--skill <name>) [--role <r>] [--slice <SLICE-ID>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--whole]` | Emit one deduplicated read-set bundle per phase/role/skill from each skill's `loads:` manifest; `--skill` works without a workspace when `--out` is given. A root `--phase build\|autocomplete` bundle (no `--role`, no `--slice`) defaults to `--slice <active_slice>` while the state.md cursor phase is `build` and active_slice names a slice present in tasks.md (prints `scope: slice SLICE-### (auto from state.md) ...`), unless `.devrites/AFK` `max_parallel` is 2 or more or a parallel lease is `running` (the bundle stays whole); `--whole` opts out. Every bundle opens, after its header comments, with a table of contents: one `L<start>-<end> <section label>` line per `===== label =====` section, giving its exact line range in the bundle file. A bundle without `--role` (the root's own read) gives over-budget artifacts as by-reference indexes; a `--role` bundle leads with the role's agent contract and names the manifest's `rootOnly` paths instead of inlining them. When the contract resolves under `.claude/agents`, `.omp/agents`, or `.codex/agents` (the host loads it as the agent's system prompt), the bundle writes one header line naming its path, size, and SHA-256 instead of the body; other layouts (pi, devin, unknown) and `--inline-contract` (only with `--role`) inline the body, and a missing contract still exits `3`. Inside inlined files, a `--role` bundle replaces each `<!-- root-only -->`…`<!-- /root-only -->` block with a one-line stub naming the omitted heading, and does the same for each `<!-- model-surface -->` block unless the role is `security-auditor`, the feature has an `ai-spec.md`, or `spec.md`/`plan.md`/`tasks.md`/`design-brief.md` are absent or (outside the spec template's `AI-SPEC annex`) name a model, agent, RAG, or tool surface; an unbalanced or headingless marker exits `2`. `--slice` inlines that slice's `tasks.md` block and turns each over-budget artifact, and each artifact over 16 KiB except `spec.md`, into a by-reference index (path, SHA-256, headings, line hits for every ID the block cites); repeat `--slice` for several slices; an unknown slice exits `3`. In phase `build`, a `--role` bundle other than `slice-wright` without `--slice` exits `3` (`unscoped build reviewer bundle`). `--recheck <inventory>` (phase `build`, with `--role` and `--slice`; path relative to the workspace) writes `<phase>-<role>.<slice>.recheck.bundle.md`: the inventory file and `core.md` inline whole, every other non-`rootOnly` pack file becomes a by-reference index (path, SHA-256, headings with line numbers) followed by each section the inventory cites as `<file>.md § <heading>`; workspace handling matches `--slice`. A missing or empty inventory exits `2`. First reviews, full-inventory rechecks, Vet, `/rite-review`, and Seal do not use it. |
@@ -62,6 +62,51 @@ workflow strategy.
 Under AFK, `next`, `handoff`, and `check continuation` include the sequence
 frontier without replacing the source-local cursor. Reporting actionable work
 does not authorize Build or Ship, and cannot guarantee native-host compliance.
+For a valid nonempty map, `frontier-authority: <artifact-path>,...` exposes actual
+authority files. Canonical maps name owner `roadmap.md` and owner-local
+`decisions.md`; valid legacy maps name their artifacts without a canonical claim.
+Native preparation must read those exact paths and restrictions, including
+archived/related owners absent from the local context read-next bundle.
+
+Native `/rite-autocomplete` automatically upserts AFK `mode: autocomplete`
+(no new flag), preserving other fields except an explicit `--parallel N` capacity
+update. Missing mode retains standalone AFK behavior; invalid/duplicate mode
+fails closed. With mode and global cap >1, Build wright `dispatch open` checks
+global scheduling before claims/history/round writes: prepare one immediate
+recorded successor per source, with actual pending planning/review handles,
+current native readiness, or a concrete human/dependency hold; placeholders do
+not count. Opt-out, exhausted opening budgets, and source human/question holds
+remain binding. Unresolved authority requires native normalization.
+
+Source `evidence.md` may retain `frontier-blocked: <successor-slug> — <specific constraint>`
+or `frontier-blocked: sequence — <specific constraint>` as a visible scheduling
+deferral, never approval or completed normalization. Generic local `serial:`
+does not waive preparation. Ready foreign picks require mixed selection and
+global lease capacity/path reservations, or an exact qualified
+`serial: other-workspace/SLICE-001 — <constraint>` ordered handoff. Cohort waves
+need not open atomically. Opaque `controller_batch` identifies admission to an
+existing lease cohort instance; reusing a batch label creates no actor entitlement.
+It proves no actor checkout/cwd/runtime isolation and cannot retrofit a retained
+writer. Immutable per-slice `admitted_paths` retain only each pending actor lane;
+missing snapshots or changed reservations require actor reconciliation, not
+backfill from mutable tasks. Returned/integrated siblings may release slots for
+refill. Exact claim identity/session remains required even after release/expiry.
+Readiness, dependencies, actor claims and proof windows still apply.
+Target-specific blocking defers preparation, not ready foreign Build. Sequence
+blocking covers historical normalization only for otherwise-valid local work;
+malformed canonical authority and invalid AFK/path/readiness/security still fail.
+Discharged deferrals do not repeatedly trigger controller work. Native reviews
+constraint substance and verifies exact actor cwd/profile. Retained unbound or
+other-cohort writers hold new actors; unsupported isolation requires local-owner
+serial work and ordered handoff, never early same-tree foreign writing.
+
+Controller continuation prioritizes actionable global work over direct local
+Build without replacing the local cursor or looping on local-only ready work.
+Committed dispatch returns emit fresh scheduling after locks release even if
+later claim release fails; preserve that nonzero failure and claim exclusion.
+Rejected/unpersisted returns do not refresh; status reads stay read-only.
+Protected reviewer/proof windows constrain landing, not independent planning.
+See [controller admission](../cli.md#autocomplete-controller-admission).
 
 For `context --role`, optional `devrites-` prefixes and `.lane` suffixes resolve
 the base specialist's contract, workspace read-set, and role-specific rules.

@@ -2,6 +2,7 @@ package lib
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -561,8 +562,10 @@ func TestAutocompleteControllerDeferralsCannotWaiveStructuralOrWriterSafety(t *t
 			case "invalid canonical roadmap":
 				writeFile(t, filepath.Join(dir, "roadmap.md"), "Sequence root: current16\nDecision: DEC-017\n\n| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | future17 |\n| 2 | duplicate17 |\n")
 			case "symlink canonical roadmap":
+				writeFile(t, filepath.Join(dir, "decisions.md"), "# Decisions\n\n## DEC-017\nKeep the recorded sequence.\n\n| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | future17 |\n| 3 | future18 |\n")
+				poolVet(t, root, "current16")
 				target := filepath.Join(t.TempDir(), "outside-roadmap")
-				writeFile(t, target, "Sequence root: current16\nDecision: DEC-017\n\n| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | future17 |\n")
+				writeFile(t, target, "Sequence root: current16\nDecision: DEC-017\n\n| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | future17 |\n| 3 | future18 |\n")
 				if err := os.Symlink(target, filepath.Join(dir, "roadmap.md")); err != nil {
 					t.Fatal(err)
 				}
@@ -686,5 +689,548 @@ func TestAutocompleteControllerReturnSchedulingRunsOutsideDispatchLocks(t *testi
 	}
 	if code != 0 || !checked {
 		t.Fatalf("return omitted post-lock scheduling: code=%d checked=%t\n%s%s", code, checked, &out, &errOut)
+	}
+}
+
+func TestAutocompleteControllerRetainsUnisolatedWriterAcrossSourcesAndLaterLeases(t *testing.T) {
+	for _, kind := range []string{"foreign source", "same source overlap", "retroactive matching lease"} {
+		t.Run(kind, func(t *testing.T) {
+			root, dir := controllerFixture(t)
+			writeFile(t, filepath.Join(dir, "evidence.md"), "frontier-blocked: future17 — owner must settle DEC-017 before preparation\n")
+			if code, out := controllerOpen(t, root, "current16", "legacy-writer", "SLICE-001"); code != 0 {
+				t.Fatalf("initial truthful owner dispatch: %d %s", code, out)
+			}
+			if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "legacy-writer", "--role", "slice-wright", "--handle", "native-unisolated16"); code != 0 {
+				t.Fatalf("initial owner start: %d %s", code, out)
+			}
+			target := "current16"
+			if kind != "same source overlap" {
+				target = "future17"
+				controllerReadyFuture(t, root, "src/future.go")
+			}
+			if kind == "retroactive matching lease" {
+				controllerLease(t, root, 2,
+					controllerLeaseRow("", "SLICE-001", "src/current.go"),
+					controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+			}
+			before := controllerSnapshot(t, root)
+			code, out := controllerOpen(t, root, target, "unsafe-second", "SLICE-001", "--claim-session", "native-controller", "--claim", "src/future.go")
+			if code != 3 || !strings.Contains(out, "BLOCKED") {
+				t.Fatalf("retained unknown/same-tree writer was hidden by %s: %d\n%s", kind, code, out)
+			}
+			if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+				t.Fatal("unsafe second writer changed claims/history/dispatch")
+			}
+		})
+	}
+}
+
+func TestAutocompleteControllerReservationCannotBindChangedWriterPaths(t *testing.T) {
+	root, _ := controllerFixture(t)
+	controllerReadyFuture(t, root, "src/future.go")
+	controllerLease(t, root, 2,
+		controllerLeaseRow("", "SLICE-001", "src/old-current.go"),
+		controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+	before := controllerSnapshot(t, root)
+	if code, out := controllerOpen(t, root, "current16", "changed-contract", "SLICE-001"); code != 3 {
+		t.Fatalf("same-ID lease retroactively accepted changed writer allowlist: %d\n%s", code, out)
+	}
+	if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+		t.Fatal("changed-contract admission mutated workflow")
+	}
+}
+
+func TestAutocompleteControllerOneReservationCannotOpenTwoUnstartedWriterWaves(t *testing.T) {
+	root, _ := controllerFixture(t)
+	controllerReadyFuture(t, root, "src/future.go")
+	controllerLease(t, root, 2,
+		controllerLeaseRow("", "SLICE-001", "src/current.go"),
+		controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+	if code, out := controllerOpen(t, root, "current16", "first-reserved", "SLICE-001"); code != 0 {
+		t.Fatalf("first cohort wave: %d %s", code, out)
+	}
+	before := controllerSnapshot(t, root)
+	if code, out := controllerOpen(t, root, "current16", "duplicate-reserved", "SLICE-001"); code != 3 {
+		t.Fatalf("one reservation admitted duplicate undeployed writers: %d\n%s", code, out)
+	}
+	if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+		t.Fatal("duplicate reservation assignment changed workflow")
+	}
+}
+
+func TestAutocompleteControllerDeferralCannotHideMalformedSuccessorWorkspace(t *testing.T) {
+	for _, kind := range []string{"duplicate successor cursor", "symlink successor workspace"} {
+		t.Run(kind, func(t *testing.T) {
+			root, dir := controllerFixture(t)
+			writeFile(t, filepath.Join(dir, "evidence.md"), "frontier-blocked: future17 — owner decision pending\nfrontier-blocked: sequence — historical normalization pending\n")
+			state := cursor("plan", "running", "/rite-vet future17") + "| sequence_parent | current16 |\n| sequence_position | 2 |\n| sequence_workspaces_remaining | 1 |\n"
+			if kind == "duplicate successor cursor" {
+				writeFile(t, filepath.Join(root, "work", "future17", "state.md"), state+"| status | ready |\n")
+			} else {
+				outside := t.TempDir()
+				writeFile(t, filepath.Join(outside, "state.md"), state)
+				if err := os.Symlink(outside, filepath.Join(root, "work", "future17")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			before := controllerSnapshot(t, root)
+			if code, out := controllerOpen(t, root, "current16", "unsafe-normalization-waiver", "SLICE-001"); code != 3 {
+				t.Fatalf("scheduling deferral hid %s: %d\n%s", kind, code, out)
+			}
+			if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+				t.Fatal("malformed successor admission changed workflow")
+			}
+		})
+	}
+}
+
+func TestAutocompleteControllerReusedBatchLabelCannotRetrofitRetainedActor(t *testing.T) {
+	root, _ := controllerFixture(t)
+	controllerReadyFuture(t, root, "src/future.go")
+	controllerLease(t, root, 2,
+		controllerLeaseRow("", "SLICE-001", "src/current.go"),
+		controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+	if code, out := controllerOpen(t, root, "current16", "original-cohort", "SLICE-001"); code != 0 {
+		t.Fatalf("original cohort open: %d %s", code, out)
+	}
+	if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "original-cohort", "--role", "slice-wright", "--handle", "native-original-cohort"); code != 0 {
+		t.Fatalf("original actor start: %d %s", code, out)
+	}
+	path, err := parallel.LeasePath(filepath.Dir(root), "current16")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lease, err := parallel.ReadLease(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lease.CreatedAt = "2026-11-05T01:00:00Z"
+	if err := parallel.WriteLease(path, lease); err != nil {
+		t.Fatal(err)
+	}
+	before := controllerSnapshot(t, root)
+	if code, out := controllerOpen(t, root, "future17", "reused-label", "SLICE-001"); code != 3 {
+		t.Fatalf("reused batch label reclassified actor into another lease instance: %d\n%s", code, out)
+	}
+	if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+		t.Fatal("reused-cohort admission changed workflow")
+	}
+}
+
+func TestAutocompleteControllerRetainedActorCannotOutliveItsCountedReservation(t *testing.T) {
+	root, _ := controllerFixture(t)
+	controllerReadyFuture(t, root, "src/future.go")
+	controllerLease(t, root, 2,
+		controllerLeaseRow("", "SLICE-001", "src/current.go"),
+		controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+	if code, out := controllerOpen(t, root, "current16", "retained-cohort", "SLICE-001"); code != 0 {
+		t.Fatalf("cohort open: %d %s", code, out)
+	}
+	if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "retained-cohort", "--role", "slice-wright", "--handle", "native-retained-cohort"); code != 0 {
+		t.Fatalf("cohort actor: %d %s", code, out)
+	}
+	controllerLease(t, root, 2, controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+	before := controllerSnapshot(t, root)
+	if code, out := controllerOpen(t, root, "future17", "lost-actor-slot", "SLICE-001"); code != 3 {
+		t.Fatalf("matching cohort label hid an actor no longer counted by the lease: %d\n%s", code, out)
+	}
+	if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+		t.Fatal("lost actor slot admission changed workflow")
+	}
+}
+
+func TestAutocompleteControllerRecordedReturnRefreshesEvenWhenClaimReleaseIsHeld(t *testing.T) {
+	root, dir := controllerFixture(t)
+	writeFile(t, filepath.Join(dir, "evidence.md"), "frontier-blocked: future17 — owner must settle DEC-017\n")
+	if code, out := controllerOpen(t, root, "current16", "held-return", "SLICE-001", "--claim-session", "native-controller", "--claim", "src/current.go"); code != 0 {
+		t.Fatalf("claimed writer: %d %s", code, out)
+	}
+	if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "held-return", "--role", "slice-wright", "--handle", "native-held-return"); code != 0 {
+		t.Fatalf("writer start: %d %s", code, out)
+	}
+	writeFile(t, filepath.Join(dir, "evidence.md"), "# Evidence\n\nPreparation constraint resolved; future17 still needs native preparation.\n")
+	claimPath := claimsPath(root)
+	moved := claimPath + ".saved"
+	interrupted := false
+	var out, errOut bytes.Buffer
+	writer := auditDispatchWriteFunc(func(p []byte) (int, error) {
+		if !interrupted && bytes.Contains(p, []byte("returned (wave held-return complete)")) {
+			if err := os.Rename(claimPath, moved); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Mkdir(claimPath, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			interrupted = true
+		}
+		return out.Write(p)
+	})
+	code := RunDispatch(root, []string{"current16", "return", "--wave", "held-return", "--role", "slice-wright", "--handle", "native-held-return"}, writer, &errOut)
+	if !interrupted {
+		t.Fatalf("fixture never reached recorded return: %d %s%s", code, &out, &errOut)
+	}
+	if err := os.Remove(claimPath); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(moved, claimPath); err != nil {
+		t.Fatal(err)
+	}
+	if code != 3 || !strings.Contains(errOut.String(), "claim not released") || !strings.Contains(out.String(), "frontier-prepare: /rite-spec 'future17'") {
+		t.Fatalf("recorded-but-held return lost failure or fresh scheduling: %d\n%s%s", code, &out, &errOut)
+	}
+	if claimCode, stdout, stderr := runClaim(t, root, "check", "--session", "foreign-owner", "src/current.go"); claimCode != 3 {
+		t.Fatalf("held return released claim exclusion: %d %s%s", claimCode, stdout, stderr)
+	}
+	if code, out := controllerDispatch(t, root, "current16", "return", "--wave", "held-return", "--role", "slice-wright", "--handle", "native-held-return"); code != 0 || !strings.Contains(out, "frontier-prepare: /rite-spec 'future17'") {
+		t.Fatalf("successful claim reconciliation lost fresh scheduling: %d %s", code, out)
+	}
+}
+
+func TestAutocompleteControllerCompletedSuccessorNeedsNoReopenedPreparation(t *testing.T) {
+	for _, location := range []string{"work", "archive"} {
+		for _, pendingActor := range []bool{false, true} {
+			name := location + "/completed"
+			if pendingActor {
+				name = location + "/retained-writer"
+			}
+			t.Run(name, func(t *testing.T) {
+				root, source := controllerFixture(t)
+				child := controllerReadyFuture(t, root, "src/future.go")
+				writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 2\n")
+				if code, out := controllerOpen(t, root, "future17", "completed17", "SLICE-001"); code != 0 {
+					t.Fatalf("successor writer fixture: %d %s", code, out)
+				}
+				for _, args := range [][]string{
+					{"start", "--wave", "completed17", "--role", "slice-wright", "--handle", "native-completed17"},
+					{"return", "--wave", "completed17", "--role", "slice-wright", "--handle", "native-completed17"},
+				} {
+					if code, out := controllerDispatch(t, root, "future17", args...); code != 0 {
+						t.Fatalf("completed successor account: %d %s", code, out)
+					}
+				}
+				if pendingActor {
+					if code, out := controllerOpen(t, root, "future17", "retained17", "SLICE-001"); code != 0 {
+						t.Fatalf("retained successor writer fixture: %d %s", code, out)
+					}
+					if code, out := controllerDispatch(t, root, "future17", "start", "--wave", "retained17", "--role", "slice-wright", "--handle", "native-retained17"); code != 0 {
+						t.Fatalf("retained successor actor: %d %s", code, out)
+					}
+				}
+				writeFile(t, filepath.Join(child, "state.md"), cursor("done", "shipped", "")+"| schema | 4 |\n| sequence_parent | current16 |\n| sequence_position | 2 |\n| sequence_workspaces_remaining | 0 |\n\n## Slices\n- [x] SLICE-001 built — abcdef1\n")
+				writeFile(t, filepath.Join(child, "evidence.md"), "# Evidence\n\n## EVID-017: SLICE-001 checkpointed\nCheckpoint: abcdef1\n")
+				if location == "archive" {
+					if err := os.MkdirAll(filepath.Join(root, "archive"), 0o755); err != nil {
+						t.Fatal(err)
+					}
+					archived := filepath.Join(root, "archive", "future17")
+					if err := os.Rename(child, archived); err != nil {
+						t.Fatal(err)
+					}
+					child = archived
+				}
+				writeFile(t, filepath.Join(source, "decisions.md"), "# Decisions\n\n## DEC-017\nRetain the completed successor in the current sequence.\n")
+				writeFile(t, filepath.Join(source, "roadmap.md"), "Sequence root: current16\nDecision: DEC-017\n\n| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | future17 |\n| 3 | future18 |\n")
+				poolVet(t, root, "current16")
+				writeFile(t, filepath.Join(root, "AFK"), "mode: autocomplete\nmax_parallel: 2\n")
+				before := controllerSnapshot(t, root)
+				childBefore := controllerSnapshot(t, child)
+				code, out := controllerOpen(t, root, "current16", "writer-after-completed-successor", "SLICE-001")
+				if pendingActor {
+					if code != 3 || !strings.Contains(out, "retained writer") || !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+						t.Fatalf("terminal child hid retained native writer: %d\n%s", code, out)
+					}
+				} else if code != 0 || !strings.Contains(out, "wave writer-after-completed-successor open") || strings.Contains(out, "preparation has not actually started") {
+					t.Fatalf("completed successor required reopening native Spec: %d\n%s", code, out)
+				}
+				if !reflect.DeepEqual(childBefore, controllerSnapshot(t, child)) {
+					t.Fatal("source admission rewrote completed successor artifacts")
+				}
+				if location == "archive" {
+					if _, err := os.Stat(filepath.Join(root, "work", "future17")); !os.IsNotExist(err) {
+						t.Fatalf("source admission resurrected archived successor: %v", err)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestAutocompleteControllerLocalReconciliationKeepsOwningPhase(t *testing.T) {
+	for _, kind := range []string{"returned Build", "local Plan repair"} {
+		t.Run(kind, func(t *testing.T) {
+			root, source := controllerFixture(t)
+			controllerPlanning(t, root, "plan", "plan-drafter", true)
+			frontierFixture(t, root, "work", "future17", "current16", "plan", "running", "/rite-vet future17", 2, "0")
+			invoke := "/rite-build SLICE-001"
+			if kind == "returned Build" {
+				if code, out := controllerOpen(t, root, "current16", "returned16", "SLICE-001"); code != 0 {
+					t.Fatalf("writer fixture: %d %s", code, out)
+				}
+				for _, sub := range []string{"start", "return"} {
+					if code, out := controllerDispatch(t, root, "current16", sub, "--wave", "returned16", "--role", "slice-wright", "--handle", "native-returned16"); code != 0 {
+						t.Fatalf("writer %s: %d %s", sub, code, out)
+					}
+				}
+			} else {
+				invoke = "/rite-plan repair current16"
+				writeFile(t, filepath.Join(source, "plan.md"), "# Plan\n\nNeeds native repair before another writer.\n")
+				frontierFixture(t, root, "work", "current16", "", "build", "running", invoke, 1, "2")
+			}
+			before := controllerSnapshot(t, root)
+			var out, errOut bytes.Buffer
+			if code := RunCheckContinuation(root, []string{"current16"}, &out, &errOut); code != 0 {
+				t.Fatalf("local reconciliation: %d %s", code, &errOut)
+			}
+			if !strings.Contains(out.String(), "invoke: "+invoke+"\n") || strings.Contains(out.String(), "invoke: /rite-autocomplete\n") || !strings.Contains(out.String(), "future17 location=live action=wait") {
+				t.Fatalf("local-only reconciliation recursively invoked controller:\n%s", &out)
+			}
+			if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+				t.Fatal("continuation changed local or pending planning accounts")
+			}
+		})
+	}
+}
+
+func TestAutocompleteControllerAdmitsEligibleSliceDespiteSiblingNotices(t *testing.T) {
+	for _, declaration := range []string{"Workspace dependencies: current16/SLICE-001", ""} {
+		t.Run(declaration, func(t *testing.T) {
+			root, _ := controllerFixture(t)
+			child := controllerReadyFuture(t, root, "src/independent.go")
+			writeFile(t, filepath.Join(child, "tasks.md"), "# Tasks\n"+
+				poolSlice("SLICE-001", "src/independent.go", "Workspace dependencies: none")+
+				poolSlice("SLICE-002", "src/dependent.go", declaration))
+			poolVet(t, root, "future17")
+			controllerLease(t, root, 2,
+				controllerLeaseRow("", "SLICE-001", "src/current.go"),
+				controllerLeaseRow("future17", "SLICE-001", "src/independent.go"))
+			before := controllerSnapshot(t, root)
+			if code, out := controllerOpen(t, root, "future17", "blocked-sibling", "SLICE-002"); code != 3 || !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+				t.Fatalf("withheld sibling was admitted or wrote workflow: %d %s", code, out)
+			}
+			if code, out := controllerOpen(t, root, "current16", "current-independent", "SLICE-001"); code != 0 {
+				t.Fatalf("successor's candidate-local notice blocked current writer: %d %s", code, out)
+			}
+			if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "current-independent", "--role", "slice-wright", "--handle", "native-current-independent"); code != 0 {
+				t.Fatalf("current writer start: %d %s", code, out)
+			}
+			code, out := controllerOpen(t, root, "future17", "future-independent", "SLICE-001")
+			if code != 0 || !strings.Contains(out, "wave future-independent open") || !strings.Contains(out, "future17/SLICE-002") {
+				t.Fatalf("eligible foreign slice blocked or sibling diagnostic lost: %d\n%s", code, out)
+			}
+		})
+	}
+}
+
+func TestAutocompleteControllerMatchesNormalizedReservationWithoutRewritingPlan(t *testing.T) {
+	root, _ := controllerFixture(t)
+	child := controllerReadyFuture(t, root, "./src/future.go")
+	controllerLease(t, root, 2,
+		controllerLeaseRow("", "SLICE-001", "src/current.go"),
+		controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+	tasks := readTestFile(t, filepath.Join(child, "tasks.md"))
+	if code, out := controllerOpen(t, root, "current16", "normalized-current", "SLICE-001", "--claim-session", "native-controller", "--claim", "src/"); code != 0 {
+		t.Fatalf("current cohort writer: %d %s", code, out)
+	}
+	if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "normalized-current", "--role", "slice-wright", "--handle", "native-normalized-current"); code != 0 {
+		t.Fatalf("current actor: %d %s", code, out)
+	}
+	if code, out := controllerOpen(t, root, "future17", "normalized-future", "SLICE-001", "--claim-session", "native-controller", "--claim", "src/"); code != 0 {
+		t.Fatalf("normalized lease or legitimate same-session cohort claim refused: %d\n%s", code, out)
+	}
+	if after := readTestFile(t, filepath.Join(child, "tasks.md")); after != tasks {
+		t.Fatal("reservation matching rewrote the approved plan")
+	}
+}
+
+func TestAutocompleteControllerRetainedWriterPathsCannotBeMovedWithLeaseAndPlan(t *testing.T) {
+	for _, releaseClaim := range []bool{false, true} {
+		name := "live-claim"
+		if releaseClaim {
+			name = "released-claim-still-pending-actor"
+		}
+		t.Run(name, func(t *testing.T) {
+			root, source := controllerFixture(t)
+			child := controllerReadyFuture(t, root, "src/future.go")
+			controllerLease(t, root, 2,
+				controllerLeaseRow("", "SLICE-001", "src/current.go"),
+				controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+			if code, out := controllerOpen(t, root, "current16", "frozen-actor", "SLICE-001", "--claim-session", "native-controller", "--claim", "src/"); code != 0 {
+				t.Fatalf("original actor wave: %d %s", code, out)
+			}
+			if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "frozen-actor", "--role", "slice-wright", "--handle", "native-frozen-actor"); code != 0 {
+				t.Fatalf("original actor start: %d %s", code, out)
+			}
+			if releaseClaim {
+				account, _, err := loadDispatch(root, "current16")
+				if err != nil {
+					t.Fatal(err)
+				}
+				if code, out, errOut := runClaim(t, root, "release", "--session", "native-controller", "--id", account.Waves["frozen-actor"].Claim); code != 0 {
+					t.Fatalf("claim release fixture: %d %s%s", code, out, errOut)
+				}
+			}
+			writeFile(t, filepath.Join(source, "tasks.md"), "# Tasks\n"+poolSlice("SLICE-001", "src/spare.go", "Workspace dependencies: none"))
+			poolVet(t, root, "current16")
+			writeFile(t, filepath.Join(child, "tasks.md"), "# Tasks\n"+poolSlice("SLICE-001", "src/current.go", "Workspace dependencies: none"))
+			poolVet(t, root, "future17")
+			controllerLease(t, root, 2,
+				controllerLeaseRow("", "SLICE-001", "src/spare.go"),
+				controllerLeaseRow("future17", "SLICE-001", "src/current.go"))
+			before := controllerSnapshot(t, root)
+			code, out := controllerOpen(t, root, "future17", "retrofitted-path", "SLICE-001", "--claim-session", "native-controller", "--claim", "src/")
+			if code != 3 || !strings.Contains(out, "retained") || !strings.Contains(out, "path") {
+				t.Fatalf("mutable lease/tasks moved a pending actor's frozen write authority: %d\n%s", code, out)
+			}
+			if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+				t.Fatal("retrofitted-path refusal changed claims/history/dispatch")
+			}
+		})
+	}
+}
+
+func TestAutocompleteControllerRetainedAccountNeedsFrozenPathsAndExactClaimSession(t *testing.T) {
+	for _, corrupt := range []string{"admitted_paths", "claim_session"} {
+		t.Run(corrupt, func(t *testing.T) {
+			root, _ := controllerFixture(t)
+			controllerReadyFuture(t, root, "src/future.go")
+			controllerLease(t, root, 2,
+				controllerLeaseRow("", "SLICE-001", "src/current.go"),
+				controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+			if code, out := controllerOpen(t, root, "current16", "retained-account", "SLICE-001", "--claim-session", "native-controller", "--claim", "src/"); code != 0 {
+				t.Fatalf("retained account fixture: %d %s", code, out)
+			}
+			if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "retained-account", "--role", "slice-wright", "--handle", "native-retained-account"); code != 0 {
+				t.Fatalf("retained actor fixture: %d %s", code, out)
+			}
+			path := filepath.Join(root, "work", "current16", "dispatch.json")
+			var account struct {
+				Waves map[string]map[string]any `json:"waves"`
+			}
+			if err := json.Unmarshal([]byte(readTestFile(t, path)), &account); err != nil {
+				t.Fatal(err)
+			}
+			if corrupt == "admitted_paths" {
+				delete(account.Waves["retained-account"], corrupt)
+			} else {
+				account.Waves["retained-account"][corrupt] = "wrong-ledger-session"
+			}
+			data, err := json.Marshal(account)
+			if err != nil {
+				t.Fatal(err)
+			}
+			writeFile(t, path, string(data))
+			before := controllerSnapshot(t, root)
+			if code, out := controllerOpen(t, root, "future17", "untrusted-retained-account", "SLICE-001", "--claim-session", "native-controller", "--claim", "src/"); code != 3 {
+				t.Fatalf("retained account %s corruption was ignored: %d\n%s", corrupt, code, out)
+			}
+			if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+				t.Fatal("untrusted-account refusal changed workflow")
+			}
+		})
+	}
+}
+
+func TestAutocompleteControllerRollingRefillUsesOnlyPendingWriterLane(t *testing.T) {
+	root, source := controllerFixture(t)
+	writeFile(t, filepath.Join(source, "tasks.md"), "# Tasks\n"+
+		poolSlice("SLICE-001", "src/first.go", "Workspace dependencies: none")+
+		poolSlice("SLICE-002", "src/second.go", "Workspace dependencies: none")+
+		poolSlice("SLICE-003", "src/third.go", "Workspace dependencies: none"))
+	poolVet(t, root, "current16")
+	controllerReadyFuture(t, root, "src/future.go")
+	writeFile(t, filepath.Join(root, "AFK"), "mode: autocomplete\nmax_parallel: 3\n")
+	controllerLease(t, root, 3,
+		controllerLeaseRow("", "SLICE-001", "src/first.go"),
+		controllerLeaseRow("", "SLICE-002", "src/second.go"),
+		controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+	if code, out := controllerDispatch(t, root, "current16", "open", "--phase", "build", "--wave", "rolling",
+		"--role", "slice-wright.SLICE-001", "--role", "slice-wright.SLICE-002",
+		"--slice", "SLICE-001", "--slice", "SLICE-002", "--contract", wrightContractPath(t)); code != 0 {
+		t.Fatalf("multi-role cohort fixture: %d %s", code, out)
+	}
+	for _, id := range []string{"SLICE-001", "SLICE-002"} {
+		if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "rolling", "--role", "slice-wright."+id, "--handle", "native-rolling-"+id); code != 0 {
+			t.Fatalf("cohort role start: %d %s", code, out)
+		}
+	}
+	if code, out := controllerDispatch(t, root, "current16", "return", "--wave", "rolling", "--role", "slice-wright.SLICE-001", "--handle", "native-rolling-SLICE-001"); code != 0 {
+		t.Fatalf("first sibling return: %d %s", code, out)
+	}
+	writeFile(t, filepath.Join(source, "state.md"), cursor("build", "running", "/rite-build SLICE-003")+"| sequence_position | 1 |\n| sequence_workspaces_remaining | 2 |\n\n## Slices\n- [x] SLICE-001 built — abcdef2\n")
+	writeFile(t, filepath.Join(source, "evidence.md"), "# Evidence\n\n## EVID-001: SLICE-001 checkpointed\nCheckpoint: abcdef2\n")
+	first := controllerLeaseRow("", "SLICE-001", "src/first.go")
+	first.WrightStatus, first.TransferCommit = parallel.WrightIntegrated, "abcdef2"
+	controllerLease(t, root, 3, first,
+		controllerLeaseRow("", "SLICE-002", "src/second.go"),
+		controllerLeaseRow("future17", "SLICE-001", "src/future.go"),
+		controllerLeaseRow("", "SLICE-003", "src/third.go"))
+	if code, out := controllerOpen(t, root, "current16", "rolling-refill", "SLICE-003"); code != 0 {
+		t.Fatalf("returned/integrated sibling blocked disjoint rolling refill: %d\n%s", code, out)
+	}
+	if code, out := controllerDispatch(t, root, "current16", "status", "--wave", "rolling"); code != 3 || !strings.Contains(out, "slice-wright.SLICE-001=returned") || !strings.Contains(out, "slice-wright.SLICE-002=started") {
+		t.Fatalf("rolling refill altered pending sibling identity: %d %s", code, out)
+	}
+}
+
+func TestAutocompleteControllerLowerCapBlocksNewLaunchWithoutCancellingReservations(t *testing.T) {
+	for _, capN := range []string{"1", "2"} {
+		for _, target := range []struct{ slug, id string }{{"current16", "SLICE-001"}, {"current16", "SLICE-002"}, {"future17", "SLICE-001"}} {
+			t.Run(capN+"/"+target.slug+"/"+target.id, func(t *testing.T) {
+				root, source := controllerFixture(t)
+				writeFile(t, filepath.Join(source, "tasks.md"), "# Tasks\n"+
+					poolSlice("SLICE-001", "src/current.go", "Workspace dependencies: none")+
+					poolSlice("SLICE-002", "src/current-two.go", "Workspace dependencies: none"))
+				poolVet(t, root, "current16")
+				controllerReadyFuture(t, root, "src/future.go")
+				controllerLease(t, root, 3,
+					controllerLeaseRow("", "SLICE-001", "src/current.go"),
+					controllerLeaseRow("", "SLICE-002", "src/current-two.go"),
+					controllerLeaseRow("future17", "SLICE-001", "src/future.go"))
+				writeFile(t, filepath.Join(root, "AFK"), "mode: autocomplete\nmax_parallel: "+capN+"\n")
+				before := controllerSnapshot(t, root)
+				if code, out := controllerOpen(t, root, target.slug, "over-cap", target.id); code != 3 || !strings.Contains(out, "cap") {
+					t.Fatalf("three occupied reservations bypassed lower cap %s: %d\n%s", capN, code, out)
+				}
+				if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+					t.Fatal("lower-cap refusal cancelled/resized reservations or wrote dispatch")
+				}
+			})
+		}
+	}
+}
+
+func TestAutocompleteControllerSequenceCursorNormalizationPreemptsLocalBuild(t *testing.T) {
+	root, _ := controllerFixture(t)
+	frontierFixture(t, root, "work", "current16", "", "build", "running", "/rite-build SLICE-001", 2, "2")
+	before := controllerSnapshot(t, root)
+	var out, errOut bytes.Buffer
+	if code := RunCheckContinuation(root, []string{"current16"}, &out, &errOut); code != 0 {
+		t.Fatalf("sequence normalization: %d %s", code, &errOut)
+	}
+	if !strings.Contains(out.String(), "invoke: /rite-autocomplete\n") || !strings.Contains(out.String(), "frontier-review-sequence:") || strings.Contains(out.String(), "invoke: /rite-build") {
+		t.Fatalf("invalid sequence cursor used local Build instead of authority normalization:\n%s", &out)
+	}
+	if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+		t.Fatal("normalization observation rewrote source authority")
+	}
+}
+
+func TestAutocompleteControllerSingleCapRetainsExistingLeaseAuthority(t *testing.T) {
+	root, _ := controllerFixture(t)
+	writeFile(t, filepath.Join(root, "AFK"), "mode: autocomplete\nmax_parallel: 1\n")
+	controllerLease(t, root, 1, controllerLeaseRow("", "SLICE-001", "src/current.go"))
+	if code, out := controllerOpen(t, root, "current16", "single-reserved", "SLICE-001"); code != 0 {
+		t.Fatalf("single reserved writer invented missing-successor obligation: %d %s", code, out)
+	}
+	if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "single-reserved", "--role", "slice-wright", "--handle", "native-single-reserved"); code != 0 {
+		t.Fatalf("single reserved actor: %d %s", code, out)
+	}
+	controllerReadyFuture(t, root, "src/future.go")
+	before := controllerSnapshot(t, root)
+	if code, out := controllerOpen(t, root, "future17", "unreserved-second", "SLICE-001"); code != 3 {
+		t.Fatalf("cap one bypassed retained lease/actor authority: %d\n%s", code, out)
+	}
+	if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+		t.Fatal("cap-one refusal changed retained reservations or workflow")
 	}
 }

@@ -72,6 +72,14 @@ func TestFrontierCanonicalRoadmapSupersedesHistoryReadOnly(t *testing.T) {
 				t.Fatalf("canonical frontier code=%d: %s", code, &errOut)
 			}
 			text = out.String()
+			authority := "frontier-authority: " + filepath.Join(dir, "roadmap.md") + "," + filepath.Join(dir, "decisions.md")
+			authorityFound := false
+			for _, line := range strings.Split(text, "\n") {
+				authorityFound = authorityFound || line == authority
+			}
+			if !authorityFound {
+				t.Fatalf("missing exact current authority paths %q:\n%s", authority, text)
+			}
 			for _, want := range []string{"frontier: actionable", "renamed-09 location=archive", "step-17 location=missing action=prepare", "frontier-prepare: /rite-spec 'step-17' source=step-16"} {
 				if !strings.Contains(text, want) {
 					t.Fatalf("canonical roadmap missing %q:\n%s", want, text)
@@ -93,6 +101,7 @@ func TestFrontierCanonicalRoadmapInvalidAuthorityNeverFallsBack(t *testing.T) {
 		"multiple owners", "position gap", "duplicate position", "duplicate slug", "invalid slug",
 		"conflicting bound node", "unenrolled bound node", "conflicting next Spec", "second table",
 		"missing table", "malformed markdown", "symlink", "unreadable", "nonregular",
+		"unrelated second table", "duplicate root header", "decision prefix only", "fenced decision only",
 	} {
 		t.Run(name, func(t *testing.T) {
 			root, anchor, tip, roadmap := canonicalRoadmapFixture(t)
@@ -134,6 +143,14 @@ func TestFrontierCanonicalRoadmapInvalidAuthorityNeverFallsBack(t *testing.T) {
 				roadmap = "Sequence root: step-01\nDecision: DEC-017\n"
 			case "malformed markdown":
 				roadmap += "\n```unclosed\n"
+			case "unrelated second table":
+				roadmap += "\n| Note | Value |\n| --- | --- |\n| extra | table |\n"
+			case "duplicate root header":
+				roadmap = "Sequence root: step-01\n" + roadmap
+			case "decision prefix only":
+				writeFile(t, filepath.Join(anchor, "decisions.md"), "## DEC-0170\n\n"+table)
+			case "fenced decision only":
+				writeFile(t, filepath.Join(anchor, "decisions.md"), "```markdown\n## DEC-017\n```\n\n"+table)
 			}
 			writeFile(t, path, roadmap)
 			switch name {

@@ -40,6 +40,11 @@ func RunCheckContinuation(root string, args []string, stdout, stderr io.Writer) 
 		}
 		return code
 	}
+	mode, err := autocompleteMode(root)
+	if err != nil {
+		fmt.Fprintf(stderr, "check continuation: %v\n", err)
+		return 2
+	}
 	verdict, err := classifyContinuation(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "check continuation: %v\n", err)
@@ -52,7 +57,7 @@ func RunCheckContinuation(root string, args []string, stdout, stderr io.Writer) 
 			fmt.Fprintf(stderr, "check continuation: frontier: %v\n", err)
 			return 2
 		}
-		if !verdict.Required && len(frontier) > 0 && frontier[0] == "frontier: actionable" {
+		if mode && frontierGlobalPriority(slug, frontier) || !mode && !verdict.Required && len(frontier) > 0 && frontier[0] == "frontier: actionable" {
 			verdict = continuationVerdict{Required: true, Invoke: "/rite-autocomplete", Source: slug, Reason: "global frontier requires native preparation, authority review, or selection; no Ship approval"}
 		}
 	}

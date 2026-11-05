@@ -16,6 +16,11 @@ handle workflow policy and judgment. See
 [ADR-0024](docs/adr/0024-native-policy-offline-installer-boundary.md), as
 amended by [ADR-0028](docs/adr/0028-self-contained-engine-update.md).
 
+Structural admission for an explicitly identified native Autocomplete controller
+and canonical sequence-roadmap identity narrow this boundary in
+[ADR-0039](docs/adr/0039-autocomplete-structural-admission.md). Native hosts still
+own semantic scheduling and model dispatch.
+
 ## The three planes
 
 - **Control plane: the engine** (`engine/`): a single stdlib-only Go binary

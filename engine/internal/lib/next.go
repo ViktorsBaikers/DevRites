@@ -82,6 +82,15 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 		for _, line := range lines {
 			fmt.Fprintln(stdout, line)
 		}
+		mode, err := autocompleteMode(root)
+		if err != nil {
+			fmt.Fprintf(stderr, "next: %v\n", err)
+			return 2
+		}
+		if mode && frontierGlobalPriority(slug, lines) {
+			fmt.Fprintln(stdout, "next-command: /rite-autocomplete")
+			return exit
+		}
 	}
 	if report.Phase == state.PhaseBuild {
 		printPlanBatch(stdout, root, slug)

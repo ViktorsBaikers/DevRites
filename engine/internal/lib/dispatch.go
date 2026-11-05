@@ -116,7 +116,9 @@ type dispatchWave struct {
 	ResliceReviewed []string                 `json:"reslice_reviewed,omitempty"`
 	Claim           string                   `json:"claim,omitempty"`
 	ClaimSession    string                   `json:"claim_session,omitempty"`
-	Tree            string                   `json:"tree,omitempty"` // work tree at a build wright open, for check windows --since-dispatch
+	Tree            string                   `json:"tree,omitempty"`             // work tree at a build wright open, for check windows --since-dispatch
+	ControllerBatch string                   `json:"controller_batch,omitempty"` // cohort admission identity, not evidence of actor checkout
+	AdmittedPaths   map[string][]string      `json:"admitted_paths,omitempty"`   // immutable normalized write sets, keyed by source-local slice
 }
 
 // dispatchClaim carries the wave-claim flags; ttl 0 means unset.
@@ -341,20 +343,61 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	// Serialize load-modify-save so concurrent start/return calls never lose
 	// an update and strand the wave short of complete.
 	code := 0
-	if err := state.WithFeatureLock(root, slug, func() error {
-		// Feature → claims is the lock order; never acquire another feature.
-		return state.WithLock(claimsPath(root)+".lock", func() error {
-			code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, all, claim, stdout, stderr)
-			return nil
+	recordedReturn := false
+	mutate := func() error {
+		return state.WithFeatureLock(root, slug, func() error {
+			// Controller → feature → claims; never acquire another feature.
+			return state.WithLock(claimsPath(root)+".lock", func() error {
+				code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, all, claim, stdout, stderr, &recordedReturn)
+				return nil
+			})
 		})
-	}); err != nil {
+	}
+	controllerOpen := false
+	if sub == "open" && strings.EqualFold(phase, "build") {
+		for _, candidate := range roles {
+			controllerOpen = controllerOpen || strings.Contains(candidate, "wright")
+		}
+	}
+	if controllerOpen {
+		mode, err := autocompleteMode(root)
+		if err != nil {
+			fmt.Fprintf(stderr, "dispatch: BLOCKED: %v\n", err)
+			return 3
+		}
+		controllerOpen = mode
+	}
+	var lockErr error
+	if controllerOpen {
+		lockErr = parallel.WithControlLock(root, mutate)
+	} else {
+		lockErr = mutate()
+	}
+	if err := lockErr; err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
 		return 3
+	}
+	if recordedReturn {
+		mode, err := autocompleteMode(root)
+		if err != nil {
+			fmt.Fprintf(stderr, "dispatch: return recorded; global scheduling: %v\n", err)
+			return 3
+		}
+		if mode {
+			lines, err := FrontierLines(root, slug)
+			if err != nil {
+				fmt.Fprintf(stderr, "dispatch: return recorded; global scheduling: %v\n", err)
+				return 3
+			}
+			for _, line := range lines {
+				fmt.Fprintln(stdout, line)
+			}
+		}
 	}
 	return code
 }
 
-func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome, result string, all bool, claim dispatchClaim, stdout, stderr io.Writer) int {
+func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome, result string, all bool, claim dispatchClaim, stdout, stderr io.Writer, recordedReturn *bool) int {
 	f, path, err := loadDispatch(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -392,6 +435,16 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if err := lintKnownRoles(root, phase, roles); err != nil {
 			return fail("BLOCKED: %v", err)
 		}
+		if isBuildWrightWave(w) {
+			binding, notices, err := autocompleteWriterAdmission(root, slug, w, f)
+			if err != nil {
+				return fail("BLOCKED: %v", err)
+			}
+			w.ControllerBatch = binding
+			for _, notice := range notices {
+				fmt.Fprintln(stdout, notice)
+			}
+		}
 		rounds, code := admitWrightRounds(root, slug, f, w, review, stderr)
 		if code != 0 {
 			return code
@@ -428,10 +481,16 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		}
 		admissionPaths := slices.Clone(claimPaths)
 		if isWrightWave(w) {
-			admissionPaths = append(admissionPaths, sliceWriteSet(root, slug, w.Slices)...)
+			if len(w.AdmittedPaths) > 0 {
+				for _, id := range w.Slices {
+					admissionPaths = append(admissionPaths, w.AdmittedPaths[id]...)
+				}
+			} else {
+				admissionPaths = append(admissionPaths, sliceWriteSet(root, slug, w.Slices)...)
+			}
 		}
 		if len(claimPaths) == 0 {
-			if err := checkAbandonedWriterClaims(root, admissionPaths); err != nil {
+			if err := checkWriterClaimsLocked(root, claim.session, admissionPaths); err != nil {
 				return fail("BLOCKED: %v", err)
 			}
 		}
@@ -566,6 +625,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			if !releaseWaveClaim(root, wave, w, stdout, stderr) {
 				return 3
 			}
+			*recordedReturn = true
 			return 0
 		}
 		if r.Returned {
@@ -604,6 +664,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			}
 			return fail("%v", err)
 		}
+		*recordedReturn = true
 		recordMetricNote(root, slug, w.Phase, "return", role, note)
 		fmt.Fprintf(stdout, "dispatch: %s returned (wave %s %s)\n", role, wave, w.State)
 		if all {
@@ -712,28 +773,6 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 	}
 	fmt.Fprint(stderr, dispatchUsage)
 	return 2
-}
-
-// Caller holds the repository claims lock through new-wave publication.
-func checkAbandonedWriterClaims(root string, paths []string) error {
-	if len(paths) == 0 {
-		return nil
-	}
-	latest, _, bad, err := readClaims(claimsPath(root))
-	if err != nil {
-		return err
-	}
-	if bad > 0 {
-		return fmt.Errorf("%d unparsed ledger line(s); cannot rule out an abandoned writer claim", bad)
-	}
-	conflicts, err := retainedWriterConflicts(root, latest, paths, newHolderProbe())
-	if err != nil {
-		return err
-	}
-	if len(conflicts) > 0 {
-		return fmt.Errorf("abandoned writer still holds claim %s on %s; confirm host termination and use dispatch abandon --release before retrying", conflicts[0].ID, strings.Join(conflicts[0].Paths, ","))
-	}
-	return nil
 }
 
 // releaseWaveClaim releases w's claim or reconciles a verified prior release.
@@ -1039,6 +1078,13 @@ func wrightLane(role string) (string, bool) {
 // errors are never refused: the check widens the batch, it never stops a
 // wave that already starts every remaining pick.
 func widerBatchRefusal(root, slug string, wave []string) string {
+	mode, modeErr := autocompleteMode(root)
+	if modeErr != nil {
+		return fmt.Sprintf("dispatch: BLOCKED: %v", modeErr)
+	}
+	if mode {
+		return ""
+	}
 	capN := min(afkMaxParallel(root), parallel.MaxParallelSlices)
 	if capN < 2 {
 		return ""
