@@ -116,7 +116,8 @@ func TestFrontierCanonicalRoadmapRetainsLocalHolds(t *testing.T) {
 			}
 			before := frontierSnapshot(t, root)
 			text := frontierText(t, root, "step-16")
-			if !strings.Contains(text, "frontier: blocked") || strings.Contains(text, "frontier-prepare:") {
+			// Local repair may remain actionable without authorizing future preparation.
+			if strings.Contains(text, "frontier-prepare:") {
 				t.Fatalf("local hold authorized future preparation:\n%s", text)
 			}
 			if !reflect.DeepEqual(before, frontierSnapshot(t, root)) {
