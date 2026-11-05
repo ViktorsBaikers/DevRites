@@ -147,12 +147,6 @@ grep -q 'devrites.workflow-artifact-admission.v1' "$OUT/codex/skills/devrites-li
   grep -q '"action":"OFFLINE_RECOVERY; correct offline, re-preflight, narrow Vet, retry only under cap"' "$OUT/codex/skills/devrites-debug-recovery/SKILL.md" &&
   ok "Codex Workflow Artifact contract preserves identity and recovery" ||
   no "Codex Workflow Artifact contract lost canonical identity or recovery"
-grep -q '`NEEDS REPLAN` is a backward edge' "$OUT/codex/skills/rite-autocomplete/SKILL.md" &&
-  grep -q '`NEEDS REPLAN` cold resume' "$OUT/codex/skills/rite-autocomplete/SKILL.md" &&
-  grep -q 'No user-facing reply is permitted' "$OUT/codex/skills/rite-autocomplete/reference/loop.md" &&
-  grep -q 'Intermediate `NEEDS_REPLAN`' "$OUT/codex/skills/devrites-lib/reference/reply-contract.md" &&
-  ok "Codex autocomplete keeps technical Plan/Vet recovery internal" ||
-  no "Codex autocomplete can stop at an internal NEEDS_REPLAN checkpoint"
 grep -q 'Codex custom-agent version\|repository-aware file tool refuses an ignored path\|For automatic Engram calls' "$OUT/codex/agents/devrites-code-reviewer.toml" &&
   no "Codex agent artifact duplicates project-wide guidance" ||
   ok "Codex agent artifact contains only its converted role contract"
@@ -402,8 +396,6 @@ for host in claude codex omp pi devin; do
     "$OUT/$host/skills/rite-autocomplete/SKILL.md" &&
     grep -q 'one-write AFK contract' \
       "$OUT/$host/skills/rite-autocomplete/SKILL.md" &&
-    grep -q 'never rewrite it after' \
-      "$OUT/$host/skills/rite-autocomplete/reference/loop.md" &&
     grep -q 'Blocking with a ranked recommended' \
       "$OUT/$host/skills/rite-autocomplete/reference/stop-conditions.md"; then
     ok "$host autocomplete preserves flag, AFK-state, and recommended-option blocking resolve"

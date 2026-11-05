@@ -176,7 +176,7 @@ Move `state.md` narrative verbatim to append-only `history/<file>-<YYYYMMDD>.md`
 leave a one-line pointer; history never enters phase read-next. Legacy reason-only
 overrides cannot clear gates: `$rite-upgrade` routes relocation/split; new writers
 never override these reasons. Use
-[`context-hygiene.md` dispatch packets](standards/context-hygiene.md#dispatch-packets)
+[dispatch packets](standards/context-hygiene.md#dispatch-packets)
 for byte checks/lossless retrieval. Overrides neither rewrite nor require loading protected history.
 
 ## Anchored notes

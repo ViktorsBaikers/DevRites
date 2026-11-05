@@ -251,11 +251,13 @@ func FrontierLines(root, slug string) ([]string, error) {
 			return nil, err
 		}
 	}
+	workspaceOverride := ""
 	if slug != "" {
 		if !devritespaths.ValidSlug(slug) {
 			return nil, fmt.Errorf("invalid source slug")
 		}
-		if _, err := devritespaths.WorkspaceOverrideChecked(root, slug); err != nil {
+		workspaceOverride, err = devritespaths.WorkspaceOverrideChecked(root, slug)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -330,6 +332,9 @@ func FrontierLines(root, slug string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if workspaceOverride != "" {
+		allowFuture = false
+	}
 	if lease != nil && lease.Capacity > 0 && capN > lease.Capacity {
 		capN = lease.Capacity
 	}
@@ -397,6 +402,9 @@ func FrontierLines(root, slug string) ([]string, error) {
 				actionable = true
 			case "wait":
 				waiting = true
+			case "no-cursor":
+				blocked = true
+				action = "wait"
 			case "blocked":
 				blocked = true
 				action = "wait"
@@ -670,6 +678,11 @@ func frontierLocal(root, controller string, n *frontierWorkspace, candidates *[]
 		// Ship approval holds this writer, not independently recorded future preparation.
 		n.selectionHeld = true
 		return "wait", "Ship requires existing native authority; controller invocation is not approval", nil
+	}
+	if n.next == "" {
+		// Missing local work is not a hold on independently recorded preparation.
+		n.selectionHeld = true
+		return "no-cursor", "no actionable native internal cursor; review state without inventing authority", nil
 	}
 	return "blocked", "no actionable native internal cursor; review state without inventing authority", nil
 }

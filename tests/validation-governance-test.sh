@@ -31,6 +31,15 @@ run_ok "cross refs accept repo docs and runtime artifacts" python3 "$ROOT/script
 printf 'Read `definitely-dead.md`.\n' >> "$T/cross/pack/.claude/skills/demo/SKILL.md"
 run_fail_contains "cross refs still reject unknown documents" "definitely-dead.md" python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/cross"
 
+# Sequence roadmaps are runtime artifacts, not an exemption for shared references.
+mkdir -p "$T/roadmap/pack/.claude/skills/demo"
+printf 'Read `roadmap.md`.\n' > "$T/roadmap/pack/.claude/skills/demo/SKILL.md"
+run_ok "cross refs accept runtime sequence roadmap" \
+  python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/roadmap"
+printf 'Read `missing-shared.md`.\n' >> "$T/roadmap/pack/.claude/skills/demo/SKILL.md"
+run_fail_contains "runtime roadmap does not exempt missing shared files" "missing-shared.md" \
+  python3 "$ROOT/scripts/check-cross-refs.py" --root "$T/roadmap"
+
 # Bare shared-standard basenames must not pass merely because the file exists
 # under another skill (hosts open <skill>/reference/<name>.md for bare names).
 mkdir -p "$T/bare/pack/.claude/skills/demo" \

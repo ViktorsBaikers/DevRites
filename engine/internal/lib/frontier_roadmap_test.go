@@ -95,12 +95,75 @@ func TestFrontierCanonicalRoadmapSupersedesHistoryReadOnly(t *testing.T) {
 	}
 }
 
+func TestFrontierCanonicalRoadmapRetainsLocalHolds(t *testing.T) {
+	for _, hold := range []string{"human", "blocked", "question", "dispatch", "invalid cursor"} {
+		t.Run(hold, func(t *testing.T) {
+			root, anchor, tip, roadmap := canonicalRoadmapFixture(t)
+			writeFile(t, filepath.Join(anchor, "roadmap.md"), roadmap)
+			switch hold {
+			case "human", "blocked":
+				status := "awaiting_human"
+				if hold == "blocked" {
+					status = "blocked"
+				}
+				frontierFixture(t, root, "work", "step-16", "step-15", "seal", status, "", 16, "1")
+			case "question":
+				writeFile(t, filepath.Join(tip, "questions.md"), "## Q-001\nstatus: open\ngate: blocking\n")
+			case "dispatch":
+				writeFile(t, filepath.Join(tip, "dispatch.json"), "{")
+			case "invalid cursor":
+				frontierFixture(t, root, "work", "step-16", "step-15", "seal", "ready", "/rite-ship other-workspace", 16, "1")
+			}
+			before := frontierSnapshot(t, root)
+			text := frontierText(t, root, "step-16")
+			if !strings.Contains(text, "frontier: blocked") || strings.Contains(text, "frontier-prepare:") {
+				t.Fatalf("local hold authorized future preparation:\n%s", text)
+			}
+			if !reflect.DeepEqual(before, frontierSnapshot(t, root)) {
+				t.Fatal("held observation changed workspace bytes")
+			}
+		})
+	}
+}
+
+func TestFrontierCanonicalRoadmapRetainsWorkspaceScope(t *testing.T) {
+	for _, next := range []string{"", "/rite-ship step-16"} {
+		t.Run(next, func(t *testing.T) {
+			root, anchor, tip, roadmap := canonicalRoadmapFixture(t)
+			writeFile(t, filepath.Join(anchor, "roadmap.md"), roadmap)
+			frontierFixture(t, root, "work", "step-16", "step-15", "seal", "ready", next, 16, "1")
+			t.Setenv("DEVRITES_WORKSPACE", tip)
+			before := frontierSnapshot(t, root)
+			text := frontierText(t, root, "step-16")
+			if strings.Contains(text, "frontier-prepare:") || strings.Contains(text, "step-17 location=missing action=prepare") {
+				t.Fatalf("matching workspace scope authorized future preparation:\n%s", text)
+			}
+			if !strings.Contains(text, "step-16 location=live action=wait") {
+				t.Fatalf("scope changed local cursor disposition:\n%s", text)
+			}
+			if !reflect.DeepEqual(before, frontierSnapshot(t, root)) {
+				t.Fatal("scoped observation changed workspace bytes")
+			}
+		})
+	}
+}
+
+func TestFrontierCanonicalRoadmapMasksUnclosedFence(t *testing.T) {
+	root, anchor, _, roadmap := canonicalRoadmapFixture(t)
+	// CommonMark fences may run to EOF; fenced authority must stay inert.
+	writeFile(t, filepath.Join(anchor, "roadmap.md"), roadmap+"\n```markdown\nSequence root: other\nDecision: DEC-999\n| Position | Workspace |\n| --- | --- |\n| 1 | other |\n")
+	text := frontierText(t, root, "step-16")
+	if !strings.Contains(text, "frontier-prepare: /rite-spec 'step-17' source=step-16") || strings.Contains(text, "native authority-normalization") {
+		t.Fatalf("fenced tail changed canonical authority:\n%s", text)
+	}
+}
+
 func TestFrontierCanonicalRoadmapInvalidAuthorityNeverFallsBack(t *testing.T) {
 	for _, name := range []string{
 		"wrong root", "missing root", "missing decision", "duplicate decision", "decision in other owner",
 		"multiple owners", "position gap", "duplicate position", "duplicate slug", "invalid slug",
 		"conflicting bound node", "unenrolled bound node", "conflicting next Spec", "second table",
-		"missing table", "malformed markdown", "symlink", "unreadable", "nonregular",
+		"missing table", "invalid UTF-8", "NUL byte", "symlink", "unreadable", "nonregular",
 		"unrelated second table", "duplicate root header", "decision prefix only", "fenced decision only",
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -141,8 +204,10 @@ func TestFrontierCanonicalRoadmapInvalidAuthorityNeverFallsBack(t *testing.T) {
 				roadmap += "\n" + table
 			case "missing table":
 				roadmap = "Sequence root: step-01\nDecision: DEC-017\n"
-			case "malformed markdown":
-				roadmap += "\n```unclosed\n"
+			case "invalid UTF-8":
+				roadmap += "\xff"
+			case "NUL byte":
+				roadmap += "\x00"
 			case "unrelated second table":
 				roadmap += "\n| Note | Value |\n| --- | --- |\n| extra | table |\n"
 			case "duplicate root header":

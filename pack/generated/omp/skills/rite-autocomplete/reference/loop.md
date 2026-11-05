@@ -47,8 +47,9 @@ preparation/deferral and global cohort rules; local readiness alone is insuffici
 Count every leaf result. Explicit activations reset activation-local counters,
 not durable slice/recovery state. Pass resolved `--parallel N` to
 [Build](skill://rite-build/reference/output.md#caller-owned-continuation).
-Ignored legacy budgets, tool-call counts and local serial constraints are not
-whole-run stops; an explicit human bounded request still wins.
+Ignored legacy budgets and local serial constraints are not whole-run stops.
+Invented ceilings on dispatches, waits, tool calls or turns cannot stop execution;
+human instructions to pause or limit scope still bind.
 Resolve ranked validating/blocking picks via `devrites-engine state resolve`;
 never hand `/rite-resolve` to the user. Escalating, irreversible-risk, access, blocking
 without recommendations, and Seal judgment (`slice: seal`) still pause.
@@ -149,6 +150,9 @@ fingerprint spend only its strategy: escalate inline per the
 and park it after three escalations while independent work continues.
 
 ## Continuous caller obligation
+
+After a green slice or phase, execute its recorded `next_action` internally;
+reply only at completion or a genuine stop.
 
 Before replying, run `devrites-engine check continuation`: `required` means
 consume `invoke:` now; only `clear` permits a final reply. Under controller mode,

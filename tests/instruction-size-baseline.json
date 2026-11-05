@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1589305,
+  "total_bytes": 1589480,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -138,7 +138,7 @@
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/plan.md": 2384,
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/slides.md": 2014,
     "pack/.claude/skills/devrites-lib/reference/visual-playbooks/table.md": 2015,
-    "pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md": 23300,
+    "pack/.claude/skills/devrites-lib/reference/workspace-artifact-schema.md": 23279,
     "pack/.claude/skills/devrites-lib/SKILL.md": 6009,
     "pack/.claude/skills/devrites-prose-craft/reference/banned-phrases.md": 6494,
     "pack/.claude/skills/devrites-prose-craft/reference/examples.md": 6317,
@@ -163,7 +163,7 @@
     "pack/.claude/skills/rite-adopt/SKILL.md": 4114,
     "pack/.claude/skills/rite-autocomplete/reference/decision-policy.md": 2465,
     "pack/.claude/skills/rite-autocomplete/reference/lookahead.md": 3035,
-    "pack/.claude/skills/rite-autocomplete/reference/loop.md": 10282,
+    "pack/.claude/skills/rite-autocomplete/reference/loop.md": 10478,
     "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md": 7356,
     "pack/.claude/skills/rite-autocomplete/SKILL.md": 12382,
     "pack/.claude/skills/rite-build/reference/afk-discipline.md": 7614,
