@@ -213,7 +213,9 @@ self-contained updater.
   and exits `3` naming the holder when a live claim by another session covers a
   path; `release --session <id> --id <claim>` frees it; `list [--all]` shows
   live (or all) claims; `check [--session <id>] <path>...` is the read-only
-  preflight. Each claim records its host and the claiming session's long-lived
+  preflight. Conflict checks cover logical paths and physical symlink aliases;
+  unresolved physical paths fail closed. Same-session allocation stays exempt.
+  Each claim records its host and the claiming session's long-lived
   processes; when all of them have exited on this host, `list` shows the claim
   `dead` and it no longer conflicts. Other hosts or an unavailable `ps` never
   prove exit. Claims coordinate concurrent same-tree sessions; they never
@@ -285,6 +287,10 @@ The report emits:
 - `frontier-prepare:` for a recorded next Spec cursor or an unambiguous next entry
   in an exact position/workspace table, or `frontier-review-sequence:` artifact
   paths when remaining work or conflicting sequence maps require native review.
+- `frontier-authority: <artifact-path>,...` identifies actual files supplying a
+  valid nonempty scheduling map. For explicit canonical authority it names the
+  owning `roadmap.md` and same-owner `decisions.md`; legacy maps list their actual
+  artifacts without claiming canonical status.
 
 Relations come from exact recorded `sequence_parent` edges, not name prefixes.
 Conflicting identities, cycles, malformed related state, or invalid declared
@@ -295,14 +301,106 @@ Conflicting or amended sequence maps suppress missing-workspace preparation even
 with a recorded Spec cursor until native authority normalization resolves them;
 valid existing live descendants remain visible and eligible for guarded selection.
 
+An optional `roadmap.md` becomes current scheduling authority when it contains
+either `Sequence root:` or `Decision:`. Both headers are then required:
+
+```markdown
+Sequence root: actual-anchor-slug
+Decision: DEC-017
+
+| Position | Workspace |
+| --- | --- |
+| 1 | actual-anchor-slug |
+| 2 | actual-renamed-child |
+```
+
+Exactly one related live or archived workspace may own this explicit map.
+`Decision: DEC-NNN` must identify exactly one `## DEC-NNN` heading in that
+owner's `decisions.md`; the root must match the actual chain anchor. Exactly
+one table must have contiguous positions from 1 and unique valid workspace
+slugs, matching every related recorded position and exact successor. Folder
+numbering, prose amendments, and unenrolled workspaces confer no authority.
+A valid explicit map supersedes historical tables in `decisions.md`, `spec.md`,
+and headerless `roadmap.md` for scheduling only; preserve those historical bytes.
+Without either header, `roadmap.md` retains conservative legacy parsing.
+Partial/malformed headers, multiple owners, invalid root/decision/table, or a
+symlink/unreadable explicit map fail closed without legacy fallback. Use native
+authority normalization to record the approved actual identities while retaining
+history. Structural validation establishes identity, not semantic approval,
+independence, Build readiness, or Ship permission.
+
 Under AFK, `next`, `handoff`, and `check continuation` expose the same frontier.
 A source-local `parallel select --from-plan` without `--workspaces` also prints
 the report to stderr, preserving its machine-readable selection on stdout and
 source-local picks: reporting another workspace never silently admits it.
-Native Autocomplete must inspect the returned preparation and review
-actions, read the approved roadmap and recorded restrictions, then invoke the
-owning Spec/Plan/Vet steps or explicit mixed selection. Path disjointness alone
-does not establish semantic independence or lift a planning-only restriction.
+Native Autocomplete must inspect returned preparation/review actions and read
+the exact `frontier-authority:` paths plus recorded restrictions before invoking
+Spec/Plan/Vet or mixed selection. This read is required even when the owner is an
+archived ancestor or another related workspace outside the local read-next bundle.
+Path disjointness alone establishes neither semantic independence nor permission
+to lift a planning-only restriction.
+
+### Autocomplete controller admission
+
+The existing `/rite-autocomplete` invocation writes or upserts `mode: autocomplete`
+in `.devrites/AFK`; no extra flag is needed. It preserves other sentinel fields
+unless an explicit `--parallel N` changes capacity. Mode identifies the native
+controller, not authorization. Standalone AFK without mode retains its behavior;
+duplicate or invalid mode requires normalization rather than silently disabling
+the controller gate.
+
+With controller mode and global capacity above one, a new Build wright
+`dispatch open` checks structural global scheduling before writing claims, history,
+or a round. It checks one immediate recorded successor per admitted source, not
+the whole future sequence:
+
+- Missing permitted successor: start its native Spec/Plan/Vet preparation and
+  retain actual launched planning/review handles before admitting the writer.
+- Existing successor: require pending preparation handles, a current native
+  Build-ready binding, or its concrete human/dependency hold. A placeholder
+  state/spec or a prose claim that preparation happened is insufficient.
+- Opted-out or exhausted future opening and source human/question holds do not
+  invent new preparation obligations. Unresolved sequence authority requires
+  native normalization.
+
+For a concrete preparation constraint, retain
+`frontier-blocked: <successor-slug> — <specific constraint>` in the source's
+`evidence.md`. For unresolved historical normalization on otherwise-valid local
+work use `frontier-blocked: sequence — <specific constraint>`. These deferrals
+remain visible for native review; they grant no approval, readiness, or claim
+that normalization succeeded. Neither waives malformed canonical authority,
+invalid AFK/path/readiness/security checks, or already-ready foreign Build.
+A generic local `serial: SLICE-002 — <reason>` does not waive cross-workspace
+preparation. A discharged deferral does not repeatedly trigger controller work.
+
+Ready independent foreign sources must participate in explicit repository-wide
+mixed selection and lease capacity/path reservations. Reserve the cohort with
+`parallel create/add`; source waves may then open separately. A concrete
+`serial: other-workspace/SLICE-001 — <constraint>` can retain an ordered handoff
+for that exact foreign pick; an unqualified local serial reason cannot silently
+omit it. This does not waive successor preparation or readiness, dependencies,
+runtime/path isolation, actor claims, or reviewer/proof windows.
+Dispatch `controller_batch` is an opaque cohort-instance admission identity,
+recording initial whole-wave, source-qualified live-lease admission, never proof
+of actor checkout, cwd, or runtime profile. Immutable `admitted_paths` snapshots
+retain each pending writer lane's normalized allowlist. Missing snapshots or
+changed reservations require actor reconciliation; mutable tasks cannot backfill
+authority. Returned/integrated siblings may release slots for rolling refill.
+Exact claim identity/session remains required; release or expiry does not stop
+an actor. Retained unbound or other-cohort writers hold new actors; later lease
+IDs cannot retrofit them. Native exact cwd/profile checks remain required.
+Unsupported isolation permits truthful local-owner serial work and normal
+ordered handoff, never an early same-tree foreign writer.
+
+Controller continuation prioritizes actionable global normalization, preparation,
+and foreign work over a direct local Build invocation while preserving the local
+phase cursor. Local-only ready work does not recursively invoke Autocomplete.
+After a committed dispatch return, a fresh global scheduling result resurfaces
+the next obligation—even if later claim release fails; its nonzero failure and
+claim exclusion remain. Rejected or unpersisted returns do not refresh.
+Ordinary status reads remain read-only. Protected reviewer/proof windows defer
+unsafe landing, not independent planning. No such transition invokes Ship or
+launches a model through the engine.
 
 The engine does not invoke models, create workspaces, change `ACTIVE`, resolve
 semantic authority, or grant Ship approval. These outputs guide the native host;

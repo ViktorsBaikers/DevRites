@@ -26,24 +26,27 @@ Fully escalated fingerprints park unless remaining owner is human.
 
 ## Not stops: internal technical routing
 
-AFK + `status=running` + an internal phase `next_action` is not a stop. `devrites-engine check continuation` prints `required` for that cursor and `clear` for `/rite-ship`, `awaiting_human`, a question cursor, or an open blocking or escalating question.
+For AFK `status=running`, consume an internal phase edge. In
+`mode: autocomplete`, actionable global normalization, preparation or foreign
+work takes priority over local Build; local-only picks do not recurse through
+Autocomplete. Source human/Ship holds remain binding, while independent
+authorized planning can continue. `clear` is reply permission, not Ship approval.
 
-`NEEDS_REPLAN` is not a stop condition under active Autocomplete. It blocks
-forward work, persists the return cursor, and invokes Plan repair plus Recovery
-Vet inline. The same applies to nested `STOP`/`Next step` when its decision is
-agent-owned.
+A preparation refusal routes native work or a narrow disclosed scheduling
+deferral under the [global pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
+Deferral removes only its named scheduling obligation from repeated continuation:
+it neither makes a placeholder prepared nor waives readiness, malformed authority,
+claims, isolation, proof or human gates. Qualified foreign serial handoff is a
+separate rule. Revisit deferrals when their constraint changes.
 
-Agent-owned backtracking is not a stop condition while its exact causal
-fingerprint has budget: invoke earlier phase, affected Vet, remediation, proof;
-resume origin. Three no-progress corrections spend only that fingerprint's current
-strategy: escalate inline to the next class (shared root cause, diagnostic
-amplification, boundary redesign) with fresh budget, without permission. After
-three escalations per activation it parks; finish independent work, then stop once.
-Preserve reproduction, attempts, and dead ends; never offer `/rite-plan unblock`
-or another routine phase command. A new user-issued `/rite-autocomplete`
-reopens parked fingerprints with fresh escalation; wakes and compaction do not.
-Closure is progress; a separately evidenced Critical/Important invariant starts
-its own cap and cannot extend the closed one.
+Agent-owned NEEDS_REPLAN or nested STOP persists the return cursor and invokes
+Plan repair, affected Recovery Vet, remediation and proof inline. Three
+no-progress corrections spend that fingerprint's strategy; escalate through
+shared root cause, diagnostic amplification and boundary redesign without asking.
+After three escalations, park it and finish independent work. Preserve attempts;
+resume through `/rite-autocomplete`, not a routine phase command. A new explicit
+invocation reopens parked fingerprints; wakes/compaction do not. Closure is
+progress; a distinct Critical/Important invariant gets its own cap.
 
 Spent consumptive-action authorization is not technical-recovery exhaustion.
 It blocks another execution; retained new Critical/Important evidence still
@@ -72,14 +75,10 @@ Without a safe seam, escalate or park; only a real human/risk/scope gate stops f
 - **Clarify:** material `open`/unowned decision coverage or a
   low-confidence high-consequence assumption. Continue the initial interview;
   never arm AFK early.
-- **Seal:** report remaining NO-GO with every blocker/fix direction; never round
-  up to GO. Resolve recommended-option blocking questions internally; recover
-  agent-owned findings and re-enter Seal. A first NO-GO is not a stop:
-  recover every agent-owned blocker (missing or unbound proof, a reviewer gap root
-  can close, a finding with a fix direction, a missing `review.md` verdict), then
-  re-enter Seal. The unattended `N` to accepting Important risks means repair, not
-  stop. Stop only for blockers that need a human: accepting a risk, changing scope
-  or an acceptance criterion, or access. Record each one as a question.
+- **Seal:** NO-GO never rounds up to GO. Recover agent-owned missing/unbound proof,
+  reviewer gaps and findings, then re-enter Seal; declining Important-risk
+  acceptance means repair. A human-owned risk, scope/acceptance change or access
+  blocker remains a question. A first repairable NO-GO is not a handoff.
 - **Reslice:** execute its marked action before deciding continue/stop.
 - **Slice budget:** do not stop on `--max-slices`. Leftover
   pre-existing remaining value, explicit flag, sentinel cap, or post-vet pending count
@@ -89,8 +88,9 @@ Without a safe seam, escalate or park; only a real human/risk/scope gate stops f
   another session blocks only work on those paths; run independent work, re-check,
   and stop only when nothing independent remains. `released`/`dead` claims are
   reconciled per [§ Cancellation](../../devrites-lib/reference/parallel-dispatch.md#cancellation-and-terminal-reconciliation).
-- **Resource envelope:** overlapping run or missing AFK after arm still stops.
-  Do not stop on `--max-slices`, `max_agents`, `max_minutes`, or `max_review_queue`.
+- **Resource envelope:** overlapping controllers, missing AFK after arm or invalid/
+  duplicate mode fail closed. Ignored slice/agent/time/review ceilings do not stop
+  Autocomplete; mode itself grants no authority.
 - **Confidence:** intent still cannot become testable acceptance after interview.
 - **Repeated failure:** not a stop. Escalate; fully escalated fingerprints park.
   Stop only when no independent work remains.

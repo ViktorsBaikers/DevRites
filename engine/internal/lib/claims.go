@@ -239,21 +239,39 @@ func validSession(s string) bool {
 	return true
 }
 
-// claimConflicts returns live claims by other sessions overlapping any path: a
-// claimed directory covers every path beneath it, and vice versa.
-func claimConflicts(live []*claimRecord, session string, paths []string) []*claimRecord {
+// claimConflicts checks logical and physical overlap for other live sessions:
+// a claimed directory covers every path beneath it, and vice versa.
+func claimConflicts(root string, live []*claimRecord, session string, paths []string) ([]*claimRecord, error) {
 	var out []*claimRecord
+	var physical []string
 	for _, rec := range live {
 		if rec.Session == session {
 			continue
 		}
-		if slices.ContainsFunc(rec.Paths, func(held string) bool {
+		overlaps := slices.ContainsFunc(rec.Paths, func(held string) bool {
 			return slices.ContainsFunc(paths, func(p string) bool { return claimPathsOverlap(held, p) })
-		}) {
+		})
+		if !overlaps {
+			if physical == nil {
+				var err error
+				physical, err = physicalClaimPaths(root, paths)
+				if err != nil {
+					return nil, err
+				}
+			}
+			held, err := physicalClaimPaths(root, rec.Paths)
+			if err != nil {
+				return nil, fmt.Errorf("claim %s: %w", rec.ID, err)
+			}
+			overlaps = slices.ContainsFunc(held, func(h string) bool {
+				return slices.ContainsFunc(physical, func(p string) bool { return claimPathsOverlap(h, p) })
+			})
+		}
+		if overlaps {
 			out = append(out, rec)
 		}
 	}
-	return out
+	return out, nil
 }
 
 // claimPathsOverlap folds case always: on a case-sensitive filesystem a false
@@ -482,6 +500,37 @@ func addClaimTargets(root, session, reason string, ttl int, raw, workspaces []st
 	return id, code
 }
 
+// Caller holds the repository claims lock through new-wave publication.
+func checkWriterClaimsLocked(root, session string, paths []string) error {
+	if len(paths) == 0 {
+		return nil
+	}
+	latest, order, bad, err := readClaims(claimsPath(root))
+	if err != nil {
+		return err
+	}
+	if bad > 0 {
+		return fmt.Errorf("%d unparsed ledger line(s); cannot rule out a writer claim", bad)
+	}
+	probe := newHolderProbe()
+	retained, err := retainedWriterConflicts(root, latest, paths, probe)
+	if err != nil {
+		return err
+	}
+	if len(retained) > 0 {
+		return fmt.Errorf("abandoned writer still holds claim %s on %s; confirm host termination and use dispatch abandon --release before retrying", retained[0].ID, strings.Join(retained[0].Paths, ","))
+	}
+	conflicts, err := claimConflicts(root, probe.withoutGone(liveClaims(latest, order, time.Now().UTC())), session, paths)
+	if err != nil {
+		return err
+	}
+	if len(conflicts) > 0 {
+		rec := conflicts[0]
+		return fmt.Errorf("live writer claim %s on %s held by session %q until %s", rec.ID, strings.Join(rec.Paths, ","), rec.Session, rec.ExpiresAt)
+	}
+	return nil
+}
+
 func claimAddLocked(path, session, reason string, ttl int, paths, admissionPaths []string, stdout, stderr io.Writer) (string, int) {
 	latest, order, bad, err := readClaims(path)
 	if err != nil {
@@ -503,7 +552,11 @@ func claimAddLocked(path, session, reason string, ttl int, paths, admissionPaths
 		printConflicts(stderr, retained)
 		return "", 3
 	}
-	conflicts := claimConflicts(probe.withoutGone(liveClaims(latest, order, now)), session, paths)
+	conflicts, err := claimConflicts(filepath.Dir(path), probe.withoutGone(liveClaims(latest, order, now)), session, admissionPaths)
+	if err != nil {
+		fmt.Fprintf(stderr, "claim: %v\n", err)
+		return "", 3
+	}
 	if len(conflicts) > 0 {
 		printConflicts(stderr, conflicts)
 		return "", 3
@@ -698,7 +751,11 @@ func claimCheckLocked(root, session string, paths []string, stdout, stderr io.Wr
 		printConflicts(stdout, retained)
 		return 3
 	}
-	conflicts := claimConflicts(probe.withoutGone(liveClaims(latest, order, time.Now().UTC())), session, paths)
+	conflicts, err := claimConflicts(root, probe.withoutGone(liveClaims(latest, order, time.Now().UTC())), session, paths)
+	if err != nil {
+		fmt.Fprintf(stderr, "claim: %v\n", err)
+		return 2
+	}
 	if len(conflicts) > 0 {
 		printConflicts(stdout, conflicts)
 		return 3

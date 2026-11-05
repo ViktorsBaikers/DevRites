@@ -12,65 +12,45 @@ candidate bindings and proof belong to that source. A missing source artifact
 routes its prerequisite; it never falls back to another workspace's artifacts.
 An explicit valid workspace does not require ACTIVE to name it or to exist.
 
-Carry that source through Spec → Clarify → Temper → Define/Plan → Vet and later
-Build/Converge/Prove/Polish/Review/Seal/Ship entrypoints. Use existing slug arguments
-where supported, including `context <source>` and `handoff <source> --resume`.
-For qid-only `state resolve` (including `--drop`/`--batch`), keep its existing argv
-and bind the call with `DEVRITES_ROOT=<absolute-control>/.devrites` and
-`DEVRITES_WORKSPACE=<absolute-control>/.devrites/work/<source>`. The override is a
-workspace path, not a slug. Apply this environment only to that invocation;
-neither a fabricated resolver slug argument nor process-global environment
-mutation is routing. Use the same source binding for nested recommended answers.
-
-Preparing or running an admitted future source preserves the ordered owner's
-ACTIVE and retained writer/controller. Ordinary standalone Spec still sets ACTIVE;
-explicit `--lookahead` still stops at planning/Vet and never becomes a Build root.
+Carry SOURCE through every phase, nested resolution and cold handoff. Use existing
+slug arguments (`context <source>`, `handoff <source> --resume`). Qid-only
+`state resolve` retains its argv: bind only that invocation's `DEVRITES_ROOT` and
+`DEVRITES_WORKSPACE` as above, never a fabricated resolver slug or process-global
+change. Early future work preserves ACTIVE and the retained controller.
+Standalone Spec still sets ACTIVE; `--lookahead` remains planning/Vet-only.
 Target binding changes neither phase approval nor Ship authority.
 
 ## Authority and admission
 
-Resolve one controlling root and ordered lifecycle owner. `.devrites/ACTIVE` stays
-on that owner until normal sequence handoff; scheduling a future slice does not
-advance ACTIVE or create a second Build root. One repository-global lease owns
-control-tip mutations. Resume its controller, source identities and retained
-handles before admitting more work; status queried via ACTIVE/source reports the
-actual retained controller even after ordered handoff. Another retained
-controller is not bypassable; no extra cursor pointer is needed.
+Keep ACTIVE on the ordered owner until normal handoff. One repository-global
+lease owns control-tip mutations; recover its controller, source identities and
+handles before more admission, including after handoff. No second Build root.
+`--parallel N` caps active writers globally: explicit N, else AFK `max_parallel`,
+else retained capacity on resume, else 10. One means one writer total. Review
+queues retain host/reviewer caps; capacity or Reslice never waives fanout or proof.
 
-The existing `--parallel N` is one global active-writer cap, not a target guarantee:
-explicit invocation value, else AFK `max_parallel`, else retained lease capacity
-on resume, else 10. Explicit 1 means one writer, not one writer per workspace.
-Review queues obey host capacity and existing reviewer caps separately; neither
-capacity nor a Reslice cap waiver waives required named-role fanout or proof gates.
+Only checked source-related sequence membership qualifies; user-mentioned or
+unrelated directories are not enrollment. Current canonical `roadmap.md` follows
+[the grammar](workspace-artifact-schema.md#what-each-file-owns): one related live/
+archived owner, actual chain root, same-owner unique decision and contiguous
+position table. It supersedes historical tables for scheduling without rewriting
+them. Invalid canonical authority fails closed; absence retains conservative
+legacy resolution. Honor opt-out, opening budgets and human bounds; charge each
+opening once. Lookahead claims retain artifacts through terminal reconciliation.
+Root alone writes workspace artifacts; leaves never write `.devrites/**`.
 
-Use the engine frontier below for recorded source-related sequence membership.
-Honor `continue_sequence: false`, opening budget and human bounded requests.
-Charge each opening once; reuse prepared children and their cursor.
-Unrelated directories or user-mentioned slugs are not automatic enrollment.
-Respect workspace claims: a live lookahead owner retains its artifacts until
-release/terminal reconciliation. Root alone writes workspace artifacts; leaves
-never write `.devrites/**`.
-
-For each future slice, native Plan/Vet must have CURRENT approved readiness,
-a complete bound contract and explicit `Workspace dependencies` under
-[canonical slice grammar](workspace-artifact-schema.md#canonical-slice-grammar).
-Plan/Vet checks assumptions, consumed interfaces, shared runtime resources and
-independent slice proof. `none` is a native declaration, never an inference from
-path disjointness, local `Dependencies: none`, planning digests or a green branch.
-Only durably BUILT/integrated producer checkpoints satisfy qualified dependencies;
-validate each producer reference and graph, including safely archived predecessors.
-Cycles, unknown/malformed references and shared unisolated runtime withhold unsafe
-candidates. A waiting producer withholds only its consumers, not unrelated work.
-
-Missing declarations in legacy future plans need narrow Plan repair + affected
-Vet before early admission; existing local/standalone plans remain valid. Absent,
-incomplete, stale or human-blocked future work is a planning/repair/blocked
-opportunity, not a fatal pool failure. Retain every readiness reason: fixing stale
-bindings does not waive a coexisting human/access/safety gate. Re-Vet affected
-predecessor assumptions, then record current bindings; never auto-refresh a digest.
-Read archived predecessors in place through the engine's referenced read-only
-readiness lookup. Never copy an archive into live `work/` merely to read/hash it:
-that can resurrect stale controller leases and claims.
+Native Plan/Vet must bind CURRENT readiness, contract, producer assumptions and
+explicit future `Workspace dependencies` per [slice grammar](workspace-artifact-schema.md#canonical-slice-grammar).
+`none` is a native declaration, not an inference from paths, local dependencies,
+digests or green branches. Only durable BUILT/integrated checkpoints satisfy
+validated producer references/graphs, including safely archived predecessors.
+Unknown references, cycles and shared unisolated runtime withhold unsafe slices;
+waiting producers withhold consumers, not independent work. Legacy future plans
+need narrow Plan repair/affected Vet; standalone/local plans retain their rules.
+Per-slice withheld diagnostics do not block other returned eligible IDs;
+workspace-wide readiness failures still withhold the source.
+Preserve coexisting stale-readiness and human/access/safety reasons. Re-Vet changed
+assumptions; never auto-refresh digests or copy archives into live `work/`.
 
 ## Recover avoidable serialization
 
@@ -108,66 +88,77 @@ reslicing unchanged work.
 
 ## Continuous global frontier
 
-Autocomplete executes this bounded pass at every phase entry (including cold
-Prove/Vet/Review), before phase-local recovery, on each landing/planning/review
-return, and immediately before a native wait or final reply. A nested phase
-returns scheduling to Autocomplete; its source-local phase/recovery return cursor
-and pending native reviewer handles remain intact. This is not a second phase
-controller or a persistent frontier artifact.
+Run this pass at phase entry, before local recovery/waits/reply, and after landing
+or planning changes. A persisted `dispatch return` emits fresh scheduling after
+locks release, even when later claim release fails: retain the nonzero failure
+and claim exclusion. Exact successful claim reconciliation also refreshes;
+rejected/unpersisted returns do not. Ordinary status stays read-only. Keep local
+return cursors and native handles: one controller, not another phase or queue.
 
-1. Run `devrites-engine frontier <source>` before local recovery or selection.
-   This read-only report names the related pool, preparation/repair actions and
-   blockers; it neither authorizes work nor changes the source's local cursor.
-   For `frontier-prepare` and `frontier-workspace` prepare/repair actions, execute
-   authorized native Spec → Clarify → Temper → Define/Plan → affected Vet now,
-   not after owner Seal. Check source gates, claims and planning/Build restrictions.
-   For `frontier-review-sequence`, read the named approved roadmap/artifacts:
-   native authority normalization must record the exact continuation through its
-   owning decision/phase before rerunning frontier. Ambiguous legacy prose,
-   positive remaining budget and path disjointness never imply permission.
-   Retain unresolved authority blockers; continue independent authorized work.
-   Owner-local red/human/access gates withhold that owner and actual consumers;
-   whole-run safety/access/claim constraints still bind. Record actions/blockers
-   in existing source artifacts under normal write authority.
-   Yield children at pending reviewer/phase boundaries; reconcile available
-   parent returns before another pass. Reporting actions or reading phase skills
-   is not executing preparation/Vet. Wait only after authorized actions across
-   the pool have run or reached concrete pending handles/blockers.
-2. Reconcile explicit/AFK capacity changes with
-   `parallel add --root <repo> --slug <controller> --cap N --json -`, stdin `[]`.
-   This changes capacity only. Below active count, pause admissions, drain and
-   retry; never cancel workers to meet a lower cap. Recover a pending recorded
-   landing before admission; unrelated HEAD/ref movement remains blocked.
-   Rerun frontier after preparation/repair or capacity changes. Execute returned
-   `frontier-select-command` with only authorized live `--workspaces`: this exact
-   candidate list includes the `--slug` controller only when eligible. This is
-   internal, not a new user flag. `frontier: none` retains source-local routing.
-   Source-local `parallel select --from-plan` notices neither select globally nor
-   expand picks. Route notices to their source; running slots/paths seed mixed
-   selection globally. Zero picks with live writers means continue planning/review
-   or wait, not Prove for unfinished sources.
-3. Preflight selected slices against their SOURCE workspace with Build's normal
-   slice/readiness/precondition, exact-path and runtime-isolation gates. Early
-   foreign Build always uses isolated workers. For cap>1 on a capable host,
-   isolate even the first lone local writer, so later sources can refill. Persist
-   `--cap N` on create/add. With a retained lease, add even one pick; a complete
-   retained lease can reopen only at unchanged control tip. After cleanup,
-   create a new batch from current control. Never start another controller.
-   Unsupported isolation uses truthful serial owner dispatch and ordinary ordered
-   handoff, never early same-tree foreign Build or concurrent same-worktree writers.
-4. Launch every selected native writer before waiting on any; keep scheduling
-   planning and independent review while they run, including while the owner
-   awaits Prove/Vet/Review accounts. Apply the protected window below before any
-   landing: defer control mutations while frozen validation is pending. Outside
-   that window, land each individually green sibling through Build review/proof
-   and `parallel integrate --slice <key>`; refill immediately from the whole pool.
-   A red or `integrate-failed` sibling retains its slot/paths for repair; it does
-   not halt independent safe landings/refill. A pending landing intent still
-   requires exact recovery above. Only durable integration satisfies producer edges.
-   After worker-bound review/proof and source bookkeeping finish, prune only
-   verified clean integrated checkouts with `parallel prune --root <repo>
-   --slug <controller>`. Retain transfer refs/lease identities; dirty or ignored
-   data stays with its reported recovery path and does not justify forced deletion.
+1. Read `devrites-engine frontier <source>`, then its selected `frontier-authority`
+   paths before preparation. Follow the actual owner/decision, including archives;
+   local phase context is not a reason to create a second owner. Execute native actions.
+   Normalize unresolved legacy sequence authority through its owning decision/
+   phase. Positive budget, ambiguous prose or path disjointness grants nothing.
+   A current invalid canonical map is an error, never a fallback to history.
+   For controller mode at cap>1, before a new Build-wright wave writes claims,
+   rounds or history, start preparation of that source's immediate recorded
+   successor. Missing targets need native Spec → Clarify → Temper → Define/Plan →
+   affected Vet; existing targets need completed native state, actual pending
+   planning/review handles, current Build-ready binding, or a human/dependency hold.
+   Completed live/archived successors need no reopening; retained actors still bind.
+   A placeholder, prose claim, unopened wave or unrelated reviewer is insufficient.
+   Pipeline one successor per admitted source; preparing the whole roadmap first
+   is unnecessary. Opt-out, zero opening budget or source human/question holds
+   prevent new openings, not already-created child planning or independent work.
+   If preparation cannot start, retain `frontier-blocked: <successor> — <constraint>`
+   in source `evidence.md`. `frontier-blocked: sequence — <constraint>` may defer
+   unresolved historical normalization for valid independent local work. Each row
+   names one concrete native-reviewed constraint; keep it visible and revisit on
+   change. It discharges only that scheduling obligation, not readiness, malformed
+   canonical/AFK data, paths, claims, isolation, proof or human gates. It cannot
+   waive already-ready foreign picks or certify preparation/normalization.
+2. Reconcile explicit/AFK capacity via `parallel add --root <repo> --slug
+   <controller> --cap N --json -`, stdin `[]`. Below occupied count, freeze every
+   new launch, even reserved waves; reconcile/drain and retry without cancelling.
+   Recover recorded landing intent; unrelated HEAD/ref movement
+   stays blocked. Rerun frontier after changes and execute its exact authorized
+   `frontier-select-command`. Local select notices do not broaden picks. Existing
+   global slots and paths seed selection; reserve the mixed cohort in create/add
+   before separate source-local wave opens. Reservations assemble width, never
+   prove actor checkout/start. Ready foreign picks cannot disappear behind local
+   `serial:` records. A foreign deferral is exactly
+   `serial: child/SLICE-001 — <reason>` in source evidence; bare `SLICE-001` is local.
+   Substantive-reason rules apply; native workflow judges the constraint.
+   Re-evaluate owning serial rows when constraints change; engine checks exact
+   scope, not the truth of a host/resource claim.
+   Discharged deferrals are not repeatedly actionable. Foreign work/preparation
+   and authority normalization precede local Build; local-only reconciliation,
+   repair and picks retain their owning phase, not recursive Autocomplete.
+   Zero picks with live writers means planning/wait, not premature Prove.
+3. Apply SOURCE Build readiness/preconditions, exact paths and runtime isolation.
+   Early foreign Build always uses isolated workers. On a capable host at cap>1,
+   isolate even the first local writer for later refill; persist `--cap N`.
+   Add one pick to a retained lease; reopen a complete lease only at unchanged
+   control tip, or create from current control after cleanup. Unsupported
+   isolation uses qualified serial deferral, truthful local-owner dispatch and
+   ordinary ordered handoff, never early same-tree foreign/concurrent writers.
+   New dispatch accounts retain opaque `controller_batch` and immutable per-slice
+   normalized `admitted_paths`. Retain only each pending writer's lane; returned/
+   integrated siblings may release slots for rolling refill. Missing snapshots or
+   changed lease paths require actor reconciliation, never backfill from new tasks.
+   Exact claim identity/session still matters; release/expiry does not stop an actor.
+   Same-session claims allocate space, not extra write authority. None of these
+   records proves actual cwd/profile: verify through the native host.
+4. Start every selected native writer before waiting; continue independent native
+   planning/review while they run. Protected validation defers unsafe landings,
+   not independent preparation. Outside that window, land individually green
+   siblings through Build review/proof and `parallel integrate --slice <key>`;
+   refill globally. Red/integrate-failed siblings keep slots/paths for repair.
+   Durable integration alone satisfies producer edges. After worker-bound
+   accounts and source bookkeeping settle, `parallel prune --root <repo> --slug
+   <controller>` removes only verified clean integrated checkouts, retaining
+   transfer refs/lease identities. Dirty/ignored data keeps its recovery path.
 
 ## Identity, dispatch and proof
 

@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -241,6 +240,10 @@ func frontierQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", "'
 
 // FrontierLines reports structural obligations, never semantic authorization or Ship approval.
 func FrontierLines(root, slug string) ([]string, error) {
+	mode, err := autocompleteMode(root)
+	if err != nil {
+		return nil, err
+	}
 	if slug == "" {
 		var err error
 		slug, err = devritespaths.ActiveSlug(root)
@@ -248,11 +251,13 @@ func FrontierLines(root, slug string) ([]string, error) {
 			return nil, err
 		}
 	}
+	workspaceOverride := ""
 	if slug != "" {
 		if !devritespaths.ValidSlug(slug) {
 			return nil, fmt.Errorf("invalid source slug")
 		}
-		if _, err := devritespaths.WorkspaceOverrideChecked(root, slug); err != nil {
+		workspaceOverride, err = devritespaths.WorkspaceOverrideChecked(root, slug)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -288,44 +293,21 @@ func FrontierLines(root, slug string) ([]string, error) {
 	}
 	chain, chainErr := frontierChain(nodes, slug)
 	if chainErr != nil {
-		return []string{"frontier: blocked", "frontier-source: " + slug, fmt.Sprintf("frontier-workspace: %s location=%s action=repair reason=%s", slug, source.location, chainErr)}, nil
-	}
-	anchor := chain[len(chain)-1]
-	related := map[string]bool{anchor: true}
-	for range maxSequenceChain {
-		changed := false
-		for name, n := range nodes {
-			if related[n.parent] && !related[name] {
-				related[name] = true
-				changed = true
-			}
+		location := "work"
+		if source.location == "archive" {
+			location = "archive"
 		}
-		if !changed {
-			break
-		}
+		artifact := filepath.Join(root, location, slug, "state.md")
+		return []string{
+			"frontier: blocked", "frontier-source: " + slug,
+			fmt.Sprintf("frontier-workspace: %s location=%s action=repair reason=%s", slug, source.location, chainErr),
+			"frontier-review-sequence: " + artifact + " reason=native authority-normalization required: " + chainErr.Error(),
+		}, nil
 	}
+	ordered, related := frontierRelated(nodes, chain)
 	if len(related) == 1 && source.parent == "" && !source.hasPosition && !source.hasRemaining && frontierSpecTarget(source) == "" {
 		return []string{"frontier: none"}, nil
 	}
-	ordered := make([]string, 0, len(related))
-	for name := range related {
-		ordered = append(ordered, name)
-	}
-	depth := make(map[string]int, len(ordered))
-	for _, name := range ordered {
-		chain, _ := frontierChain(nodes, name)
-		depth[name] = len(chain)
-	}
-	sort.Slice(ordered, func(i, j int) bool {
-		a, b := nodes[ordered[i]], nodes[ordered[j]]
-		if depth[a.slug] != depth[b.slug] {
-			return depth[a.slug] < depth[b.slug]
-		}
-		if a.position != b.position {
-			return a.position < b.position
-		}
-		return a.slug < b.slug
-	})
 	controller := ""
 	for _, name := range ordered {
 		if nodes[name].location == "live" {
@@ -350,6 +332,9 @@ func FrontierLines(root, slug string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if workspaceOverride != "" {
+		allowFuture = false
+	}
 	if lease != nil && lease.Capacity > 0 && capN > lease.Capacity {
 		capN = lease.Capacity
 	}
@@ -364,11 +349,30 @@ func FrontierLines(root, slug string) ([]string, error) {
 	if source.hasRemaining && source.remaining == 0 {
 		allowFuture = false
 	}
-	maps, artifacts, mapProblem := frontierRoadmap(nodes, ordered)
-	if mapProblem != "" {
-		lines = append(lines, "frontier-review-sequence: "+strings.Join(artifacts, ",")+" reason=native authority-normalization required: "+mapProblem)
-		blocked = true
+	maps, artifacts, mapProblem, invalidCanonical := frontierRoadmap(nodes, ordered)
+	if invalidCanonical {
+		return []string{"frontier: blocked", "frontier-source: " + slug, "frontier-review-sequence: " + strings.Join(artifacts, ",") + " reason=native authority-normalization required: invalid canonical authority: " + mapProblem}, nil
 	}
+	if len(maps) > 0 && mapProblem == "" {
+		lines = append(lines, "frontier-authority: "+strings.Join(artifacts, ","))
+	}
+	records := frontierRecords{}
+	if mode {
+		records, err = frontierEvidence(root, slug)
+		if err != nil {
+			return nil, err
+		}
+	}
+	sequenceDeferred := mode && records.blocked["sequence"] != ""
+	if mapProblem != "" {
+		if sequenceDeferred {
+			lines = append(lines, "frontier-blocked: sequence — "+records.blocked["sequence"]+"; scheduling deferred, not normalized")
+		} else {
+			lines = append(lines, "frontier-review-sequence: "+strings.Join(artifacts, ",")+" reason=native authority-normalization required: "+mapProblem)
+			blocked = true
+		}
+	}
+	deferred := map[string]string{}
 	prepared := map[string]bool{}
 	for _, name := range ordered {
 		n := nodes[name]
@@ -386,15 +390,21 @@ func FrontierLines(root, slug string) ([]string, error) {
 			if err != nil {
 				action, reason, n.selectionHeld = "repair", err.Error(), true
 			}
+			if mode && action == "prepare" && deferred[name] != "" {
+				action, reason, n.selectionHeld = "wait", "frontier-blocked: "+name+" — "+deferred[name], true
+			}
 			if !n.selectionHeld {
 				live = append(live, name)
 			}
-			held = action == "blocked" || err != nil
+			held = action == "blocked" || err != nil || mode && action == "wait" && deferred[name] != ""
 			switch action {
 			case "inspect", "prepare", "repair":
 				actionable = true
 			case "wait":
 				waiting = true
+			case "no-cursor":
+				blocked = true
+				action = "wait"
 			case "blocked":
 				blocked = true
 				action = "wait"
@@ -409,7 +419,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 			target = maps[n.position+1]
 		}
 		if mapProblem != "" {
-			if target != "" || n.hasRemaining && n.remaining > 0 {
+			if !sequenceDeferred && (target != "" || n.hasRemaining && n.remaining > 0) {
 				actionable = true
 			}
 			continue
@@ -429,6 +439,20 @@ func FrontierLines(root, slug string) ([]string, error) {
 			actionable, blocked = true, true
 			continue
 		}
+		if mode && target != "" {
+			sourceRecords := records
+			if name != slug {
+				sourceRecords, err = frontierEvidence(root, name)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if reason := sourceRecords.blocked[target]; reason != "" {
+				deferred[target] = reason
+				lines = append(lines, "frontier-blocked: "+target+" source="+name+" — "+reason+"; preparation deferred, not approved")
+				continue
+			}
+		}
 		if target != "" && nodes[target] == nil && !prepared[target] {
 			prepared[target] = true
 			// A table identifies a preparation obligation, not approval to implement it.
@@ -438,6 +462,23 @@ func FrontierLines(root, slug string) ([]string, error) {
 			lines = append(lines, "frontier-review-sequence: "+strings.Join(artifacts, ",")+" source="+name+" reason=remaining work unresolved; native authority-normalization required")
 			actionable, blocked = true, true
 		}
+	}
+	if mode {
+		filtered := candidates[:0]
+		for _, candidate := range candidates {
+			workspace := candidate.Workspace
+			if workspace == "" {
+				workspace = controller
+			}
+			if workspace != slug {
+				if reason := frontierSerialReason(records, slug, workspace, candidate.ID); reason != "" {
+					lines = append(lines, "frontier-serial: "+workspace+"/"+candidate.ID+" — "+reason+"; ordered handoff retained")
+					continue
+				}
+			}
+			filtered = append(filtered, candidate)
+		}
+		candidates = filtered
 	}
 	if controller != "" && controllerProblem == "" && len(live) > 0 {
 		lines = append(lines, fmt.Sprintf("frontier-select-command: devrites-engine parallel select --root %s --slug %s --from-plan --workspaces %s --cap %d", frontierQuote(filepath.Dir(root)), frontierQuote(controller), frontierQuote(strings.Join(live, ",")), capN))
@@ -638,12 +679,22 @@ func frontierLocal(root, controller string, n *frontierWorkspace, candidates *[]
 		n.selectionHeld = true
 		return "wait", "Ship requires existing native authority; controller invocation is not approval", nil
 	}
+	if n.next == "" {
+		// Missing local work is not a hold on independently recorded preparation.
+		n.selectionHeld = true
+		return "no-cursor", "no actionable native internal cursor; review state without inventing authority", nil
+	}
 	return "blocked", "no actionable native internal cursor; review state without inventing authority", nil
 }
 
-// Only exact position/slug or position/workspace tables are structural authority.
-// Different maps require native normalization, even if prose claims one supersedes another.
-func frontierRoadmap(nodes map[string]*frontierWorkspace, ordered []string) (map[int]string, []string, string) {
+// Current canonical authority supersedes historical tables without rewriting them.
+// Without it, differing exact legacy maps require native normalization.
+func frontierRoadmap(nodes map[string]*frontierWorkspace, ordered []string) (map[int]string, []string, string, bool) {
+	if mapping, artifacts, err := frontierCanonicalRoadmap(nodes, ordered); err != nil {
+		return nil, artifacts, err.Error(), true
+	} else if mapping != nil {
+		return mapping, artifacts, "", false
+	}
 	result := map[int]string{}
 	var artifacts []string
 	problem := ""
@@ -743,7 +794,7 @@ func frontierRoadmap(nodes map[string]*frontierWorkspace, ordered []string) (map
 			artifacts = append(artifacts, filepath.Join(nodes[slug].dir, "state.md"))
 		}
 	}
-	return result, artifacts, problem
+	return result, artifacts, problem, false
 }
 
 func frontierCells(line string) []string {
@@ -782,6 +833,12 @@ func frontierBoundSpec(root, slug, action string) bool {
 	if err != nil {
 		return false
 	}
+	ordered, _ := frontierRelated(nodes, chain)
+	mapping, _, problem, invalidCanonical := frontierRoadmap(nodes, ordered)
+	if invalidCanonical {
+		return false
+	}
+	// Existing checked children remain resumable under ambiguous historical maps.
 	if child := nodes[target]; child != nil {
 		if child.parent != slug {
 			return false
@@ -791,7 +848,6 @@ func frontierBoundSpec(root, slug, action string) bool {
 		}
 		return true
 	}
-	mapping, _, problem := frontierRoadmap(nodes, chain)
 	if problem != "" || n.hasPosition && mapping[n.position+1] != "" && mapping[n.position+1] != target {
 		return false
 	}

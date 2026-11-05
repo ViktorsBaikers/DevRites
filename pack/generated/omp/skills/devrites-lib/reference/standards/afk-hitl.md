@@ -51,6 +51,7 @@ time. No `state.md` run-mode field can drift out of sync.
 Presence = AFK active. The file body is optional YAML:
 
 ```yaml
+mode: autocomplete # optional controller identity; absent = standalone AFK
 max_slices: 10 # whole-workspace writer budget; seeds state.md remaining count
 max_agents: 32                       # native agent dispatches in one host activation
 max_minutes: 120                     # min; /rite-autocomplete: not a ceiling
@@ -61,10 +62,13 @@ notify: 'curl -fsS -m 10 -d "$DEVRITES_QID: $DEVRITES_QUESTION" ntfy.sh/my-topic
 allow_gates: [advisory, validating]  # gate severities AFK auto-handles (auto-picks the recommended option)
 continue_sequence: true              # after Seal GO, open the next recorded continuation
 max_workspaces: 5                    # workspaces one armed sequence may open
-max_parallel: 10 # unattended default cap; `--parallel N` on this invocation wins and may rewrite only this field
+max_parallel: 10 # global writer cap; explicit --parallel N wins
 ```
 
-The file is **read-only config**: never rewritten in place, except `/rite-autocomplete --parallel N` writes or replaces only `max_parallel: N`.
+AFK is read-only after entry. Explicit `/rite-autocomplete` upserts only
+`mode: autocomplete` and, with `--parallel N`, `max_parallel: N`; preserve other
+fields. Missing mode keeps standalone behavior; invalid/duplicate mode fails
+closed. Mode identifies scheduling, never grants phase, safety or Git authority.
 
 Outside active `/rite-autocomplete`, the following slice-budget rules apply:
 `max_slices` seeds root-owned `state.md` cursor `afk_slices_remaining`
@@ -103,10 +107,9 @@ malformed values fail closed; `0` opens nothing.
 candidate manifest to cover the whole recorded chain — run
 `devrites-engine state merge-manifest <slug>` before Prove.
 
-- Only continuations recorded in the parent's `decisions.md` sequence
-  ([slicing.md § Continuation workspaces](skill://rite-plan/reference/slicing.md#continuation-workspaces))
-  qualify; no next entry or exhausted `max_workspaces` stops with that reason. The review-queue bound applies only outside active
-  `/rite-autocomplete`.
+- Only checked recorded continuations qualify, under the
+  [sequence grammar](skill://devrites-lib/reference/workspace-artifact-schema.md#what-each-file-owns).
+  No next entry or opening budget stops new openings, not existing child work.
 - Milestones are **not** shipped: they stay sealed and unarchived in `.devrites/work/`
   with `Next step: /rite-ship` preserved. Local `WIP(<slug>):` checkpoints still
   land ([checkpoint.md](skill://rite-build/reference/checkpoint.md)), so the tree
@@ -118,15 +121,13 @@ candidate manifest to cover the whole recorded chain — run
   `/rite-autocomplete` recovers agent-owned Seal `NO-GO` per
   [stop-conditions.md](skill://rite-autocomplete/reference/stop-conditions.md), not a handoff.
 
-`max_parallel` is the unattended default writer cap when this invocation omits
-`--parallel N`; explicit N wins and Autocomplete writes/replaces only that field.
-Build's explicit flag wins without rewriting the sentinel. Never write
-`max_slices` from `--max-slices`. Autocomplete uses one cap across all authorized
-sources, including explicit 1, under the shared root-only
-[`workspace controller`](skill://devrites-lib/reference/parallel-workspaces.md); standalone Build stays local.
-Unattended runs recompute after each landing and planning/review return, not only
-after a batch completes. **Failing case:** `/rite-autocomplete --parallel 5`
-honors leftover `max_parallel: 1`, or grants five writers per workspace.
+`--parallel N` wins over AFK `max_parallel`, else retained lease capacity on
+resume, else 10. Build's flag never rewrites AFK; explicit controller entry may
+update only mode/capacity. One cap covers all admitted sources, even explicit 1;
+standalone Build stays local. Follow the [global pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
+for immediate-successor preparation, narrow `frontier-blocked` deferrals,
+qualified foreign `serial:` handoff and automatic dispatch-return scheduling.
+These are scheduling disclosures, never readiness, isolation, proof or Ship waivers.
 
 ## Unattended resource envelope
 
@@ -157,8 +158,8 @@ applicable remaining limit. Agent/time/token/cost counters are per native activa
 for a new activation. Slice/recovery state and review queue remain durable/recomputed across wakes.
 Persist stops/checkpoints before notification.
 
-New sentinels omit `expires_at` and notification/token/cost caps. Post-Vet pending
-count may lower standalone slices. Never add missing defaults to existing files.
+Fresh AFK omits expiry and notification/token/cost caps. Standalone post-Vet
+counts may lower slices; preserve existing fields except controller entry above.
 
 Delete the file to restore HITL on the next invocation.
 

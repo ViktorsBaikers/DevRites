@@ -1,10 +1,9 @@
 # Workspace artifact schema
 
 Feature truth: `.devrites/work/<slug>/`, discovered by `state.md`; remnants/archives
-are inactive. Spec writes optional `README.md`. Use canonical filenames; both released
-cursor forms remain readable, but a cursor with no `schema` row needs
-`devrites-engine migrate <slug>` before the engine accepts it. `/rite-upgrade` audits
-without path/alias/format migration.
+inactive. Spec's `README.md` is optional. Use canonical filenames. Both released
+cursors read; no `schema` requires `devrites-engine migrate <slug>`.
+`/rite-upgrade`: audit only, no path/alias/format migration.
 
 ## Contents
 
@@ -59,6 +58,7 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | `visual/<name>.outline.md` | required machine dual-read companion for the sibling HTML; outline wins on conflict; never a candidate path | 200 lines (advisory; not gate-checked) |
 | `visual/README.md` | optional index of visuals in the workspace | 80 lines (advisory; not gate-checked) |
 | `decisions.md` | ADR-style `DEC-###` log: status, context, options, decision, consequences, related IDs; optional `Files:`/`Tags:` fields make entries queryable by path or theme; Build's `## Carry-forward constraints` lines (rule, source slice, evidence, `Files:`) | 200 lines |
+| `roadmap.md` | optional sequence authority (below); headerless maps stay legacy | — |
 | `assumptions.md` | assumptions with confidence, owner, validation status | 160 lines |
 | `questions.md` | current `q-YYYY-MM-DD-NNN` (or released `Q-###`) open/resolved questions, gate, answer, impact | 180 lines |
 | `plan.md` | technical approach, slice strategy, canonical shared-contract proof, validation strategy, rollback | 220 lines |
@@ -84,6 +84,17 @@ accept safe legacy basenames. Ordinary phases never rename them.
 
 For visual pairs load only matching [playbooks](visual-playbooks/index.md); use
 the [required outline headings](visual-playbooks/outline-template.md).
+
+Canonical `roadmap.md`: either header claims explicit authority; require both
+`Sequence root: <actual-anchor-slug>` and `Decision: DEC-NNN`, identifying one
+`## DEC-NNN` in owner-local `decisions.md`. One related live/archive owner, one
+`Position`/`Workspace` table: contiguous from 1, unique valid slugs matching all
+related positions/exact successors; no unenrolled nodes. Valid authority supersedes
+history for scheduling; preserve historical bytes. Headerless maps remain legacy.
+Partial/malformed headers, multiple owners, invalid root/decision/table, symlink
+or unreadable maps fail closed, no fallback. Native normalization records approved
+actual identities, preserves history. Engine identity checks grant no semantic
+approval, independence, Build or Ship readiness.
 
 ## Candidate manifest and bindings
 
@@ -141,40 +152,32 @@ The worktree digest is deterministic but is not an atomic filesystem snapshot
 against a malicious concurrent same-size rewrite. Ship's exact Git-index scope,
 byte, binding, and secret checks own the final freeze immediately before commit.
 
-Only a structural `Budget override: <=N lines; <reason>` line (not a fenced example)
-permits excess, up to N lines and N×400 bytes with N at most 2× the line budget; a
-reason-only override counts as none. Each line budget also bounds bytes at 400 bytes
-per budgeted line (`state.md` 120 lines → 48 KiB); long lines do not evade it. `orient`
-reports `artifact_budgets` (lines/bytes/over/override) and `bulk_files` (non-canonical
-files over 64 KiB) so a phase can decide what to read before loading; phase writers
-check these limits before returning, with no repository-local script assumption.
+Only structural `Budget override: <=N lines; <reason>` outside fences permits N
+lines/N×400 bytes, N ≤ 2× budget. Reason-only overrides count as none. Budgets:
+400 bytes/line (`state.md`: 120 lines/48 KiB); long lines cannot evade them.
+`orient`: `artifact_budgets` (lines/bytes/over/override), `bulk_files` (non-canonical
+files >64 KiB). Writers check limits before returning; no local script assumed.
 
-`check readiness`, `check seal` and `state append` enforce the material band: any present
-budgeted artifact (required or not, `drift.md` included) at or above 1.5× its line or
-byte budget with no covering override blocks with the exact measurement and three legal
-remedies (relocate history losslessly via `/rite-plan revise`, split via `/rite-plan
-course-correct`, or record the bounded override). Past 2× only relocation or split remain.
-Overshoot below that band stays advisory and is reported by `orient`. Proof ledgers
-(`evidence.md`, `browser-evidence.md`, `touched-files.md`) are always advisory: they
-scale with proof volume, and `touched-files.md` keeps its own manifest limits.
-Because they are never gate-blocked they are also the only artifacts that can grow
-unboundedly — so phases read them by index, not whole-file: the standalone binding
-line, a `EVID-###`/section-header index (`grep -n`), then bodies only for entries
-naming this candidate's AC/slice IDs. An entry naming no in-scope ID is anomaly
-evidence to inspect, not skip. A whole-file read is allowed only when `orient`
-reports the artifact within budget; completeness for seal is engine-checked
-(literal `AC-###` presence), the reader judges quality.
+`check readiness`/`check seal`/`state append` block present budgeted artifacts
+(optional/`drift.md` included) at ≥1.5× lines or bytes without covering override.
+Report exact measurement and remedies: lossless relocation (`/rite-plan revise`),
+split (`/rite-plan course-correct`), bounded override. Past 2×: relocation/split
+only; below 1.5×: advisory in `orient`.
+Proof ledgers (`evidence.md`, `browser-evidence.md`, `touched-files.md`) alone may
+grow unbounded, always advisory; manifest limits still apply. Read standalone
+binding, `EVID-###`/section index (`grep -n`), then candidate AC/slice bodies.
+Inspect no-in-scope-ID entries as anomalies. Whole-file reads require `orient`
+within budget; Seal checks literal `AC-###` completeness, reader judges quality.
 
-Two reasons are not durable fixes: slice or acceptance-criteria count (an over-budget
-`tasks.md`/`plan.md`/`traceability.md` from decomposition size is a
-[feature-sequence split](skill://rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget)),
-and history in `state.md` (checkpoint narrative moves verbatim to
-`history/<file>-<YYYYMMDD>.md`, append-only, never a phase read-next, with a one-line
-pointer left behind). A legacy reason-only `Budget override:` line no longer clears a
-gate; `/rite-upgrade` routes it to relocation or the split, and new writers never create one for those two reasons.
-Apply [[`context-hygiene.md`](standards/context-hygiene.md) dispatch packets](standards/context-hygiene.md#dispatch-packets)
-for byte-size checks and lossless retrieval; budget overrides neither rewrite protected
-history nor require loading it all.
+Slice/AC count and cursor history never justify durable overrides. Decomposition
+overflow (`tasks.md`/`plan.md`/`traceability.md`) requires a
+[feature-sequence split](skill://rite-plan/reference/slicing.md#feature-ceiling-split-an-epic-never-override-the-budget).
+Move `state.md` narrative verbatim to append-only `history/<file>-<YYYYMMDD>.md`;
+leave a one-line pointer; history never enters phase read-next. Legacy reason-only
+overrides cannot clear gates: `/rite-upgrade` routes relocation/split; new writers
+never override these reasons. Use
+[dispatch packets](standards/context-hygiene.md#dispatch-packets)
+for byte checks/lossless retrieval. Overrides neither rewrite nor require loading protected history.
 
 ## Anchored notes
 

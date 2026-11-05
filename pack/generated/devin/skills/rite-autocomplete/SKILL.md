@@ -85,48 +85,43 @@ With `--lookahead` (trigger `lookahead`), follow
 [`lookahead.md`](reference/lookahead.md) instead of the steps below: plan the
 next sequence continuation through Vet in a second session, then stop.
 
-1. **Orient and parse.** Resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding); when a workspace exists,
-   require its `state.md` and read its cursor; a fresh idea starts empty at step 2.
-   After normalizing arguments below, run `devrites-engine frontier <source>`
-   before phase-local cold recovery; execute its actions under the shared
-   [global frontier pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
-   Before honoring `blocked` with terminal `next_action`,
-   reconcile retained consumptive evidence and fingerprint attempts from
-   `drift.md`/`evidence.md`; a retained fingerprint below its cap resumes offline
-   recovery, and this new invocation reopens each parked fingerprint.
+1. **Orient and parse.** Resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding).
+   Read its existing cursor; a fresh idea starts empty at step 2. Normalize this
+   invocation to idea, `ship_preflight: yes|no`, `max_slices: unlimited`,
+   `parallel: N|default`, `profile: standard|full`, `cross_model: yes|no`.
+   Apply the loop's [AFK contract](reference/loop.md#arm-afk-once) to an existing
+   sentinel: upsert `mode: autocomplete`, plus capacity only for explicit
+   `--parallel N`. Mode identifies this controller, never grants authority.
+   Run `devrites-engine frontier <source>` before local recovery; execute the
+   [global pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
+   Reconcile blocked/terminal cursors against retained action evidence and exact
+   fingerprint attempts; resume offline recovery below its cap. This explicit
+   invocation reopens parked fingerprints. Reconstruct missing return cursors
+   only from the current phase and approved `test-plan.md`/evidence action.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"lifecycle cursor encounters admitted set or resumable journal","action":"invoke classifier; execute returned route internally","return":"saved phase/action; zero intermediate reply"} -->
-   Reconstruct a missing return cursor only from
-   the current phase and exact approved action in `test-plan.md`/evidence, never
-   from chat. After compaction or a resumed session, always run `devrites-engine
-   handoff <source> --resume` first for that selected source and open only the
-   `read_next` artifacts it names, per [`context-hygiene.md`](../devrites-lib/reference/standards/context-hygiene.md) § Compaction fallback.
-   Normalize current arguments to idea, `ship_preflight: yes|no`,
-   `max_slices: unlimited`, `parallel: N|default`, `profile: standard|full`,
-   and `cross_model: yes|no`.
-   **Completion:** arguments and source authority are unambiguous; local cursor and pending handles remain intact.
+   After compaction/resume, run `devrites-engine handoff <source> --resume`
+   and open its `read_next` artifacts per [context hygiene](../devrites-lib/reference/standards/context-hygiene.md).
+   **Completion:** arguments/source are unambiguous; local cursor and handles survive.
 2. **Specify and clarify.** Run `devrites-interview`, `/rite-spec`, and
    `/rite-clarify` as one window. `open` material coverage never arms
    AFK. **Completion:** `Decision coverage: CLEAR` is durable.
-3. **Arm AFK once.** Apply the loop's
-   [one-write AFK contract](reference/loop.md#arm-afk-once): preserve valid
-   existing bytes or create the sentinel once (`allow_gates: [advisory, validating]`); never
-   rewrite it after Vet except to write or replace only `max_parallel: N` when
-   this invocation contains `--parallel N`. Preserve an existing sentinel
-   byte-for-byte otherwise. **Failing case:** leftover `max_parallel: 1` keeps
-   the run serial after `--parallel 5`.
-   **Completion:** a valid read-only AFK sentinel exists.
-4. **Drive phases.** Follow [the loop](reference/loop.md): `/rite-spec` →
-   `/rite-clarify` → `/rite-temper` → `/rite-define` → `/rite-vet` →
-   `/rite-build` batch loop → `/rite-prove` → `/rite-polish` →
-   `/rite-review` → `/rite-seal`. Read and execute each skill; durable files, not
-   chat, carry state. Apply the mutable post-vet budget before first Build.
-   Run `devrites-engine frontier <source>` at phase entry, before recovery,
-   on returns and before native waits; execute the shared
-   [global frontier pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier),
-   not merely its report. Autocomplete retains repository scheduling and local
-   cursors. Apply its protected validation window and pass resolved `--parallel N`
-   to Build under the same global cap and admission/isolation gates.
-   **Completion:** loop reaches Seal GO or persists a valid stop before any later phase.
+3. **Arm AFK once.** Apply the [one-write AFK contract](reference/loop.md#arm-afk-once):
+   create only after clarity; explicit controller entry upserts
+   `mode: autocomplete` and, only with `--parallel N`, `max_parallel: N`.
+   Preserve all other fields; reject malformed/duplicate mode rather than
+   silently becoming standalone AFK. **Completion:** valid controller identity
+   and capacity are durable; no gate or Git authority changed.
+   **Failing case:** leftover `max_parallel: 1` after explicit `--parallel 5`.
+4. **Drive phases.** Execute [the loop](reference/loop.md): Spec → Clarify →
+   Temper → Define → Vet → Build → Prove → Polish → Review → Seal. Durable files
+   carry state. Apply the mutable post-vet budget before Build. Consume fresh scheduling
+   emitted by recorded `dispatch return`; rerun frontier after further changes
+   and before waits. Start actual immediate-successor preparation before local
+   writer admission, or disclose the narrow deferral in the shared global pass.
+   A placeholder or report is not preparation; the entire sequence need not be
+   prepared at once. Preserve local cursors and protected validation windows;
+   pass Build the resolved global cap and retain every admission/isolation gate.
+   **Completion:** Seal GO or a durable valid stop precedes later phases.
 5. **Apply stops.** At every gate use
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:
    route agent-owned red results through bounded recovery.
