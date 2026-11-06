@@ -117,11 +117,13 @@ next sequence continuation through Vet in a second session, then stop.
    Temper → Define → Vet → Build → Prove → Polish → Review → Seal. Durable files
    carry state. Apply the mutable post-vet budget before Build. Consume fresh scheduling
    emitted by recorded `dispatch return`; rerun frontier after further changes
-   and before waits. Start actual immediate-successor preparation before local
-   writer admission, or disclose the narrow deferral in the shared global pass.
-   A placeholder or report is not preparation; the entire sequence need not be
-   prepared at once. Preserve local cursors and protected validation windows;
-   pass Build the resolved global cap and retain every admission/isolation gate.
+   and before waits. Before ordinary local Temper/Define/Plan/Vet context/dispatch,
+   resolve sequence authority and start actual immediate-successor preparation
+   under [early admission](reference/loop.md#early-preparation-admission),
+   or retain the global pass's concrete deferral; keep the full Build gate.
+   Derive initial preparatory-only routing before any marked wave; do not recurse
+   through the roadmap. Preserve local cursors, protected validation windows and
+   every admission/isolation gate; pass Build the resolved global cap.
    **Completion:** Seal GO or a durable valid stop precedes later phases.
 5. **Apply stops.** At every gate use
    [stop-conditions.md](reference/stop-conditions.md). A `blocked` label alone is not a stop condition:

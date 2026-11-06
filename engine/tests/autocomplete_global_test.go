@@ -1,8 +1,10 @@
 package main_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -91,7 +93,7 @@ func TestAutocompleteGlobalCLIMissingFutureNeedsActualNativePlanning(t *testing.
 		t.Fatal("placeholder refusal changed workflow")
 	}
 	for _, command := range [][]string{
-		{"dispatch", "future17", "open", "--phase", "plan", "--wave", "prepare17", "--role", "plan-drafter"},
+		{"dispatch", "future17", "open", "--phase", "plan", "--wave", "prepare17", "--role", "plan-drafter", "--prepare-for", "current16"},
 		{"dispatch", "future17", "start", "--wave", "prepare17", "--role", "plan-drafter", "--handle", "native-planner17"},
 	} {
 		if out, errOut, code := runDevrites(t, root, command...); code != 0 {
@@ -106,16 +108,19 @@ func TestAutocompleteGlobalCLIMissingFutureNeedsActualNativePlanning(t *testing.
 	}
 	before = autocompleteCLISnapshot(t, root)
 	out, errOut, code = runDevrites(t, root, "check", "continuation", "current16")
-	for _, want := range []string{"continuation: required\n", "invoke: /rite-autocomplete\n", "current16 location=live action=wait", "frontier-prepare: /rite-spec 'future18' source=future17"} {
+	for _, want := range []string{"continuation: required\n", "invoke: /rite-build SLICE-001\n", "current16 location=live action=wait"} {
 		if code != 0 || !strings.Contains(out, want) {
-			t.Errorf("busy source hid independent next preparation; missing %q: code=%d out=%q err=%q", want, code, out, errOut)
+			t.Errorf("bounded preparation lost owning continuation; missing %q: code=%d out=%q err=%q", want, code, out, errOut)
 		}
+	}
+	if strings.Contains(out, "frontier-prepare: /rite-spec 'future18'") {
+		t.Fatalf("preparatory child recursively demanded future18: %s", out)
 	}
 	if !reflect.DeepEqual(before, autocompleteCLISnapshot(t, root)) {
 		t.Fatal("continuation changed source cursor or planning accounts")
 	}
 	out, errOut, code = runDevrites(t, root, "dispatch", "current16", "return", "--wave", "writer16", "--role", "slice-wright", "--handle", "native-writer16")
-	if code != 0 || !strings.Contains(out, "frontier-prepare: /rite-spec 'future18' source=future17") || strings.Count(out, "frontier-source: current16\n") != 1 {
+	if code != 0 || strings.Contains(out, "frontier-prepare: /rite-spec 'future18' source=future17") || strings.Count(out, "frontier-source: current16\n") != 1 {
 		t.Fatalf("actual return omitted fresh global scheduling: code=%d out=%q err=%q", code, out, errOut)
 	}
 	if release, frontier := strings.Index(out, "released claim"), strings.Index(out, "frontier:"); release < 0 || frontier <= release {
@@ -210,4 +215,62 @@ func TestAutocompleteGlobalCLITwoSourcesShareOneIsolatedController(t *testing.T)
 		t.Fatalf("second controller escaped repository cap: %d %q %q", code, out, errOut)
 	}
 	autocompleteCLIProductsUnchanged(t, project)
+}
+
+func TestAutocompleteGlobalCLITriggerReplayRetainsPreparationPurposeAndHostTree(t *testing.T) {
+	for _, purpose := range []string{"prepare-for", "sequence-research"} {
+		t.Run(purpose, func(t *testing.T) {
+			_, root, _ := autocompleteCLIFixture(t)
+			frontierCLIWorkspace(t, root, "future17", "| phase | temper |\n| status | running |\n| sequence_parent | current16 |\n| sequence_position | 2 |\n| sequence_workspaces_remaining | 1 |\n| next_action | /rite-temper future17 |\n", false)
+			role := "strategy-reviewer"
+			flags := []string{"--prepare-for", "current16"}
+			if purpose == "sequence-research" {
+				role = "evidence-scout"
+				flags = []string{"--sequence-research"}
+				testutil.WriteFile(t, filepath.Join(root, "work", "current16", "roadmap.md"), "Sequence root: current16\nDecision: DEC-017\n\n| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | future17 |\n| 2 | conflicting17 |\n")
+			}
+			skills := filepath.Join(t.TempDir(), "selected host's skills")
+			testutil.WriteFile(t, filepath.Join(skills, "devrites-lib", "reference", "standards", "core.md"), "# Selected host core\n")
+			testutil.WriteFile(t, filepath.Join(skills, "devrites-lib", "reference", "afk.md"), "# Selected host AFK rules\n")
+			testutil.WriteFile(t, filepath.Join(skills, "rite-temper", "SKILL.md"), "---\nname: rite-temper\n---\n<!-- loads: {\"always\":[\"devrites-lib/reference/standards/core.md\"],\"triggers\":{\"afk\":[\"devrites-lib/reference/afk.md\"]},\"workspace\":[\"state.md\"]} -->\n# Temper\n")
+			testutil.WriteFile(t, filepath.Join(skills, "..", "agents", "devrites-"+role+".md"), "# Native role\n")
+			args := append([]string{"context", "future17", "--phase", "temper", "--role", role, "--skills-root", skills}, flags...)
+			out, errOut, code := runDevrites(t, root, args...)
+			if code != 0 {
+				t.Fatalf("initial purpose context: %d %s%s", code, out, errOut)
+			}
+			command := ""
+			for _, line := range strings.Split(out, "\n") {
+				if strings.HasPrefix(line, "triggers: apply with: ") {
+					command = strings.TrimPrefix(line, "triggers: apply with: ")
+					break
+				}
+			}
+			if command == "" {
+				t.Fatalf("context omitted executable trigger suggestion:\n%s", out)
+			}
+			// Execute the CLI's shell suggestion verbatim: quoting the fixture's host-tree path is part of this contract.
+			cmd := exec.Command("bash")
+			cmd.Stdin = strings.NewReader("devrites-engine() { \"$ENGINE_TEST_BIN\" \"$@\"; };\n" + command + "\n")
+			cmd.Env = append(os.Environ(), "DEVRITES_ROOT="+root, "DEVRITES_WORKSPACE=", "ENGINE_TEST_BIN="+binPath, "HOME="+t.TempDir())
+			var replayOut, replayErr bytes.Buffer
+			cmd.Stdout, cmd.Stderr = &replayOut, &replayErr
+			if err := cmd.Run(); err != nil {
+				t.Fatalf("suggested command lost purpose or selected host tree: %v\ncommand: %s\n%s%s", err, command, &replayOut, &replayErr)
+			}
+			if !strings.Contains(replayOut.String(), "applied=[afk]") {
+				t.Fatalf("suggested command did not apply trigger:\n%s%s", &replayOut, &replayErr)
+			}
+			bundle, err := os.ReadFile(filepath.Join(root, "work", "future17", "ctx", "temper-"+role+".bundle.md"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(bundle), "# Selected host AFK rules") {
+				t.Fatalf("rerun did not use explicitly selected host rules:\n%s", bundle)
+			}
+			if _, err := os.Stat(filepath.Join(root, "work", "future17", "dispatch.json")); !os.IsNotExist(err) {
+				t.Fatalf("trigger replay created preparation account: %v", err)
+			}
+		})
+	}
 }

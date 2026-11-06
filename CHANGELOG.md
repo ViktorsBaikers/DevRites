@@ -53,6 +53,16 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 
 ### Fixed
 
+- Guard Autocomplete's early phase context and dispatch, not only Build writers,
+  against unstarted successor preparation. Keep normalization research reachable
+  and bound successor preparation before its first wave without recursively
+  requiring the rest of the roadmap.
+- Keep Clarify required when decision coverage is missing or empty despite an
+  empty question queue.
+- Preserve preparation intent and the selected host tree in suggested context
+  reruns; reject repeated parent flags before writes and retain settled history
+  without rebinding active preparation actors.
+
 - Give an explicitly identified Autocomplete controller structural writer-admission
   checks for actual successor preparation and source-qualified mixed reservations.
   Surface fresh global scheduling after returns and prioritize unresolved global

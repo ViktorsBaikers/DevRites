@@ -101,16 +101,18 @@ return cursors and native handles: one controller, not another phase or queue.
    Normalize unresolved legacy sequence authority through its owning decision/
    phase. Positive budget, ambiguous prose or path disjointness grants nothing.
    A current invalid canonical map is an error, never a fallback to history.
-   For controller mode at cap>1, before a new Build-wright wave writes claims,
-   rounds or history, start preparation of that source's immediate recorded
-   successor. Missing targets need native Spec → Clarify → Temper → Define/Plan →
-   affected Vet; existing targets need completed native state, actual pending
-   planning/review handles, current Build-ready binding, or a human/dependency hold.
-   Completed live/archived successors need no reopening; retained actors still bind.
-   A placeholder, prose claim, unopened wave or unrelated reviewer is insufficient.
-   Pipeline one successor per admitted source; preparing the whole roadmap first
-   is unnecessary. Opt-out, zero opening budget or source human/question holds
-   prevent new openings, not already-created child planning or independent work.
+   At controller cap>1, resolve sequence authority and start actual immediate-
+   successor preparation before ordinary local Temper/Define/Plan/Vet context or
+   dispatch open, and retain the full Build gate before claims/rounds/history.
+   Follow [early preparation](../../rite-autocomplete/reference/loop.md#early-preparation-admission)
+   for native launch/start, internal markers and bounded preparatory-only routing.
+   Missing targets need native Spec → Clarify → Temper → Define/Plan → affected
+   Vet; existing targets need current completed/readiness state, registered pending
+   native preparation, or an existing human/dependency hold. Completed live/
+   archived successors need no reopening; valid finite tails discharge the
+   obligation. Placeholders, reports and unopened waves prove nothing.
+   Opt-out, zero opening budget or source human/question holds prevent new
+   openings, not existing child preparation or independent work.
    If preparation cannot start, retain `frontier-blocked: <successor> — <constraint>`
    in source `evidence.md`. `frontier-blocked: sequence — <constraint>` may defer
    unresolved historical normalization for valid independent local work. Each row

@@ -40,7 +40,7 @@ type loadsManifest struct {
 
 const loadsMarker = "<!-- loads:"
 
-const contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--whole] [--skills-root <dir>] [--out <path>]
+const contextUsage = `usage: devrites-engine context [slug] (--phase <p> | --skill <name>) [--role <r>] [--prepare-for <parent-source> | --sequence-research] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--inline-contract] [--whole] [--skills-root <dir>] [--out <path>]
 
 Emits one deduplicated context bundle for a phase or standalone skill
 (+ optional dispatch role) into .devrites/work/<slug>/ctx/ so an agent
@@ -65,6 +65,12 @@ build or autocomplete bundle (no --role, no --slice) defaults to --slice
 bounded recheck bundle: the inventory file (relative to the workspace)
 and core.md are inlined; every other pack file becomes a by-reference
 index plus the sections the inventory cites as "<file>.md § <heading>".
+Autocomplete at effective cap>1 gates Temper/Define/Plan/Vet bundles, including
+--skill rite-<phase>, on immediate-successor preparation before writing.
+--prepare-for binds native preparation to its exact immediate parent; roleless
+controlling-root context is allowed. --sequence-research permits only exact
+evidence-scout investigation of sequence authority. Neither creates an account
+or grants product-write authority; research does not satisfy successor preparation.
 `
 
 // coreStandard is the universal floor every bundle inlines whole.
@@ -73,11 +79,26 @@ const coreStandard = "devrites-lib/reference/standards/core.md"
 // RunContext emits one deduplicated context bundle for a phase (+ optional
 // dispatch role) so an agent reads a single file instead of selecting files.
 //
-//	context <slug> --phase <p> [--role <r>] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
+//	context <slug> --phase <p> [--role <r>] [--prepare-for <parent-source> | --sequence-research] [--slice <SLICE-###>] [--recheck <inventory>] [--trigger a,b] [--skills-root <dir>] [--out <path>]
 func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	opts, code := parseContextArgs(args, stderr)
 	if code != 0 {
 		return code
+	}
+	phase := opts.phase
+	if opts.skill != "" {
+		phase = ""
+		if strings.HasPrefix(opts.skill, "rite-") {
+			phase = strings.TrimPrefix(opts.skill, "rite-")
+		}
+	}
+	var roles []string
+	if opts.role != "" {
+		roles = []string{opts.role}
+	}
+	if err := opts.purpose.validate(phase, roles, true); err != nil {
+		fmt.Fprintf(stderr, "context: %v\n", err)
+		return 2
 	}
 	// A Build reviewer judges one slice; an unscoped bundle inlines whole
 	// plan/tasks/architecture into every dispatch.
@@ -93,6 +114,19 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "context: %v\n", err)
 			return 2
 		}
+	}
+	if opts.slug != "" {
+		notices, err := preparationAdmission(root, opts.slug, phase, opts.purpose, nil)
+		if err != nil {
+			fmt.Fprintf(stderr, "context: BLOCKED: %v\n", err)
+			return 3
+		}
+		for _, notice := range notices {
+			fmt.Fprintln(stdout, notice)
+		}
+	} else if opts.purpose.parent != "" || opts.purpose.research {
+		fmt.Fprintln(stderr, "context: preparation purpose requires an exact existing source")
+		return 2
 	}
 	sources := contextSources{dir: featureDir}
 	// One active slice per bundle, except a parallel batch: the root has to
@@ -791,6 +825,7 @@ type contextOpts struct {
 	recheck        string
 	inlineContract bool
 	whole          bool
+	purpose        preparationPurpose
 }
 
 func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
@@ -799,6 +834,19 @@ func parseContextArgs(args []string, stderr io.Writer) (contextOpts, int) {
 	for i := 0; i < len(args); i++ {
 		value := argAt(args, i+1)
 		switch args[i] {
+		case "--prepare-for":
+			if opts.purpose.parent != "" {
+				fmt.Fprintln(stderr, "context: duplicate --prepare-for")
+				return opts, 2
+			}
+			if value == "" || strings.HasPrefix(value, "-") {
+				fmt.Fprintln(stderr, "context: --prepare-for requires a parent source")
+				return opts, 2
+			}
+			opts.purpose.parent = value
+		case "--sequence-research":
+			opts.purpose.research = true
+			continue
 		case "--phase":
 			opts.phase = value
 		case "--skill":

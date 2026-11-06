@@ -134,19 +134,14 @@ func frontierSerialReason(records frontierRecords, source, workspace, id string)
 	return records.serial[parallel.SliceKey(workspace, "SLICE-"+sliceNumber(id))]
 }
 
-func frontierPendingPreparation(n *frontierWorkspace) (bool, error) {
-	raw, err := readBoundedRegularFile(filepath.Join(n.dir, "dispatch.json"), workspaceArtifactLimit)
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	dispatch, err := decodeDispatch(raw)
-	if err != nil {
-		return false, err
+func frontierPendingPreparation(dispatch *dispatchFile) bool {
+	if dispatch == nil {
+		return false
 	}
 	for _, wave := range dispatch.Waves {
+		if wave.SequenceResearch {
+			continue
+		}
 		if wave.State != "open" && wave.State != "sealed" {
 			continue
 		}
@@ -155,23 +150,12 @@ func frontierPendingPreparation(n *frontierWorkspace) (bool, error) {
 				continue
 			}
 			base := roleBase(role)
-			switch strings.ToLower(wave.Phase) {
-			case "spec", "clarify", "temper":
-				if base == "evidence-scout" || base == "strategy-reviewer" {
-					return true, nil
-				}
-			case "define", "plan":
-				if base == "plan-drafter" || base == "evidence-scout" {
-					return true, nil
-				}
-			case "vet":
-				if base == "plan-reviewer" || base == "devex-reviewer" || base == "strategy-reviewer" || base == "code-reviewer" {
-					return true, nil
-				}
+			if preparationRole(strings.ToLower(wave.Phase), base) {
+				return true
 			}
 		}
 	}
-	return false, nil
+	return false
 }
 
 func frontierSuccessor(n *frontierWorkspace, nodes map[string]*frontierWorkspace, mapping map[int]string) (string, error) {
@@ -199,8 +183,8 @@ func frontierSuccessor(n *frontierWorkspace, nodes map[string]*frontierWorkspace
 
 func frontierPreparationAdmission(root, source string, nodes map[string]*frontierWorkspace, mapping map[int]string, problem string, allow bool, records frontierRecords) ([]string, error) {
 	n := nodes[source]
-	if !allow || n.hasRemaining && n.remaining == 0 {
-		return nil, nil
+	if n == nil {
+		return nil, fmt.Errorf("source %s is not an existing sequence workspace", source)
 	}
 	if hold, err := frontierQuestionHold(n); err != nil || hold != "" {
 		return nil, err
@@ -222,13 +206,18 @@ func frontierPreparationAdmission(root, source string, nodes map[string]*frontie
 		if reason == "" {
 			reason = "positive remaining budget has no exact recorded successor"
 		}
-		return nil, fmt.Errorf("source %s native authority-normalization required before writer admission: %s; read sequence artifacts, record current roadmap through its owning decision, or retain frontier-blocked: sequence — <specific constraint>", source, reason)
+		return nil, fmt.Errorf("source %s native authority-normalization required before forward-phase admission: %s; read sequence artifacts, record current roadmap through its owning decision, or retain frontier-blocked: sequence — <specific constraint>", source, reason)
 	}
-	if target == "" {
+	if target == "" || nodes[target] == nil && (!allow || n.hasRemaining && n.remaining == 0) {
 		return nil, nil
 	}
+	var successorDispatch *dispatchFile
 	if child := nodes[target]; child != nil {
 		if _, err := frontierChain(nodes, target); err != nil {
+			return nil, err
+		}
+		successorDispatch, err = frontierPreparationBindings(child, nil)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -242,8 +231,8 @@ func frontierPreparationAdmission(root, source string, nodes map[string]*frontie
 		if frontierTerminal(child) {
 			return nil, nil
 		}
-		if pending, err := frontierPendingPreparation(child); err != nil || pending {
-			return nil, err
+		if frontierPendingPreparation(successorDispatch) {
+			return nil, nil
 		}
 		ready, notices, err := WorkspaceReady(filepath.Dir(root), source, target)
 		if err != nil {
@@ -264,7 +253,7 @@ func frontierPreparationAdmission(root, source string, nodes map[string]*frontie
 			return nil, nil
 		}
 	}
-	return nil, fmt.Errorf("successor %s preparation has not actually started; invoke /rite-spec %s or its native Plan/Vet cursor and retain launched planning/review handles before /rite-build %s; alternatively retain frontier-blocked: %s — <specific constraint> in evidence.md", target, frontierQuote(target), source, target)
+	return nil, fmt.Errorf("successor %s preparation has not actually started; invoke /rite-spec %s or its native Plan/Vet cursor and retain launched planning/review handles before continuing forward phases of %s; alternatively retain frontier-blocked: %s — <specific constraint> in evidence.md", target, frontierQuote(target), source, target)
 }
 
 func frontierNormalizePaths(paths []string) error {
@@ -321,7 +310,7 @@ func frontierLeaseReserved(lease *parallel.Lease, controller, source string, ids
 	return len(ids) > 0
 }
 
-func frontierWriterRetention(root, source, controller, binding string, lease *parallel.Lease, nodes map[string]*frontierWorkspace, ordered, ids []string, current *dispatchFile) error {
+func frontierWriterRetention(root, source, controller, binding string, lease *parallel.Lease, nodes map[string]*frontierWorkspace, ordered, ids []string, current *dispatchFile, checkPreparation bool) error {
 	var claims map[string]*claimRecord
 	for _, slug := range ordered {
 		if _, err := frontierChain(nodes, slug); err != nil {
@@ -339,6 +328,11 @@ func frontierWriterRetention(root, source, controller, binding string, lease *pa
 			dispatch, err = decodeDispatch(raw)
 			if err != nil {
 				return err
+			}
+			if checkPreparation {
+				if _, err := frontierPreparationBindings(nodes[slug], dispatch); err != nil {
+					return err
+				}
 			}
 		}
 		for name, wave := range dispatch.Waves {
@@ -475,6 +469,12 @@ func autocompleteWriterAdmission(root, source string, wave *dispatchWave, curren
 	if err != nil {
 		return "", nil, err
 	}
+	checkPreparation := capN > 1 && (lease == nil || lease.Capacity != 1)
+	if checkPreparation {
+		if _, err := frontierPreparationBindings(nodes[source], current); err != nil {
+			return "", nil, err
+		}
+	}
 	chain, err := frontierChain(nodes, source)
 	if err != nil {
 		return "", nil, err
@@ -498,9 +498,12 @@ func autocompleteWriterAdmission(root, source string, wave *dispatchWave, curren
 	if err != nil {
 		return "", nil, err
 	}
-	notices, err := frontierPreparationAdmission(root, source, nodes, mapping, problem, allow && capN > 1, records)
-	if err != nil {
-		return "", nil, err
+	var notices []string
+	if checkPreparation {
+		notices, err = frontierPreparationAdmission(root, source, nodes, mapping, problem, allow, records)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 	local, withheld, err := WorkspaceReady(filepath.Dir(root), controller, source)
 	if err != nil {
@@ -531,7 +534,7 @@ func autocompleteWriterAdmission(root, source string, wave *dispatchWave, curren
 	if reserved {
 		binding = controller + "/" + lease.BatchID + "@" + lease.CreatedAt
 	}
-	if err := frontierWriterRetention(root, source, controller, binding, lease, nodes, ordered, ids, current); err != nil {
+	if err := frontierWriterRetention(root, source, controller, binding, lease, nodes, ordered, ids, current, checkPreparation); err != nil {
 		return "", nil, err
 	}
 	var candidates []parallel.SlicePaths
@@ -549,7 +552,7 @@ func autocompleteWriterAdmission(root, source string, wave *dispatchWave, curren
 		} else if hold != "" {
 			continue
 		}
-		if _, _, err := frontierLocal(root, controller, n, &candidates); err != nil {
+		if _, _, err := frontierLocal(root, controller, n, &candidates, nil); err != nil {
 			return "", nil, err
 		}
 	}
@@ -611,6 +614,18 @@ func autocompleteWriterAdmission(root, source string, wave *dispatchWave, curren
 		}
 	}
 	return binding, notices, nil
+}
+
+const frontierInheritedPreparationWait = "preparatory descendant; continue immediate-parent preparation before this native cursor"
+
+func frontierSourcePreparationWait(source string, lines []string) bool {
+	wait := "frontier-workspace: " + source + " location=live action=wait reason=" + frontierInheritedPreparationWait
+	for _, line := range lines {
+		if line == wait {
+			return true
+		}
+	}
+	return false
 }
 
 func frontierGlobalPriority(source string, lines []string) bool {

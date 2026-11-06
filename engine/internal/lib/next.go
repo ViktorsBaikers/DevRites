@@ -91,6 +91,9 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintln(stdout, "next-command: /rite-autocomplete")
 			return exit
 		}
+		if mode && frontierSourcePreparationWait(slug, lines) {
+			return exit
+		}
 	}
 	if report.Phase == state.PhaseBuild {
 		printPlanBatch(stdout, root, slug)
@@ -118,11 +121,11 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 			}
 			missing = report.MissingFiles
 		} else {
-			if policy.Target == state.PhaseClarify && openQuestions == 0 {
+			missing = missingArtifacts(featureDir, policy.RequiredArtifacts)
+			if policy.Target == state.PhaseClarify && openQuestions == 0 && len(missing) == 0 {
 				skips = append(skips, "clarify (0 open questions)")
 				continue
 			}
-			missing = missingArtifacts(featureDir, policy.RequiredArtifacts)
 			// A phase that adds no required artifact over the previous one
 			// (build after vet, polish after prove) cannot be proven done by
 			// artifact presence, so it is never skipped. Converge is the

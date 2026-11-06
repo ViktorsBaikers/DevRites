@@ -176,5 +176,14 @@ func triggerApplyCommand(opts contextOpts, suggested []string) string {
 		}
 	}
 	parts = append(parts, "--trigger", strings.Join(suggested, ","))
+	if opts.purpose.parent != "" {
+		parts = append(parts, "--prepare-for", frontierQuote(opts.purpose.parent))
+	}
+	if opts.purpose.research {
+		parts = append(parts, "--sequence-research")
+	}
+	if opts.skillsRoot != "" {
+		parts = append(parts, "--skills-root", frontierQuote(opts.skillsRoot))
+	}
 	return strings.Join(parts, " ")
 }
