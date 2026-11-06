@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.3.6](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.5...v7.3.6) (2026-11-06)
+
+### Fixed
+
+* **devrites:** enforce native prebuild preparation admission ([#209](https://github.com/ViktorsBaikers/DevRites/issues/209)) ([2aba0a0](https://github.com/ViktorsBaikers/DevRites/commit/2aba0a0e0828f25c90e3021ca2c29ddebb291bf9))
+
 ## [7.3.5](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.4...v7.3.5) (2026-11-05)
 
 ### Fixed
