@@ -41,18 +41,41 @@ remaining. AFK configuration itself stays unchanged.
 
 ### Admit each unattended cycle
 
-Before each phase, fan-out, recovery or writer: run cheap readiness and reject
-overlap. Before Build admission, execute the shared immediate-successor
-preparation/deferral and global cohort rules; local readiness alone is insufficient.
-Count every leaf result. Explicit activations reset activation-local counters,
-not durable slice/recovery state. Pass resolved `--parallel N` to
-[Build](../../rite-build/reference/output.md#caller-owned-continuation).
-Ignored legacy budgets and local serial constraints are not whole-run stops.
-Invented ceilings on dispatches, waits, tool calls or turns cannot stop execution;
-human instructions to pause or limit scope still bind.
-Resolve ranked validating/blocking picks via `devrites-engine state resolve`;
-never hand `/rite-resolve` to the user. Escalating, irreversible-risk, access, blocking
-without recommendations, and Seal judgment (`slice: seal`) still pause.
+Before each phase/fan-out/recovery/writer, check readiness/overlap and apply early
+admission and the global pass below; local readiness is insufficient. Count every leaf.
+Explicit activation resets only activation-local counters, not durable recovery.
+Pass resolved `--parallel N` to [Build](../../rite-build/reference/output.md#caller-owned-continuation).
+Legacy or invented execution ceilings never stop this controller; human limits bind.
+Resolve ranked validating/blocking picks via `devrites-engine state resolve`, not
+a user handoff. Escalating, irreversible-risk, access, unrecommended blocking picks
+and Seal judgment (`slice: seal`) still pause.
+
+## Early preparation admission
+
+Internal exclusive `context`/`dispatch open` flags:
+- `--prepare-for <parent-source>`: permitted native non-Build preparation roles
+  (only controlling-root context may be roleless), exact existing immediate
+  successor/parent agreeing on canonical identity, binding, adjacency and chain.
+  Exempts the child's successor gate, never product writes.
+- `--sequence-research`: only canonical `evidence-scout`, Spec/Clarify/Temper/Define/
+  Plan/Vet, exact existing source and normal path/role/ledger constraints. Exempts
+  authority/successor admission solely to investigate broken authority read-only:
+  no acceptance, scope/approval/phase advance, successor creation, writers,
+  readiness or preparation credit.
+
+Context (`--skill rite-<phase>` too) checks before writes; no account required.
+Use context → packet → open → native launch → `dispatch start` actual handles
+before parent admission; openings alone do not count.
+
+Derive preparatory-only B before any marked wave from nonterminal parent A:
+until ordinary unmarked B Temper/Define/Plan/Vet or Build-wright admission
+(checking C first), A becoming terminal or ordered handoff to B, C waits—even
+explicit C `next`/`check continuation`. No C creation/rerouting before A's eligible
+phase. Completed B history retains this bound; Spec/Clarify/research/read-only
+Build do not release it. Independent work stays visible; all global-pass gates bind.
+
+Shared registry edits alone do not serialize disjoint modules. Isolate their
+writer; refusal-only tests never replace positive requirements or defer their band.
 
 ## Phase arc
 
@@ -72,12 +95,10 @@ Workspace files, not chat, carry state. Read/execute each phase skill:
 | 10 | `/rite-seal` | GO/NO-GO; no Git |
 | 11 | `/rite-ship` | only after GO; `--ship` never authorizes Git; stop at literal-GO/native approval |
 
-At phase entry, before local recovery or waits, execute the
+At phase entry, before recovery/waits, execute the
 [global pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
-Consume the fresh frontier emitted after a recorded `dispatch return`; after
-landing, planning/artifact changes or capacity updates, rerun frontier. Execute
-authorized preparation/selection, preserving pending handles, local cursors and
-protected validation windows. Reporting or creating a placeholder is not progress.
+Consume persisted return frontiers; rerun after landing/artifact/capacity changes.
+Execute authorized routes, retaining handles, cursors and protected proof windows.
 
 Check [stop-conditions.md](stop-conditions.md) before advancing. Discard stale
 pass evidence after source edits. Re-read the selected source before each phase per [phase target binding](../../devrites-lib/reference/parallel-workspaces.md#phase-target-binding). On a cold resume or
@@ -90,14 +111,12 @@ floor; `--update` never excuses an unreconciled regression.
 
 ## Sequence continuation
 
-With a recorded successor, opening budget and no opt-out, Seal GO stays internal:
-leave the owner sealed/unshipped with `/rite-ship`, then resume the prepared child
-or invoke its authorized native Spec. Sequence authority follows the
-[shared grammar](../../devrites-lib/reference/workspace-artifact-schema.md#what-each-file-owns),
-not invented slugs. Charge an opening once; preparation may pipeline before Seal,
-one immediate successor per admitted source, not the whole roadmap at once.
-Reuse the child's durable cursor and controller. ACTIVE changes only at normal
-ordered handoff; early planning or isolated independent Build does not advance it.
+With a recorded successor, budget and no opt-out, Seal GO stays internal:
+leave the owner sealed/unshipped with `/rite-ship`; resume the child's cursor/
+controller or authorized native Spec. Use the
+[shared grammar](../../devrites-lib/reference/workspace-artifact-schema.md#what-each-file-owns).
+Charge once; pipeline only immediate successors. ACTIVE changes at ordered handoff,
+not early planning or isolated independent Build.
 
 Before invoking a continuation, require durable `state.md`
 `sequence_workspaces_remaining > 0`; if absent, first write
@@ -151,20 +170,14 @@ and park it after three escalations while independent work continues.
 
 ## Continuous caller obligation
 
-After a green slice or phase, execute its recorded `next_action` internally;
-reply only at completion or a genuine stop.
-
-Before replying, run `devrites-engine check continuation`: `required` means
-consume `invoke:` now; only `clear` permits a final reply. Under controller mode,
-actionable normalization, successor preparation or foreign work precedes local
-Build. Local-only reconciliation, repair, picks or discharged scheduling deferrals
-retain the owning phase edge, not recursive `/rite-autocomplete`.
-Agent-owned NEEDS_REPLAN, budgeted Critical/Important recovery, independent work
-or a recommended blocking answer stays internal. Invoke repair or `state resolve`
-unless the [resolver-failure stop](stop-conditions.md#other-stop-classes) applies.
-A distinct invariant is progress, not exhaustion; repeated failed resolver calls
-without correction are not progress.
-
-The number of completed repair/Vet cycles, context pressure, compaction, session
-duration, and nested completion never turn checkpoints into handoffs. Persist and
-resume to the requested rest point or shared human/safety/access/parked-recovery stop.
+Execute each green slice/phase's `next_action` internally. Before replying, run
+`devrites-engine check continuation`: consume `required`'s `invoke:`; only `clear`
+permits reply. Controller normalization/preparation/foreign work precedes local
+Build; local repair/picks/reconciliation/discharged deferrals keep their phase,
+not recursive Autocomplete. Route agent-owned NEEDS_REPLAN, budgeted Critical/Important recovery,
+independent work and recommended blocking answers internally; invoke repair or
+`state resolve` unless the [resolver-failure stop](stop-conditions.md#other-stop-classes)
+applies. Distinct invariants are progress; unchanged resolver retries are not.
+Cycles, context pressure, compaction, duration and nested completion never create
+handoffs. Persist/resume until requested completion or a shared human/safety/
+access/parked-recovery stop.

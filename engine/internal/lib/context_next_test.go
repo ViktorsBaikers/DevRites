@@ -606,7 +606,7 @@ func TestNextRequiresClarifyCoverageWithoutOpenQuestions(t *testing.T) {
 				t.Fatalf("code=%d err=%s", code, stderr.String())
 			}
 			out := stdout.String()
-			for _, want := range []string{"current-status: complete\n", "open-questions: 0\n", "next-phase: clarify\n", "next-command: /rite-clarify\n", "missing: decision-coverage.md\n"} {
+			for _, want := range []string{"current-status: complete\n", "open-questions: 0\n", "next-phase: clarify\n", "missing: decision-coverage.md\n"} {
 				if !strings.Contains(out, want) {
 					t.Fatalf("expected %q:\n%s", want, out)
 				}

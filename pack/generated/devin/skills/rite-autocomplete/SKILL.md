@@ -118,7 +118,7 @@ next sequence continuation through Vet in a second session, then stop.
    emitted by recorded `dispatch return`; rerun frontier after further changes
    and before waits. Before ordinary local Temper/Define/Plan/Vet context/dispatch,
    resolve sequence authority and start actual immediate-successor preparation
-   under [early admission](../devrites-lib/reference/parallel-dispatch.md#early-preparation-admission),
+   under [early admission](reference/loop.md#early-preparation-admission),
    or retain the global pass's concrete deferral; keep the full Build gate.
    Derive initial preparatory-only routing before any marked wave; do not recurse
    through the roadmap. Preserve local cursors, protected validation windows and

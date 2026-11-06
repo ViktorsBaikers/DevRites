@@ -104,7 +104,7 @@ return cursors and native handles: one controller, not another phase or queue.
    At controller cap>1, resolve sequence authority and start actual immediate-
    successor preparation before ordinary local Temper/Define/Plan/Vet context or
    dispatch open, and retain the full Build gate before claims/rounds/history.
-   Follow [early preparation](parallel-dispatch.md#early-preparation-admission)
+   Follow [early preparation](skill://rite-autocomplete/reference/loop.md#early-preparation-admission)
    for native launch/start, internal markers and bounded preparatory-only routing.
    Missing targets need native Spec → Clarify → Temper → Define/Plan → affected
    Vet; existing targets need current completed/readiness state, registered pending

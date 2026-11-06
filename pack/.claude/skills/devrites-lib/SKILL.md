@@ -39,6 +39,8 @@ lifecycle state from chat or optional `README.md`.
   completion states. The host renders the response normally.
 - [`reference/parallel-workspaces.md`](reference/parallel-workspaces.md): explicit
   phase targets, one isolated global controller, and source-owned proof.
+- [Autocomplete loop](../rite-autocomplete/reference/loop.md#early-preparation-admission):
+  controller-only early preparation, bounded successor routing and normalization research.
 - [`reference/visual-playbooks/index.md`](reference/visual-playbooks/index.md): progressive
   visual HTML playbook router (load matching ids only; dual-read outline).
 
