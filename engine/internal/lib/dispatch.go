@@ -27,9 +27,9 @@ import (
 // fan-out cannot silently degrade to serial (open -> every role started ->
 // seal -> returns -> complete). start/return also auto-record metrics events.
 //
-//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]
+//	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--prepare-for <parent-source> | --sequence-research] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]
 
-const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]
+const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute> [--phase p] [--wave w] [--role r] [--prepare-for <parent-source> | --sequence-research] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
 role has a distinct handle; return fails before seal. The start that gives
@@ -40,6 +40,12 @@ completes the wave releases it, and abandon keeps it unless --release (any
 host-confirmed terminal path without a completing return, such as a stop or a
 refused launch). Wave IDs are single-use, including abandoned waves; retries
 need a fresh ID and never inherit or release an earlier wave's claim.
+Autocomplete at effective cap>1 checks immediate-successor preparation before
+ordinary Temper/Define/Plan/Vet open writes. Open-only --prepare-for binds allowed
+native preparation roles to an exact immediate parent without recursively
+requiring another successor. Open-only --sequence-research admits exact
+evidence-scout authority investigation, never successor preparation or writers.
+Both require an existing source and persist their purpose on the wave.
 Native starts, returns and abandonment retain subsecond timestamps. abandon
 --release also retains host-terminal confirmation, even without a claim or when
 its owned claim was already released; a failed release does not certify termination.
@@ -105,20 +111,22 @@ type dispatchFile struct {
 }
 
 type dispatchWave struct {
-	Phase           string                   `json:"phase"`
-	State           string                   `json:"state"` // open, sealed, abandoned, complete
-	Reason          string                   `json:"reason,omitempty"`
-	AbandonedAt     string                   `json:"abandoned_at,omitempty"`
-	TerminalAt      string                   `json:"terminal_at,omitempty"`
-	Roles           map[string]*dispatchRole `json:"roles"`
-	Slices          []string                 `json:"slices,omitempty"`
-	ResliceReview   string                   `json:"reslice_review,omitempty"`
-	ResliceReviewed []string                 `json:"reslice_reviewed,omitempty"`
-	Claim           string                   `json:"claim,omitempty"`
-	ClaimSession    string                   `json:"claim_session,omitempty"`
-	Tree            string                   `json:"tree,omitempty"`             // work tree at a build wright open, for check windows --since-dispatch
-	ControllerBatch string                   `json:"controller_batch,omitempty"` // cohort admission identity, not evidence of actor checkout
-	AdmittedPaths   map[string][]string      `json:"admitted_paths,omitempty"`   // immutable normalized write sets, keyed by source-local slice
+	Phase            string                   `json:"phase"`
+	State            string                   `json:"state"` // open, sealed, abandoned, complete
+	Reason           string                   `json:"reason,omitempty"`
+	AbandonedAt      string                   `json:"abandoned_at,omitempty"`
+	TerminalAt       string                   `json:"terminal_at,omitempty"`
+	Roles            map[string]*dispatchRole `json:"roles"`
+	Slices           []string                 `json:"slices,omitempty"`
+	ResliceReview    string                   `json:"reslice_review,omitempty"`
+	ResliceReviewed  []string                 `json:"reslice_reviewed,omitempty"`
+	Claim            string                   `json:"claim,omitempty"`
+	ClaimSession     string                   `json:"claim_session,omitempty"`
+	Tree             string                   `json:"tree,omitempty"`             // work tree at a build wright open, for check windows --since-dispatch
+	ControllerBatch  string                   `json:"controller_batch,omitempty"` // cohort admission identity, not evidence of actor checkout
+	AdmittedPaths    map[string][]string      `json:"admitted_paths,omitempty"`   // immutable normalized write sets, keyed by source-local slice
+	PreparationFor   string                   `json:"preparation_for,omitempty"`
+	SequenceResearch bool                     `json:"sequence_research,omitempty"`
 }
 
 // dispatchClaim carries the wave-claim flags; ttl 0 means unset.
@@ -178,6 +186,16 @@ func decodeDispatch(data []byte) (*dispatchFile, error) {
 		if w == nil || strings.TrimSpace(name) == "" || strings.TrimSpace(w.Phase) == "" || len(w.Roles) == 0 ||
 			!slices.Contains([]string{"open", "sealed", "complete", "abandoned"}, w.State) {
 			return nil, fmt.Errorf("wave %q is malformed (invalid phase, state or roles)", name)
+		}
+		purpose := preparationPurpose{parent: w.PreparationFor, research: w.SequenceResearch}
+		if purpose.parent != "" || purpose.research {
+			roles := make([]string, 0, len(w.Roles))
+			for role := range w.Roles {
+				roles = append(roles, role)
+			}
+			if err := purpose.validate(w.Phase, roles, false); err != nil {
+				return nil, fmt.Errorf("wave %q has invalid preparation purpose: %w", name, err)
+			}
 		}
 		handles := map[string]bool{}
 		allStarted, allReturned := true, true
@@ -254,16 +272,33 @@ func saveDispatch(path string, f *dispatchFile) error {
 func nowStamp() string { return time.Now().UTC().Format(time.RFC3339Nano) }
 
 // RunDispatch implements the dispatch wave state machine.
+//
+// Preparation-purpose flags apply to open only; ordinary early-phase admission
+// and context generation share immediate-successor validation.
 func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	var slug, sub, phase, wave, role, handle, reason, review, contract, packet, outcome, result string
 	var roles, sliceIDs []string
 	var positional []string
 	all := false
+	var purpose preparationPurpose
 	var claim dispatchClaim
 	var attributed []string
 	for i := 0; i < len(args); i++ {
 		value := argAt(args, i+1)
 		switch args[i] {
+		case "--prepare-for":
+			if purpose.parent != "" {
+				fmt.Fprintln(stderr, "dispatch: duplicate --prepare-for")
+				return 2
+			}
+			if value == "" || strings.HasPrefix(value, "-") {
+				fmt.Fprintln(stderr, "dispatch: --prepare-for requires a parent source")
+				return 2
+			}
+			purpose.parent = value
+		case "--sequence-research":
+			purpose.research = true
+			continue
 		case "--phase":
 			phase = value
 		case "--wave":
@@ -321,6 +356,16 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	slug, sub = positional[0], positional[1]
+	if purpose.parent != "" || purpose.research {
+		if sub != "open" {
+			fmt.Fprintln(stderr, "dispatch: preparation purpose applies to open only")
+			return 2
+		}
+		if err := purpose.validate(phase, roles, false); err != nil {
+			fmt.Fprintf(stderr, "dispatch: %v\n", err)
+			return 2
+		}
+	}
 	if sub != "open" && (claim.session != "" || len(claim.paths) > 0 || claim.ttl != 0) {
 		fmt.Fprintln(stderr, "dispatch: --claim-session, --claim, and --claim-ttl apply to open only")
 		return 2
@@ -348,7 +393,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 		return state.WithFeatureLock(root, slug, func() error {
 			// Controller → feature → claims; never acquire another feature.
 			return state.WithLock(claimsPath(root)+".lock", func() error {
-				code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, all, claim, stdout, stderr, &recordedReturn)
+				code = dispatchLocked(root, slug, sub, phase, wave, role, handle, reason, roles, sliceIDs, review, contract, packet, outcome, result, all, claim, purpose, stdout, stderr, &recordedReturn)
 				return nil
 			})
 		})
@@ -359,13 +404,16 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			controllerOpen = controllerOpen || strings.Contains(candidate, "wright")
 		}
 	}
+	if sub == "open" && (earlyPreparationPhase(phase) || purpose.parent != "" || purpose.research) {
+		controllerOpen = true
+	}
 	if controllerOpen {
 		mode, err := autocompleteMode(root)
 		if err != nil {
 			fmt.Fprintf(stderr, "dispatch: BLOCKED: %v\n", err)
 			return 3
 		}
-		controllerOpen = mode
+		controllerOpen = mode || purpose.parent != "" || purpose.research
 	}
 	var lockErr error
 	if controllerOpen {
@@ -397,7 +445,7 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 	return code
 }
 
-func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome, result string, all bool, claim dispatchClaim, stdout, stderr io.Writer, recordedReturn *bool) int {
+func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, roles, sliceIDs []string, review, contract, packet, outcome, result string, all bool, claim dispatchClaim, purpose preparationPurpose, stdout, stderr io.Writer, recordedReturn *bool) int {
 	f, path, err := loadDispatch(root, slug)
 	if err != nil {
 		fmt.Fprintf(stderr, "dispatch: %v\n", err)
@@ -425,7 +473,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if prev := getWave(); prev != nil {
 			return fail("wave %q already exists (state %s)", wave, prev.State)
 		}
-		w := &dispatchWave{Phase: phase, State: "open", Roles: map[string]*dispatchRole{}, Slices: sliceIDs}
+		w := &dispatchWave{Phase: phase, State: "open", Roles: map[string]*dispatchRole{}, Slices: sliceIDs, PreparationFor: purpose.parent, SequenceResearch: purpose.research}
 		for _, r := range roles {
 			if w.Roles[r] != nil {
 				return fail("duplicate role %q in wave", r)
@@ -434,6 +482,13 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		}
 		if err := lintKnownRoles(root, phase, roles); err != nil {
 			return fail("BLOCKED: %v", err)
+		}
+		notices, err := preparationAdmission(root, slug, phase, purpose, f)
+		if err != nil {
+			return fail("BLOCKED: %v", err)
+		}
+		for _, notice := range notices {
+			fmt.Fprintln(stdout, notice)
 		}
 		if isBuildWrightWave(w) {
 			binding, notices, err := autocompleteWriterAdmission(root, slug, w, f)

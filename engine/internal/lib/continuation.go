@@ -59,6 +59,8 @@ func RunCheckContinuation(root string, args []string, stdout, stderr io.Writer) 
 		}
 		if mode && frontierGlobalPriority(slug, frontier) || !mode && !verdict.Required && len(frontier) > 0 && frontier[0] == "frontier: actionable" {
 			verdict = continuationVerdict{Required: true, Invoke: "/rite-autocomplete", Source: slug, Reason: "global frontier requires native preparation, authority review, or selection; no Ship approval"}
+		} else if mode && frontierSourcePreparationWait(slug, frontier) {
+			verdict = continuationVerdict{Reason: frontierInheritedPreparationWait}
 		}
 	}
 	writeContinuation(stdout, verdict)

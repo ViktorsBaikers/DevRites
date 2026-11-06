@@ -106,6 +106,61 @@ Never restart/orphan the cohort or infer approval. Reviewers are read-only;
 accounts store evidence, never telemetry. Same-file writers stay serial.
 Capacity rejection is backpressure: retry batches; never shrink a roster.
 
+## Early preparation admission
+
+Autocomplete at effective cap>1 admits ordinary local Temper/Define/Plan/Vet
+`context` (including `--skill rite-<phase>`) and `dispatch open` only after the
+[global pass](parallel-workspaces.md#continuous-global-frontier) resolves sequence
+authority and immediate-successor preparation. Context checks before bundle
+writes; it requires no open dispatch account. Initial Spec/Clarify, controller/
+bootstrap reads, standalone and cap1 retain their existing behavior. Build keeps
+its full admission gate.
+
+For native successor preparation, pass internal `--prepare-for <parent-source>`
+on both `context <successor> ...` and `dispatch <successor> open ...`. Only native
+preparation phases and permitted preparation roles qualify; controlling-root
+context may omit a role, dispatch may not. The existing source must be its existing
+parent's exact recorded immediate successor: canonical identities, parent binding,
+adjacent positions and chains must agree. No Build/writer use or product-write
+authority. Open persists `preparation_for`; context creates no account.
+A marked preparatory admission need not prepare its own successor first.
+
+Keep normal order: context → packet → open → native host launch → `dispatch start`
+with each actual handle. A bundle needs no prior open; an open/reservation alone
+is not actual preparation. Launch the native preparation actors and register their
+handles before resuming the parent's ordinary admission. Native workflow still
+owns scope, approval, model/profile/cwd and execution; these internal flags add
+no user Autocomplete option, queue, model client, receipt or launch bridge.
+
+Derive preparatory-only B immediately from validated immediate parent A while A
+is nonterminal, B has no ordinary unmarked forward-phase/Build-wright admission, and
+normal ordered handoff has not selected B. No marked wave is needed: initial
+creation and unmarked Spec/Clarify/context reads already have this routing bound.
+Observe C waiting, without creating/rerouting C before A's eligible phase.
+Explicit C `next`/`check continuation` honor that wait; completed B history retains
+the bound. Ordinary unmarked B Temper/Define/Plan/Vet or Build-wright admission
+checks C before publication. That admission, terminal A, or ordered handoff to B
+releases the bound. ACTIVE selection is native handoff, not implementation/approval.
+Spec/Clarify, research and read-only Build do not release it; independent work stays visible.
+
+For normalization investigation only, internal `--sequence-research` on context
+and dispatch open exempts canonical `evidence-scout` in Spec/Clarify/Temper/Define/
+Plan/Vet from sequence-authority/successor admission. Use an exact existing source
+and all existing path/role/ledger constraints; never combine with `--prepare-for`.
+This read-only exception can inspect conflicting/malformed authority, not accept
+it, advance scope/approval/phase, create successors, admit writers, certify
+readiness or credit upstream preparation. Open persists `sequence_research`;
+context creates no account.
+
+Pending/abandoned unreconciled actors, unfinished writer integration and stale/
+invalid readiness still bind; protected proof remains mandatory. New-opening
+opt-out or exhausted budget preserves existing children; valid finite tails and
+concrete deferrals retain the global pass semantics, never waive other gates.
+
+Shared registry edits alone do not serialize disjoint module work: isolate the
+real shared writer and preserve independently provable cuts. Refusal-only tests
+cannot replace carried positive requirements or silently move them to later bands.
+
 ## Engineering lanes
 
 Classify each changed path by the runtime it executes in — from entry points, build

@@ -301,7 +301,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 		return []string{
 			"frontier: blocked", "frontier-source: " + slug,
 			fmt.Sprintf("frontier-workspace: %s location=%s action=repair reason=%s", slug, source.location, chainErr),
-			"frontier-review-sequence: " + artifact + " reason=native authority-normalization required: " + chainErr.Error(),
+			"frontier-review-sequence: reason=native authority-normalization required: " + chainErr.Error() + " artifacts=" + artifact,
 		}, nil
 	}
 	ordered, related := frontierRelated(nodes, chain)
@@ -351,7 +351,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 	}
 	maps, artifacts, mapProblem, invalidCanonical := frontierRoadmap(nodes, ordered)
 	if invalidCanonical {
-		return []string{"frontier: blocked", "frontier-source: " + slug, "frontier-review-sequence: " + strings.Join(artifacts, ",") + " reason=native authority-normalization required: invalid canonical authority: " + mapProblem}, nil
+		return []string{"frontier: blocked", "frontier-source: " + slug, "frontier-review-sequence: reason=native authority-normalization required: invalid canonical authority: " + mapProblem + " artifacts=" + strings.Join(artifacts, ",")}, nil
 	}
 	if len(maps) > 0 && mapProblem == "" {
 		lines = append(lines, "frontier-authority: "+strings.Join(artifacts, ","))
@@ -368,12 +368,24 @@ func FrontierLines(root, slug string) ([]string, error) {
 		if sequenceDeferred {
 			lines = append(lines, "frontier-blocked: sequence — "+records.blocked["sequence"]+"; scheduling deferred, not normalized")
 		} else {
-			lines = append(lines, "frontier-review-sequence: "+strings.Join(artifacts, ",")+" reason=native authority-normalization required: "+mapProblem)
+			lines = append(lines, "frontier-review-sequence: reason=native authority-normalization required: "+mapProblem+" artifacts="+strings.Join(artifacts, ","))
 			blocked = true
 		}
 	}
 	deferred := map[string]string{}
 	prepared := map[string]bool{}
+	var preparatory map[string]bool
+	var preparationAccounts map[string]*dispatchFile
+	if mode && capN > 1 {
+		preparatory = make(map[string]bool, len(ordered))
+		preparationAccounts = make(map[string]*dispatchFile, len(ordered))
+		for _, name := range ordered {
+			preparatory[name], preparationAccounts[name], err = frontierPreparatoryOnly(root, nodes[name], nodes, maps, mapProblem)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 	for _, name := range ordered {
 		n := nodes[name]
 		action, reason := "complete", "archived predecessor; no writer admission"
@@ -386,17 +398,21 @@ func FrontierLines(root, slug string) ([]string, error) {
 		} else if gateReason != "" {
 			action, reason, held, blocked = "wait", gateReason, true, true
 		} else if n.location == "live" {
-			action, reason, err = frontierLocal(root, controller, n, &candidates)
+			action, reason, err = frontierLocal(root, controller, n, &candidates, preparationAccounts[name])
 			if err != nil {
 				action, reason, n.selectionHeld = "repair", err.Error(), true
 			}
 			if mode && action == "prepare" && deferred[name] != "" {
 				action, reason, n.selectionHeld = "wait", "frontier-blocked: "+name+" — "+deferred[name], true
 			}
+			inheritedPreparation := preparatory[name] && preparatory[n.parent] && (n.phase == "frame" || preparationPhase(n.phase)) && action == "prepare"
+			if inheritedPreparation {
+				action, reason, n.selectionHeld = "wait", frontierInheritedPreparationWait, true
+			}
 			if !n.selectionHeld {
 				live = append(live, name)
 			}
-			held = action == "blocked" || err != nil || mode && action == "wait" && deferred[name] != ""
+			held = inheritedPreparation || action == "blocked" || err != nil || mode && action == "wait" && deferred[name] != ""
 			switch action {
 			case "inspect", "prepare", "repair":
 				actionable = true
@@ -411,6 +427,9 @@ func FrontierLines(root, slug string) ([]string, error) {
 			}
 		}
 		lines = append(lines, fmt.Sprintf("frontier-workspace: %s location=%s action=%s reason=%s", name, n.location, action, reason))
+		if preparatory[name] {
+			continue
+		}
 		if invalid != nil || held || !allowFuture || n.hasRemaining && n.remaining == 0 || n.status == "awaiting_human" || n.status == "blocked" || n.question != "" {
 			continue
 		}
@@ -425,12 +444,12 @@ func FrontierLines(root, slug string) ([]string, error) {
 			continue
 		}
 		if target != "" && frontierConflictingSuccessor(nodes, n, target) {
-			lines = append(lines, "frontier-review-sequence: "+strings.Join(artifacts, ",")+" source="+name+" reason=conflicting successor identities; native authority-normalization required")
+			lines = append(lines, "frontier-review-sequence: reason=conflicting successor identities; native authority-normalization required source="+name+" artifacts="+strings.Join(artifacts, ","))
 			actionable, blocked = true, true
 			continue
 		}
 		if target != "" && n.hasPosition && maps[n.position+1] != "" && maps[n.position+1] != target {
-			lines = append(lines, "frontier-review-sequence: "+strings.Join(artifacts, ",")+" source="+name+" reason=next Spec conflicts with recorded successor; native authority-normalization required")
+			lines = append(lines, "frontier-review-sequence: reason=next Spec conflicts with recorded successor; native authority-normalization required source="+name+" artifacts="+strings.Join(artifacts, ","))
 			actionable, blocked = true, true
 			continue
 		}
@@ -459,7 +478,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 			lines = append(lines, fmt.Sprintf("frontier-workspace: %s location=missing action=prepare reason=recorded next workspace; native scope and independence review required", target), fmt.Sprintf("frontier-prepare: /rite-spec %s source=%s reason=read recorded sequence authority before preparation; no workspace created", frontierQuote(target), name))
 			actionable = true
 		} else if target == "" && n.hasRemaining && n.remaining > 0 {
-			lines = append(lines, "frontier-review-sequence: "+strings.Join(artifacts, ",")+" source="+name+" reason=remaining work unresolved; native authority-normalization required")
+			lines = append(lines, "frontier-review-sequence: reason=remaining work unresolved; native authority-normalization required source="+name+" artifacts="+strings.Join(artifacts, ","))
 			actionable, blocked = true, true
 		}
 	}
@@ -574,7 +593,7 @@ func frontierQuestionHold(n *frontierWorkspace) (string, error) {
 	return "", nil
 }
 
-func frontierLocal(root, controller string, n *frontierWorkspace, candidates *[]parallel.SlicePaths) (string, string, error) {
+func frontierLocal(root, controller string, n *frontierWorkspace, candidates *[]parallel.SlicePaths, dispatch *dispatchFile) (string, string, error) {
 	n.selectionHeld = true
 	if frontierTerminal(n) {
 		return "complete", "terminal workspace", nil
@@ -585,15 +604,20 @@ func frontierLocal(root, controller string, n *frontierWorkspace, candidates *[]
 	if n.status != "running" && n.status != "ready" {
 		return "blocked", "status lacks an actionable native cursor; normalize state without inventing authority", nil
 	}
-	raw, err := readBoundedRegularFile(filepath.Join(n.dir, "dispatch.json"), workspaceArtifactLimit)
-	if err != nil && !os.IsNotExist(err) {
-		return "", "", err
-	}
-	if err == nil {
-		dispatch, err := decodeDispatch(raw)
-		if err != nil {
+	if dispatch == nil {
+		raw, err := readBoundedRegularFile(filepath.Join(n.dir, "dispatch.json"), workspaceArtifactLimit)
+		if err != nil && !os.IsNotExist(err) {
 			return "", "", err
 		}
+		if err == nil {
+			dispatch, err = decodeDispatch(raw)
+			if err != nil {
+				return "", "", err
+			}
+		}
+	}
+	if dispatch != nil {
+		var err error
 		retained, pending := false, false
 		var built map[string]bool
 		for _, wave := range dispatch.Waves {

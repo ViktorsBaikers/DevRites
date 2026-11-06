@@ -59,6 +59,10 @@ workflow strategy.
 | `overhaul <records\|admit\|snapshot\|score\|bench\|render> ...` | Deterministic tools behind the standalone `/overhaul` skill: run-record generations and cross-record validation, worker-receipt admission and quote anchoring, index-safe baseline snapshots and per-attempt deltas, exact-rational readiness scoring, benchmark ratio intervals, and escaped offline review/report views. Operates only on explicit run-area and repository paths. See [Overhaul tools](#overhaul-tools). |
 | `version` | Print the engine version. |
 
+`next` skips zero-question Clarify only when its required artifacts are present
+and nonempty. Missing or empty `decision-coverage.md` still routes to Clarify;
+an empty question queue does not establish decision coverage.
+
 Under AFK, `next`, `handoff`, and `check continuation` include the sequence
 frontier without replacing the source-local cursor. Reporting actionable work
 does not authorize Build or Ship, and cannot guarantee native-host compliance.
@@ -71,12 +75,50 @@ archived/related owners absent from the local context read-next bundle.
 Native `/rite-autocomplete` automatically upserts AFK `mode: autocomplete`
 (no new flag), preserving other fields except an explicit `--parallel N` capacity
 update. Missing mode retains standalone AFK behavior; invalid/duplicate mode
-fails closed. With mode and global cap >1, Build wright `dispatch open` checks
-global scheduling before claims/history/round writes: prepare one immediate
-recorded successor per source, with actual pending planning/review handles,
-current native readiness, or a concrete human/dependency hold; placeholders do
-not count. Opt-out, exhausted opening budgets, and source human/question holds
-remain binding. Unresolved authority requires native normalization.
+fails closed. With mode and effective global cap >1, ordinary local
+Temper/Define/Plan/Vet `context` and `dispatch open` check immediate-successor
+preparation before bundle/account/claim/history writes. The context check also
+applies to `--skill rite-<phase>`; it does not require an already-open wave.
+Build-wright admission retains its additional mixed-cohort and writer checks.
+Actual pending native planning/review handles, current readiness/completion, or
+a concrete human/dependency hold satisfy preparation; placeholders do not.
+Valid finite tails have no successor obligation. Opt-out and exhausted opening
+budgets prevent new openings, not planning an existing child. Standalone/cap1
+and initial Spec/Clarify/bootstrap reads retain their existing behavior.
+
+Both commands accept internal preparation intents, not new Autocomplete flags:
+
+| Option | Meaning |
+| --- | --- |
+| `--prepare-for <parent-source>` | Prepare the existing exact immediate successor of that parent. Validates canonical identity, parent binding, adjacent positions and both chains. Only supported preparation phases/roles qualify; controlling-root context may omit a role, dispatch may not. Never Build/writers or product-write authority. |
+| `--sequence-research` | Read-only normalization investigation by `evidence-scout` in Spec/Clarify/Temper/Define/Plan/Vet, bound to the exact existing source. Can inspect conflicting/malformed sequence authority; grants no normalization acceptance, scope, phase advancement, successor creation, writer admission, readiness or upstream preparation credit. |
+
+The options are mutually exclusive; dispatch accepts them on `open` only.
+Repeated `--prepare-for` is a syntax error, even with the same parent.
+Syntax/combination errors exit `2`; refused preparation/authority exits `3`
+before workflow writes. Successful admission uses the existing `0` convention.
+Dispatch retains optional wave fields `preparation_for` (string) and
+`sequence_research` (boolean); context creates no account or receipt. Old
+accounts need neither field. These fields record intent, not host execution.
+Keep context → packet → open → native launch → start order; register actual
+host handles before resuming the parent's ordinary phase.
+Suggested trigger-rerun commands preserve the preparation intent and explicitly
+selected skills root, including shell-safe quoting of that path.
+
+A newly created preparatory child B of nonterminal A does not recursively
+require C before A can proceed, even before B's first marked wave. Completed
+preparation history retains that routing boundary. Ordinary unmarked forward
+or Build-wright admission for B still checks C; such admission, terminal A, or normal
+ordered handoff selecting B restores B's own successor obligation. Pending
+actors, unfinished writer integration and other independent work remain visible.
+Read-only Build accounts do not release the bound. When an inherited descendant
+waits, explicit `next <descendant>` emits no local phase command and
+`check continuation <descendant>` emits `continuation: clear`, unless other
+actionable global work takes priority. Observing a source does not change ACTIVE.
+Purpose history stays immutable and does not make completed actors live again.
+Settled purpose bindings remain historical after an authorized replan; they
+neither bind the current parent nor supply new preparation credit. Unsettled
+mismatched actors still fail closed.
 
 Source `evidence.md` may retain `frontier-blocked: <successor-slug> — <specific constraint>`
 or `frontier-blocked: sequence — <specific constraint>` as a visible scheduling
