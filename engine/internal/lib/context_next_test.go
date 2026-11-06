@@ -590,23 +590,58 @@ func TestNextBlocksOnOpenQuestions(t *testing.T) {
 	}
 }
 
+func TestNextRequiresClarifyCoverageWithoutOpenQuestions(t *testing.T) {
+	for _, coverage := range []string{"missing", "empty"} {
+		t.Run(coverage, func(t *testing.T) {
+			root, featureDir := newWorkspace(t, "spec")
+			for _, name := range []string{"brief.md", "spec.md", "decisions.md", "assumptions.md"} {
+				writeFile(t, filepath.Join(featureDir, name), "x\n")
+			}
+			writeFile(t, filepath.Join(featureDir, "questions.md"), "# Questions\n\nNo open questions remain.\n")
+			if coverage == "empty" {
+				writeFile(t, filepath.Join(featureDir, "decision-coverage.md"), "")
+			}
+			stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+			if code := RunNext(root, []string{"feat"}, stdout, stderr); code != 0 {
+				t.Fatalf("code=%d err=%s", code, stderr.String())
+			}
+			out := stdout.String()
+			for _, want := range []string{"current-status: complete\n", "open-questions: 0\n", "next-phase: clarify\n", "next-command: /rite-clarify\n", "missing: decision-coverage.md\n"} {
+				if !strings.Contains(out, want) {
+					t.Fatalf("expected %q:\n%s", want, out)
+				}
+			}
+			if strings.Contains(out, "skip: clarify") {
+				t.Fatalf("incomplete coverage must not skip clarify:\n%s", out)
+			}
+		})
+	}
+}
+
 func TestNextSkipsVacuousClarify(t *testing.T) {
-	root, featureDir := newWorkspace(t, "spec")
-	for _, name := range []string{"brief.md", "spec.md", "decisions.md", "assumptions.md"} {
-		writeFile(t, filepath.Join(featureDir, name), "x\n")
-	}
-	writeFile(t, filepath.Join(featureDir, "questions.md"), "# Questions\n\nNo open questions remain.\n")
-	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
-	code := RunNext(root, []string{"feat"}, stdout, stderr)
-	out := stdout.String()
-	if code != 0 {
-		t.Fatalf("code=%d err=%s", code, stderr.String())
-	}
-	if !strings.Contains(out, "skip: clarify (0 open questions)") {
-		t.Fatalf("expected clarify skip advisory:\n%s", out)
-	}
-	if !strings.Contains(out, "next-phase: temper") {
-		t.Fatalf("expected temper next:\n%s", out)
+	for _, phase := range []string{"spec", "clarify"} {
+		t.Run(phase, func(t *testing.T) {
+			root, featureDir := newWorkspace(t, phase)
+			for _, name := range []string{"brief.md", "spec.md", "decisions.md", "assumptions.md", "decision-coverage.md"} {
+				writeFile(t, filepath.Join(featureDir, name), "x\n")
+			}
+			writeFile(t, filepath.Join(featureDir, "questions.md"), "# Questions\n\nNo open questions remain.\n")
+			stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+			code := RunNext(root, []string{"feat"}, stdout, stderr)
+			out := stdout.String()
+			if code != 0 {
+				t.Fatalf("code=%d err=%s", code, stderr.String())
+			}
+			if phase == "spec" && !strings.Contains(out, "skip: clarify (0 open questions)") {
+				t.Fatalf("expected clarify skip advisory:\n%s", out)
+			}
+			if !strings.Contains(out, "next-phase: temper\n") {
+				t.Fatalf("expected temper next:\n%s", out)
+			}
+			if strings.Contains(out, "missing:") {
+				t.Fatalf("complete clarify should have no missing artifacts:\n%s", out)
+			}
+		})
 	}
 }
 

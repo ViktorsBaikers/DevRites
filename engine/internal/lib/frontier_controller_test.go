@@ -54,6 +54,11 @@ func controllerPlanning(t *testing.T, root, phase, role string, started bool) {
 	t.Helper()
 	frontierFixture(t, root, "work", "future17", "current16", "plan", "running", "/rite-vet future17", 2, "1")
 	args := []string{"open", "--phase", phase, "--wave", "prepare17", "--role", role}
+	if phase == "plan" && role == "plan-drafter" || phase == "vet" && role == "plan-reviewer" {
+		args = append(args, "--prepare-for", "current16")
+	} else {
+		writeFile(t, filepath.Join(root, "work", "future17", "evidence.md"), "frontier-blocked: future18 — DEC-018 needs owner scope decision\n")
+	}
 	if isReviewerRole(role) {
 		args = append(args, "--packet", reviewerPacketPath(t))
 	}
@@ -127,8 +132,8 @@ func TestAutocompleteControllerRefusesUnstartedSuccessorBeforeWorkflowWrites(t *
 		}},
 		{"source planning handle is not successor handle", func(t *testing.T, root, dir string) {
 			for _, args := range [][]string{
-				{"open", "--phase", "plan", "--wave", "source-plan", "--role", "plan-drafter"},
-				{"start", "--wave", "source-plan", "--role", "plan-drafter", "--handle", "native-source"},
+				{"open", "--phase", "spec", "--wave", "source-plan", "--role", "evidence-scout"},
+				{"start", "--wave", "source-plan", "--role", "evidence-scout", "--handle", "native-source"},
 			} {
 				if code, out := controllerDispatch(t, root, "current16", args...); code != 0 {
 					t.Fatalf("source planning: %d %s", code, out)
