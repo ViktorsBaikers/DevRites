@@ -235,8 +235,8 @@ func builtSlicesFrom(read func(string) ([]byte, error)) (map[string]bool, error)
 		if !builtWordRe.MatchString(item) {
 			continue
 		}
-		for _, m := range regressSliceIDRe.FindAllStringSubmatch(item, -1) {
-			built[strings.TrimLeft(m[1], "0")] = true
+		if digits, ok := ledgerOwner(item); ok {
+			built[strings.TrimLeft(digits, "0")] = true
 		}
 	}
 	extra, err := evidenceBuiltFrom(read)

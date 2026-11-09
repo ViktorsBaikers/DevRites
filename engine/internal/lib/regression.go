@@ -59,6 +59,18 @@ var (
 	regressH2Re      = regexp.MustCompile(`(?m)^## `)
 )
 
+// ledgerOwner returns the slice digits a checked state.md item owns: only its
+// first slice token (documented `SLICE-003` or `Slice 3`). Later tokens on the
+// same line are context — a blocked dependent, an INV reference, a NOT_RUN
+// note — and do not make those slices built.
+func ledgerOwner(item string) (string, bool) {
+	m := regressSliceIDRe.FindStringSubmatch(item)
+	if m == nil {
+		return "", false
+	}
+	return m[1], true
+}
+
 // progressFingerprint is the structural state one baseline records. Sets are
 // sorted for deterministic output and diffing.
 type progressFingerprint struct {
@@ -180,13 +192,15 @@ func fingerprintWorkspace(root, slug, workspace string) (progressFingerprint, er
 	note("state.md", err)
 	if err == nil {
 		for _, item := range regressBuiltRe.FindAllString(masked, -1) {
-			for _, m := range regressSliceIDRe.FindAllStringSubmatch(item, -1) {
-				// `SLICE-001` and `Slice 1` name the same slice.
-				n, _ := strconv.Atoi(m[1])
-				id := fmt.Sprintf("SLICE-%03d", n)
-				if !slices.Contains(fp.DoneSlices, id) {
-					fp.DoneSlices = append(fp.DoneSlices, id)
-				}
+			digits, ok := ledgerOwner(item)
+			if !ok {
+				continue
+			}
+			// `SLICE-001` and `Slice 1` name the same slice.
+			n, _ := strconv.Atoi(digits)
+			id := fmt.Sprintf("SLICE-%03d", n)
+			if !slices.Contains(fp.DoneSlices, id) {
+				fp.DoneSlices = append(fp.DoneSlices, id)
 			}
 		}
 	}
