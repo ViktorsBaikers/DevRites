@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "total_bytes": 1590659,
+  "total_bytes": 1591845,
   "files": {
     "pack/.claude/agents/_shared/composition-findings.md": 106,
     "pack/.claude/agents/_shared/composition-overhaul.md": 476,
@@ -66,7 +66,7 @@
     "pack/.claude/skills/devrites-lib/reference/intent-map.md": 8929,
     "pack/.claude/skills/devrites-lib/reference/orchestration-profiles.md": 2877,
     "pack/.claude/skills/devrites-lib/reference/parallel-dispatch.md": 12362,
-    "pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md": 16032,
+    "pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md": 16461,
     "pack/.claude/skills/devrites-lib/reference/reply-contract.md": 5706,
     "pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md": 3792,
     "pack/.claude/skills/devrites-lib/reference/standards/afk-hitl.md": 29058,
@@ -163,8 +163,8 @@
     "pack/.claude/skills/rite-adopt/SKILL.md": 4114,
     "pack/.claude/skills/rite-autocomplete/reference/decision-policy.md": 2465,
     "pack/.claude/skills/rite-autocomplete/reference/lookahead.md": 3035,
-    "pack/.claude/skills/rite-autocomplete/reference/loop.md": 11184,
-    "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md": 7356,
+    "pack/.claude/skills/rite-autocomplete/reference/loop.md": 11475,
+    "pack/.claude/skills/rite-autocomplete/reference/stop-conditions.md": 7822,
     "pack/.claude/skills/rite-autocomplete/SKILL.md": 12533,
     "pack/.claude/skills/rite-build/reference/afk-discipline.md": 7614,
     "pack/.claude/skills/rite-build/reference/anti-patterns.md": 1407,

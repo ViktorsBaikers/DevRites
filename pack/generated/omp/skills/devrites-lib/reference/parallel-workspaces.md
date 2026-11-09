@@ -113,6 +113,12 @@ return cursors and native handles: one controller, not another phase or queue.
    obligation. Placeholders, reports and unopened waves prove nothing.
    Opt-out, zero opening budget or source human/question holds prevent new
    openings, not existing child preparation or independent work.
+   In autocomplete mode, `blocked` or `awaiting_human` with no question cursor
+   and no open blocking or escalating question is existing work when
+   `next_action` is Spec, Clarify, Temper, Define, Plan, or Vet. A recorded
+   Temper-or-later phase is ordinary work, so later siblings stay visible.
+   Launch every `frontier-concurrent:` command and every `frontier-picks`
+   writer in the same turn, up to the cap, picks first.
    If preparation cannot start, retain `frontier-blocked: <successor> — <constraint>`
    in source `evidence.md`. `frontier-blocked: sequence — <constraint>` may defer
    unresolved historical normalization for valid independent local work. Each row

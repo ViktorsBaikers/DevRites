@@ -57,6 +57,15 @@ func (p preparationPurpose) validate(phase string, roles []string, context bool)
 	return nil
 }
 
+func ordinaryAdmittedPhase(phase string) bool {
+	switch phase {
+	case "temper", "define", "plan", "vet", "build", "prove", "polish", "review", "seal", "ship", "done":
+		return true
+	default:
+		return false
+	}
+}
+
 func earlyPreparationPhase(phase string) bool {
 	phase = strings.ToLower(phase)
 	return phase == "temper" || phase == "define" || phase == "plan" || phase == "vet"
@@ -199,6 +208,11 @@ func frontierPreparatoryOnly(root string, n *frontierWorkspace, nodes map[string
 		return false, account, nil
 	}
 	if account == nil {
+		// A recorded Temper-or-later phase is ordinary work. Missing dispatch
+		// waves do not keep every later sibling preparatory-only.
+		if ordinaryAdmittedPhase(n.phase) {
+			return false, nil, nil
+		}
 		return true, nil, nil
 	}
 	for _, wave := range account.Waves {

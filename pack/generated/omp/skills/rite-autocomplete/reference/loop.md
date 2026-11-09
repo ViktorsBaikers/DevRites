@@ -99,6 +99,10 @@ At phase entry, before recovery/waits, execute the
 [global pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
 Consume persisted return frontiers; rerun after landing/artifact/capacity changes.
 Execute authorized routes, retaining handles, cursors and protected proof windows.
+When frontier prints `frontier-concurrent:`, launch every listed command and every
+`frontier-picks` writer in that same turn, each on its own source. The cap bounds
+the turn: start picks first, then fill remaining slots from `frontier-concurrent`.
+Do not finish one listed source and reply.
 
 Check [stop-conditions.md](stop-conditions.md) before advancing. Discard stale
 pass evidence after source edits. Re-read the selected source before each phase per [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding). On a cold resume or

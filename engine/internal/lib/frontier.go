@@ -22,7 +22,7 @@ type frontierWorkspace struct {
 	slug, dir, location, parent, phase, status, next, question string
 	position, remaining                                        int
 	hasPosition, hasRemaining                                  bool
-	selectionHeld                                              bool
+	selectionHeld, agentOwnedPlanning                          bool
 	problem                                                    error
 }
 
@@ -374,6 +374,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 	}
 	deferred := map[string]string{}
 	prepared := map[string]bool{}
+	var concurrent []string
 	var preparatory map[string]bool
 	var preparationAccounts map[string]*dispatchFile
 	if mode && capN > 1 {
@@ -393,7 +394,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 		_, invalid := frontierChain(nodes, name)
 		if invalid != nil {
 			action, reason, blocked = "repair", invalid.Error(), true
-		} else if gateReason, gateErr := frontierQuestionHold(n); gateErr != nil {
+		} else if gateReason, gateErr := frontierSchedulingHold(n, mode); gateErr != nil {
 			action, reason, held, blocked = "repair", gateErr.Error(), true, true
 		} else if gateReason != "" {
 			action, reason, held, blocked = "wait", gateReason, true, true
@@ -424,6 +425,11 @@ func FrontierLines(root, slug string) ([]string, error) {
 			case "blocked":
 				blocked = true
 				action = "wait"
+			}
+		}
+		if mode && action == "prepare" {
+			if cmd, ok := planningCursorCommand(reason); ok {
+				concurrent = append(concurrent, cmd)
 			}
 		}
 		lines = append(lines, fmt.Sprintf("frontier-workspace: %s location=%s action=%s reason=%s", name, n.location, action, reason))
@@ -518,6 +524,15 @@ func FrontierLines(root, slug string) ([]string, error) {
 			}
 		}
 	}
+	if mode && capN > 0 && len(concurrent) > 0 {
+		limit := capN
+		if limit > len(concurrent) {
+			limit = len(concurrent)
+		}
+		for _, cmd := range concurrent[:limit] {
+			lines = append(lines, "frontier-concurrent: "+cmd)
+		}
+	}
 	verdict := "clear"
 	if blocked {
 		verdict = "blocked"
@@ -577,6 +592,51 @@ func frontierPolicy(root string) (bool, int, error) {
 	return allow, capN, nil
 }
 
+func frontierSchedulingHold(n *frontierWorkspace, mode bool) (string, error) {
+	if mode && agentOwnedPlanningCursor(n) {
+		if n.question != "" {
+			return "human/blocked cursor; retain native gate", nil
+		}
+		questions, err := readBoundedRegularFile(filepath.Join(n.dir, "questions.md"), workspaceArtifactLimit)
+		if err != nil && !os.IsNotExist(err) {
+			return "", err
+		}
+		if err == nil {
+			for _, kind := range gate.OpenBlockingQuestionGates(questions) {
+				if kind == "blocking" || kind == "escalating" {
+					return "open " + kind + " question; retain native gate", nil
+				}
+			}
+		}
+		n.agentOwnedPlanning = true
+		return "", nil
+	}
+	return frontierQuestionHold(n)
+}
+
+func agentOwnedPlanningCursor(n *frontierWorkspace) bool {
+	if n == nil || (n.status != "blocked" && n.status != "awaiting_human") {
+		return false
+	}
+	_, internal, err := internalPhaseEdge(n.next, n.slug)
+	if err != nil || !internal {
+		return false
+	}
+	return preparationPhase(workflow.ForAction(n.next).Verb)
+}
+
+func planningCursorCommand(reason string) (string, bool) {
+	const prefix = "native internal phase cursor: "
+	if !strings.HasPrefix(reason, prefix) {
+		return "", false
+	}
+	cmd := strings.TrimSpace(strings.TrimPrefix(reason, prefix))
+	if cmd == "" || strings.ContainsAny(cmd, "\n\r") {
+		return "", false
+	}
+	return cmd, true
+}
+
 func frontierQuestionHold(n *frontierWorkspace) (string, error) {
 	if n.status == "awaiting_human" || n.status == "blocked" || n.question != "" {
 		return "human/blocked cursor; retain native gate", nil
@@ -601,7 +661,7 @@ func frontierLocal(root, controller string, n *frontierWorkspace, candidates *[]
 	if _, err := devritespaths.WorkspaceOverrideChecked(root, n.slug); err != nil {
 		return "blocked", "DEVRITES_WORKSPACE scope retained; unset override before global admission", nil
 	}
-	if n.status != "running" && n.status != "ready" {
+	if n.status != "running" && n.status != "ready" && !n.agentOwnedPlanning {
 		return "blocked", "status lacks an actionable native cursor; normalize state without inventing authority", nil
 	}
 	if dispatch == nil {
@@ -682,7 +742,7 @@ func frontierLocal(root, controller string, n *frontierWorkspace, candidates *[]
 	}
 	if _, internal, err := internalPhaseEdge(n.next, n.slug); err != nil {
 		return "", "", err
-	} else if internal && n.status == "running" {
+	} else if internal && (n.status == "running" || n.agentOwnedPlanning) {
 		return "prepare", "native internal phase cursor: " + n.next, nil
 	}
 	if command := workflow.ForAction(n.next); command.Verb == "ship" {

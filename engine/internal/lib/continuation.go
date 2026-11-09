@@ -61,6 +61,10 @@ func RunCheckContinuation(root string, args []string, stdout, stderr io.Writer) 
 			verdict = continuationVerdict{Required: true, Invoke: "/rite-autocomplete", Source: slug, Reason: "global frontier requires native preparation, authority review, or selection; no Ship approval"}
 		} else if mode && frontierSourcePreparationWait(slug, frontier) {
 			verdict = continuationVerdict{Reason: frontierInheritedPreparationWait}
+		} else if mode && !verdict.Required {
+			if invoke, ok := frontierSourcePlanningCursor(slug, frontier); ok {
+				verdict = continuationVerdict{Required: true, Invoke: invoke, Source: slug, Reason: "agent-owned planning cursor; launch every frontier-concurrent command before replying"}
+			}
 		}
 	}
 	writeContinuation(stdout, verdict)
