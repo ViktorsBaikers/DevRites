@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.3.7](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.6...v7.3.7) (2026-11-09)
+
+### Fixed
+
+* **devrites:** count only the owning slice of a build item ([#210](https://github.com/ViktorsBaikers/DevRites/issues/210)) ([b1e4f92](https://github.com/ViktorsBaikers/DevRites/commit/b1e4f92cb5d49d2865b4c0994523e52993b5d133))
+
 ## [7.3.6](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.5...v7.3.6) (2026-11-06)
 
 ### Fixed
