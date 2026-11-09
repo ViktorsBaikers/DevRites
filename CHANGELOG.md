@@ -59,6 +59,10 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 
 ### Fixed
 
+- Mark only the slice a checked state.md item names first as built; a later
+  `SLICE-###` reference in the same line no longer inflates regression, next, or
+  parallel admission. Baselines written under the old all-token parsing re-ratchet
+  once with `check regression <slug> --update`.
 - Guard Autocomplete's early phase context and dispatch, not only Build writers,
   against unstarted successor preparation. Keep normalization research reachable
   and bound successor preparation before its first wave without recursively
