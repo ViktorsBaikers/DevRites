@@ -618,6 +618,19 @@ func autocompleteWriterAdmission(root, source string, wave *dispatchWave, curren
 
 const frontierInheritedPreparationWait = "preparatory descendant; continue immediate-parent preparation before this native cursor"
 
+func frontierSourcePlanningCursor(source string, lines []string) (string, bool) {
+	prefix := "frontier-workspace: " + source + " location=live action=prepare reason=native internal phase cursor: "
+	for _, line := range lines {
+		if strings.HasPrefix(line, prefix) {
+			cmd := strings.TrimSpace(strings.TrimPrefix(line, prefix))
+			if cmd != "" {
+				return cmd, true
+			}
+		}
+	}
+	return "", false
+}
+
 func frontierSourcePreparationWait(source string, lines []string) bool {
 	wait := "frontier-workspace: " + source + " location=live action=wait reason=" + frontierInheritedPreparationWait
 	for _, line := range lines {
