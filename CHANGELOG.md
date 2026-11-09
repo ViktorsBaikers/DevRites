@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.3.8](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.7...v7.3.8) (2026-11-09)
+
+### Fixed
+
+* **devrites:** schedule agent-owned planning cursors together ([#211](https://github.com/ViktorsBaikers/DevRites/issues/211)) ([8553c00](https://github.com/ViktorsBaikers/DevRites/commit/8553c0038ddeb2608608cdc19f133f3f2a1de0e1))
+
 ## [7.3.7](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.6...v7.3.7) (2026-11-09)
 
 ### Fixed
