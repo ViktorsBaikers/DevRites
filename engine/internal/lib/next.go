@@ -88,6 +88,7 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 			return 2
 		}
 		if mode && frontierGlobalPriority(slug, lines) {
+			writeFrontierBatch(stdout, lines)
 			fmt.Fprintln(stdout, "next-command: /rite-autocomplete")
 			return exit
 		}

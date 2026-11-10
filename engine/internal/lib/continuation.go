@@ -58,7 +58,11 @@ func RunCheckContinuation(root string, args []string, stdout, stderr io.Writer) 
 			return 2
 		}
 		if mode && frontierGlobalPriority(slug, frontier) || !mode && !verdict.Required && len(frontier) > 0 && frontier[0] == "frontier: actionable" {
-			verdict = continuationVerdict{Required: true, Invoke: "/rite-autocomplete", Source: slug, Reason: "global frontier requires native preparation, authority review, or selection; no Ship approval"}
+			reason := "global frontier requires native preparation, authority review, or selection; Git stays unauthorized"
+			if mode && frontierHasBatch(frontier) {
+				reason = "a source GO does not end autocomplete; run every launch command and every picks writer this turn; do not ask; Git stays unauthorized"
+			}
+			verdict = continuationVerdict{Required: true, Invoke: "/rite-autocomplete", Source: slug, Reason: reason}
 		} else if mode && frontierSourcePreparationWait(slug, frontier) {
 			verdict = continuationVerdict{Reason: frontierInheritedPreparationWait}
 		} else if mode && !verdict.Required {
@@ -67,11 +71,35 @@ func RunCheckContinuation(root string, args []string, stdout, stderr io.Writer) 
 			}
 		}
 	}
-	writeContinuation(stdout, verdict)
+	writeContinuation(stdout, verdict, frontier)
 	for _, line := range frontier {
 		fmt.Fprintln(stdout, line)
 	}
 	return 0
+}
+
+// frontierHasBatch reports a capped same-turn batch: planning commands and/or
+// admitted slice writers. The controller invoke stays /rite-autocomplete.
+func frontierHasBatch(lines []string) bool {
+	for _, line := range lines {
+		if strings.HasPrefix(line, "frontier-concurrent: ") || strings.HasPrefix(line, "frontier-picks: ") {
+			return true
+		}
+	}
+	return false
+}
+
+func writeFrontierBatch(stdout io.Writer, lines []string) {
+	for _, line := range lines {
+		if cmd, ok := strings.CutPrefix(line, "frontier-concurrent: "); ok && cmd != "" {
+			fmt.Fprintf(stdout, "launch: %s\n", cmd)
+		}
+	}
+	for _, line := range lines {
+		if picks, ok := strings.CutPrefix(line, "frontier-picks: "); ok && picks != "" {
+			fmt.Fprintf(stdout, "picks: %s\n", picks)
+		}
+	}
 }
 
 func classifyContinuation(root, slug string) (continuationVerdict, error) {
@@ -246,11 +274,12 @@ func continuationArguments(command workflow.Command, args []string, slug string)
 	return badArgs()
 }
 
-func writeContinuation(stdout io.Writer, verdict continuationVerdict) {
+func writeContinuation(stdout io.Writer, verdict continuationVerdict, frontier []string) {
 	if verdict.Required {
 		fmt.Fprintln(stdout, "continuation: required")
 		fmt.Fprintf(stdout, "invoke: %s\n", verdict.Invoke)
 		fmt.Fprintf(stdout, "source: %s\n", verdict.Source)
+		writeFrontierBatch(stdout, frontier)
 	} else {
 		fmt.Fprintln(stdout, "continuation: clear")
 	}

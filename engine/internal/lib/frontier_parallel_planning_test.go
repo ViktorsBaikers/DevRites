@@ -29,6 +29,9 @@ func TestAutocompleteSchedulesAgentOwnedPlanningTogether(t *testing.T) {
 		"frontier-workspace: delta location=live action=prepare reason=native internal phase cursor: /rite-define delta",
 		"frontier-concurrent: /rite-plan repair alpha\n",
 		"frontier-concurrent: /rite-plan repair beta\n",
+		"launch: /rite-plan repair alpha\n",
+		"launch: /rite-plan repair beta\n",
+		"reason: a source GO does not end autocomplete; run every launch command and every picks writer this turn; do not ask; Git stays unauthorized\n",
 	} {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %q:\n%s", want, text)
@@ -58,6 +61,7 @@ func TestAutocompleteBlockedPlanningCursorContinuesWithoutSibling(t *testing.T) 
 		"invoke: /rite-plan repair beta\n",
 		"source: beta\n",
 		"frontier-concurrent: /rite-plan repair beta\n",
+		"launch: /rite-plan repair beta\n",
 		"reason: agent-owned planning cursor; launch every frontier-concurrent command before replying\n",
 	} {
 		if !strings.Contains(text, want) {
@@ -126,5 +130,45 @@ func TestAutocompleteSpecChainStillWaitsForUnadmittedDescendant(t *testing.T) {
 	}
 	if strings.Contains(text, "frontier-concurrent: /rite-spec chain-c") {
 		t.Fatalf("unadmitted grandchild was launched:\n%s", text)
+	}
+}
+
+func TestAutocompleteBarePhaseCommandNamesWorkspace(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeFile(t, filepath.Join(root, "AFK"), "mode: autocomplete\nmax_parallel: 5\n")
+	frontierFixture(t, root, "work", "bare", "", "vet", "running", "/rite-vet", 1, "0")
+	text := frontierText(t, root, "bare")
+	for _, want := range []string{
+		"reason=native internal phase cursor: /rite-vet bare",
+		"frontier-concurrent: /rite-vet bare",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("missing %q:\n%s", want, text)
+		}
+	}
+}
+
+func TestAutocompleteSourceGODoesNotStopOtherWorkspaces(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".devrites")
+	writeFile(t, filepath.Join(root, "AFK"), "mode: autocomplete\nmax_parallel: 5\n")
+	dir := frontierFixture(t, root, "work", "hold", "", "seal", "awaiting_human", "/rite-seal hold", 1, "1")
+	writeFile(t, filepath.Join(dir, "questions.md"), "## q-go\nstatus: open\ngate: blocking\n")
+	frontierFixture(t, root, "work", "other", "hold", "plan", "blocked", "/rite-plan repair other", 2, "0")
+	var out, errOut bytes.Buffer
+	if code := RunCheckContinuation(root, []string{"hold"}, &out, &errOut); code != 0 {
+		t.Fatalf("code=%d: %s", code, &errOut)
+	}
+	text := out.String()
+	for _, want := range []string{
+		"continuation: required\n",
+		"launch: /rite-plan repair other\n",
+		"a source GO does not end autocomplete",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("missing %q:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "continuation: clear") {
+		t.Fatalf("source GO ended the run:\n%s", text)
 	}
 }

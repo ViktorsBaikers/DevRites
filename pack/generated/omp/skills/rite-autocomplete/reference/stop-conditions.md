@@ -35,10 +35,10 @@ Autocomplete. Source human/Ship holds remain binding, while independent
 authorized planning can continue. `clear` is reply permission, not Ship approval.
 In autocomplete mode, `blocked` or `awaiting_human` is agent-owned recovery
 when no question cursor is set, no blocking or escalating question is open,
-and `next_action` is Spec, Clarify, Temper, Define, Plan, or Vet. Ship, Build,
-a question cursor, and an open blocking or escalating question still wait.
-`frontier-concurrent:` lists at most the cap of those cursors. Before any reply,
-start every listed command and every `frontier-picks` writer in the same turn.
+and `next_action` is Spec, Clarify, Temper, Define, Plan, or Vet. A GO, Ship,
+Build, question, or blocking hold binds that source only and does not end the run.
+Before any reply, start every `frontier-concurrent:` command and every
+`frontier-picks` writer, at most the cap. Ask only when both are empty.
 
 A preparation refusal routes native work or a narrow disclosed scheduling
 deferral under the [global pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
