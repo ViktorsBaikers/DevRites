@@ -44,9 +44,9 @@ admission and the global pass below; local readiness is insufficient. Count ever
 Explicit activation resets only activation-local counters, not durable recovery.
 Pass resolved `--parallel N` to [Build](../../rite-build/reference/output.md#caller-owned-continuation).
 Legacy or invented execution ceilings never stop this controller; human limits bind.
-Resolve ranked validating/blocking picks via `devrites-engine state resolve`, not
-a user handoff. Escalating, irreversible-risk, access, unrecommended blocking picks
-and Seal judgment (`slice: seal`) still pause.
+Resolve ranked picks via `devrites-engine state resolve`, not
+a user handoff. Escalating, irreversible-risk, access, and unrecommended blocking
+picks pause that source only. A Seal GO does not end the run.
 
 ## Early preparation admission
 

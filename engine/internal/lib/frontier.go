@@ -429,7 +429,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 		}
 		if mode && action == "prepare" {
 			if cmd, ok := planningCursorCommand(reason); ok {
-				concurrent = append(concurrent, cmd)
+				concurrent = append(concurrent, commandWithWorkspace(cmd, name))
 			}
 		}
 		lines = append(lines, fmt.Sprintf("frontier-workspace: %s location=%s action=%s reason=%s", name, n.location, action, reason))
@@ -625,6 +625,20 @@ func agentOwnedPlanningCursor(n *frontierWorkspace) bool {
 	return preparationPhase(workflow.ForAction(n.next).Verb)
 }
 
+// commandWithWorkspace names the workspace on a phase command that omitted it.
+// `/rite-vet` cannot be launched; `/rite-vet <slug>` can.
+func commandWithWorkspace(cmd, slug string) string {
+	if slug == "" {
+		return cmd
+	}
+	for _, field := range strings.Fields(cmd) {
+		if field == slug {
+			return cmd
+		}
+	}
+	return cmd + " " + slug
+}
+
 func planningCursorCommand(reason string) (string, bool) {
 	const prefix = "native internal phase cursor: "
 	if !strings.HasPrefix(reason, prefix) {
@@ -740,10 +754,10 @@ func frontierLocal(root, controller string, n *frontierWorkspace, candidates *[]
 	if frontierSpecTarget(n) != "" {
 		return "complete", "native next Spec cursor recorded", nil
 	}
-	if _, internal, err := internalPhaseEdge(n.next, n.slug); err != nil {
+	if invoke, internal, err := internalPhaseEdge(n.next, n.slug); err != nil {
 		return "", "", err
 	} else if internal && (n.status == "running" || n.agentOwnedPlanning) {
-		return "prepare", "native internal phase cursor: " + n.next, nil
+		return "prepare", "native internal phase cursor: " + commandWithWorkspace(invoke, n.slug), nil
 	}
 	if command := workflow.ForAction(n.next); command.Verb == "ship" {
 		fields := strings.Fields(n.next)
