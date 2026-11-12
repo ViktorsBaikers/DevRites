@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.3.10](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.9...v7.3.10) (2026-11-12)
+
+### Fixed
+
+* **devrites:** recover autocomplete owner when ACTIVE is empty ([#213](https://github.com/ViktorsBaikers/DevRites/issues/213)) ([7014453](https://github.com/ViktorsBaikers/DevRites/commit/70144532ef53e9d6df9021b53523828b44ffc4f3))
+
 ## [7.3.9](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.8...v7.3.9) (2026-11-10)
 
 ### Fixed
