@@ -77,6 +77,8 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 
 ### Fixed
 
+- Pin the engine and workflow-artifact fixture to Go 1.27.4 to address
+  GO-2026-6859 in `net/http`.
 - Mark only the slice a checked state.md item names first as built; a later
   `SLICE-###` reference in the same line no longer inflates regression, next, or
   parallel admission. Baselines written under the old all-token parsing re-ratchet
