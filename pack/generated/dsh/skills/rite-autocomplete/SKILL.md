@@ -62,12 +62,9 @@ executable controller/harness/bundle bytes or a missing writer, read
 - Do not stop on `--max-slices`, sentinel `max_slices`, `max_agents`,
   `max_minutes`, or `max_review_queue`. Count failed, malformed, and
   unavailable leaf calls.
-- Never end the turn with a progress note while a wave runs or a next step
-  exists: on a headless host a text-only reply ends the session and kills
-  running children. Wait with the host's wait tool and keep working; end only
-  at a recorded stop. A host reminder or rule notice (style rule, advisory) is
-  not a stop either: follow it in your next tool call, never in a text-only
-  acknowledgement.
+- While waves run or next steps exist, use host tools/wait; text replies kill
+  headless sessions/children. End only at recorded stops; reminders/advisories
+  require tools, not acknowledgements.
 - Parse flags only from this invocation. `--ship`, `--yolo`, `--max-slices`,
   `--parallel`, `--full`, `--cross-model`, and `--lookahead` activate only as exact standalone
   tokens in `$ARGUMENTS`; examples or earlier messages can never arm them.
@@ -86,23 +83,30 @@ With `--lookahead` (trigger `lookahead`), follow
 [`lookahead.md`](reference/lookahead.md) instead of the steps below: plan the
 next sequence continuation through Vet in a second session, then stop.
 
-1. **Orient and parse.** Resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding).
-   Read its existing cursor; a fresh idea starts empty at step 2. Normalize this
-   invocation to idea, `ship_preflight: yes|no`, `max_slices: unlimited`,
+1. **Orient and parse.** Bind [source](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding);
+   Keep validated overrides. With no source/override and missing/empty
+   `ACTIVE`, run `devrites-engine frontier` without slug first. Use unique
+   `frontier-source:` before asking. `frontier: none` without sequence
+   evidence permits fresh Spec at step 2; ambiguity/invalidity gates recovery.
+   Recovery never changes ACTIVE/flags or binds source from chat/recency.
+   Read existing `state.md` cursor.
+   Bind source in `devrites-engine`: `handoff <source> --resume`,
+   `context <source> --phase autocomplete`, `check continuation <source>`.
+   Arguments: idea, `ship_preflight: yes|no`, `max_slices: unlimited`,
    `parallel: N|default`, `profile: standard|full`, `cross_model: yes|no`.
-   Apply the loop's [AFK contract](reference/loop.md#arm-afk-once) to an existing
-   sentinel: upsert `mode: autocomplete`, plus capacity only for explicit
-   `--parallel N`. Mode identifies this controller, never grants authority.
-   Run `devrites-engine frontier <source>` before local recovery; execute the
+   Apply [AFK contract](reference/loop.md#arm-afk-once) to existing sentinel:
+   upsert `mode: autocomplete`; capacity only for explicit `--parallel N`.
+   Mode identifies controller, grants no authority. Run
+   `devrites-engine frontier <source>` before local recovery; execute
    [global pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
-   Reconcile blocked/terminal cursors against retained action evidence and exact
-   fingerprint attempts; resume offline recovery below its cap. This explicit
-   invocation reopens parked fingerprints. Reconstruct missing return cursors
-   only from the current phase and approved `test-plan.md`/evidence action.
+   Reconcile blocked/terminal cursors with retained action evidence/exact fingerprint
+   attempts; resume below-cap offline recovery and reopen parked fingerprints.
+   Reconstruct missing return cursors only from current phase and approved
+   `test-plan.md`/evidence action, never chat.
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"lifecycle cursor encounters admitted set or resumable journal","action":"invoke classifier; execute returned route internally","return":"saved phase/action; zero intermediate reply"} -->
-   After compaction/resume, run `devrites-engine handoff <source> --resume`
-   and open its `read_next` artifacts per [context hygiene](../devrites-lib/reference/standards/context-hygiene.md).
-   **Completion:** arguments/source are unambiguous; local cursor and handles survive.
+   On compaction/resume, first run `devrites-engine handoff <source> --resume`;
+   read only its `read_next` per [context hygiene](../devrites-lib/reference/standards/context-hygiene.md).
+   **Completion:** unambiguous arguments/source; cursor and handles intact.
 2. **Specify and clarify.** Run `devrites-interview`, `/rite-spec`, and
    `/rite-clarify` as one window. `open` material coverage never arms
    AFK. **Completion:** `Decision coverage: CLEAR` is durable.
@@ -149,15 +153,12 @@ next sequence continuation through Vet in a second session, then stop.
 
 ## Reply and resume
 
-HITL Build returns after one slice; Autocomplete ignores `--max-slices`, chaining
-pending slices. Each Autocomplete invocation owns internal backtracking. Context pressure, compaction, or a nested completion footer does
-not create a stop; persist and resume the cursor.
-
-Reply only at final state: text-only turns end the run. Keep
-calling tools after compaction or phase changes. Before any user-visible reply,
-`devrites-engine check continuation` must print `continuation: clear`
-(`handoff` prints the same lines). `required` means invoke `invoke:` now.
-`stopped` is not a phase token. Print this card only after `clear`:
+HITL Build returns after one slice; Autocomplete chains pending slices, ignoring
+`--max-slices`, and owns backtracking. Context pressure, compaction, and nested
+completion footers never stop it; persist/resume the cursor and keep calling tools.
+Before replying, `devrites-engine check continuation <source>` must print
+`continuation: clear` (`handoff` emits it too); `required` means execute `invoke:`
+now. `stopped` is no phase token. Only after `clear`, print:
 
 ```text
 Autocomplete: <slug>
