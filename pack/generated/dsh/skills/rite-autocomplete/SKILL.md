@@ -66,10 +66,10 @@ executable controller/harness/bundle bytes or a missing writer, read
   headless sessions/children. End only at recorded stops; reminders/advisories
   require tools, not acknowledgements.
 - Parse flags only from this invocation. `--ship`, `--yolo`, `--max-slices`,
-  `--parallel`, `--full`, `--cross-model`, and `--lookahead` require exact standalone
-  `$ARGUMENTS` tokens; examples/history never arm them.
-  `--max-slices` occurs once with a positive base-10 integer;
-  `--parallel` occurs once with a base-10 integer in `1`–`10`.
+  `--parallel`, `--full`, `--cross-model`, and `--lookahead` activate only as exact standalone
+  tokens in `$ARGUMENTS`; examples or earlier messages can never arm them.
+  `--max-slices` must occur once and be followed by a positive base-10 integer;
+  `--parallel` must occur once and be followed by a base-10 integer in `1`–`10`.
   Missing, repeated, malformed, or conflicting values stop before any write.
 - Temper always runs after Clarify. Auto-apply `hold-rigor`, `reduce-to-MVP` or a skip;
   record the ADR and fold via Spec Drift Guard. `expand` and extra acceptance never
@@ -84,19 +84,19 @@ With `--lookahead` (trigger `lookahead`), follow
 next sequence continuation through Vet in a second session, then stop.
 
 1. **Orient and parse.** Bind [source](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding);
-   retain validated overrides. Without source/override and with missing/empty
-   `ACTIVE`, first run `devrites-engine frontier` without slug. Consume unique
-   `frontier-source:` before user selection. `frontier: none` without sequence
-   evidence starts fresh Spec at step 2; ambiguity/invalidity gates selection/repair.
-   Recovery changes neither ACTIVE nor flags; chat/recency grants no source authority.
+   Keep validated overrides. With no source/override and missing/empty
+   `ACTIVE`, run `devrites-engine frontier` without slug first. Use unique
+   `frontier-source:` before asking. `frontier: none` without sequence
+   evidence permits fresh Spec at step 2; ambiguity/invalidity gates recovery.
+   Recovery never changes ACTIVE/flags or binds source from chat/recency.
    Read existing `state.md` cursor.
-   Pass source explicitly to `devrites-engine`: `handoff <source> --resume`,
+   Bind source in `devrites-engine`: `handoff <source> --resume`,
    `context <source> --phase autocomplete`, `check continuation <source>`.
    Arguments: idea, `ship_preflight: yes|no`, `max_slices: unlimited`,
    `parallel: N|default`, `profile: standard|full`, `cross_model: yes|no`.
    Apply [AFK contract](reference/loop.md#arm-afk-once) to existing sentinel:
    upsert `mode: autocomplete`; capacity only for explicit `--parallel N`.
-   Mode identifies this controller, never grants authority. Run
+   Mode identifies controller, grants no authority. Run
    `devrites-engine frontier <source>` before local recovery; execute
    [global pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
    Reconcile blocked/terminal cursors with retained action evidence/exact fingerprint
