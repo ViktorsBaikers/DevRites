@@ -103,6 +103,9 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
   complete writer allowlist against live foreign claims, including symlink
   aliases, even when optional claim flags are absent or name unrelated paths.
 
+- Recover Autocomplete's recorded live sequence owner when ACTIVE is missing or
+  empty before requesting a workspace handoff; retain ambiguity, metadata repair,
+  human gates, and read-only recovery without changing ACTIVE.
 - Use `GH_TOKEN`, then `GITHUB_TOKEN`, then optional bounded noninteractive GitHub
   CLI credential lookup for release API requests. Keep credentials off release
   assets and off-origin redirects, fail explicit invalid credentials, and document

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -22,6 +23,7 @@ type frontierWorkspace struct {
 	slug, dir, location, parent, phase, status, next, question string
 	position, remaining                                        int
 	hasPosition, hasRemaining                                  bool
+	hasParent                                                  bool
 	selectionHeld, agentOwnedPlanning                          bool
 	problem                                                    error
 }
@@ -92,7 +94,10 @@ func frontierRead(root, slug, location string) *frontierWorkspace {
 	}{
 		{state.CursorSequenceParent, &n.parent}, {state.CursorPhase, &n.phase}, {state.CursorStatus, &n.status}, {state.CursorNextAction, &n.next}, {state.CursorQuestionID, &n.question},
 	} {
-		value, _, err := frontierField(lines, field.key)
+		value, present, err := frontierField(lines, field.key)
+		if field.key == state.CursorSequenceParent {
+			n.hasParent = present
+		}
 		*field.dst = value
 		if err != nil {
 			n.problem = err
@@ -238,6 +243,75 @@ func frontierTerminal(n *frontierWorkspace) bool {
 
 func frontierQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'" }
 
+func frontierRecoverSource(nodes map[string]*frontierWorkspace) (string, error) {
+	names := make([]string, 0, len(nodes))
+	hasChild := make(map[string]bool, len(nodes))
+	for name, n := range nodes {
+		names = append(names, name)
+		hasChild[n.parent] = true
+	}
+	sort.Strings(names)
+	owners := map[string]string{}
+	depths := map[string]int{}
+	ambiguous := map[string]bool{}
+	recorded := false
+	var tips []struct{ slug, anchor string }
+	for _, name := range names {
+		n := nodes[name]
+		tip := n.location == "archive" && frontierTerminal(n) && frontierSpecTarget(n) != "" && !hasChild[name]
+		recorded = recorded || n.parent != "" || n.hasPosition || n.hasRemaining || hasChild[name] || tip
+		if !n.hasParent && !n.hasPosition && !n.hasRemaining && !hasChild[name] && !tip {
+			continue
+		}
+		chain, err := frontierChain(nodes, name)
+		if err != nil {
+			return "", fmt.Errorf("empty ACTIVE: invalid recorded sequence at %s: %w; repair native sequence metadata before recovery", name, err)
+		}
+		anchor := chain[len(chain)-1]
+		if len(chain) > 1 || hasChild[name] || n.hasPosition && n.hasRemaining {
+			for i := len(chain) - 1; i >= 0; i-- {
+				member := chain[i]
+				if nodes[member].location != "live" {
+					continue
+				}
+				depth := len(chain) - i
+				old := owners[anchor]
+				if old == "" || depth < depths[anchor] {
+					owners[anchor], depths[anchor] = member, depth
+					ambiguous[anchor] = false
+				} else if depth == depths[anchor] && member != old {
+					ambiguous[anchor] = true
+				}
+				break
+			}
+		}
+		if tip {
+			tips = append(tips, struct{ slug, anchor string }{name, anchor})
+		}
+	}
+	if !recorded {
+		return "", nil
+	}
+	for _, name := range names {
+		if ambiguous[name] {
+			return "", fmt.Errorf("empty ACTIVE: sequence %s has multiple equally earliest live owners; repair native sequence ownership before recovery", name)
+		}
+	}
+	var sources []string
+	for _, owner := range owners {
+		sources = append(sources, owner)
+	}
+	for _, tip := range tips {
+		if owners[tip.anchor] == "" {
+			sources = append(sources, tip.slug)
+		}
+	}
+	if len(sources) != 1 {
+		return "", fmt.Errorf("empty ACTIVE: need a unique recorded live sequence owner or unique archived terminal sequence tip with exact next Spec edge; found %d", len(sources))
+	}
+	return sources[0], nil
+}
+
 // FrontierLines reports structural obligations, never semantic authorization or Ship approval.
 func FrontierLines(root, slug string) ([]string, error) {
 	mode, err := autocompleteMode(root)
@@ -266,26 +340,13 @@ func FrontierLines(root, slug string) ([]string, error) {
 		return nil, err
 	}
 	if slug == "" {
-		var tips []string
-		for name, n := range nodes {
-			if n.location != "archive" || !frontierTerminal(n) || frontierSpecTarget(n) == "" {
-				continue
-			}
-			if _, err := frontierChain(nodes, name); err != nil {
-				continue
-			}
-			hasChild := false
-			for _, child := range nodes {
-				hasChild = hasChild || child.parent == name
-			}
-			if !hasChild {
-				tips = append(tips, name)
-			}
+		slug, err = frontierRecoverSource(nodes)
+		if err != nil {
+			return nil, err
 		}
-		if len(tips) != 1 {
-			return nil, fmt.Errorf("empty ACTIVE: need a unique archived terminal sequence tip with exact next Spec edge; found %d", len(tips))
+		if slug == "" {
+			return []string{"frontier: none"}, nil
 		}
-		slug = tips[0]
 	}
 	source := nodes[slug]
 	if source == nil {
