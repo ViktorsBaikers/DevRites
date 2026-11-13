@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.3.11](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.10...v7.3.11) (2026-11-13)
+
+### Fixed
+
+* **devrites:** anchor reviews to bound worker candidates ([#214](https://github.com/ViktorsBaikers/DevRites/issues/214)) ([ea746f6](https://github.com/ViktorsBaikers/DevRites/commit/ea746f6c3974802d62eb3de6d61f0e501a4e9f89))
+
 ## [7.3.10](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.9...v7.3.10) (2026-11-12)
 
 ### Fixed
