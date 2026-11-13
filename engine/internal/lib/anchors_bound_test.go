@@ -42,7 +42,11 @@ func TestCheckAnchorsBoundCandidate(t *testing.T) {
 			}
 			sums := readTestFile(t, filepath.Join(workspace, "packets/r1.sha256"))
 			// A different control candidate must not influence the review account.
-			writeFile(t, filepath.Join(workspace, "touched-files.md"), candidateTestManifest(candidateTestRow{state: "present", path: "src/a.go", slice: "S-1", reason: "control"}))
+			writeFile(t, filepath.Join(project, "src/control-only.go"), "package a // control-only scope\n")
+			writeFile(t, filepath.Join(workspace, "touched-files.md"), candidateTestManifest(
+				candidateTestRow{state: "present", path: "src/a.go", slice: "S-1", reason: "control"},
+				candidateTestRow{state: "present", path: "src/control-only.go", slice: "S-1", reason: "control-only"},
+			))
 			packet := func(manifest string) string {
 				return "# Packet r1: code-reviewer\n\nFeature: feat\nPhase: build\n\nCandidate:\n```text\n" + manifest + "```\n"
 			}
@@ -104,7 +108,7 @@ func TestCheckAnchorsBoundCandidate(t *testing.T) {
 			}
 			writeFile(t, filepath.Join(workspace, "dispatch.json"), ledger)
 			args = []string{"feat", stored}
-			if scenario != "same tree" && scenario != "missing worktree" {
+			if scenario != "same tree" && scenario != "missing worktree" && scenario != "missing account" {
 				args = append(args, "--worktree", worker)
 			}
 			if scenario == "explicit account" || scenario == "unstored account" {
