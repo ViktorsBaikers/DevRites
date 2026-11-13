@@ -12,6 +12,7 @@ import (
 	"github.com/devrites/devrites/internal/anchor"
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/safepath"
+	"github.com/devrites/devrites/internal/state"
 )
 
 // anchors.go: deterministic quote anchoring for one reviewer return.
@@ -89,7 +90,9 @@ func RunCheckAnchors(root string, args []string, stdout, stderr io.Writer) int {
 		return 3
 	}
 	a := anchorer{root: root, project: projectDir(root), workspace: workspace, skillsRoot: skillsRoot, candidate: candidate}
-	if candidate != nil {
+	if candidate != nil && candidate.digest == "" {
+		fmt.Fprintln(stdout, "check anchors: native pre-build metadata review (no product candidate)")
+	} else if candidate != nil {
 		fmt.Fprintf(stdout, "check anchors: candidate %s (%d files)\n", candidate.digest, len(candidate.rows))
 	} else if digest, n, err := CandidateIdentity(root, slug); err == nil {
 		fmt.Fprintf(stdout, "check anchors: candidate %s (%d files)\n", digest, n)
@@ -278,12 +281,33 @@ func (a anchorer) lines(rel string) ([]string, error) {
 		if raw, ok := a.candidate.sources[filepath.ToSlash(name)]; ok {
 			return anchor.Lines(raw), nil
 		}
-		// Workspace documents remain control metadata; product quotes never fall back there.
+		// Short metadata aliases must not shadow product documents or deleted candidate paths.
 		full := rel
 		if !filepath.IsAbs(rel) {
-			full = filepath.Join(a.workspace, filepath.FromSlash(rel))
 			if strings.HasPrefix(rel, workspaceRel(a.root, a.workspace)+"/") {
 				full = filepath.Join(a.project, filepath.FromSlash(rel))
+			} else {
+				if !state.SanctionedRootFile(rel) {
+					return nil, fmt.Errorf("%s is outside the frozen candidate scope; use an explicit workspace path for metadata", rel)
+				}
+				for _, row := range a.candidate.rows {
+					if row.path == rel {
+						return nil, fmt.Errorf("%s is deleted in the frozen candidate", rel)
+					}
+				}
+				for i, project := range [...]string{a.project, a.candidate.project} {
+					if i == 1 && project == a.project {
+						continue
+					}
+					_, exists, err := candidatePathInfo(project, rel)
+					if err != nil {
+						return nil, err
+					}
+					if exists {
+						return nil, fmt.Errorf("%s is outside the frozen candidate scope; use an explicit workspace path for metadata", rel)
+					}
+				}
+				full = filepath.Join(a.workspace, filepath.FromSlash(rel))
 			}
 		}
 		if safepath.WithinResolved(full, a.workspace) && strings.HasSuffix(rel, ".md") {

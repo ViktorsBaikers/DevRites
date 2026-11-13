@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/devrites/devrites/internal/state"
 )
 
 type anchorCandidate struct {
@@ -60,7 +62,7 @@ func resolveAnchorCandidate(root, slug, workspace, wave, role, worktree string, 
 			return nil, err
 		}
 		for _, entry := range entries {
-			if strings.HasSuffix(entry.Name(), ".sha256") {
+			if strings.HasSuffix(entry.Name(), ".sha256") || strings.HasSuffix(entry.Name(), ".return.md") {
 				hasReviewer = true
 				break
 			}
@@ -81,13 +83,28 @@ func resolveAnchorCandidate(root, slug, workspace, wave, role, worktree string, 
 	if err != nil {
 		return nil, err
 	}
-	if candidate == "" || strings.Count(string(packet), "\n"+candidate+"```\n") != 1 ||
-		strings.Count(string(packet), candidateDigestDomain+" "+candidateDigestVersion) != 1 ||
-		!strings.HasPrefix(string(packet), "# Packet "+wave+": "+role+"\n\nFeature: "+slug+"\nPhase: "+ledger.Waves[wave].Phase+"\n") {
-		return nil, errors.New("review packet has missing or mismatched frozen candidate binding")
+	if !strings.HasPrefix(string(packet), "# Packet "+wave+": "+role+"\n\nFeature: "+slug+"\nPhase: "+ledger.Waves[wave].Phase+"\n") {
+		return nil, errors.New("review packet has missing or mismatched account binding")
 	}
-	if err := lintPacketDiffs(root, slug, packetPath, true); err != nil {
+	if err := lintPacketDiffs(root, slug, packetPath, candidate != ""); err != nil {
 		return nil, err
+	}
+	if candidate == "" {
+		if worktree == "" && !strings.Contains(string(packet), candidateDigestDomain) && !diffPathRE.Match(packet) {
+			for _, policy := range state.PhasePolicies() {
+				if policy.Target == state.PhaseBuild {
+					break
+				}
+				if strings.EqualFold(string(policy.Target), ledger.Waves[wave].Phase) {
+					return &anchorCandidate{project: projectDir(root)}, nil
+				}
+			}
+		}
+		return nil, errors.New("review packet has missing frozen candidate binding")
+	}
+	if strings.Count(string(packet), "\n"+candidate+"```\n") != 1 ||
+		strings.Count(string(packet), candidateDigestDomain+" "+candidateDigestVersion) != 1 {
+		return nil, errors.New("review packet has mismatched frozen candidate binding")
 	}
 	full, err := readBoundedRegularFile(filepath.Join(workspace, "packets", wave+".sha256"), workspaceArtifactLimit)
 	if err != nil {

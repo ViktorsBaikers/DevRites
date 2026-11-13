@@ -10,12 +10,16 @@ import (
 )
 
 func TestCheckAnchorsBoundCandidate(t *testing.T) {
-	for _, scenario := range []string{"worker", "original", "explicit account", "unstored account", "control quote", "changed bytes", "changed head", "wrong aggregate", "wrong file hash", "wrong scope", "missing account", "ambiguous account", "missing packet", "wrong packet", "missing manifest", "missing worktree", "outside scope", "same tree"} {
+	for _, scenario := range []string{"worker", "original", "explicit account", "unstored account", "control quote", "changed bytes", "changed head", "wrong aggregate", "wrong file hash", "wrong scope", "missing account", "missing ledger and freeze", "ambiguous account", "missing packet", "wrong packet", "missing manifest", "missing worktree", "outside scope", "workspace document shadow", "canonical document collision", "deleted document shadow", "explicit metadata document", "frozen product document", "same tree"} {
 		t.Run(scenario, func(t *testing.T) {
 			root, workspace := anchorsProject(t)
 			project := filepath.Dir(root)
 			initDupRepo(t, project)
 			runDupGit(t, project, "add", "src/a.go")
+			if scenario == "deleted document shadow" {
+				writeFile(t, filepath.Join(project, "README.md"), "Original product documentation.\n")
+				runDupGit(t, project, "add", "README.md")
+			}
 			runDupGit(t, project, "commit", "-qm", "baseline")
 			base := strings.TrimSpace(string(mustGitOutput(t, project, "rev-parse", "HEAD")))
 			worker := filepath.Join(t.TempDir(), "worker")
@@ -33,10 +37,21 @@ func TestCheckAnchorsBoundCandidate(t *testing.T) {
 			writeFile(t, filepath.Join(source, "src/a.go"), "package a\nfunc Handler() { return workerIdentity }\n")
 			if source == worker {
 				runDupGit(t, worker, "add", "src/a.go")
+				if scenario == "deleted document shadow" {
+					runDupGit(t, worker, "rm", "README.md")
+				}
+				if scenario == "frozen product document" {
+					writeFile(t, filepath.Join(worker, "README.md"), "return workerIdentity\n")
+					runDupGit(t, worker, "add", "README.md")
+				}
 				runDupGit(t, worker, "commit", "-qm", "worker candidate")
 			}
 			out, errs := &bytes.Buffer{}, &bytes.Buffer{}
-			args := append([]string{"feat", "--wave", "r1", "--paths", "src/a.go"}, flags...)
+			args := []string{"feat", "--wave", "r1", "--paths", "src/a.go"}
+			if scenario == "deleted document shadow" || scenario == "frozen product document" {
+				args = append(args, "README.md")
+			}
+			args = append(args, flags...)
 			if code := RunCandidateFreeze(root, args, out, errs); code != 0 {
 				t.Fatalf("freeze %d: %s %s", code, out, errs)
 			}
@@ -60,6 +75,28 @@ func TestCheckAnchorsBoundCandidate(t *testing.T) {
 			if scenario == "outside scope" {
 				location = "src/other.go:1"
 				writeFile(t, filepath.Join(project, "src/other.go"), "return workerIdentity\n")
+			}
+			if scenario == "workspace document shadow" || scenario == "canonical document collision" {
+				location = "docs/guide.md:1"
+				if scenario == "canonical document collision" {
+					location = "README.md:1"
+				}
+				name := strings.TrimSuffix(location, ":1")
+				writeFile(t, filepath.Join(project, name), "Control-only documentation.\n")
+				writeFile(t, filepath.Join(workspace, name), "return workerIdentity\n")
+			}
+			if scenario == "deleted document shadow" || scenario == "frozen product document" {
+				location = "README.md:1"
+				writeFile(t, filepath.Join(workspace, "README.md"), "return workerIdentity\n")
+				if scenario == "frozen product document" {
+					writeFile(t, filepath.Join(workspace, "README.md"), "Different workspace documentation.\n")
+				} else if err := os.Remove(filepath.Join(project, "README.md")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if scenario == "explicit metadata document" {
+				writeFile(t, filepath.Join(workspace, "docs/guide.md"), "return workerIdentity\n")
+				location = workspaceRel(root, workspace) + "/docs/guide.md:1"
 			}
 			body := "Outcome: findings\nCounts: important=1\n" + anchorsRow("Important", location, quote, anchorsGoodBreaks) + "\n"
 			stored := filepath.Join(workspace, "packets/r1-code-reviewer.return.md")
@@ -106,9 +143,18 @@ func TestCheckAnchorsBoundCandidate(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+			if scenario == "missing ledger and freeze" {
+				ledger = `{"waves":{}}`
+				if err := os.Remove(filepath.Join(workspace, "packets/r1.sha256")); err != nil {
+					t.Fatal(err)
+				}
+				body = strings.ReplaceAll(body, "src/a.go:2", "src/a.go:4")
+				body = strings.ReplaceAll(body, "return workerIdentity", "return r.User")
+				writeFile(t, stored, body)
+			}
 			writeFile(t, filepath.Join(workspace, "dispatch.json"), ledger)
 			args = []string{"feat", stored}
-			if scenario != "same tree" && scenario != "missing worktree" && scenario != "missing account" {
+			if scenario != "same tree" && scenario != "missing worktree" && scenario != "missing account" && scenario != "missing ledger and freeze" {
 				args = append(args, "--worktree", worker)
 			}
 			if scenario == "explicit account" || scenario == "unstored account" {
@@ -116,7 +162,7 @@ func TestCheckAnchorsBoundCandidate(t *testing.T) {
 			}
 			code, output := checkAnchors(t, root, args...)
 			want := 3
-			if scenario == "worker" || scenario == "original" || scenario == "explicit account" || scenario == "unstored account" || scenario == "same tree" {
+			if scenario == "worker" || scenario == "original" || scenario == "explicit account" || scenario == "unstored account" || scenario == "same tree" || scenario == "explicit metadata document" || scenario == "frozen product document" {
 				want = 0
 			}
 			if code != want {
@@ -124,9 +170,58 @@ func TestCheckAnchorsBoundCandidate(t *testing.T) {
 			}
 			if want == 0 {
 				digest := strings.TrimSpace(strings.Split(sums, "aggregate ")[1])
-				if !strings.Contains(output, fmt.Sprintf("candidate %s (1 files)", digest)) || !strings.Contains(output, "anchored=1") {
+				files := 1
+				if scenario == "frozen product document" {
+					files = 2
+				}
+				if !strings.Contains(output, fmt.Sprintf("candidate %s (%d files)", digest, files)) || !strings.Contains(output, "anchored=1") {
 					t.Fatal(output)
 				}
+			}
+		})
+	}
+}
+
+func TestCheckAnchorsPrebuildMetadata(t *testing.T) {
+	for _, scenario := range []string{"metadata", "product quote", "missing context", "stale candidate declaration", "worker selection"} {
+		t.Run(scenario, func(t *testing.T) {
+			root, workspace := anchorsProject(t)
+			writeFile(t, filepath.Join(workspace, "plan.md"), "Every handler must validate caller permissions.\n")
+			writeFile(t, filepath.Join(workspace, "ctx/vet-plan-reviewer.bundle.md"), "Read the plan and spec.\n")
+			var stdout, stderr bytes.Buffer
+			if code := RunPacket(root, []string{"feat", "--wave", "v1", "--phase", "vet", "--role", "plan-reviewer"}, &stdout, &stderr); code != 0 {
+				t.Fatalf("packet: %d %s %s", code, &stdout, &stderr)
+			}
+			writeFile(t, filepath.Join(workspace, "dispatch.json"), `{"waves":{"v1":{"phase":"vet","state":"complete","roles":{"plan-reviewer":{"handle":"plan-1","started":"2026-11-13T00:00:00Z","returned":true,"returned_at":"2026-11-13T00:01:00Z"}}}}}`)
+			location, quote := "plan.md:1", "`Every handler must validate caller permissions`"
+			if scenario == "product quote" {
+				location, quote = "src/a.go:4", "`return r.User`"
+			}
+			if scenario == "missing context" {
+				if err := os.Remove(filepath.Join(workspace, "packets/v1.plan-reviewer.context.bundle.md")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if scenario == "stale candidate declaration" {
+				packet := filepath.Join(workspace, "packets/v1.plan-reviewer.md")
+				writeFile(t, packet, readTestFile(t, packet)+"\nCandidate:\ndevrites-candidate-sha256 v1\n")
+			}
+			ret := filepath.Join(workspace, "packets/v1-plan-reviewer.return.md")
+			writeFile(t, ret, "Outcome: findings\nCounts: important=1\n"+anchorsRow("Important", location, quote, anchorsGoodBreaks)+"\n")
+			args := []string{"feat", ret}
+			if scenario == "worker selection" {
+				args = append(args, "--worktree", filepath.Dir(root))
+			}
+			code, out := checkAnchors(t, root, args...)
+			want := 3
+			if scenario == "metadata" {
+				want = 0
+			}
+			if code != want {
+				t.Fatalf("want %d got %d: %s", want, code, out)
+			}
+			if want == 0 && (!strings.Contains(out, "anchored=1") || strings.Contains(out, "quotes read the live tree")) {
+				t.Fatal(out)
 			}
 		})
 	}

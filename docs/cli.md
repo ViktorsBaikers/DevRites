@@ -201,6 +201,9 @@ self-contained updater.
   or mismatched bindings exit `3`. Original returns can match stored accounts by
   exact bytes; unstored returns require `--wave` and `--role`. Unverified or
   Deferred findings and Counts exceeding parsed rows also exit `3`.
+  Candidate-free native pre-build reviews are metadata-only: account and context
+  bindings still validate, and no product-source quote can anchor. Explicit
+  workspace paths disambiguate metadata from product Markdown.
   See [invocation and integrity contract](engine/commands.md#linked-worktree-review-anchors).
 - `check dup [slug] [--all|--worktree|--staged|--base <ref>]` reports advisory
   near-duplicate code clusters that survive comment stripping, literal

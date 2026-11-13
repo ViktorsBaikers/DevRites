@@ -24,18 +24,30 @@ or identical returns from multiple accounts, name the account explicitly:
 An explicit selection still checks the native account, packet, and any stored
 return; it is not permission to supply a digest or bypass validation.
 
-The selected account must have `packets/<wave>.<role>.md` with its native
+Native source-review accounts must have `packets/<wave>.<role>.md` with the
 wave/role/feature/phase header and the frozen `packets/<wave>.sha256` binding.
 Validation checks the diff checksum, exact normalized path set, per-file hashes,
 aggregate identity (including executable bits), base diff, and worker transfer
 HEAD with no path-set changes. Missing, ambiguous, stale, or mismatched bindings
 exit `3`; there is no control-source or cwd fallback. Product quotes read
 verified candidate bytes only; metadata and `breaks` anchors stay in the control
-workspace. Source paths outside the frozen scope cannot anchor.
+workspace. Source paths outside the frozen scope cannot anchor. An unqualified
+metadata filename must be a sanctioned workspace-root artifact and must not
+collide with a product path in either checkout or a deleted candidate path.
+Use an explicit control-workspace path for other metadata, such as
+`.devrites/work/feature-slug/references/contract.md`; nested product-like paths
+never fall through to similarly named workspace files.
 
-Same-tree native accounts omit `--worktree` and validate their frozen source
-checkout. Legacy same-tree checks without review accounts or frozen packets keep
-workspace/project lookup. Neither invocation forces an outcome or edits findings.
+Same-tree native source accounts omit `--worktree` and validate their frozen
+checkout. Before Build, a native account whose packet declares no source
+candidate or diff can anchor workspace metadata without a product freeze. Its
+account header and context checksums still validate; product-source quotes,
+worker selection, and stale candidate declarations are rejected.
+
+Legacy same-tree checks without native review accounts, frozen packets, or
+retained native returns keep workspace/project lookup. Retained native returns
+never fall back to control source if their ledger and freeze manifest go missing.
+No invocation forces an outcome or edits findings.
 
 Release/install: merge the conventional `fix:` PR after CI passes; the existing
 [release pipeline](../release.md) selects the patch version and ships matching
