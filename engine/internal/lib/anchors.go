@@ -12,6 +12,7 @@ import (
 	"github.com/devrites/devrites/internal/anchor"
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/safepath"
+	"github.com/devrites/devrites/internal/state"
 )
 
 // anchors.go: deterministic quote anchoring for one reviewer return.
@@ -21,7 +22,7 @@ import (
 // matcher /overhaul admit uses, so no row reaches a repair round on a quote
 // nobody can find.
 //
-//	devrites-engine check anchors <slug> <return-file> [--skills-root <dir>]
+//	devrites-engine check anchors <slug> <return-file> [--wave <w> --role <r>] [--worktree <path>] [--skills-root <dir>]
 //
 //	0  every Critical/Important row anchored (exact or relocated)
 //	2  usage error, workspace or return unreadable
@@ -29,15 +30,15 @@ import (
 //
 // A row's site is the first `;`-separated location in its second cell
 // (`path:line[-line]`, or a workspace .md file with no line); its quote is the
-// first backticked span in its observed cell. Paths resolve in the workspace,
-// then the project. Exact match at the cited lines anchors; a quote on exactly
-// one other line relocates; otherwise the row is Unverified (anchor lost or
-// ambiguous). The `breaks "<quote>"` cell must quote spec.md/decisions.md for a
+// first backticked span in its observed cell. Bound reviews read verified frozen
+// candidate bytes; metadata stays in the control workspace. Legacy same-tree
+// checks resolve workspace then project. Exact matches anchor; a unique other
+// line relocates; otherwise the row is Unverified. The breaks cell must quote spec.md/decisions.md for a
 // spec ID, or the named shipped standard (under --skills-root when a host passes
 // it); with no quote the row is Deferred.
 
 // AnchorsUsage is the help and usage-error text for `check anchors`.
-const AnchorsUsage = "usage: devrites-engine check anchors <slug> <return-file> [--skills-root <dir>]"
+const AnchorsUsage = "usage: devrites-engine check anchors <slug> <return-file> [--wave <w> --role <r>] [--worktree <path>] [--skills-root <dir>]"
 
 var (
 	anchorSiteRE       = regexp.MustCompile(`^(\S+?)(?::([0-9]+)(?::[0-9]+)?(?:[-–]([0-9]+))?)?$`)
@@ -45,15 +46,23 @@ var (
 	anchorLineSuffixRE = regexp.MustCompile(`:[0-9]+(?:[-–][0-9]+)?$`)
 )
 
-type anchorer struct{ root, project, workspace, skillsRoot string }
+type anchorer struct {
+	root, project, workspace, skillsRoot string
+	candidate                            *anchorCandidate
+}
 
 // RunCheckAnchors implements `devrites-engine check anchors`.
 func RunCheckAnchors(root string, args []string, stdout, stderr io.Writer) int {
 	var positional []string
-	skillsRoot := ""
+	skillsRoot, wave, role, worktree := "", "", "", ""
+	options := map[string]*string{"--skills-root": &skillsRoot, "--wave": &wave, "--role": &role, "--worktree": &worktree}
 	for i := 0; i < len(args); i++ {
-		if args[i] == "--skills-root" && i+1 < len(args) {
-			skillsRoot = args[i+1]
+		if value, ok := options[args[i]]; ok {
+			if i+1 >= len(args) || *value != "" || strings.HasPrefix(args[i+1], "-") {
+				fmt.Fprintln(stderr, AnchorsUsage)
+				return 2
+			}
+			*value = args[i+1]
 			i++
 			continue
 		}
@@ -75,13 +84,21 @@ func RunCheckAnchors(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "check anchors: %s: %v\n", args[1], err)
 		return 2
 	}
-	// The digest lets root confirm it anchored on the candidate the reviewer saw.
-	if digest, n, err := CandidateIdentity(root, slug); err == nil {
+	candidate, err := resolveAnchorCandidate(root, slug, workspace, wave, role, worktree, raw)
+	if err != nil {
+		fmt.Fprintf(stdout, "check anchors: BLOCKED: %v\n", err)
+		return 3
+	}
+	a := anchorer{root: root, project: projectDir(root), workspace: workspace, skillsRoot: skillsRoot, candidate: candidate}
+	if candidate != nil && candidate.digest == "" {
+		fmt.Fprintln(stdout, "check anchors: native pre-build metadata review (no product candidate)")
+	} else if candidate != nil {
+		fmt.Fprintf(stdout, "check anchors: candidate %s (%d files)\n", candidate.digest, len(candidate.rows))
+	} else if digest, n, err := CandidateIdentity(root, slug); err == nil {
 		fmt.Fprintf(stdout, "check anchors: candidate %s (%d files)\n", digest, n)
 	} else {
 		fmt.Fprintf(stdout, "check anchors: no candidate (%v); quotes read the live tree\n", err)
 	}
-	a := anchorer{root: root, project: projectDir(root), workspace: workspace, skillsRoot: skillsRoot}
 	counts := map[string]int{}
 	rows := 0
 	for i, line := range strings.Split(string(raw), "\n") {
@@ -252,6 +269,54 @@ func (a anchorer) breaks(cells []string) (status, detail string) {
 
 // lines reads a cited file from the workspace, else the project, never outside them.
 func (a anchorer) lines(rel string) ([]string, error) {
+	if a.candidate != nil {
+		name := rel
+		if filepath.IsAbs(name) {
+			var err error
+			name, err = filepath.Rel(a.candidate.project, name)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if raw, ok := a.candidate.sources[filepath.ToSlash(name)]; ok {
+			return anchor.Lines(raw), nil
+		}
+		// Short metadata aliases must not shadow product documents or deleted candidate paths.
+		full := rel
+		if !filepath.IsAbs(rel) {
+			if strings.HasPrefix(rel, workspaceRel(a.root, a.workspace)+"/") {
+				full = filepath.Join(a.project, filepath.FromSlash(rel))
+			} else {
+				if !state.SanctionedRootFile(rel) {
+					return nil, fmt.Errorf("%s is outside the frozen candidate scope; use an explicit workspace path for metadata", rel)
+				}
+				for _, row := range a.candidate.rows {
+					if row.path == rel {
+						return nil, fmt.Errorf("%s is deleted in the frozen candidate", rel)
+					}
+				}
+				for i, project := range [...]string{a.project, a.candidate.project} {
+					if i == 1 && project == a.project {
+						continue
+					}
+					_, exists, err := candidatePathInfo(project, rel)
+					if err != nil {
+						return nil, err
+					}
+					if exists {
+						return nil, fmt.Errorf("%s is outside the frozen candidate scope; use an explicit workspace path for metadata", rel)
+					}
+				}
+				full = filepath.Join(a.workspace, filepath.FromSlash(rel))
+			}
+		}
+		if safepath.WithinResolved(full, a.workspace) && strings.HasSuffix(rel, ".md") {
+			if raw, err := readBoundedRegularFile(full, workspaceArtifactLimit); err == nil {
+				return anchor.Lines(raw), nil
+			}
+		}
+		return nil, fmt.Errorf("%s is outside the frozen candidate scope", rel)
+	}
 	for _, base := range []string{a.workspace, a.project} {
 		full := rel
 		if !filepath.IsAbs(rel) {

@@ -32,7 +32,6 @@ func TestCommandHelp(t *testing.T) {
 		{args: []string{"check", "dup", "--help"}, want: "check dup [slug]"},
 		{args: []string{"check", "drift", "--help"}, want: "check drift <slug>"},
 		{args: []string{"check", "continuation", "--help"}, want: "check continuation [slug]"},
-		{args: []string{"check", "anchors", "--help"}, want: "check anchors <slug> <return-file> [--skills-root <dir>]"},
 		{args: []string{"check", "perturb", "--help"}, want: "check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N]"},
 		{args: []string{"check", "windows", "--help"}, want: "|--since-dispatch <wave>] [--cwd <dir>]"},
 		{args: []string{"detect", "--help"}, want: "detect commands [--root <dir>]"},
@@ -110,6 +109,7 @@ func TestCommandHelpDoesNotRequireWorkspace(t *testing.T) {
 	for _, args := range [][]string{
 		{"state", "--help"},
 		{"check", "candidate", "--help"},
+		{"check", "anchors", "--help"},
 		{"orient", "--help"},
 		{"migrate", "--help"},
 		{"parallel", "create", "--help"},
