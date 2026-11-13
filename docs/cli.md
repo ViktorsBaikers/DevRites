@@ -194,10 +194,14 @@ self-contained updater.
   Read-only: nothing is installed or executed. Skills use it to cite real
   commands in `gates.md` `CHECK` lines and proof steps instead of invented
   ones; unresolved slots print `unresolved` rather than guessing.
-- `check anchors <slug> <return-file>` anchors each Critical/Important row's
-  quote at its cited `file:line` and its `breaks` quote; Unverified or Deferred
-  rows exit `3` and never drive a repair round. A `Counts:` head declaring more
-  Critical/Important findings than there are `Finding:` rows also exits `3`.
+- `check anchors <slug> <return-file> [--wave <w> --role <r>] [--worktree <path>]`
+  anchors each Critical/Important row's source quote against the native review
+  account's frozen candidate, with control metadata kept separate from worker
+  source. Linked workers require explicit `--worktree`; missing, ambiguous, stale,
+  or mismatched bindings exit `3`. Original returns can match stored accounts by
+  exact bytes; unstored returns require `--wave` and `--role`. Unverified or
+  Deferred findings and Counts exceeding parsed rows also exit `3`.
+  See [invocation and integrity contract](engine/commands.md#linked-worktree-review-anchors).
 - `check dup [slug] [--all|--worktree|--staged|--base <ref>]` reports advisory
   near-duplicate code clusters that survive comment stripping, literal
   collapsing, and identifier renaming. Diff modes mark units overlapping

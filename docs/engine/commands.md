@@ -4,6 +4,46 @@ The engine is a deterministic, stdlib-only control plane. It has no model or
 provider dependency and does not dispatch agents, interpret reviews, or choose
 workflow strategy.
 
+## Linked-worktree review anchors
+
+Keep `DEVRITES_ROOT` pointed at the control metadata directory. Select source
+checkout separately with `--worktree`, using its physical, registered linked
+worktree top-level path (the same contract as `candidate freeze --worktree`):
+
+```bash
+DEVRITES_ROOT=/control/repo/.devrites devrites-engine check anchors \
+  feature-slug /control/repo/.devrites/work/feature-slug/packets/review-wave-code-reviewer.return.md \
+  --worktree /workers/review-source
+```
+
+The return's exact bytes must match exactly one started, non-abandoned native
+review account's stored return. Original provider files work unchanged once
+`dispatch return --result` has stored those same bytes. For an unstored return,
+or identical returns from multiple accounts, name the account explicitly:
+`--wave review-wave --role code-reviewer`. Both flags are required together.
+An explicit selection still checks the native account, packet, and any stored
+return; it is not permission to supply a digest or bypass validation.
+
+The selected account must have `packets/<wave>.<role>.md` with its native
+wave/role/feature/phase header and the frozen `packets/<wave>.sha256` binding.
+Validation checks the diff checksum, exact normalized path set, per-file hashes,
+aggregate identity (including executable bits), base diff, and worker transfer
+HEAD with no path-set changes. Missing, ambiguous, stale, or mismatched bindings
+exit `3`; there is no control-source or cwd fallback. Product quotes read
+verified candidate bytes only; metadata and `breaks` anchors stay in the control
+workspace. Source paths outside the frozen scope cannot anchor.
+
+Same-tree native accounts omit `--worktree` and validate their frozen source
+checkout. Legacy same-tree checks without review accounts or frozen packets keep
+workspace/project lookup. Neither invocation forces an outcome or edits findings.
+
+Release/install: merge the conventional `fix:` PR after CI passes; the existing
+[release pipeline](../release.md) selects the patch version and ships matching
+pack and binaries. Once published, run `npx devrites@latest update` from the
+control checkout with its existing installation options, then check
+`devrites-engine version` and `/rite-doctor`. Do not install a standalone binary
+over an older pack or change review metadata to work around a failed binding.
+
 ## Complete operational command inventory
 
 | Command | Deterministic responsibility |
@@ -25,7 +65,7 @@ workflow strategy.
 | `check drift <slug> [--record]` | Attribute readiness-input changes to the exact artifact. `--record` writes the per-input `readiness-inputs.json` digest baseline under the feature lock; without it the workspace diffs current inputs against that baseline (or falls back to the aggregate binding recorded in `eng-review.md`). Advisory: exit `0` on drift; a corrupt baseline exits `3`. A `test-plan.md` change limited to exact `Workflow Artifact reviewed identity: <64hex>` lines is reported as `reviewed-identity-only` (ADR-0034). `--record` also stores each slice's proof bytes (its `tasks.md` block plus the `test-plan.md` lines naming it); both modes print `ADVISORY proportion:` for a slice whose proof grew over 2x since that baseline or carries over 3x the median proof per AC. |
 | `check windows <slug> [--worktree\|--staged\|--base <ref>\|--since-dispatch <wave>]` | Fail on deferral and bar-lowering markers the change introduces without a waiver row in the workspace's `windows.md`: added TODO/FIXME/XXX/HACK, skipped/focused-test and stub idioms, checker suppressions, one-line empty catch; removed `deleted-test` files and net `removed-assertion` lines in remaining test files. `--since-dispatch <wave>` reports only `deleted-test`/`removed-assertion` against the work-tree snapshot (`tree` in `dispatch.json`) recorded when that build wright wave opened, untracked files included; it takes no `--cwd` and records the `windows-since` metric. |
 | `check dup [slug] [--all\|--worktree\|--staged\|--base <ref>] [--min-lines n] [--threshold f] [--ignore-file <path>] [--limit n] [--exclude <csv>]` | Report near-duplicate code clusters that survive comment stripping, literal collapsing, and identifier renaming — token-shingle matches chained into segments, clustered transitively, ranked with bounded path/line-distance boosts. Diff modes mark units overlapping changed hunks with `*`; stable content-derived cluster hashes let `.devrites/dup-ignore` dismissals survive line moves but resurface on structural edits. Staged mode reads index blobs and excludes untracked files. Bounded heuristic: successful scans/leads exit `0`; usage, unavailable input, and partial scans exit `2`. |
-| `check anchors <slug> <return-file> [--skills-root <dir>]` | Deterministic quote anchoring for one reviewer return (agents.md § Result admission). For each Critical/Important `Finding:` row (list markers and bold tolerated), it anchors the backticked observed quote at the cited `path:line[-line]`, looking in the workspace first, then the project, never outside either. Exact match → `anchored`. Exactly one other line → `relocated <cited> -> path:N`. Otherwise → `Unverified: <row> — anchor lost\|ambiguous`; this also covers a missing file:line or quote, or a quote under 8 characters. The `breaks "<quote>"` must appear in spec.md/decisions.md (spec ID) or in the named shipped standard under the skills root (`--skills-root` for host installs). No breaks quote → `Deferred: <row> — no spec anchor`. Prints the candidate digest and records an `anchors` metrics event. Exit `0` all anchored, `3` any Unverified/Deferred row (never drives a repair round) or a `Counts:` head declaring more Critical/Important findings than `Finding:` rows, `2` usage or unreadable input. |
+| `check anchors <slug> <return-file> [--wave <w> --role <r>] [--worktree <path>] [--skills-root <dir>]` | Deterministic quote anchoring for one reviewer return (agents.md § Result admission). Native review accounts select their packet's exact frozen candidate, not the control checkout's candidate. See [linked-worktree invocation](#linked-worktree-review-anchors). Each Critical/Important `Finding:` row needs a backticked source quote at `path:line[-line]` and a `breaks` quote from the control workspace spec/decisions or shipped standard. Exact match → `anchored`; unique relocation → `relocated`; lost/ambiguous quote → `Unverified`; missing breaks quote → `Deferred`. Quotes under 8 characters do not anchor. Records an `anchors` metric after validation. Exit `0` all anchored, `3` binding/integrity failure, Unverified/Deferred rows, or Counts exceeding parsed findings; `2` usage or unreadable input. |
 | `check slice <slug> <SLICE-ID>` | Pre-dispatch lint of one slice's wright contract: contract present, exact Writer allowlist paths, resolvable `Satisfies` AC ids, bounded scope. Same non-blocking size advisory as `check task-graph`, plus the `check drift` proportion advisory for that slice. |
 | `check diff-scope <slug> --allow <csv>\|--allow-file <path> [--worktree\|--staged\|--base <ref>] [--baseline] [--verbose]`, `check diff-scope <slug> --snapshot` | Verify the changed-path set stays inside the declared allowlist; the mechanical gate run before reviewer dispatch. `--snapshot` records the mode and SHA-256 of every currently changed path in `<feature>/diff-scope-baseline.json` (an engine machine file, never reported); run it before writer dispatch. `--baseline` drops a changed path whose fingerprint still matches, printing `preexisting (unchanged)`; a baselined path whose bytes or mode changed, or a new path, still blocks; a run with only preexisting changes is an empty diff; a missing baseline exits `2`. More than 20 violations print grouped by the first two path segments (count plus 3 examples, at most 20 groups); `--verbose` lists every path. Exit codes are unchanged. |
 | `check perturb <slug> --patch <file> --expect <test-name> --gate <G-ID> [--timeout N] [--worktree <path> --slice <SLICE-ID>]` | Safe-perturbation probe (testing.md § Safe perturbation). Copies the candidate (HEAD plus every touched-files.md manifest row, at the project's prefix below the git toplevel) into a detached temporary worktree, requires it to hash to the `check candidate` digest, applies the wright-supplied mutant patch (toplevel-relative paths), and runs the gate's CHECK only when it is an approved test-plan.md preflight row. RED counts only when a runner FAIL line (go test, pytest, cargo test, jest/vitest) names `--expect`; build/setup failure, timeout, exit 0 (survivor), or a RED naming only other tests is `cannot_verify`. Reverts the patch, requires the copy back at the candidate digest and the gate GREEN (exit 0 plus EXPECT), and requires the checkout candidate unchanged. Writes `<feature>/evidence/perturb/<gate>-<digest12>-aN.log`. Never mutates the checkout. `--worktree <path> --slice <SLICE-ID>` (both or neither) probes a linked worktree of the same repository instead (a parallel sibling, checked as for `candidate freeze --worktree`): its HEAD plus the slice's tasks.md write set, hashed as `candidate freeze` does, with `--patch` resolved against the worktree; the transcript stays under the control workspace. Exit `0` verified, `3` cannot_verify or refused, `2` usage. |
