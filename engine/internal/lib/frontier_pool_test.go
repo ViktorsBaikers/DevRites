@@ -513,8 +513,7 @@ func TestHostReservationsReleaseDeadAbandonedWriter(t *testing.T) {
 	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 10\n")
 	foreign := frontierFixture(t, root, "archive", "fulfillment", "", "spec", "running", "/rite-spec fulfillment", 0, "")
 	foreignPath := filepath.Join(foreign, "dispatch.json")
-	foreignBytes := `{"waves":{"fulfilled":{"phase":"build","state":"sealed","roles":{"slice-wright":{"handle":"foreign-native","started":"2026-01-01T00:00:00Z","returned":true}}}}}`
-	writeFile(t, foreignPath, foreignBytes)
+	foreignBytes := `{"waves":{"fulfilled":{"phase":"build","state":"sealed","roles":{"slice-wright":{"handle":"foreign-native","started":"2026-01-01T00:00:00Z"}}}}}`
 	if code, out := controllerOpen(t, root, "current16", "dead-writer", "SLICE-001"); code != 0 {
 		t.Fatalf("first wave: %d %s", code, out)
 	}
@@ -540,6 +539,10 @@ func TestHostReservationsReleaseDeadAbandonedWriter(t *testing.T) {
 	}
 	if code, out := controllerOpen(t, root, "current16", "oversubscribed", "SLICE-001"); code != 3 || !strings.Contains(out, "resource deferral") || !strings.Contains(out, "replacement") || strings.Contains(out, "dead-writer") {
 		t.Fatalf("live reservation not identified: %d %s", code, out)
+	}
+	writeFile(t, foreignPath, foreignBytes)
+	if code, out := controllerOpen(t, root, "current16", "foreign-blocked", "SLICE-001"); code != 3 || !strings.Contains(out, "resource deferral") {
+		t.Fatalf("foreign reservation ignored: %d %s", code, out)
 	}
 	if got, err := os.ReadFile(foreignPath); err != nil || string(got) != foreignBytes {
 		t.Fatalf("foreign sealed wave changed: %s %v", got, err)
