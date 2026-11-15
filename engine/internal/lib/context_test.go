@@ -148,7 +148,9 @@ func TestContextBundleTOCMatchesSections(t *testing.T) {
 			lines++
 		}
 		err = scanner.Err()
-		file.Close()
+		if closeErr := file.Close(); closeErr != nil {
+			t.Fatal(closeErr)
+		}
 		if err != nil || lines != previousEnd {
 			t.Fatalf("last range misses final bytes: lines=%d end=%d error=%v", lines, previousEnd, err)
 		}
@@ -163,7 +165,11 @@ func contextTestReadLines(t *testing.T, path string, start, end int) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 	reader := bufio.NewReader(file)
 	var selected strings.Builder
 	for line := 1; line <= end; line++ {

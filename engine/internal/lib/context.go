@@ -331,11 +331,11 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 			continue
 		}
 		bundle.startSection(rel, opts.role == "" && strings.Contains(filepath.ToSlash(filepath.Clean(rel)), "/reference/") && !includeMarkerRe.Match(body))
-		bundle.Write(body)
+		bundle.Builder.Write(body)
 		if len(body) > 0 && body[len(body)-1] != '\n' {
-			bundle.WriteByte('\n')
+			bundle.Builder.WriteByte('\n')
 		}
-		bundle.WriteByte('\n')
+		bundle.Builder.WriteByte('\n')
 		loaded++
 	}
 	if len(rootOnly) > 0 {
@@ -348,7 +348,7 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 	if hasManifest && featureDir != "" {
 		if workspaceScoped && len(workspaceList) == 0 {
 			bundle.startSection("workspace", false)
-			bundle.WriteString("skipped: role-scoped read-set declares no workspace artifacts\n\n")
+			bundle.Builder.WriteString("skipped: role-scoped read-set declares no workspace artifacts\n\n")
 		}
 		for _, rel := range workspaceList {
 			abs := filepath.Join(featureDir, filepath.FromSlash(rel))
@@ -378,7 +378,7 @@ func RunContext(root string, args []string, stdout, stderr io.Writer) int {
 		}
 	} else if hasManifest && len(workspaceList) > 0 {
 		bundle.startSection("workspace", false)
-		bundle.WriteString("skipped: no feature workspace (slug omitted)\n\n")
+		bundle.Builder.WriteString("skipped: no feature workspace (slug omitted)\n\n")
 	}
 	rendered := insertSectionTOC(&bundle)
 	out, unchanged, err := publishContext(featureDir, opts, []byte(rendered))
@@ -676,15 +676,15 @@ func writeAnchorIndex(bundle *contextBundle, project, abs, label string, data []
 	}
 	bundle.startSection(label+" (by reference)", false)
 	fmt.Fprintf(bundle, "path: %s sha256: %x bytes: %d lines: %d\n", filepath.ToSlash(rel), sha256.Sum256(data), len(data), len(lines))
-	bundle.WriteString("Not inlined. Read owning sections from the live file by line anchor; nothing is omitted there.\n")
-	bundle.WriteString("headings:\n")
+	bundle.Builder.WriteString("Not inlined. Read owning sections from the live file by line anchor; nothing is omitted there.\n")
+	bundle.Builder.WriteString("headings:\n")
 	for i, line := range structural {
 		if anchorHeadingRE.MatchString(line) {
 			fmt.Fprintf(bundle, "- L%d %s\n", i+1, clipRunes(lines[i], 120))
 		}
 	}
 	if len(ids) > 0 {
-		bundle.WriteString("id hits (IDs cited by the slice block):\n")
+		bundle.Builder.WriteString("id hits (IDs cited by the slice block):\n")
 	}
 	for _, cited := range ids {
 		var at []string
@@ -706,7 +706,7 @@ func writeAnchorIndex(bundle *contextBundle, project, abs, label string, data []
 		}
 		fmt.Fprintf(bundle, "- %s: %s\n", cited.id, hits)
 	}
-	bundle.WriteByte('\n')
+	bundle.Builder.WriteByte('\n')
 }
 
 // standardCiteRE matches a "<file>.md § <heading>" citation, as a finding's
@@ -767,7 +767,7 @@ func writeCitedSections(bundle *contextBundle, rel string, body, inventory []byt
 			}
 		}
 		bundle.startSection(fmt.Sprintf("%s § %s (cited by the recheck inventory)", rel, heading), false)
-		bundle.WriteString(strings.TrimRight(strings.Join(lines[i:end], ""), "\r\n") + "\n\n")
+		bundle.Builder.WriteString(strings.TrimRight(strings.Join(lines[i:end], ""), "\r\n") + "\n\n")
 		written, coveredTo = written+1, end
 	}
 	return written
@@ -799,14 +799,14 @@ func writeContextData(bundle *contextBundle, abs, label string, data []byte, err
 		return false
 	}
 	if expand {
-		bundle.Write(expandIncludes(abs, data))
+		bundle.Builder.Write(expandIncludes(abs, data))
 	} else {
-		bundle.Write(data)
+		bundle.Builder.Write(data)
 	}
 	if len(data) > 0 && data[len(data)-1] != '\n' {
-		bundle.WriteByte('\n')
+		bundle.Builder.WriteByte('\n')
 	}
-	bundle.WriteByte('\n')
+	bundle.Builder.WriteByte('\n')
 	return true
 }
 
@@ -827,7 +827,7 @@ func writeContractStub(bundle *contextBundle, project, abs, label string, seen m
 	}
 	bundle.startSection(fmt.Sprintf("%s (not inlined: your host loads this role contract as your system prompt; %d bytes, sha256 %x; read %s only if your system prompt lacks it)",
 		label, len(data), sha256.Sum256(data), path), false)
-	bundle.WriteByte('\n')
+	bundle.Builder.WriteByte('\n')
 	return true
 }
 
