@@ -13,6 +13,7 @@ cursors read; no `schema` requires `devrites-engine migrate <slug>`.
 - [Candidate manifest and bindings](#candidate-manifest-and-bindings)
 - [Anchored notes](#anchored-notes)
 - [Native readiness ownership](#native-readiness-ownership)
+- [Consumed planning inputs](#consumed-planning-inputs)
 - [Canonical slice grammar](#canonical-slice-grammar)
 - [Read next by phase](#read-next-by-phase)
 - [Do not duplicate](#do-not-duplicate)
@@ -29,6 +30,12 @@ same feature. Otherwise append the smallest unused suffix (`-2`, `-3`, ...), kee
 the trimmed base within 64 characters. Never overwrite a workspace by slug alone;
 accept safe legacy basenames. Ordinary phases never rename them.
 
+Canonical sequence creation uses the exact recorded target, never a suffixed alias.
+`state create-sequence` reuses only a matching current-schema live identity, preserving
+its evolved brief, phase, and all bytes; conflicting, partial, or archived targets
+refuse. Scope approval must come from the substantive brief's recorded provenance,
+not the roadmap's identity map.
+
 ## Required by phase
 
 | Phase | Required artifacts |
@@ -42,6 +49,16 @@ accept safe legacy basenames. Ordinary phases never rename them.
 | prove/polish/review | vetted plan artifacts plus `evidence.md`, `touched-files.md` |
 | seal/ship/done | proof artifacts plus `review.md`, `seal.md`; Ship writes `ship.md` |
 | conditional | `checklists/<domain>.md` per spec-covered domain (Spec writes; Define gates on it); `flows.md` when diagrams clarify; `visual/` HTML+`.outline.md` companions when a richer reviewable visual earns it (optional; never readiness-required); `design-brief.md` and `browser-evidence.md` for UI; `devex.md` when a developer-facing surface is in scope; `drift.md` for drift; `polish-report.md` for polish; `handoff.md` only when requested; `references.md` + `references/` when references exist; `investigation-map.md` for pressure-test; `dogfood.md` for dogfood; `windows.md` when the diff introduces deferral markers (waiver ledger for `check windows`); `packets/` for by-reference dispatch packets and admitted accounts (≤ 64 KiB each; older closed rounds may be deleted; never transcripts); `history/` for verbatim relocated checkpoint narrative (append-only, never a read-next); `readiness-inputs.json` as the advisory per-input drift baseline written by `check drift --record` after Vet's binding (never a gate input; regenerated, not hand-edited); `diff-scope-baseline.json` as the pre-dispatch dirty-path fingerprint snapshot written by `check diff-scope --snapshot` and read by `--baseline` (engine-written, never hand-edited); `tree-baseline.json` as the root-edit tripwire baseline `dispatch` writes and `dispatch open`/`next`/`check candidate` read (engine-written, never hand-edited); `notes.md` for anchored notes bound to verbatim code quotes (engine-regraded; non-exact anchors block seal) |
+
+A selected `state create-sequence` target starts with only a substantive `brief.md`
+and schema-4 `state.md` (`phase: spec`, `status: running`, its own `/rite-spec <target>`
+next action). This is pending bootstrap, not completed Spec: native Spec must produce
+the normal artifacts and pass its gates. Preserve initialized sequence identity and
+remaining budget without a second charge, parent decrement, or ACTIVE movement.
+Bootstrap grants no release role; authorized native root handles the approved
+[release milestone](skill://rite-plan/reference/slicing.md#release-milestone-full-picture-gate)
+explicitly before release proof/seal. Pool admission and source ownership live in
+[`parallel-workspaces.md`](parallel-workspaces.md).
 
 ## What each file owns
 
@@ -207,6 +224,31 @@ Proof commands must be repository-portable: no host wrappers, user-specific abso
 or temporary proof trees. Evidence records the executed command. Optional `visual/`
 artifacts never inflate readiness: they are not readiness inputs and do not substitute
 for `decision-coverage.md`, `eng-review.md`, or `test-plan.md`.
+
+## Consumed planning inputs
+
+Canonical future-pool `plan.md` requires exactly one standalone declaration:
+`Consumed planning inputs: none` or `Consumed planning inputs: <slug>, <slug>`.
+The list contains unique related producer slugs, including nonadjacent producers,
+whose implementation design the plan actually uses. Native Define/Plan and Vet
+reviewers verify that set against cited architecture, contracts, and design decisions.
+Roadmap scope ownership and sequence position alone are not consumed design.
+
+Vet records one standalone `Predecessor readiness: <slug> <digest>` in `eng-review.md`
+for each declared producer, using its current `check readiness --emit-binding`
+hex digest; an explicit empty set records only `Predecessor readiness: none`.
+The bound producer set must equal the declared set exactly: duplicate declarations
+or bindings, missing/extra producers, and changed current digests refuse readiness.
+Repair the declaration through native Plan and re-Vet affected consumers; never
+automatically rebind drift. C consuming A is bound to A, not unrelated adjacent B.
+Legacy absent declarations remain supported only outside canonical future-pool
+admission; explicit separate-session lookahead keeps its predecessor binding.
+
+These are planning snapshot bindings, not implementation prerequisites. Preserve
+slice `Workspace dependencies` and their durably BUILT/integrated producer checkpoints.
+When real required design is unavailable, park only the affected source on its
+concrete hold under [`parallel-workspaces.md`](parallel-workspaces.md); do not invent
+design to fill the pool or hold unrelated sources.
 
 ## Canonical slice grammar
 

@@ -71,6 +71,17 @@ Before any HTML:
   ordered owner; pass source slug explicitly, preserve claims and opening budget,
   and use the shared [controller workflow](../../devrites-lib/reference/parallel-workspaces.md) (trigger `parallel-workspaces`).
   A new directory alone never authorizes future enrollment.
+- For selected missing canonical-pool identities, root first supplies a substantive
+  brief with recorded approved scope and provenance to `devrites-engine state
+  create-sequence <controller> <target> --brief <file>`. Roadmap identity is not
+  scope approval. This bootstrap publishes only `brief.md` and a schema-4
+  `state.md` at `phase: spec`, `status: running`, with its own `$rite-spec <target>`
+  next action. It is pending Spec, not Spec completion or readiness. Native Spec
+  authors the normal artifacts below; root alone applies workflow writes.
+- On bootstrapped or reused workspaces, preserve initialized sequence identity,
+  opening budget, existing artifact bytes, and evolved native cursor. Never reseed
+  counters, charge the parent again, or replace an advanced target with a fresh
+  Spec workspace. Creation/reuse leaves ACTIVE unchanged and assigns no release role.
 - `$rite-spec` creates the workspace map, `brief.md`, `spec.md`, `decisions.md`,
   `assumptions.md`, `questions.md`, `state.md`, optional `references.md` /
   `references/`, optional `flows.md` when a diagram already clarifies investigation,
@@ -181,10 +192,12 @@ increasing, renaming, or deleting it. Released bullet workspaces spell it `AFK
 slices remaining`; preserve that presentation rather than migrating it.
 
 When the brief records a [sequence continuation](../../rite-plan/reference/slicing.md#continuation-workspaces),
-seed the `sequence_parent`, `sequence_position`, `sequence_workspaces_remaining`,
-and — for the release entry — `sequence_role` rows at creation per that contract.
-Without them `state merge-manifest` cannot walk the chain and the release-union
-gate never engages.
+preserve its initialized `sequence_parent`, `sequence_position`, and
+`sequence_workspaces_remaining`; initialize only absent fields through that native
+contract. For an approved release milestone, the authorized native root explicitly
+records `sequence_role: release` after bootstrap, before release proof/seal. Creation
+does not grant this authority. The chain enables `state merge-manifest`; the explicit
+release role activates the release-union gate.
 
 ## questions.md entry format
 

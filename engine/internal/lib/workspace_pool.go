@@ -45,6 +45,14 @@ func WorkspaceReady(repoRoot, controller, target string) ([]parallel.SlicePaths,
 	structuralCursor, _ := markdowntext.Structural(cursorBytes)
 	status, _ := state.CursorField(strings.Split(string(structuralCursor), "\n"), state.CursorStatus)
 	var notices []string
+	requireInputs, inputErr := canonicalFuturePlanningInputsRequired(root, controller, target)
+	if inputErr != nil {
+		notices = append(notices, fmt.Sprintf("%s: planning input authority unavailable: %v; repair canonical sequence before admission", target, inputErr))
+	} else if requireInputs && !result.Blocked {
+		for _, problem := range gate.ConsumedPlanningInputProblems(root, observation, true) {
+			notices = append(notices, target+": "+problem)
+		}
+	}
 	if result.Phase != state.PhaseVet && result.Phase != state.PhaseBuild {
 		notices = append(notices, fmt.Sprintf("%s: phase %s is not Build entry; native Plan/Vet must prepare this workspace before admission", target, result.Phase))
 	}
@@ -82,6 +90,42 @@ func WorkspaceReady(repoRoot, controller, target string) ([]parallel.SlicePaths,
 		}
 	}
 	return ready, notices, nil
+}
+
+// Determine authority without evaluating pool readiness, which calls WorkspaceReady.
+func canonicalFuturePlanningInputsRequired(root, controller, target string) (bool, error) {
+	mode, err := autocompleteMode(root)
+	if err != nil || !mode {
+		return false, err
+	}
+	_, capacity, err := frontierPolicy(root)
+	if err != nil {
+		return false, err
+	}
+	_, lease, err := parallel.ControllerLease(filepath.Dir(root))
+	if err != nil {
+		return false, err
+	}
+	if lease != nil && lease.Capacity > 0 && lease.Capacity < capacity {
+		capacity = lease.Capacity
+	}
+	if capacity <= 1 {
+		return false, nil
+	}
+	nodes, err := frontierScan(root)
+	if err != nil {
+		return false, err
+	}
+	chain, err := frontierChain(nodes, controller)
+	if err != nil {
+		return false, err
+	}
+	ordered, related := frontierRelated(nodes, chain)
+	mapping, _, err := frontierCanonicalRoadmap(nodes, ordered)
+	if err != nil || mapping == nil {
+		return false, err
+	}
+	return related[target] && mapping[1] != target, nil
 }
 
 // readSequenceArtifact permits archived predecessors, never an archived writer.

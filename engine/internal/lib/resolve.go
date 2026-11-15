@@ -13,6 +13,7 @@ import (
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/markdowntext"
+	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 	"github.com/devrites/devrites/internal/workflow"
 )
@@ -25,7 +26,11 @@ import (
 //	0  resolved         2  no active workspace      3  qid not found
 //	4  qid not open      5  bad arguments
 func Resolve(root string, args []string, stdout, stderr io.Writer) int {
-	return resolveWithLock(root, args, stdout, stderr, state.WithFeatureLockIn)
+	return resolveWithLock(root, args, stdout, stderr, func(selected *os.Root, slug string, fn func() error) error {
+		return parallel.WithControlLock(root, func() error {
+			return state.WithFeatureLockIn(selected, slug, fn)
+		})
+	})
 }
 
 func resolveWithLock(root string, args []string, stdout, stderr io.Writer, withLock func(*os.Root, string, func() error) error) int {

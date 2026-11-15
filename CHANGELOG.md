@@ -6,6 +6,12 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 
 ### Changed
 
+- Prepare approved canonical future workspaces through a bounded rolling pool in
+  Autocomplete. Add atomic, retry-safe `state create-sequence` bootstrap, root
+  creation routes, shared host reservations, pre-spawn checks and durable parking.
+- Require explicit consumed planning inputs for canonical future plans and bind
+  their exact producer readiness at Vet; retain producer Build dependencies,
+  standalone/serial behavior and conservative legacy sequence admission.
 - Load global scheduling conditionally while retaining universal source binding and
   standalone serialization audits. Index context sections by rendered identity for
   same-uncompacted-root rule reuse; fresh reviewers and workspace reads remain independent.

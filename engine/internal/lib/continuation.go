@@ -60,11 +60,11 @@ func RunCheckContinuation(root string, args []string, stdout, stderr io.Writer) 
 		if mode && frontierGlobalPriority(slug, frontier) || !mode && !verdict.Required && len(frontier) > 0 && frontier[0] == "frontier: actionable" {
 			reason := "global frontier requires native preparation, authority review, or selection; Git stays unauthorized"
 			if mode && frontierHasBatch(frontier) {
-				reason = "a source GO does not end autocomplete; run every launch command and every picks writer this turn; do not ask; Git stays unauthorized"
+				reason = "a source GO does not end autocomplete; prioritize picks, author approved briefs for create rows, then launch native preparation within host capacity; refresh after each result; Git stays unauthorized"
 			}
 			verdict = continuationVerdict{Required: true, Invoke: "/rite-autocomplete", Source: slug, Reason: reason}
-		} else if mode && frontierSourcePreparationWait(slug, frontier) {
-			verdict = continuationVerdict{Reason: frontierInheritedPreparationWait}
+		} else if wait := frontierSourcePreparationWaitReason(slug, frontier); mode && wait != "" {
+			verdict = continuationVerdict{Reason: wait}
 		} else if mode && !verdict.Required {
 			if invoke, ok := frontierSourcePlanningCursor(slug, frontier); ok {
 				verdict = continuationVerdict{Required: true, Invoke: invoke, Source: slug, Reason: "agent-owned planning cursor; launch every frontier-concurrent command before replying"}
@@ -78,11 +78,11 @@ func RunCheckContinuation(root string, args []string, stdout, stderr io.Writer) 
 	return 0
 }
 
-// frontierHasBatch reports a capped same-turn batch: planning commands and/or
-// admitted slice writers. The controller invoke stays /rite-autocomplete.
+// frontierHasBatch reports root creation, native preparation or admitted writers.
+// The controller invoke stays /rite-autocomplete.
 func frontierHasBatch(lines []string) bool {
 	for _, line := range lines {
-		if strings.HasPrefix(line, "frontier-concurrent: ") || strings.HasPrefix(line, "frontier-picks: ") {
+		if strings.HasPrefix(line, "frontier-concurrent: ") || strings.HasPrefix(line, "frontier-picks: ") || strings.HasPrefix(line, "frontier-create: ") {
 			return true
 		}
 	}
@@ -90,14 +90,15 @@ func frontierHasBatch(lines []string) bool {
 }
 
 func writeFrontierBatch(stdout io.Writer, lines []string) {
-	for _, line := range lines {
-		if cmd, ok := strings.CutPrefix(line, "frontier-concurrent: "); ok && cmd != "" {
-			fmt.Fprintf(stdout, "launch: %s\n", cmd)
-		}
-	}
-	for _, line := range lines {
-		if picks, ok := strings.CutPrefix(line, "frontier-picks: "); ok && picks != "" {
-			fmt.Fprintf(stdout, "picks: %s\n", picks)
+	for _, route := range [...]struct{ frontier, batch string }{
+		{"frontier-picks: ", "picks"},
+		{"frontier-create: ", "create"},
+		{"frontier-concurrent: ", "launch"},
+	} {
+		for _, line := range lines {
+			if action, ok := strings.CutPrefix(line, route.frontier); ok && action != "" {
+				fmt.Fprintf(stdout, "%s: %s\n", route.batch, action)
+			}
 		}
 	}
 }

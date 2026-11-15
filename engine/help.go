@@ -36,7 +36,7 @@ const (
   check anchors <slug> <return-file> [--skills-root <dir>]
 `
 
-	stateUsage = `usage: devrites-engine state <resolve|merge-manifest|apply-bundle|set|append|close> ...
+	stateUsage = `usage: devrites-engine state <resolve|merge-manifest|apply-bundle|create-sequence|set|append|close> ...
 
   state resolve <qid> "<answer>"
   state resolve --drop <qid> ["<reason>"]
@@ -46,6 +46,7 @@ const (
   state resolve --human --batch <file>
   state merge-manifest <slug> [<predecessor>...]
   state apply-bundle <slug> <bundle.json>... [--dry-run]
+  state create-sequence <controller> <target> --brief <file>
   state set <slug> <key>=<value>... [--unset <key>]...
   state append <slug> <ledger.md> --heading "<text>" --body-file <path|->
   state close <slug>
@@ -66,7 +67,7 @@ const (
   metrics record <slug> --phase <p> --event <e> [--role r] [--bytes n] [--note s]
   metrics summary [slug] [--by-slice]
 `
-	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]`
+	dispatchUsage  = `usage: devrites-engine dispatch <slug> <open|check-spawn|start|seal|return|status|abandon|park|resume|attribute> [--phase p] [--wave w] [--role r] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]`
 	claimUsageText = `usage: devrites-engine claim <add|release|list|check> ...
 
   claim add --session <id> [--ttl <minutes>] [--reason <s>] <path>...
@@ -315,6 +316,8 @@ func helpCheck(rest []string) string {
 
 func helpState(rest []string) string {
 	switch firstNonHelp(rest) {
+	case "create-sequence":
+		return lib.CreateSequenceUsage
 	case "resolve":
 		return resolveUsage
 	case "merge-manifest":

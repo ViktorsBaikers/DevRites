@@ -27,6 +27,42 @@ If the candidate diff has no matching surfaces, record
 `Not-applicable: no relevant paths in diff` for `frontend-reviewer`,
 `security-auditor`, and `performance-reviewer`; do not dispatch them.
 
+## Host reservations and subwaves
+
+Apply this protocol in every phase, including Spec/Clarify preparation, Build,
+review, proof and recovery. Root supplies `DEVRITES_HOST_CAPACITY=<positive integer>`
+per engine invocation from the actual native host's total concurrent actor budget.
+It is an internal capability, not a user parallelism option; never derive it from
+`--parallel` or `max_parallel`. Absent means 1; malformed values fail closed.
+Account for every retained/open/unreturned role across sources and phases, including
+unknown outcomes and restarts between native spawn and recorded start. Workspace
+pool slots and writer leases do not substitute for these actor reservations.
+
+Before `open`, determine the complete required roster and available host slots.
+Reserve all roles in each wave together. If the roster will not fit, split it
+**before opening** into complete, independently sealable subwaves with fresh IDs.
+Keep the full phase review barrier across subwaves: all required accounts must
+return before reconciliation or correction. Never open a wave whose remaining
+roles cannot launch, then wait for a return that requires that wave to seal.
+Render each subwave's packets against the same protected candidate and preserve
+coverage; constrained capacity changes scheduling, not required roles.
+
+For each role, run `devrites-engine dispatch <source> check-spawn --wave <w>
+[--role <r>]` immediately before the actual native spawn. It rechecks retained
+host reservations and immutable pool source/parent/position binding. Then spawn
+through the native host and immediately record `dispatch <source> start --wave <w>
+--role <r> --handle <id>`. If authority changes after launch, still record the
+actual late start: it is a host fact, not renewed admission. Changed eligibility
+never prevents settlement; return/abandon old actors through normal terminal
+reconciliation. A successful check is not proof that a host launched the actor.
+
+Autocomplete follows the [rolling pool and writer priority](parallel-workspaces.md#continuous-global-frontier):
+admitted writers get host slots first; preparation uses remaining slots. Retain
+honest resource deferrals and refresh after each actor settlement, not whole-wave
+completion. On resume, reconstruct retained reservations before any new opening.
+Serialize root authority/AFK edits and use controller-locked engine mutations;
+leaves return source-owned artifacts rather than writing shared workflow state.
+
 ## Dispatch contract
 
 1. Freeze one candidate with `devrites-engine candidate freeze <slug> --wave <w>
@@ -55,7 +91,8 @@ If the candidate diff has no matching surfaces, record
    The `agents` dispatch contract needs no flag: `--role` auto-fires it
    (`auto=[agents]` in the output). The command prints `unselected=[...]`; an
    omitted applicable trigger is a gap, not a shortcut.
-3. Open a single-use wave; every retry needs a fresh ID:
+3. Reserve a complete subwave under [host reservations](#host-reservations-and-subwaves).
+   Open a single-use wave; every retry needs a fresh ID:
    `devrites-engine dispatch <slug> open --phase <p> --wave <w> --role <r>...`.
    Reviewer/auditor/test-analyst waves add `--packet <file>` naming any rendered
    `packets/<w>.<role>.md`; give each agent its own packet unedited. `open` rejects
@@ -63,12 +100,13 @@ If the candidate diff has no matching surfaces, record
    `--slice <SLICE-ID>`; Review/Seal packets bind the frozen diff and a manifest
    covering every checkpointed path. Same-tree writers add `--claim-session <id>
    --claim <path>...` per [`wright-dispatch.md`](../../rite-build/reference/wright-dispatch.md#run).
-   Launch all native agents nonblocking through the host tool before waiting.
+   Run `dispatch <slug> check-spawn --wave <w> --role <r>` immediately before each
+   native spawn; launch all roles in that reserved subwave nonblocking before waiting.
    Never shell-launch host CLIs (`omp -p`, `claude -p`): that bridge's handle dies
-   with the session and its return is a gap. Record every host handle with
-   `dispatch ... start --wave <w> --role <r> --handle <id>`; the last seals the wave
-   (explicit `seal` then does nothing). Return only after seal, with the recorded
-   handle: `dispatch ... return --wave <w> --role <r> --handle <id>`.
+   with the session and its return is a gap. Immediately record every actual handle
+   with `dispatch <slug> start --wave <w> --role <r> --handle <id>`; the last seals
+   the wave (explicit `seal` then does nothing). Return only after seal, with the
+   recorded handle: `dispatch <slug> return --wave <w> --role <r> --handle <id>`.
    Reviewers add `--result <file>`: retain it verbatim at
    `packets/<wave>-<role>.return.md` (keep an existing file), derive outcome and
    `Finding:` keys. If the host cannot provide a file, use explicit
@@ -101,10 +139,10 @@ If the candidate diff has no matching surfaces, record
 7. Missing profile, null/failure, or malformed output is a `gap`; never
    infer approval or substitute inline review.
 
-On exhaustion/contention: stop spawning; collect running results; batch/serialize.
-Never restart/orphan the cohort or infer approval. Reviewers are read-only;
-accounts store evidence, never telemetry. Same-file writers stay serial.
-Capacity rejection is backpressure: retry batches; never shrink a roster.
+On exhaustion/contention: stop spawning; collect running results; use complete
+subwaves or serial work. Never restart/orphan the cohort or infer approval.
+Reviewers are read-only; accounts store evidence, never telemetry. Same-file writers
+stay serial. Capacity rejection is backpressure, not permission to shrink a roster.
 
 ## Vet affected recovery
 
@@ -158,9 +196,10 @@ tooling, libraries, game engines: own profile, no forced split; native app UI is
 in `review.md`/`seal.md`.
 
 - **Frontend and backend both changed:** dispatch `devrites-code-reviewer` twice in
-  the same wave (`dispatch open ... --role code-reviewer.frontend --role
-  code-reviewer.backend`; distinct handles — the sealed wave's handles and start
-  stamps are the concurrency receipt). Build each bundle with `devrites-engine context --skills-root .dsh/skills <slug> --phase <p> --role code-reviewer --trigger <set> --out
+  same wave when capacity permits (`dispatch open ... --role code-reviewer.frontend
+  --role code-reviewer.backend`), otherwise use complete host-reserved subwaves
+  under the capacity rule below. Distinct handles and recorded start times, not
+  wave names, prove concurrency. Build each bundle with `devrites-engine context --skills-root .dsh/skills <slug> --phase <p> --role code-reviewer --trigger <set> --out
   ctx/<p>-code-reviewer.<lane>.bundle.md`; the default name collides. Each packet
   names its lane, the lane's path set (the whole diff stays readable for context),
   the triggered profile ([`review/README.md`](standards/review/README.md)), and the
@@ -192,8 +231,10 @@ earlier-session claim proof follows. Outcome classification alone proves no deat
 On resume (compaction or a new session), run `devrites-engine dispatch <slug>
 status`, `parallel status`, and `claim list` before any dispatch. A read-only
 wave whose handles this session cannot query: `abandon` it, record each unreturned
-role `gap`, and re-dispatch under a fresh wave ID on the current digest; its late
-returns are `stale`. A writer retains claim/lease: no relaunch under a fresh wave,
+role `gap`, and queue a fresh wave on the current digest. Its unknown actors still
+reserve host capacity until terminal reconciliation; abandon alone frees nothing.
+Admit replacement only when capacity and independence permit; late returns are
+`stale`. A writer retains claim/lease: no relaunch under a fresh wave,
 same session, or expired TTL until release or proven termination. For an
 unqueryable writer, `claim list` `dead` proves its holding session exited on this
 host; `claim list --all --session <id>` shows `released` (bare `list` counts it).
@@ -214,9 +255,10 @@ admits no bytes and bypasses no candidate, admission, review or proof gate.
 
 ## Scale limits
 
-The role table bounds rosters. Use up to ten concurrent read-only reviewers,
-the same cap as a writer batch, counting children any leaf spawned.
-Refuse a larger swarm and role substitution: sharpen scope or use a bounded second pass when coverage is missing.
+The role table bounds rosters. Use at most ten concurrent read-only reviewers,
+counting children any leaf spawned, and fit them within the shared actual host
+actor budget alongside writers and all other phases. Refuse a larger swarm and
+role substitution: queue complete subwaves while preserving required coverage.
 Overlapping reviewers increase duplicate findings and reconciliation work.
 
 ## Children are tools, not peers

@@ -126,7 +126,11 @@ func RunApplyBundle(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	code := 0
-	if err := state.WithFeatureLock(root, slug, func() error {
+	withLock := withStateMutationLock
+	if dryRun {
+		withLock = state.WithFeatureLock
+	}
+	if err := withLock(root, slug, func() error {
 		code = applyBundlesLocked(slug, workspace, bundles, dryRun, stdout, stderr)
 		return nil
 	}); err != nil {

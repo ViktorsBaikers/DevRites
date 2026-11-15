@@ -9,6 +9,18 @@ and runnable gate `CHECK`/`CWD` equality with test-plan preflight Command/Cwd.
 Resolve every reference to its owning section/ID; a missing or ambiguous target is
 a gap, never permission to drop the obligation.
 
+For canonical future-pool plans, write one standalone declaration below the plan identity:
+`Consumed planning inputs: none` or `Consumed planning inputs: <slug>, <slug>`. List
+unique related workspaces whose implementation design is actually consumed, including
+nonadjacent producers; roadmap scope ownership alone does not count. Native reviewers
+verify the declaration under the
+[consumed-input schema](../../devrites-lib/reference/workspace-artifact-schema.md#consumed-planning-inputs),
+which owns Vet digest bindings and drift handling. Required design not yet available
+parks the affected source under
+[parallel-workspaces policy](../../devrites-lib/reference/parallel-workspaces.md),
+never an invented contract. Keep explicit `Workspace dependencies` and BUILT producer
+checkpoints separate; explicit separate-session lookahead retains its predecessor binding.
+
 ```markdown
 # Plan: <Feature>
 Spec: ./spec.md   Decision coverage: ./decision-coverage.md   Date: <date>

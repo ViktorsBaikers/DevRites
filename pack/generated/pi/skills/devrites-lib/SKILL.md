@@ -41,6 +41,8 @@ lifecycle state from chat or optional `README.md`.
 - [`reference/serialization-audit.md`](reference/serialization-audit.md): standalone Plan/Vet and unused-capacity audits.
 - [`reference/parallel-workspaces.md`](reference/parallel-workspaces.md): conditional
   global scheduling, one isolated controller, and source-owned proof (trigger `parallel-workspaces`).
+- [`reference/parallel-dispatch.md`](reference/parallel-dispatch.md): all-phase host
+  reservations, complete sealable subwaves and pre-spawn checks.
 - [Autocomplete loop](../rite-autocomplete/reference/loop.md#early-preparation-admission):
   controller-only early preparation, bounded successor routing and normalization research.
 - [`reference/visual-playbooks/index.md`](reference/visual-playbooks/index.md): progressive
@@ -91,8 +93,9 @@ The engine is limited to:
   authoring rules in
   [`reference/standards/gates.md`](reference/standards/gates.md).
 - Atomic state: `state resolve` for answer/drop/batch, `state merge-manifest`
-  for the predecessor-chain union, `state set`/`state append` for cursor fields and
-  ledger sections, transactional `state close`, and `migrate`
+  for the predecessor-chain union, `state create-sequence` for pending Spec bootstrap,
+  `state set`/`state append` for cursor fields and ledger sections, transactional
+  `state close`, and `migrate`
   for fail-closed workspace-schema normalization.
 - `secret-scan`, `open-visual`, and `version` remain read-only helpers.
 - Offline, local `install`, `update`, and `uninstall`; their shell/npm callers

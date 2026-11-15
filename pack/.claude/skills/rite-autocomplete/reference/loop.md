@@ -21,7 +21,8 @@ allow_gates: [advisory, validating]
 # notify: "<cmd>"
 ```
 
-Read existing AFK first. On each explicit Autocomplete invocation, upsert only
+Read existing AFK first. Root serializes this short entry write with authority and
+source-bookkeeping writes. On each explicit Autocomplete invocation, upsert only
 `mode: autocomplete` and, if supplied, `max_parallel: N`; preserve other fields.
 Missing mode retains standalone AFK behavior until that explicit entry. Invalid
 or duplicate mode fails closed; mode grants neither phase nor action authority.
@@ -40,7 +41,10 @@ remaining. AFK configuration itself stays unchanged.
 ### Admit each unattended cycle
 
 Before each phase/fan-out/recovery/writer, check readiness/overlap and apply early
-admission and the global pass below; local readiness is insufficient. Count every leaf.
+admission and the global pass below; local readiness is insufficient. Supply actual
+per-invocation `DEVRITES_HOST_CAPACITY` under the
+[all-phase host protocol](../../devrites-lib/reference/parallel-dispatch.md#host-reservations-and-subwaves);
+count every retained/open/unknown actor, not only writers or preparation roles.
 Explicit activation resets only activation-local counters, not durable recovery.
 Pass resolved `--parallel N` to [Build](../../rite-build/reference/output.md#caller-owned-continuation).
 Legacy or invented execution ceilings never stop this controller; human limits bind.
@@ -50,27 +54,41 @@ picks pause that source only. A Seal GO does not end the run.
 
 ## Early preparation admission
 
+Follow the canonical [rolling preparation pool](../../devrites-lib/reference/parallel-workspaces.md#rolling-preparation-pool)
+for Autocomplete + canonical authority + effective cap>1: bounded membership,
+READY buffering, root-only creation from approved scope, durable parking/resume
+and per-return refill. Ordinary Spec/Clarify and later native preparation share
+controller-locked admission. Selected sources need no recursive successor start.
+Standalone, cap 1 and legacy/headerless authority retain their prior boundary;
+separate-session lookahead restrictions do not change.
+
 Internal exclusive `context`/`dispatch open` flags:
 - `--prepare-for <parent-source>`: permitted native non-Build preparation roles
   (only controlling-root context may be roleless), exact existing immediate
   successor/parent agreeing on canonical identity, binding, adjacency and chain.
-  Exempts the child's successor gate, never product writes.
+  Retains exact parent identity in pool mode; outside it, exempts the child's
+  successor gate. Neither form grants product-write authority.
 - `--sequence-research`: only canonical `evidence-scout`, Spec/Clarify/Temper/Define/
   Plan/Vet, exact existing source and normal path/role/ledger constraints. Exempts
   authority/successor admission solely to investigate broken authority read-only:
   no acceptance, scope/approval/phase advance, successor creation, writers,
   readiness or preparation credit.
 
-Context (`--skill rite-<phase>` too) checks before writes; no account required.
-Use context → packet → open → native launch → `dispatch start` actual handles
-before parent admission; openings alone do not count.
+Context (`--skill rite-<phase>` too) checks before writes and reserves no capacity.
+Existing admitted sources use context → packet → open → check-spawn → native
+launch → `dispatch start` with actual handles, following complete host-reserved
+subwaves. Openings alone prove no preparation. Missing pool targets instead use
+the root [create action](../../devrites-lib/reference/parallel-workspaces.md#create-selected-identities),
+then refresh frontier before context or dispatch; pending Spec is not Spec completion.
 
-Derive preparatory-only B before any marked wave from nonterminal parent A:
-until ordinary unmarked B Temper/Define/Plan/Vet or Build-wright admission
-(checking C first), A becoming terminal or ordered handoff to B, C waits—even
-explicit C `next`/`check continuation`. No C creation/rerouting before A's eligible
-phase. Completed B history retains this bound; Spec/Clarify/research/read-only
-Build do not release it. Independent work stays visible; all global-pass gates bind.
+**Legacy/non-pool boundary:** derive preparatory-only B before any marked wave
+from nonterminal parent A. Until ordinary unmarked B Temper/Define/Plan/Vet or
+Build-wright admission (checking C first), A becoming terminal or ordered handoff
+to B, C waits—even explicit C `next`/`check continuation`. No C creation/rerouting
+before A's eligible phase. Completed B history retains this bound; Spec/Clarify/
+research/read-only Build do not release it. Independent work stays visible; all
+global-pass gates bind. This descendant wait does not apply to selected canonical
+pool sources; actual contract dependencies still do.
 
 Shared registry edits alone do not serialize disjoint modules. Isolate their
 writer; refusal-only tests never replace positive requirements or defer their band.
@@ -95,12 +113,13 @@ Workspace files, not chat, carry state. Read/execute each phase skill:
 
 At phase entry, before recovery/waits, execute the
 [global pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier).
-Consume persisted return frontiers; rerun after landing/artifact/capacity changes.
-Execute authorized routes, retaining handles, cursors and protected proof windows.
-When frontier prints `frontier-concurrent:`, launch every listed command and every
-`frontier-picks` writer in that same turn, each on its own source. The cap bounds
-the turn: start picks first, then fill remaining slots from `frontier-concurrent`.
-Do not finish one listed source and reply.
+Observe → prioritize admitted writer picks → materialize selected missing identities
+→ refresh → advance native preparation with remaining host slots. Consume each
+return into its source and refill immediately; preserve native handles, return
+cursors and protected proof windows. Run all admitted `frontier-concurrent:` routes
+without finishing one source first. Resource deferral means queued, not started,
+not a semantic hold; refresh after actor settlement. Creation, first actual writer
+start, hold resolution, landing and artifact/capacity changes also trigger refresh.
 
 Check [stop-conditions.md](stop-conditions.md) before advancing. Discard stale
 pass evidence after source edits. Re-read the selected source before each phase per [phase target binding](../../devrites-lib/reference/phase-target-binding.md#phase-target-binding). On a cold resume or
@@ -117,25 +136,33 @@ With a recorded successor, budget and no opt-out, Seal GO stays internal:
 leave the owner sealed/unshipped with `/rite-ship`; resume the child's cursor/
 controller or authorized native Spec. Use the
 [shared grammar](../../devrites-lib/reference/workspace-artifact-schema.md#what-each-file-owns).
-Charge once; pipeline only immediate successors. ACTIVE changes at ordered handoff,
-not early planning or isolated independent Build.
+Charge each opening once. ACTIVE changes at ordered handoff, not early preparation,
+creation or isolated independent Build. Canonical cap>1 preparation uses the
+[rolling pool](../../devrites-lib/reference/parallel-workspaces.md#rolling-preparation-pool);
+serial/legacy continuation pipelines only the immediate successor.
 
-Before invoking a continuation, require durable `state.md`
-`sequence_workspaces_remaining > 0`; if absent, first write
-`max_workspaces - 1` and `sequence_position: 1`. `/rite-spec` seeds the child's sequence cursor at creation per the
-[continuation contract](../../rite-plan/reference/slicing.md#continuation-workspaces);
-verify the created child's `state.md`: `sequence_parent` = current slug,
-`sequence_position` = parent position + 1,
-`sequence_workspaces_remaining` = parent remaining − 1, and — when the recorded
-entry is the sequence's release milestone — `sequence_role: release` (gates then
-require the union manifest). On resume, re-seed missing child fields from its `brief.md` parent/position and
-parent counter (same values, no second charge). No recorded parent/position
-means no sequence membership: stop the chain.
+Before a new opening, require durable `state.md`
+`sequence_workspaces_remaining > 0`; if absent, initialize the controller once
+through its native workflow with `max_workspaces - 1` and `sequence_position: 1`.
+Pool creation uses `state create-sequence <controller> <target> --brief <file>`:
+the engine derives parent, position and budget; root must not supply counters or
+decrement the parent. Resume matching identities byte-for-byte, even after native
+authoring advances them. Only real brief plus pending Spec state is bootstrapped;
+native Spec later owns normal artifacts and any approved release-role assignment.
 
-Stop sequence continuation when: `continue_sequence: false`; no recorded next
-entry (the final milestone); the `max_workspaces` cap is reached; or a genuine
-human-owned, safety, access, or parked-recovery stop fires. `max_review_queue`
-never stops Autocomplete; agent-owned Seal `NO-GO` enters recovery, not a handoff.
+Outside pool mode, `/rite-spec` seeds the child cursor under the
+[continuation contract](../../rite-plan/reference/slicing.md#continuation-workspaces):
+`sequence_parent` = current slug, `sequence_position` = parent position + 1,
+`sequence_workspaces_remaining` = parent remaining − 1; an approved release
+milestone gets `sequence_role: release`, requiring the union manifest. Serial/legacy
+resume may re-seed missing fields from recorded brief parent/position and parent
+counter without a second charge. No recorded parent/position means no membership.
+
+Stop new sequence openings when: `continue_sequence: false`; no recorded next
+entry; the `max_workspaces` cap is reached; or a genuine source human-owned, safety,
+access or parked-recovery stop fires. These do not discard independent existing
+work. `max_review_queue` never stops Autocomplete; agent-owned Seal `NO-GO` enters
+recovery, not a handoff.
 Intermediate sealed milestones continue without `--ship` and without Git mutation. On stop, report sequence position, sealed/unshipped workspaces, and
 one release command (`/rite-autocomplete <release milestone> --ship`, or
 `/rite-ship` for the current sealed workspace when the sequence is complete).
@@ -173,10 +200,14 @@ and park it after three escalations while independent work continues.
 ## Continuous caller obligation
 
 Execute each green slice/phase's `next_action` internally. Before replying, run
-`devrites-engine check continuation`: consume `required`'s `invoke:`; only `clear`
-permits reply. Controller normalization/preparation/foreign work precedes local
-Build; local repair/picks/reconciliation/discharged deferrals keep their phase,
-not recursive Autocomplete. Route agent-owned NEEDS_REPLAN, budgeted Critical/Important recovery,
+`devrites-engine check continuation`: consume required `invoke:`/`launch:` routes
+and root-owned `create: controller=X target=Y parent=Z` actions under the shared
+global pass. For `create:`, author the approved substantive brief, call
+`state create-sequence`, then refresh; never dispatch into the missing target.
+Only `clear` permits reply. Canonical writer picks precede creation/preparation;
+legacy normalization/successor obligations retain their admission boundary.
+Local repair/picks/reconciliation/discharged deferrals keep their phase, not
+recursive Autocomplete. Route agent-owned NEEDS_REPLAN, budgeted Critical/Important recovery,
 independent work and recommended blocking answers internally; invoke repair or
 `state resolve` unless the [resolver-failure stop](stop-conditions.md#other-stop-classes)
 applies. Distinct invariants are progress; unchanged resolver retries are not.

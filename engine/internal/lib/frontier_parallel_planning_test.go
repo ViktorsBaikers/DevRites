@@ -31,7 +31,6 @@ func TestAutocompleteSchedulesAgentOwnedPlanningTogether(t *testing.T) {
 		"frontier-concurrent: /rite-plan repair beta\n",
 		"launch: /rite-plan repair alpha\n",
 		"launch: /rite-plan repair beta\n",
-		"reason: a source GO does not end autocomplete; run every launch command and every picks writer this turn; do not ask; Git stays unauthorized\n",
 	} {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %q:\n%s", want, text)

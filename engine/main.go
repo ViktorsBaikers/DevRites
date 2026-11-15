@@ -68,7 +68,7 @@ Usage:
                                          Freeze a review candidate to packets/<w>.diff + packets/<w>.sha256
   devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID>] [--recheck] [--checks <G-ID,...>] [--focus <file>]
                                          Render and lint one role's by-reference dispatch packet
-  devrites-engine dispatch <slug> <sub>    Launch-wave barrier for parallel dispatch: open/start/seal/return/status/abandon/attribute (build wright waves: --slice, round cap)
+  devrites-engine dispatch <slug> <sub>    Launch-wave barrier: open/check-spawn/start/seal/return/status/abandon/park/resume/attribute (build wright waves: --slice, round cap)
   devrites-engine claim <add|release|list|check>   Advisory session-scoped file claims for same-tree concurrent sessions (.devrites/claims.jsonl)
   devrites-engine note <subcommand> <slug>         Anchored workspace notes bound to verbatim code quotes; drift regrades them (notes.md)
   devrites-engine observe slice <slug> <SLICE-ID>  Print one SLICE-### section of tasks.md
@@ -81,6 +81,7 @@ Usage:
   devrites-engine state merge-manifest <slug> [pred...]  Fold the recorded predecessor chain's manifests into the release candidate manifest
   devrites-engine state apply-bundle <slug> <bundle.json>... [--dry-run]
                                          Validate and apply plan-drafter hunk bundles with locked, rollback-protected updates
+  devrites-engine state create-sequence <controller> <target> --brief <file>
   devrites-engine state set <slug> <key>=<value>... [--unset <key>]
                                          Write state.md cursor fields atomically (known phase, no return-cursor overwrite)
   devrites-engine state append <slug> <ledger.md> --heading "<text>" --body-file <path|->
@@ -298,6 +299,8 @@ func cmdState(root string, args []string, stdin io.Reader, stdout, stderr io.Wri
 		return exitUsage
 	}
 	switch args[0] {
+	case "create-sequence":
+		return lib.RunCreateSequence(root, args[1:], stdout, stderr)
 	case "resolve":
 		return lib.Resolve(root, args[1:], stdout, stderr)
 	case "merge-manifest":

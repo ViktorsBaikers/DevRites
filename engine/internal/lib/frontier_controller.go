@@ -134,12 +134,12 @@ func frontierSerialReason(records frontierRecords, source, workspace, id string)
 	return records.serial[parallel.SliceKey(workspace, "SLICE-"+sliceNumber(id))]
 }
 
-func frontierPendingPreparation(dispatch *dispatchFile) bool {
+func frontierPendingPreparation(dispatch *dispatchFile, phase string) bool {
 	if dispatch == nil {
 		return false
 	}
 	for _, wave := range dispatch.Waves {
-		if wave.SequenceResearch {
+		if wave.SequenceResearch || phase != "" && !strings.EqualFold(wave.Phase, phase) {
 			continue
 		}
 		if wave.State != "open" && wave.State != "sealed" {
@@ -182,6 +182,17 @@ func frontierSuccessor(n *frontierWorkspace, nodes map[string]*frontierWorkspace
 }
 
 func frontierPreparationAdmission(root, source string, nodes map[string]*frontierWorkspace, mapping map[int]string, problem string, allow bool, records frontierRecords) ([]string, error) {
+	pool, err := evaluatePreparationPool(root, source, nil)
+	if err != nil {
+		return nil, err
+	}
+	if pool.enabled {
+		// Queued preparation never blocks an otherwise eligible writer.
+		if e := pool.entry(source); e != nil && e.parked != "" {
+			return nil, fmt.Errorf("frontier-blocked: %s — %s", source, e.parked)
+		}
+		return nil, nil
+	}
 	n := nodes[source]
 	if n == nil {
 		return nil, fmt.Errorf("source %s is not an existing sequence workspace", source)
@@ -231,7 +242,7 @@ func frontierPreparationAdmission(root, source string, nodes map[string]*frontie
 		if frontierTerminal(child) {
 			return nil, nil
 		}
-		if frontierPendingPreparation(successorDispatch) {
+		if frontierPendingPreparation(successorDispatch, "") {
 			return nil, nil
 		}
 		ready, notices, err := WorkspaceReady(filepath.Dir(root), source, target)
@@ -342,7 +353,7 @@ func frontierWriterRetention(root, source, controller, binding string, lease *pa
 			writerChecked := false
 			for role, actor := range wave.Roles {
 				wright := strings.Contains(role, "wright")
-				if actor.Returned || actor.Handle == "" && (!wright || wave.State == "abandoned") {
+				if actor.Returned {
 					continue
 				}
 				if !wright {
@@ -631,14 +642,17 @@ func frontierSourcePlanningCursor(source string, lines []string) (string, bool) 
 	return "", false
 }
 
-func frontierSourcePreparationWait(source string, lines []string) bool {
-	wait := "frontier-workspace: " + source + " location=live action=wait reason=" + frontierInheritedPreparationWait
+func frontierSourcePreparationWaitReason(source string, lines []string) string {
+	wait := "frontier-workspace: " + source + " location=live action=wait reason="
 	for _, line := range lines {
-		if line == wait {
-			return true
+		if reason, ok := strings.CutPrefix(line, "frontier-blocked: "+source+" — "); ok {
+			return reason
+		}
+		if reason, ok := strings.CutPrefix(line, wait); ok && (reason == frontierInheritedPreparationWait || strings.HasPrefix(reason, "resource deferral:")) {
+			return reason
 		}
 	}
-	return false
+	return ""
 }
 
 func frontierGlobalPriority(source string, lines []string) bool {
@@ -652,7 +666,7 @@ func frontierGlobalPriority(source string, lines []string) bool {
 				}
 			}
 		}
-		if strings.HasPrefix(line, "frontier-prepare:") || strings.HasPrefix(line, "frontier-review-sequence:") {
+		if strings.HasPrefix(line, "frontier-prepare:") || strings.HasPrefix(line, "frontier-create:") || strings.HasPrefix(line, "frontier-review-sequence:") {
 			return true
 		}
 		if strings.HasPrefix(line, "frontier-workspace:") {

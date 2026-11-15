@@ -49,7 +49,7 @@ devrites-engine recall --paths <p1,p2,...> [--limit n]
 devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>] [--slice <SLICE-ID> ...] [--recheck <inventory>] [--whole]
 devrites-engine metrics record <slug> --phase <p> --event <e>
 devrites-engine metrics summary [slug]
-devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute>
+devrites-engine dispatch <slug> <open|check-spawn|start|seal|return|status|abandon|park|resume|attribute>
 devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID>|--paths <path>...) [--base <ref>] [--worktree <path>]
 devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID> ...] [--recheck] [--checks <G-ID,...>] [--focus <file>]
 devrites-engine parallel <subcommand>
@@ -59,6 +59,7 @@ devrites-engine note <add|list|check|rm> <slug>
 
 devrites-engine state resolve [--human] <qid> "<answer>"
 devrites-engine state merge-manifest <slug> [pred...]
+devrites-engine state create-sequence <controller> <target> --brief <file>
 devrites-engine state close <slug>
 devrites-engine migrate <slug> [--dry-run] [--answer id=choice]
 
@@ -77,6 +78,44 @@ unsupported. There are no legacy engine aliases, tombstones, agent-protocol
 versions, semantic-readiness digests, or compatibility telemetry.
 `check candidate` is additive; no existing engine command or public `/rite-*`
 workflow was removed or renamed.
+
+## Pending sequence workspaces
+
+Under Autocomplete with a canonical roadmap and effective parallel capacity above
+one, `frontier-create: controller=... target=... parent=...` selects a missing
+identity. `next` and `check continuation` expose it as a root-only `create:` row,
+after writer `picks:` and before native `launch:` rows. Root authors a substantive
+brief from recorded approved scope, then calls `state create-sequence`; a roadmap
+position alone is not scope approval. Refresh frontier after each creation.
+
+The command derives identity and remaining allowance, takes controller then target
+locks, and atomically publishes only `brief.md` and schema-4 pending Spec state.
+It does not advance ACTIVE, decrement the parent, assign release authority, or
+claim Spec completion. Native Spec/Clarify/Temper/Define/Plan/Vet still apply.
+Success prints `sequence-workspace: created|reused target=... position=... parent=...`.
+A matching live workspace is reused without resetting advanced state or evolved
+briefs, even when the pool is full or new openings are disabled. Conflicting,
+partial, archived or symlinked identities refuse. Exit 2 means invalid arguments;
+exit 3 includes refusal/recovery. A post-publication sync failure reports the
+published identity: preserve it and retry the same command, never delete/recreate.
+Publication requires native no-replace and directory-flush support; unsupported
+filesystems fail closed. Windows publication requires NTFS.
+
+The native root supplies internal `DEVRITES_HOST_CAPACITY` from actual total actor
+capacity per invocation; absent means one, malformed values refuse. This is not a
+new user option or the writer cap. All open/retained/unknown actor reservations
+count. Reserve a complete sealable roster before spawning; split oversized rosters
+into subwaves without omitting required reviews. Immediately before native launch,
+run `dispatch <source> check-spawn --wave <wave> [--role <role>]`; then record its
+actual handle with `start`. Settlement remains possible after eligibility changes.
+
+For a concrete human/dependency hold, settle every source actor and run
+`dispatch <source> park` before clearing the hold. The durable marker survives
+restart and hold removal. After resolution, `dispatch <source> resume` requires
+unchanged identity and free preparation capacity. Resource deferral is queued
+work, not a semantic hold or started-work credit. See the canonical
+[pool workflow](../pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md).
+
 
 ## Context section index
 

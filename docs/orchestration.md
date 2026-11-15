@@ -149,11 +149,28 @@ without the flag it uses AFK `max_parallel`, retained lease capacity on resume,
 else 10. No additional user flag is needed. Standalone Build remains scoped to
 its requested workspace.
 
-While a writer runs, Autocomplete prepares or re-Vets recorded continuations and
-refills from the whole eligible pool. A future slice needs an explicit, current
-Plan/Vet `Workspace dependencies` declaration; absent or stale declarations never
-become independence merely because files differ. Only durable integrated producer
-checkpoints release dependent work. Human/access/safety gates retain their scope.
+While writers run, canonical Autocomplete at capacity above one maintains a
+separate rolling preparation buffer of that many workspaces. Root materializes
+selected identities in roadmap order with `state create-sequence` and approved
+briefs; native preparation may overlap without waiting for a predecessor to finish.
+Pre-Build and READY work occupy the buffer until an actual writer starts, terminal
+completion, or durable settled parking. Root resumes parked work only after
+capacity-safe re-admission. ACTIVE still changes only at ordered handoff.
+
+The host bounds total actors across preparation, writers and reviewers through
+internal `DEVRITES_HOST_CAPACITY` (absent: one). Open wave roles reserve slots;
+unknown/retained actors keep them until reconciled. Root prioritizes writers,
+checks `dispatch check-spawn` before native launch, and splits full required
+rosters into sealable subwaves when necessary. No declared host capacity proves
+actual overlap or isolation. Refresh after each creation, return, hold resolution,
+first writer start and landing; never wait for the entire pool.
+
+Future plans declare `Consumed planning inputs: none` or exact related producers;
+Vet binds each declared producer readiness digest. Native reviewers verify actual
+design use, not just map ownership. Explicit Plan/Vet `Workspace dependencies`
+remain mandatory, and only durable integrated producer checkpoints release
+dependent writers. Missing inputs park only affected work; path disjointness
+does not establish independence. Human/access/safety gates retain their scope.
 
 Each worker keeps its source workspace identity, isolated cwd, candidate, proof,
 state and `WIP(<source>):` checkpoint. Even a lone initial writer is isolated when

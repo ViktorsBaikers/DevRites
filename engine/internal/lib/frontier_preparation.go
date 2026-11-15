@@ -92,6 +92,15 @@ func preparationAdmission(root, source, phase string, purpose preparationPurpose
 		_, err = decodeDispatch(raw)
 		return nil, err
 	}
+	if preparationPhase(phase) {
+		pool, err := evaluatePreparationPool(root, source, current)
+		if err != nil {
+			return nil, err
+		}
+		if pool.enabled {
+			return nil, pool.admit(source, purpose)
+		}
+	}
 	if purpose.parent == "" && !earlyPreparationPhase(phase) {
 		return nil, nil
 	}

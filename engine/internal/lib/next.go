@@ -92,7 +92,7 @@ func RunNext(root string, args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintln(stdout, "next-command: /rite-autocomplete")
 			return exit
 		}
-		if mode && frontierSourcePreparationWait(slug, lines) {
+		if mode && frontierSourcePreparationWaitReason(slug, lines) != "" {
 			return exit
 		}
 	}

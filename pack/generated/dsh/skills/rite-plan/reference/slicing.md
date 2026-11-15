@@ -85,19 +85,28 @@ Make each continuation cheap and drift-free:
 
 - `brief.md` names the parent slug and the sequence position; `decisions.md` holds the
   sequence once (in the parent).
-- The child's `state.md` seeds the durable cursor at creation — `sequence_parent` =
-  parent slug, `sequence_position` = parent position + 1,
-  `sequence_workspaces_remaining` = parent remaining − 1, and `sequence_role:
-  release` only when the recorded entry is the sequence's release milestone.
-  Values derive from the parent's `state.md` and its `decisions.md` record,
-  exactly once; resume re-derives the same values rather than charging again.
-  A workspace that is not a recorded continuation leaves all four rows absent.
-  This is what `state merge-manifest` walks and what the release-union gate reads,
-  so a manually opened continuation needs the same seeding as an armed run.
-- Read the parent's `architecture.md`, `plan.md`, `decisions.md` (or its archived copy)
-  as **design input** — never re-derive settled architecture, dependency choices, or
-  interfaces. Proof is always fresh for the new candidate; parent evidence is cited as
-  input, never as proof for this workspace.
+- The child's durable cursor records `sequence_parent` = immediate predecessor,
+  `sequence_position` = parent position + 1, and `sequence_workspaces_remaining` =
+  parent remaining − 1. Derive these once from recorded sequence authority and the
+  current-schema parent. Preserve initialized values on native Spec entry or resume;
+  reuse never charges again or decrements the parent. Unrelated workspaces leave
+  sequence fields absent. Canonical-pool creation uses root's `state create-sequence`
+  bootstrap, not a fabricated full Spec; see
+  [Spec creation rules](../../rite-spec/reference/state-workspace.md#creation-rules).
+- Read related architecture, plans, and decisions when their actual design is used;
+  reuse settled contracts rather than silently re-deriving them. A numeric predecessor
+  or roadmap scope owner alone is not a consumed design input. Canonical future-pool
+  `plan.md` declares `Consumed planning inputs: none` or a unique comma-separated list
+  of related producer slugs, including nonadjacent producers. Follow the
+  [consumed-input contract](../../devrites-lib/reference/workspace-artifact-schema.md#consumed-planning-inputs)
+  for native review and exact Vet digest bindings. Parent evidence is design input,
+  never fresh proof for this workspace.
+- If a real required design input is unavailable, record the concrete source-local
+  hold and return scheduling to the controller; never invent a contract to fill its
+  queue. Unaffected sources can continue under the shared
+  [parallel-workspaces policy](../../devrites-lib/reference/parallel-workspaces.md).
+  Consumed planning snapshots do not replace explicit `Workspace dependencies` or
+  their durably BUILT/integrated producer checkpoints.
 - Shared interfaces, data shapes, and contracts are pinned **once**, in the workspace
   that introduces them, and referenced afterwards. A continuation that must change a
   pinned contract does so through its own `plan.md` shared-contract proof and an ADR
@@ -122,9 +131,10 @@ product:
   milestones and are **referenced** here, never re-owned.
 - Its candidate manifest lists the union of shipped surfaces, so one `prove` → `review`
   → `seal` binds the whole product, and one `ship` commits/pushes/tags the release.
-  Its `state.md` cursor carries `sequence_role: release` (seeded when the recorded
-  continuation is the sequence's release entry); `check candidate`/`check seal`
-  then require the manifest to cover the whole recorded chain. Build that union
+  Its authorized native root explicitly records `sequence_role: release` only for
+  the approved release entry, after pending bootstrap and before release proof/seal;
+  `state create-sequence` never assigns it. `check candidate`/`check seal` then require
+  the manifest to cover the whole recorded chain. Build that union
   deterministically: `devrites-engine state merge-manifest <release-slug>` walks
   the recorded `sequence_parent` chain (live `work/` first, then `archive/`) and
   folds every predecessor's manifest into the release `## Candidate manifest`;
