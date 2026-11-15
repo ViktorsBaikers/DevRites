@@ -15,6 +15,7 @@ import (
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/fsutil"
 	"github.com/devrites/devrites/internal/markdowntext"
+	"github.com/devrites/devrites/internal/parallel"
 	"github.com/devrites/devrites/internal/state"
 )
 
@@ -31,7 +32,7 @@ var cursorKeyPattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 var appendLedgers = []string{"assumptions.md", "decisions.md", "drift.md", "evidence.md", "questions.md"}
 
 // RunStateSet implements `devrites-engine state set`: it writes cursor fields in
-// state.md all-or-nothing under the feature lock, so the root never splices the
+// state.md all-or-nothing under controller then feature locks, so the root never splices the
 // cursor with an ad-hoc script. It refuses an unknown phase, the engine-owned
 // schema row, and an overwrite of an existing return cursor.
 //
@@ -89,7 +90,7 @@ func RunStateSet(root string, args []string, stdout, stderr io.Writer) int {
 	}
 
 	code = 0
-	if err := state.WithFeatureLock(root, slug, func() error {
+	if err := withStateMutationLock(root, slug, func() error {
 		// #nosec G304 -- state.md inside the checked feature workspace
 		raw, err := os.ReadFile(sfile)
 		if err != nil {
@@ -261,7 +262,7 @@ func RunStateAppend(root string, args []string, stdin io.Reader, stdout, stderr 
 
 	code = 0
 	var lines int
-	if err := state.WithFeatureLock(root, slug, func() error {
+	if err := withStateMutationLock(root, slug, func() error {
 		// #nosec G304 -- append-only ledger inside the checked feature workspace
 		raw, err := os.ReadFile(path)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -319,6 +320,13 @@ func RunStateAppend(root string, args []string, stdin io.Reader, stdout, stderr 
 		fmt.Fprintf(stdout, "state append: advisory: %s: %s\n", heading, a)
 	}
 	return 0
+}
+
+// Authority edits serialize with controller admission before taking feature locks.
+func withStateMutationLock(root, slug string, fn func() error) error {
+	return parallel.WithControlLock(root, func() error {
+		return state.WithFeatureLock(root, slug, fn)
+	})
 }
 
 // stateEditWorkspace returns the path of name inside slug's current-schema

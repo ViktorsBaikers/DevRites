@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["state.md","tasks.md","questions.md"]} -->
-> Read-set manifest: `devrites-engine context <slug> --skill rite-status` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context <slug> --skill rite-status` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-status: active feature status
 

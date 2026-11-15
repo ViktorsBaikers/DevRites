@@ -29,7 +29,7 @@ import (
 //
 //	devrites-engine dispatch <slug> <sub> [--phase p] [--wave w] [--role r] [--prepare-for <parent-source> | --sequence-research] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]
 
-const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute> [--phase p] [--wave w] [--role r] [--prepare-for <parent-source> | --sequence-research] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]
+const dispatchUsage = `usage: devrites-engine dispatch <slug> <open|check-spawn|start|seal|return|status|abandon|park|resume|attribute> [--phase p] [--wave w] [--role r] [--prepare-for <parent-source> | --sequence-research] [--handle h] [--reason s] [--slice SLICE-###] [--reslice-review <DRIFT-ID>] [--contract <file>] [--packet <file>] [--outcome findings|no-findings|gap] [--result <file>] [--all] [--claim-session <id> --claim <path>... [--claim-ttl <minutes>]] [--release] [--path <path>...]
 
 Wave barrier for parallel agent dispatch: seal fails until every declared
 role has a distinct handle; return fails before seal. The start that gives
@@ -40,12 +40,18 @@ completes the wave releases it, and abandon keeps it unless --release (any
 host-confirmed terminal path without a completing return, such as a stop or a
 refused launch). Wave IDs are single-use, including abandoned waves; retries
 need a fresh ID and never inherit or release an earlier wave's claim.
-Autocomplete at effective cap>1 checks immediate-successor preparation before
-ordinary Temper/Define/Plan/Vet open writes. Open-only --prepare-for binds allowed
-native preparation roles to an exact immediate parent without recursively
-requiring another successor. Open-only --sequence-research admits exact
-evidence-scout authority investigation, never successor preparation or writers.
-Both require an existing source and persist their purpose on the wave.
+Canonical Autocomplete at effective cap>1 shares bounded preparation membership
+across Spec through Vet; legacy authority retains immediate-successor checks.
+Open-only --prepare-for binds allowed native roles to an exact immediate parent.
+Open-only --sequence-research admits evidence-scout investigation, not preparation
+credit or writer authority. Open reserves every role against native host capacity;
+oversized required rosters must split into sealable subwaves retaining full review.
+Run check-spawn --wave immediately before each native spawn, then record start.
+This rechecks immutable preparation bindings and reservations; start records late
+host facts even if authority changed. Returns and abandonment remain settleable.
+park records a source-owned concrete hold after every source actor settles. Root
+must park before clearing a hold. resume clears that marker only after canonical
+identity, resolved holds and preparation capacity are rechecked under controller lock.
 Native starts, returns and abandonment retain subsecond timestamps. abandon
 --release also retains host-terminal confirmation, even without a claim or when
 its owned claim was already released; a failed release does not certify termination.
@@ -58,6 +64,8 @@ An abandoned writer's unreleased claim blocks overlapping writers across every
 live or archived feature in this repository, even in the same session or after
 TTL expiry, until explicit release or proven host termination.
 return --handle, when supplied, must match the role's recorded host handle.
+An abandoned nonterminal return requires that exact --handle; terminal abandonment
+refuses returns. Record a late start before settling an unrecorded retained actor.
 Completed return replay requires the exact recorded role and --handle and only
 reconciles claim release; failed release exits nonzero without undoing the return.
 status --wave exits
@@ -107,7 +115,8 @@ against it to catch tests that lost assertions between same-tree rounds.
 const wrightRoundsPerReview = 5
 
 type dispatchFile struct {
-	Waves map[string]*dispatchWave `json:"waves"`
+	Waves       map[string]*dispatchWave `json:"waves"`
+	PoolParking *poolParkingRecord       `json:"pool_parking,omitempty"`
 }
 
 type dispatchWave struct {
@@ -127,6 +136,10 @@ type dispatchWave struct {
 	AdmittedPaths    map[string][]string      `json:"admitted_paths,omitempty"`   // immutable normalized write sets, keyed by source-local slice
 	PreparationFor   string                   `json:"preparation_for,omitempty"`
 	SequenceResearch bool                     `json:"sequence_research,omitempty"`
+	PoolRoot         string                   `json:"pool_root,omitempty"`
+	PoolSource       string                   `json:"pool_source,omitempty"`
+	PoolParent       string                   `json:"pool_parent,omitempty"`
+	PoolPosition     int                      `json:"pool_position,omitempty"`
 }
 
 // dispatchClaim carries the wave-claim flags; ttl 0 means unset.
@@ -181,11 +194,22 @@ func decodeDispatch(data []byte) (*dispatchFile, error) {
 	if f.Waves == nil {
 		return nil, fmt.Errorf("dispatch.json is malformed (missing waves)")
 	}
+	if p := f.PoolParking; p != nil {
+		_, stampErr := time.Parse(time.RFC3339Nano, p.ParkedAt)
+		if !devritespaths.ValidSlug(p.Root) || !devritespaths.ValidSlug(p.Source) || p.Position < 1 || p.Position == 1 && p.Parent != "" || p.Position > 1 && !devritespaths.ValidSlug(p.Parent) || strings.TrimSpace(p.Reason) == "" || stampErr != nil {
+			return nil, fmt.Errorf("dispatch.json has malformed source parking binding")
+		}
+	}
 	// Validate every account before any caller can use or mutate the ledger.
 	for name, w := range f.Waves {
 		if w == nil || strings.TrimSpace(name) == "" || strings.TrimSpace(w.Phase) == "" || len(w.Roles) == 0 ||
 			!slices.Contains([]string{"open", "sealed", "complete", "abandoned"}, w.State) {
 			return nil, fmt.Errorf("wave %q is malformed (invalid phase, state or roles)", name)
+		}
+		if w.PoolSource != "" || w.PoolRoot != "" || w.PoolParent != "" || w.PoolPosition != 0 {
+			if !devritespaths.ValidSlug(w.PoolSource) || !devritespaths.ValidSlug(w.PoolRoot) || w.PoolPosition < 1 || w.PoolPosition == 1 && w.PoolParent != "" || w.PoolPosition > 1 && !devritespaths.ValidSlug(w.PoolParent) || !preparationPhase(strings.ToLower(w.Phase)) || w.SequenceResearch {
+				return nil, fmt.Errorf("wave %q has malformed canonical preparation binding", name)
+			}
 		}
 		purpose := preparationPurpose{parent: w.PreparationFor, research: w.SequenceResearch}
 		if purpose.parent != "" || purpose.research {
@@ -398,23 +422,11 @@ func RunDispatch(root string, args []string, stdout, stderr io.Writer) int {
 			})
 		})
 	}
-	controllerOpen := false
-	if sub == "open" && strings.EqualFold(phase, "build") {
-		for _, candidate := range roles {
-			controllerOpen = controllerOpen || strings.Contains(candidate, "wright")
-		}
-	}
-	if sub == "open" && (earlyPreparationPhase(phase) || purpose.parent != "" || purpose.research) {
-		controllerOpen = true
-	}
-	if controllerOpen {
-		mode, err := autocompleteMode(root)
-		if err != nil {
-			fmt.Fprintf(stderr, "dispatch: BLOCKED: %v\n", err)
-			return 3
-		}
-		controllerOpen = mode || purpose.parent != "" || purpose.research
-	}
+	// Global/host reservations serialize settlement too; standalone overrides
+	// retain their feature lock without requiring a confined controller root.
+	mode, modeErr := autocompleteMode(root)
+	_, hostSet := os.LookupEnv("DEVRITES_HOST_CAPACITY")
+	controllerOpen := sub != "status" && (mode || modeErr != nil || hostSet || purpose.parent != "" || purpose.research)
 	var lockErr error
 	if controllerOpen {
 		lockErr = parallel.WithControlLock(root, mutate)
@@ -465,6 +477,49 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 	}
 
 	switch sub {
+	case "park", "resume":
+		pool, err := evaluatePreparationPool(root, slug, f)
+		if err != nil {
+			return fail("BLOCKED: %v", err)
+		}
+		if !pool.enabled {
+			return fail("parking/resume requires canonical Autocomplete preparation pool")
+		}
+		e := pool.entry(slug)
+		if e == nil || e.missing {
+			return fail("source %s is outside canonical pool", slug)
+		}
+		if e.retained {
+			return fail("source %s retains unresolved host roles; settle every role before parking/resume", slug)
+		}
+		if sub == "park" {
+			if f.PoolParking != nil {
+				fmt.Fprintf(stdout, "dispatch: source %s already durably parked\n", slug)
+				return 0
+			}
+			if e.parked == "" {
+				return fail("park requires a concrete source hold or frontier-blocked target record")
+			}
+			f.PoolParking = &poolParkingRecord{Root: pool.mapping[1], Source: slug, Parent: e.parent, Position: e.position, Reason: e.parked, ParkedAt: nowStamp()}
+		} else {
+			if f.PoolParking == nil {
+				return fail("source %s has no durable parking record", slug)
+			}
+			f.PoolParking = nil
+			pool, err = evaluatePreparationPool(root, slug, f)
+			if err != nil {
+				return fail("BLOCKED: %v", err)
+			}
+			if err := pool.admit(slug, preparationPurpose{}); err != nil {
+				return fail("BLOCKED: %v", err)
+			}
+		}
+		if err := saveDispatch(path, f); err != nil {
+			return fail("%v", err)
+		}
+		fmt.Fprintf(stdout, "dispatch: source %s %s recorded; refresh frontier\n", slug, sub)
+		return 0
+
 	case "open":
 		if phase == "" || wave == "" || len(roles) == 0 {
 			fmt.Fprint(stderr, dispatchUsage)
@@ -483,12 +538,43 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if err := lintKnownRoles(root, phase, roles); err != nil {
 			return fail("BLOCKED: %v", err)
 		}
+		mode, modeErr := autocompleteMode(root)
+		if modeErr != nil {
+			return fail("BLOCKED: %v", modeErr)
+		}
+		_, hostSet := os.LookupEnv("DEVRITES_HOST_CAPACITY")
+		if mode || hostSet || purpose.parent != "" || purpose.research {
+			if err := hostWaveAdmission(root, slug, f, len(w.Roles)); err != nil {
+				return fail("BLOCKED: %v", err)
+			}
+		}
 		notices, err := preparationAdmission(root, slug, phase, purpose, f)
 		if err != nil {
 			return fail("BLOCKED: %v", err)
 		}
 		for _, notice := range notices {
 			fmt.Fprintln(stdout, notice)
+		}
+		if preparationPhase(strings.ToLower(phase)) && !purpose.research {
+			pool, err := evaluatePreparationPool(root, slug, f)
+			if err != nil {
+				return fail("BLOCKED: %v", err)
+			}
+			if pool.enabled {
+				if err := pool.admit(slug, purpose); err != nil {
+					return fail("BLOCKED: %v", err)
+				}
+				for _, r := range roles {
+					if !preparationRole(strings.ToLower(phase), roleBase(r)) {
+						return fail("role %q is not permitted for canonical preparation", r)
+					}
+				}
+				if err := pool.hostPreparationAdmission(root, slug, f, len(w.Roles)); err != nil {
+					return fail("BLOCKED: %v", err)
+				}
+				e := pool.entry(slug)
+				w.PoolRoot, w.PoolSource, w.PoolParent, w.PoolPosition = pool.mapping[1], slug, e.parent, e.position
+			}
 		}
 		if isBuildWrightWave(w) {
 			binding, notices, err := autocompleteWriterAdmission(root, slug, w, f)
@@ -577,6 +663,21 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 				w.Tree = tree
 			}
 		}
+		if w.PoolSource != "" {
+			pool, err := evaluatePreparationPool(root, slug, f)
+			if err == nil && !pool.enabled {
+				err = fmt.Errorf("canonical preparation authority changed before publication")
+			}
+			if err == nil {
+				err = pool.admit(slug, purpose)
+			}
+			if err != nil {
+				if w.Claim != "" {
+					_, _ = releaseClaim(root, w.ClaimSession, w.Claim)
+				}
+				return fail("BLOCKED: %v", err)
+			}
+		}
 		f.Waves[wave] = w
 		if err := saveDispatch(path, f); err != nil {
 			if w.Claim != "" {
@@ -593,9 +694,35 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		}
 		return 0
 
-	case "start":
+	case "check-spawn":
 		w := getWave()
 		if w == nil || w.State != "open" {
+			return fail("wave %q is not open", wave)
+		}
+		if role != "" && (w.Roles[role] == nil || w.Roles[role].StartedAt != "") {
+			return fail("role %q is not awaiting spawn", role)
+		}
+		if err := hostWaveAdmission(root, slug, f, 0); err != nil {
+			return fail("BLOCKED: %v", err)
+		}
+		if w.PoolSource != "" {
+			pool, err := evaluatePreparationPool(root, slug, f)
+			if err != nil {
+				return fail("BLOCKED: %v", err)
+			}
+			if !pool.enabled {
+				return fail("preparation authority changed; reconcile reserved wave before spawning")
+			}
+			if err := pool.admit(slug, preparationPurpose{parent: w.PreparationFor}); err != nil {
+				return fail("BLOCKED: %v", err)
+			}
+		}
+		fmt.Fprintf(stdout, "dispatch: wave %s spawn reservation valid; spawn then record start immediately\n", wave)
+		return 0
+
+	case "start":
+		w := getWave()
+		if w == nil || w.State != "open" && !(w.State == "abandoned" && w.TerminalAt == "") {
 			return fail("wave %q is not open (state %s)", wave, waveState(w))
 		}
 		r := w.Roles[role]
@@ -613,10 +740,13 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		if r.Handle != "" {
 			return fail("role %q already started (handle %q)", role, r.Handle)
 		}
+		if w.State == "abandoned" && w.AbandonedAt == "" {
+			w.AbandonedAt = nowStamp()
+		}
 		r.Handle = handle
 		r.StartedAt = nowStamp()
 		// Handles are distinct (checked above), so the last start seals at launch.
-		sealed := true
+		sealed := w.State == "open"
 		for _, o := range w.Roles {
 			if o.Handle == "" {
 				sealed = false
@@ -663,12 +793,18 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 
 	case "return":
 		w := getWave()
-		if w == nil || (w.State != "sealed" && w.State != "complete") {
+		if w == nil || (w.State != "sealed" && w.State != "complete" && !(w.State == "abandoned" && w.TerminalAt == "")) {
 			return fail("wave %q is not sealed (state %s)", wave, waveState(w))
 		}
 		r := w.Roles[role]
 		if r == nil {
 			return fail("role %q not declared in wave %q", role, wave)
+		}
+		if r.StartedAt == "" {
+			return fail("role %q needs its late host start recorded before return", role)
+		}
+		if w.State == "abandoned" && handle == "" {
+			return fail("abandoned wave %q needs its recorded --handle to settle a retained actor", wave)
 		}
 		if handle != "" && handle != r.Handle {
 			return fail("handle %q does not match role %q's recorded handle %q", handle, role, r.Handle)
@@ -703,6 +839,9 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 				return fail("%v", err)
 			}
 		}
+		if w.State == "abandoned" && w.AbandonedAt == "" {
+			w.AbandonedAt = nowStamp()
+		}
 		r.Returned, r.ReturnedAt = true, nowStamp()
 		all := true
 		for _, o := range w.Roles {
@@ -711,7 +850,11 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 			}
 		}
 		if all {
-			w.State = "complete"
+			if w.State == "abandoned" {
+				w.TerminalAt = nowStamp()
+			} else {
+				w.State = "complete"
+			}
 		}
 		if err := saveDispatch(path, f); err != nil {
 			if created {
@@ -722,7 +865,7 @@ func dispatchLocked(root, slug, sub, phase, wave, role, handle, reason string, r
 		*recordedReturn = true
 		recordMetricNote(root, slug, w.Phase, "return", role, note)
 		fmt.Fprintf(stdout, "dispatch: %s returned (wave %s %s)\n", role, wave, w.State)
-		if all {
+		if all && w.State == "complete" {
 			absorbWave(root, slug, w, stderr)
 		}
 		if all && w.Claim != "" && !releaseWaveClaim(root, wave, w, stdout, stderr) {

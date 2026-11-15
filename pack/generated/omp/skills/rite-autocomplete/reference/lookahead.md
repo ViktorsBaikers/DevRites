@@ -19,7 +19,7 @@ Exit 3: held, stop. Re-add the same session each phase. Release with `devrites-e
 
 ## Rules
 
-- Preserve the ordered owner's `.devrites/ACTIVE`; bind every phase and handoff to the target per shared [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding).
+- Preserve the ordered owner's `.devrites/ACTIVE`; bind every phase and handoff to the target per shared [phase target binding](skill://devrites-lib/reference/phase-target-binding.md#phase-target-binding).
 - After the workspace exists, run `devrites-engine state set <target> sequence_lookahead=yes`.
 - Run Spec → Clarify → Temper → Define → Plan → Vet. Define and Plan read the predecessor tree and plan. Record one assumption per predecessor interface used.
 - At Vet record `Predecessor readiness: <active-slug> <digest>` in `eng-review.md` (the `--emit-binding` hex). A later planning change blocks `DRV-GATE-READINESS-STALE`; re-vet before Build.

@@ -5,8 +5,8 @@ argument-hint: "[mode: decompose|reslice|repair|reorder|split|unblock|course-cor
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/agents.md","rite-plan/reference/slicing.md","rite-plan/reference/replan-and-repair.md","rite-plan/reference/dependency-graph.md","rite-plan/reference/task-breakdown.md","rite-plan/reference/anti-patterns.md","rite-define/reference/plan-template.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","drift.md"],"workspaceByRole":{"evidence-scout":["spec.md","architecture.md","decisions.md","state.md"],"plan-drafter":["brief.md","spec.md","plan.md","tasks.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","state.md","drift.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/workflow-artifacts.md"]} -->
-> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase plan` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+<!-- loads: {"always":["devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/agents.md","rite-plan/reference/slicing.md","rite-plan/reference/replan-and-repair.md","rite-plan/reference/dependency-graph.md","rite-plan/reference/task-breakdown.md","rite-plan/reference/anti-patterns.md","rite-define/reference/plan-template.md","devrites-lib/reference/serialization-audit.md"],"triggers":{"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"parallel-workspaces":["devrites-lib/reference/parallel-workspaces.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md","drift.md"],"workspaceByRole":{"evidence-scout":["spec.md","architecture.md","decisions.md","state.md"],"plan-drafter":["brief.md","spec.md","plan.md","tasks.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","state.md","drift.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/tooling.md","devrites-lib/reference/standards/workflow-artifacts.md"]} -->
+> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase plan` bundles every file named below into one deduplicated bundle. Trigger names map to the conditional rules in the sections that follow. Apply [controller load conditions](../devrites-lib/reference/phase-target-binding.md#controller-guidance-load) before controller work (trigger `parallel-workspaces`). Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 
 # /rite-plan: (re)plan an active feature
@@ -53,7 +53,7 @@ Before classifying any Reslice, read `.pi/skills/devrites-lib/reference/standard
 
 ## Workflow
 0. Read `.pi/skills/devrites-lib/reference/standards/core.md` (operating rules) before reshaping anything.
-   Then resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require its `state.md`, and read
+   Then resolve source per [phase target binding](../devrites-lib/reference/phase-target-binding.md#phase-target-binding), require its `state.md`, and read
    the cursor directly.
 1. Read `spec.md`, `decision-coverage.md`, `plan.md`, `tasks.md`, `state.md`, `drift.md`,
    `eng-review.md`, and the current `git diff` (if a repo). Read `decisions.md` and
@@ -83,9 +83,10 @@ Before classifying any Reslice, read `.pi/skills/devrites-lib/reference/standard
    See [replan-and-repair](reference/replan-and-repair.md) for each mode's steps.
 2a. **Draft fresh.** Dispatch `devrites-plan-drafter` in `repair` mode with frozen mode,
    affected artifacts, settled contract, and failure/drift; a slice-bound repair
-   builds its bundle with `--slice <SLICE-ID>` per affected slice. Await one atomic, read-only
-   the drafter's `candidate_files` bundle; human choices return separately.
-   For a capacity-driven repair, include the shared [serialization audit](../devrites-lib/reference/parallel-workspaces.md#recover-avoidable-serialization)
+   builds its bundle with `--slice <SLICE-ID>` per affected slice. Await one atomic,
+   read-only strict JSON object containing `candidate_files` and all result fields,
+   including `human_owned_choices`; Outcome/admission text stays outside the fence.
+   For a capacity-driven repair, include the shared [serialization audit](../devrites-lib/reference/serialization-audit.md#recover-avoidable-serialization)
    and its concrete blocked edges, independent cut, retained-worker impact and unchanged gates in that frozen scope.
    When the observed failure is missing or ambiguous consumptive-action evidence,
    require the drafter to apply [`one-shot-actions.md`](../devrites-lib/reference/standards/one-shot-actions.md) and return the bounded
@@ -155,10 +156,13 @@ Before classifying any Reslice, read `.pi/skills/devrites-lib/reference/standard
 4. Re-slice using vertical-slice rules: [slicing](reference/slicing.md) and
    [task-breakdown](reference/task-breakdown.md). Prefer thin, shippable, verifiable.
    **Completion:** every slice is independently shippable/provable or carries an irreducibility reason.
-5. Reconcile the candidate's meaning against steps 3 and 4, save each bundle
-   under `packets/`, and apply its hunks with `devrites-engine state apply-bundle
-   <slug> <bundle.json>...` (all-or-nothing; `--dry-run` previews); never
-   hand-copy hunks or stage file copies. Rewrite each owning clause in place; never
+5. Reconcile the candidate's meaning against steps 3 and 4, extract each fenced JSON
+   object verbatim under `packets/`, and apply with `devrites-engine state apply-bundle
+   <slug> <bundle.json>...` (all-or-nothing; `--dry-run` previews). No YAML conversion,
+   reformatting, schema guessing, hand-copying content/hunks, or staging file copies.
+   Malformed JSON returns to the drafter for bounded correction under the existing
+   rejection/retry rules below; root never guess-repairs it. Transport success grants
+   no approval or independent-review credit. Rewrite each owning clause in place; never
    append a dated delta or fold section beside the clause it supersedes (apply-bundle
    refuses one). Then update `state.md` and append
    rationale to `decisions.md`. A rejected candidate

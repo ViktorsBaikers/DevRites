@@ -3,6 +3,24 @@
 Build plan for `spec.md`; tech choices live here, not in spec. `/rite-plan` revises on
 new evidence.
 
+Canonical references replace optional prose copies only. Preserve required verbatim
+spec Prohibitions in slices, `Dependencies`/`depends_on` equality, `Proves` quotations,
+and runnable gate `CHECK`/`CWD` equality with test-plan preflight Command/Cwd.
+Resolve every reference to its owning section/ID; a missing or ambiguous target is
+a gap, never permission to drop the obligation.
+
+For canonical future-pool plans, write one standalone declaration below the plan identity:
+`Consumed planning inputs: none` or `Consumed planning inputs: <slug>, <slug>`. List
+unique related workspaces whose implementation design is actually consumed, including
+nonadjacent producers; roadmap scope ownership alone does not count. Native reviewers
+verify the declaration under the
+[consumed-input schema](../../devrites-lib/reference/workspace-artifact-schema.md#consumed-planning-inputs),
+which owns Vet digest bindings and drift handling. Required design not yet available
+parks the affected source under
+[parallel-workspaces policy](../../devrites-lib/reference/parallel-workspaces.md),
+never an invented contract. Keep explicit `Workspace dependencies` and BUILT producer
+checkpoints separate; explicit separate-session lookahead retains its predecessor binding.
+
 ```markdown
 # Plan: <Feature>
 Spec: ./spec.md   Decision coverage: ./decision-coverage.md   Date: <date>
@@ -15,7 +33,7 @@ Spec: ./spec.md   Decision coverage: ./decision-coverage.md   Date: <date>
 - Frameworks/libraries: <...>
 - Storage/data: <...>
 - Test commands: <discovered runner commands; discovery contract: .pi/skills/rite-prove/reference/test-command-discovery.md>
-- Target/platform/constraints: <...>
+- Target/platform: <...>; constraints: <exact spec.md section/IDs; implementation consequences here>
 - Approach-affecting product/constraint unknowns route to `/rite-clarify`;
   `[NEEDS CLARIFICATION]` blocks approval.
 
@@ -33,11 +51,13 @@ Record feature owner, failure/recovery, slice, and evidence. Changed `not applic
 uses Spec Drift Guard.
 
 ## Global constraints
-Exact `spec.md` requirements inherited by every slice.
+Reference exact `spec.md` section/IDs for constraints inherited by every slice;
+record their implementation consequences here, not a prose copy of the requirements.
 
 ## Approach
-State strategy and rationale. For costly/hard-to-reverse boundaries, models, contracts,
-or dependencies compare ≥2 `Option · Drivers · Trade-offs · Consequence`.
+State the implementation strategy and reference exact `decisions.md` `DEC-###` entries
+for rationale. For costly/hard-to-reverse boundaries, models, contracts, or dependencies,
+those entries compare ≥2 `Option · Drivers · Trade-offs · Consequence`.
 
 ## Slice strategy
 For explicit workflow-only scope, use zero product slices and the existing empty
@@ -46,8 +66,9 @@ Workflow Artifact behaviors and proof, not invented slices; follow
 [`workflow-artifacts.md`](../../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning).
 The following slice strategy applies to product work.
 
-List vertical `SLICE-###` increments, AC coverage, and risk-first order within dependency
-tiers. Wide refactors use expand → green migrate batches → contract, or an integration
+Reference exact `tasks.md` `SLICE-###` entries for vertical increments, AC coverage,
+order, and dependencies; explain risk-first strategy within dependency tiers here.
+Wide refactors use expand → green migrate batches → contract, or an integration
 branch + final verify slice.
 
 ## Architecture admission
@@ -61,8 +82,9 @@ implementation-local or planning-owned — not architecture.
 → Vet requests downgrade to implementation-local horizon with observable trigger.
 
 ## Architecture decisions
-Decisions + rationale (mirror to `decisions.md`). Prefer reuse and invariants over
-scaffolding. Medium+ entries add `Binds:`/`Prevents:`. Interfaces name invariants, I/O,
+Reference exact `decisions.md` `DEC-###` entries; that log owns decisions and rationale.
+Record implementation consequences here. Prefer reuse and invariants over scaffolding.
+Medium+ entries add `Binds:`/`Prevents:`. Interfaces name invariants, I/O,
 ordering/idempotency, errors, versioning, config, and budgets.
 
 ## Decision horizons
@@ -95,9 +117,10 @@ artifact. Without boundary change write exactly:
 Shared contract impact: none — <specific justification>
 
 ## Dependency graph
-List local prerequisites and explicit `Workspace dependencies` under the
-[canonical slice grammar](../../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar),
-non-code prerequisites and deployable order:
+Reference exact `tasks.md` slice entries for local prerequisites and explicit
+`Workspace dependencies` under the
+[canonical slice grammar](../../devrites-lib/reference/workspace-artifact-schema.md#canonical-slice-grammar);
+tasks owns slice dependencies. Record non-code prerequisites and deployable order here:
 contract/schema/config → old/new app/worker → migration/backfill → exposure → removal.
 Name shared mutable resources that force serialization or explicit isolation.
 Each temporary flag, shim/adapter, dual read/write, retained old column/endpoint, or deprecated
@@ -105,7 +128,8 @@ alias the plan adds names its removal `SLICE-###` here, or a Non-goal continuati
 (`/rite-spec <slug>-N`) with measurable trigger + owner; otherwise Vet returns NEEDS REPLAN.
 
 ## Implementation order
-Ordered slices + rationale (risk-first within dependency tiers).
+Reference ordered `tasks.md` slice IDs; retain risk-first rationale within dependency
+tiers here rather than a second authoritative slice order.
 `MVP cut: after SLICE-00N — <what ships if we stop here>` — the earliest coherent,
 shippable prefix. Every acceptance criterion above it is proven there, with no dependency
 below it.
@@ -132,7 +156,8 @@ off / revert / restore), and **rollback-verification proof** (command + observed
 "Revert if needed" is not a rollback plan.
 
 ## Scope boundaries
-Untouched scope; copy spec “Ask first”/“Never do.”
+Untouched scope; reference exact `spec.md` sections/IDs for “Ask first”/“Never do.”
+Record implementation consequences, not optional prose mirrors.
 
 ## Source docs needed
 Framework/library sources (triggers source-driven).

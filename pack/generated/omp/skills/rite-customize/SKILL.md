@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"]},"workspace":[]} -->
-> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite-customize` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite-customize` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](skill://devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-customize: native project customization
 

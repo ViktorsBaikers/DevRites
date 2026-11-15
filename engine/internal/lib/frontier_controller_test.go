@@ -15,6 +15,7 @@ import (
 
 func controllerFixture(t *testing.T) (string, string) {
 	t.Helper()
+	t.Setenv("DEVRITES_HOST_CAPACITY", "64")
 	root := filepath.Join(t.TempDir(), ".devrites")
 	dir := poolWorkspace(t, root, "current16", "", poolSlice("SLICE-001", "src/current.go", "Workspace dependencies: none"))
 	frontierFixture(t, root, "work", "current16", "", "build", "running", "/rite-build SLICE-001", 1, "2")

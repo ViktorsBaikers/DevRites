@@ -1,8 +1,9 @@
 # rite-seal phase contract
 
-1. **Read.** Resolve source per [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require its
+1. **Read.** Resolve source per [phase target binding](skill://devrites-lib/reference/phase-target-binding.md#phase-target-binding), require its
    `state.md`, then read required workspace artifacts, conditional
    browser/design/devex evidence, and final diff.
+   With a retained controller or shared-source proof, load [lifecycle closeout](skill://devrites-lib/reference/parallel-workspaces.md#lifecycle-closeout-and-ship) (trigger `parallel-workspaces`) before freezing or admitting accounts.
 2. **Recheck identity and real proof.** Run
    `devrites-engine check candidate <slug>` and require its exact digest to match
    the single evidence/review bindings and the browser binding when present.

@@ -94,6 +94,17 @@ func WithFeatureLock(root, slug string, fn func() error) error {
 // WithFeatureLockIn locks a feature within root without following escaping
 // symlinks. The caller retains ownership of root.
 func WithFeatureLockIn(root *os.Root, slug string, fn func() error) error {
+	return WithFeatureIdentityLockIn(root, slug, func() error {
+		if err := root.MkdirAll(filepath.Join("work", slug), 0o755); err != nil {
+			return fmt.Errorf("lock feature %q: %w", slug, err)
+		}
+		return fn()
+	})
+}
+
+// WithFeatureIdentityLockIn locks the stable feature identity and refuses an
+// archived workspace, without creating work/<slug>. The caller owns root.
+func WithFeatureIdentityLockIn(root *os.Root, slug string, fn func() error) error {
 	if !devritespaths.ValidSlug(slug) {
 		return fmt.Errorf("lock feature %q: not a feature slug", slug)
 	}
@@ -130,9 +141,6 @@ func WithFeatureLockIn(root *os.Root, slug string, fn func() error) error {
 	if _, err := root.Lstat(filepath.Join("archive", slug)); err == nil {
 		return fmt.Errorf("lock feature %q: workspace is closed (archived)", slug)
 	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("lock feature %q: %w", slug, err)
-	}
-	if err := root.MkdirAll(filepath.Join("work", slug), 0o755); err != nil {
 		return fmt.Errorf("lock feature %q: %w", slug, err)
 	}
 	return fn()

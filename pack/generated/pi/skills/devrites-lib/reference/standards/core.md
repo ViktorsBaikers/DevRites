@@ -1,10 +1,12 @@
 # DevRites core rules
 
-> Applies when: always; every workspace rite reads it first.
+> Applies when: always; every workspace rite applies it first.
 
-Read core first, then the `loads:` manifest `always` set (via
+Apply core first, then select the current `loads:` manifest `always` set (via
 `devrites-engine context --skills-root .pi/skills <slug> --skill <name>` with a workspace, else listed files).
-Load trigger files when their named condition holds; other `README.md` rules on demand.
+Select trigger files when their named condition holds; other `README.md` rules on demand.
+Read engine bundles index-first under [Context hygiene](#context-hygiene-end-of-every-phase);
+without that index, read the complete applicable bundle or listed files.
 
 Cite rules as `core.md #N` (CORE-N), not repeated text. IDs keep their meaning
 even when reworded.
@@ -173,8 +175,24 @@ Stopping without this leaves an incomplete workspace.
 
 Long contexts degrade reasoning quality. Act on context at **50-70% used, not 95%**.
 
-Read the engine `context` bundle once per phase, not its sources; after compaction
-re-read the bundle.
+For each phase, read the engine `context` bundle index first using its stdout
+`index: L1-<N>` range. Rows identify exact rendered sections as
+`L<start>-<end> sha256=<64 lowercase hex> bytes=<N> reuse=<rule|never> <label>`.
+Read every required section in full, except a `reuse=rule` section whose complete
+text is already present in this same uncompacted root conversation with the
+identical label and rendered SHA-256. Only complete expanded pack references in
+roleless bundles qualify. Apply every currently applicable rule in each new phase,
+even when its text is reused; line offsets may change without changing identity.
+
+New session, compaction, uncertain prior read, changed label/hash, or missing index
+means a complete applicable read. Fresh reviewer roles always read independently.
+Workspace artifacts, inventories, snippets, by-reference indexes, standalone
+skill/system prompts, and reviewer accounts never qualify. Freshly read required
+workspace artifacts; index identity does not replace owning text or dependencies.
+Disk equality (including `unchanged on disk`) is not evidence of a model read.
+Keep the complete bundle on disk; no persistent cache or read receipt grants reuse.
+After compaction, follow the complete [resume reconciliation sequence](context-hygiene.md#dispatch-packets)
+before re-dispatch, and read the complete applicable bundle again.
 
 <!-- root-only -->
 Only controlling-caller final replies or standalone rites name a resume command

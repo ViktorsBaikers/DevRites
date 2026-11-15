@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/git-workflow.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"],"testing":["devrites-lib/reference/standards/testing.md"]},"workspace":[]} -->
-> Read-set manifest: `devrites-engine context --skills-root .dsh/skills <slug> --skill rite-pr-feedback` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .dsh/skills <slug> --skill rite-pr-feedback` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-pr-feedback: resolve PR review threads
 

@@ -366,7 +366,15 @@ func FrontierLines(root, slug string) ([]string, error) {
 		}, nil
 	}
 	ordered, related := frontierRelated(nodes, chain)
-	if len(related) == 1 && source.parent == "" && !source.hasPosition && !source.hasRemaining && frontierSpecTarget(source) == "" {
+	maps, artifacts, mapProblem, invalidCanonical := frontierRoadmap(nodes, ordered)
+	if invalidCanonical {
+		return []string{"frontier: blocked", "frontier-source: " + slug, "frontier-review-sequence: reason=native authority-normalization required: invalid canonical authority: " + mapProblem + " artifacts=" + strings.Join(artifacts, ",")}, nil
+	}
+	pool, err := evaluatePreparationPool(root, slug, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !pool.enabled && len(maps) == 0 && len(related) == 1 && source.parent == "" && !source.hasPosition && !source.hasRemaining && frontierSpecTarget(source) == "" {
 		return []string{"frontier: none"}, nil
 	}
 	controller := ""
@@ -410,10 +418,6 @@ func FrontierLines(root, slug string) ([]string, error) {
 	if source.hasRemaining && source.remaining == 0 {
 		allowFuture = false
 	}
-	maps, artifacts, mapProblem, invalidCanonical := frontierRoadmap(nodes, ordered)
-	if invalidCanonical {
-		return []string{"frontier: blocked", "frontier-source: " + slug, "frontier-review-sequence: reason=native authority-normalization required: invalid canonical authority: " + mapProblem + " artifacts=" + strings.Join(artifacts, ",")}, nil
-	}
 	if len(maps) > 0 && mapProblem == "" {
 		lines = append(lines, "frontier-authority: "+strings.Join(artifacts, ","))
 	}
@@ -436,9 +440,12 @@ func FrontierLines(root, slug string) ([]string, error) {
 	deferred := map[string]string{}
 	prepared := map[string]bool{}
 	var concurrent []string
+	var concurrentSources []string
 	var preparatory map[string]bool
 	var preparationAccounts map[string]*dispatchFile
-	if mode && capN > 1 {
+	if pool.enabled {
+		preparationAccounts = pool.accounts
+	} else if mode && capN > 1 {
 		preparatory = make(map[string]bool, len(ordered))
 		preparationAccounts = make(map[string]*dispatchFile, len(ordered))
 		for _, name := range ordered {
@@ -453,8 +460,18 @@ func FrontierLines(root, slug string) ([]string, error) {
 		action, reason := "complete", "archived predecessor; no writer admission"
 		held := false
 		_, invalid := frontierChain(nodes, name)
+		entry := pool.entry(name)
 		if invalid != nil {
 			action, reason, blocked = "repair", invalid.Error(), true
+		} else if pool.enabled && entry != nil && (entry.parked != "" || !entry.selected && entry.occupied) {
+			action, reason, held = "wait", entry.parked, true
+			if reason == "" {
+				reason = "resource deferral: preparation pool full; re-evaluate after first Build start or actor settlement"
+			}
+			if entry.parked != "" {
+				lines = append(lines, "frontier-blocked: "+name+" — "+entry.parked)
+			}
+			waiting = true
 		} else if gateReason, gateErr := frontierSchedulingHold(n, mode); gateErr != nil {
 			action, reason, held, blocked = "repair", gateErr.Error(), true, true
 		} else if gateReason != "" {
@@ -491,10 +508,11 @@ func FrontierLines(root, slug string) ([]string, error) {
 		if mode && action == "prepare" {
 			if cmd, ok := planningCursorCommand(reason); ok {
 				concurrent = append(concurrent, commandWithWorkspace(cmd, name))
+				concurrentSources = append(concurrentSources, name)
 			}
 		}
 		lines = append(lines, fmt.Sprintf("frontier-workspace: %s location=%s action=%s reason=%s", name, n.location, action, reason))
-		if preparatory[name] {
+		if pool.enabled || preparatory[name] {
 			continue
 		}
 		if invalid != nil || held || !allowFuture || n.hasRemaining && n.remaining == 0 || n.status == "awaiting_human" || n.status == "blocked" || n.question != "" {
@@ -549,6 +567,22 @@ func FrontierLines(root, slug string) ([]string, error) {
 			actionable, blocked = true, true
 		}
 	}
+	if pool.enabled {
+		for _, entry := range pool.entries {
+			if !entry.missing {
+				continue
+			}
+			if entry.parked != "" {
+				lines = append(lines, "frontier-blocked: "+entry.target+" — "+entry.parked)
+				continue
+			}
+			if !entry.selected {
+				continue
+			}
+			lines = append(lines, fmt.Sprintf("frontier-workspace: %s location=missing action=prepare reason=selected canonical preparation slot; native scope approval required", entry.target), fmt.Sprintf("frontier-prepare: /rite-spec %s source=%s reason=pending bootstrap; no workspace created", frontierQuote(entry.target), entry.parent), fmt.Sprintf("frontier-create: controller=%s target=%s parent=%s", pool.controller, entry.target, entry.parent))
+			actionable = true
+		}
+	}
 	if mode {
 		filtered := candidates[:0]
 		for _, candidate := range candidates {
@@ -587,8 +621,36 @@ func FrontierLines(root, slug string) ([]string, error) {
 	}
 	if mode && capN > 0 && len(concurrent) > 0 {
 		limit := capN
+		if pool.enabled {
+			host, err := nativeHostCapacity()
+			if err != nil {
+				return nil, err
+			}
+			used, err := hostReservations(root, slug, nil)
+			if err != nil {
+				return nil, err
+			}
+			priority, err := pool.writerPriority(root, slug)
+			if err != nil {
+				return nil, err
+			}
+			limit = min(limit, max(0, host-used-priority))
+			if limit < len(concurrent) {
+				lines = append(lines, fmt.Sprintf("frontier-resource-deferred: preparation native-host-capacity=%d retained=%d writer-priority=%d; queued, not started; re-evaluate after actor settlement", host, used, priority))
+			}
+		}
 		if limit > len(concurrent) {
 			limit = len(concurrent)
+		}
+		if pool.enabled {
+			for _, target := range concurrentSources[limit:] {
+				prefix := "frontier-workspace: " + target + " location=live action=prepare reason="
+				for i, line := range lines {
+					if strings.HasPrefix(line, prefix) {
+						lines[i] = "frontier-workspace: " + target + " location=live action=wait reason=resource deferral: native host slots reserved for retained actors or priority writers; re-evaluate after actor settlement"
+					}
+				}
+			}
 		}
 		for _, cmd := range concurrent[:limit] {
 			lines = append(lines, "frontier-concurrent: "+cmd)
@@ -777,12 +839,7 @@ func frontierLocal(root, controller string, n *frontierWorkspace, candidates *[]
 			}
 			wavePending := false
 			for _, role := range wave.Roles {
-				if wave.State != "abandoned" || role.Handle != "" || role.StartedAt != "" {
-					wavePending = wavePending || !role.Returned
-				}
-			}
-			if wave.State == "abandoned" && !wavePending {
-				continue
+				wavePending = wavePending || !role.Returned
 			}
 			retained = true
 			pending = pending || wavePending
@@ -996,6 +1053,14 @@ func frontierBoundSpec(root, slug, action string) bool {
 	mapping, _, problem, invalidCanonical := frontierRoadmap(nodes, ordered)
 	if invalidCanonical {
 		return false
+	}
+	pool, err := evaluatePreparationPool(root, slug, nil)
+	if err != nil {
+		return false
+	}
+	if pool.enabled {
+		e := pool.entry(target)
+		return e != nil && e.selected && e.parked == ""
 	}
 	// Existing checked children remain resumable under ambiguous historical maps.
 	if child := nodes[target]; child != nil {

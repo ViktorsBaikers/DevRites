@@ -133,6 +133,121 @@ func TestApplyBundleCombinesPathAliases(t *testing.T) {
 	}
 }
 
+func TestApplyBundleDrafterJSONEnvelope(t *testing.T) {
+	const beforePlan = "# Plan\n\nAC-001 and AC-002 ship in \"draft\" order.\nRollback: keep C:\\cache\\plan.\n"
+	const payload = `{
+  "mode": "repair",
+  "base_hashes": {"plan.md": "<plan-pin>", "tasks.md": "<tasks-pin>"},
+  "candidate_files": [
+    {
+      "path": "plan.md",
+      "operation": "patch",
+      "hunks": [
+        {
+          "id": "P1",
+          "old_text": "AC-001 and AC-002 ship in \"draft\" order.\nRollback: keep C:\\cache\\plan.\n",
+          "new_text": "AC-001 and AC-002 ship in \"reviewed\" order.\nRollback:\n\tKeep C:\\cache\\plan; preserve café.\n"
+        }
+      ]
+    },
+    {
+      "path": "tasks.md",
+      "operation": "patch",
+      "hunks": [
+        {
+          "id": "T1",
+          "old_text": "Dependencies: SLICE-001\nCovers AC-002.",
+          "new_text": "Dependencies: SLICE-001\nCovers AC-002 with \"quoted\" proof.\nRollback: restore C:\\cache\\plan."
+        }
+      ]
+    }
+  ],
+  "retired_ids": [],
+  "acceptance_map": ["AC-001 -> SLICE-001", "AC-002 -> SLICE-002"],
+  "dependency_order": ["SLICE-001", "SLICE-002"],
+  "technical_decisions": ["Reuse existing rollback; rationale stays in decisions.md."],
+  "human_owned_choices": ["Operator chooses \"release\" or \"hold\".\nNo approval implied."],
+  "validation_commands": ["go test ./..."],
+  "applicability_disposition": [],
+  "self_attack_exposures": [],
+  "remaining_findings": ["F2: repair remaining traceability sites together"],
+  "blocked_findings": ["F3: release policy needs operator input"]
+}`
+	const afterPlan = "# Plan\n\nAC-001 and AC-002 ship in \"reviewed\" order.\nRollback:\n\tKeep C:\\cache\\plan; preserve café.\n"
+	const afterTasks = `# Tasks
+
+## SLICE-001 First
+Dependencies: none
+Covers AC-001.
+
+## SLICE-002 Second
+Dependencies: SLICE-001
+Covers AC-002 with "quoted" proof.
+Rollback: restore C:\cache\plan.
+`
+	for _, tc := range []struct {
+		name string
+		old  string
+		new  string
+		want string
+	}{
+		{name: "accepted partial envelope"},
+		{name: "stale second target pin", old: "<tasks-pin>", new: strings.Repeat("0", 64), want: "stale base"},
+		{name: "malformed JSON escape", old: `\"quoted\"`, new: `\q`, want: "not a JSON candidate bundle"},
+		{name: "trailing JSON object", old: "\n}", new: "\n} {}", want: "not a JSON candidate bundle"},
+		{
+			name: "overlapping hunks",
+			old:  `"hunks": [`,
+			new:  `"hunks": [{"id": "P2", "old_text": "AC-001 and AC-002", "new_text": "AC-001 plus AC-002"},`,
+			want: "overlap",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, dir := bundleWorkspace(t)
+			if err := os.WriteFile(filepath.Join(dir, "plan.md"), []byte(beforePlan), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			raw := payload
+			if tc.old != "" {
+				raw = strings.Replace(raw, tc.old, tc.new, 1)
+			}
+			raw = strings.NewReplacer(
+				"<plan-pin>", pinOf(t, dir, "plan.md"),
+				"<tasks-pin>", pinOf(t, dir, "tasks.md"),
+			).Replace(raw)
+			bundle := filepath.Join(t.TempDir(), "drafter.json")
+			if err := os.WriteFile(bundle, []byte(raw), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			wantCode := 0
+			wantPlan, wantTasks := afterPlan, afterTasks
+			if tc.want != "" {
+				wantCode = 3
+				wantPlan, wantTasks = beforePlan, bundleTasks
+			}
+			var stdout, stderr bytes.Buffer
+			if code := RunApplyBundle(root, []string{"feat", bundle}, &stdout, &stderr); code != wantCode {
+				t.Fatalf("code=%d want=%d stderr=%s", code, wantCode, stderr.String())
+			}
+			if tc.want != "" && !strings.Contains(stderr.String(), tc.want) {
+				t.Fatalf("stderr %q lacks %q", stderr.String(), tc.want)
+			}
+			if tc.want == "" && !strings.Contains(stdout.String(), "applied 2 file(s), 2 hunk(s)") {
+				t.Fatalf("stdout=%s", stdout.String())
+			}
+			for name, want := range map[string]string{"plan.md": wantPlan, "tasks.md": wantTasks} {
+				got, err := os.ReadFile(filepath.Join(dir, name))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if string(got) != want {
+					t.Errorf("%s bytes = %q, want %q", name, got, want)
+				}
+			}
+		})
+	}
+}
+
 func TestApplyBundleRefusesAndWritesNothing(t *testing.T) {
 	cases := []struct {
 		name  string

@@ -16,11 +16,11 @@ import (
 )
 
 // PacketUsage is the help and usage-error text for `packet`.
-const PacketUsage = `usage: devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID>] [--recheck] [--checks <G-ID,...>] [--focus <file>]
+const PacketUsage = `usage: devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID> ...] [--recheck] [--checks <G-ID,...>] [--focus <file>]
 
 Renders one role's by-reference dispatch packet and runs the lints dispatch
 open runs on it; a refused packet is removed and the command exits 3. A
-wright role (needs --slice) writes a same-worktree packets/<w>.contract.md
+wright role (needs exactly one --slice) writes a same-worktree packets/<w>.contract.md
 with the slice's Writer allowlist, its tasks.md Tests/proof as a writer-safe
 check, and each --checks gates.md gate's CHECK, which must be an approved
 test-plan.md Build-entry preflight row; a native-worktree pilot keeps its own
@@ -28,8 +28,10 @@ contract. A reviewer
 role (*-reviewer, *-auditor, test-analyst) writes packets/<w>.<role>.md with
 its Outcome/Counts return head. Read first names an immutable wave/role copy
 of the role's context bundle, bound by its actual SHA256 in the packet
-(run context first; --recheck copies the build --recheck bundle), and
-packets/<w>.diff when candidate freeze wrote one. The context path names the
+(run context first; --recheck copies the matching Build or Vet --recheck
+bundle), and packets/<w>.diff when candidate freeze wrote one. Build rechecks
+need slices; Vet rechecks need a reviewer role and allow plan-level or repeated
+--slice scope. The context path names the
 selected workspace, including authorized overrides outside the project.
 Candidate copies packets/<w>.sha256 verbatim, or only its header rows when the per-file rows
 would overflow the packet (required at review and seal). A wave/role cannot
@@ -47,8 +49,8 @@ var focusRowRE = regexp.MustCompile(`^- [A-Za-z][A-Za-z0-9._-]{0,63} [^\s:]+(?::
 // RunPacket implements `packet`: it renders the fixed skeleton so the root
 // never hand-writes packet prose, hashes, or IDs.
 func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
-	var wave, phase, role, slice, checks, focus, recheck string
-	var positional []string
+	var wave, phase, role, checks, focus, recheck string
+	var positional, slices []string
 	for i := 0; i < len(args); i++ {
 		value := argAt(args, i+1)
 		switch args[i] {
@@ -63,7 +65,7 @@ func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
 		case "--role":
 			role = value
 		case "--slice":
-			slice = value
+			slices = append(slices, value)
 		case "--checks":
 			checks = value
 		case "--focus":
@@ -78,14 +80,21 @@ func RunPacket(root string, args []string, stdout, stderr io.Writer) int {
 		}
 		i++
 	}
-	wright := strings.Contains(role, "wright")
+	for _, id := range slices {
+		if !state.ValidSliceID(id) {
+			fmt.Fprint(stderr, PacketUsage)
+			return 2
+		}
+	}
+	wright := !isReviewerRole(role) && strings.Contains(role, "wright")
 	doubt := roleBase(role) == "doubt-reviewer"
 	if len(positional) != 1 || !packetNameRE.MatchString(wave) || !packetNameRE.MatchString(phase) || !packetNameRE.MatchString(role) ||
-		(slice != "" && !packetNameRE.MatchString(slice)) || (!wright && !isReviewerRole(role)) || (wright && slice == "") || (!wright && checks != "") ||
-		(recheck != "" && (phase != "build" || slice == "")) || (doubt && focus == "") {
+		(!wright && !isReviewerRole(role)) || (wright && len(slices) != 1) || (!wright && checks != "") ||
+		(recheck != "" && !((phase == "build" && len(slices) > 0) || (phase == "vet" && !wright && isReviewerRole(role)))) || (doubt && focus == "") {
 		fmt.Fprint(stderr, PacketUsage)
 		return 2
 	}
+	slice := strings.Join(slices, "+")
 	slug := positional[0]
 	fail := func(err error) int {
 		fmt.Fprintf(stderr, "packet: %v\n", err)
@@ -116,7 +125,7 @@ func renderPacketLocked(root, slug, workspace, wave, phase, role, slice, checks,
 	if errors.Is(err, os.ErrNotExist) {
 		scope := recheck
 		if slice != "" {
-			scope = " --slice " + slice + recheck
+			scope = " --slice " + strings.ReplaceAll(slice, "+", " --slice ") + recheck
 		}
 		return fail(fmt.Errorf("%s/%s is missing; run devrites-engine context %s --phase %s --role %s%s first", rel, bundle, slug, phase, role, scope))
 	}

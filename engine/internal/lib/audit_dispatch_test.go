@@ -78,7 +78,7 @@ func TestAuditDispatchWrongHandleCannotCompleteOrReleaseClaim(t *testing.T) {
 			t.Fatalf("%v: code=%d\n%s", args, code, out)
 		}
 	}
-	if code, out := runDispatchT(t, root, "abandon", "--wave", "abandoned", "--reason", "return unavailable"); code != 3 {
+	if code, out := runDispatchT(t, root, "abandon", "--wave", "abandoned", "--reason", "host confirmed terminal", "--release"); code != 3 {
 		t.Fatalf("abandon: code=%d\n%s", code, out)
 	}
 	for _, args := range [][]string{
@@ -136,6 +136,59 @@ func TestAuditDispatchWrongHandleCannotCompleteOrReleaseClaim(t *testing.T) {
 	}
 	if code, out := runDispatchT(t, root, "return", "--wave", "current", "--role", role, "--handle", "H2", "--result", result); code != 0 {
 		t.Errorf("matching completed return replay refused: code=%d\n%s", code, out)
+	}
+}
+
+func TestAuditDispatchRetainedAbandonedReturnRequiresMatchingHandle(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	const role = "code-reviewer"
+	for _, args := range [][]string{
+		{"open", "--phase", "build", "--wave", "retained", "--role", role, "--packet", reviewerPacketPath(t), "--claim-session", "owner", "--claim", "pkg/a.go"},
+		{"start", "--wave", "retained", "--role", role, "--handle", "H1"},
+	} {
+		if code, out := runDispatchT(t, root, args...); code != 0 {
+			t.Fatalf("%v: code=%d\n%s", args, code, out)
+		}
+	}
+	if code, out := runDispatchT(t, root, "abandon", "--wave", "retained", "--reason", "host outcome unknown"); code != 3 {
+		t.Fatalf("abandon: code=%d\n%s", code, out)
+	}
+	result := filepath.Join(t.TempDir(), "return.md")
+	writeFile(t, result, "Outcome: no-findings\nCounts: critical=0 important=0\n")
+	snapshots := map[string]string{}
+	for _, path := range []string{dispatchPath(root, "feat"), filepath.Join(featureDir, "metrics.jsonl"), claimsPath(root)} {
+		snapshots[path] = readTestFile(t, path)
+	}
+	for _, handle := range []string{"", "foreign"} {
+		args := []string{"return", "--wave", "retained", "--role", role, "--result", result}
+		if handle != "" {
+			args = append(args, "--handle", handle)
+		}
+		if code, out := runDispatchT(t, root, args...); code != 3 {
+			t.Fatalf("unbound return accepted: code=%d\n%s", code, out)
+		}
+		for path, before := range snapshots {
+			if readTestFile(t, path) != before {
+				t.Fatalf("rejected return changed %s", path)
+			}
+		}
+		if _, err := os.Stat(filepath.Join(featureDir, "packets", "retained-"+role+".return.md")); !os.IsNotExist(err) {
+			t.Fatalf("rejected return stored result: %v", err)
+		}
+	}
+	if code, out := runDispatchT(t, root, "return", "--wave", "retained", "--role", role, "--handle", "H1", "--result", result); code != 0 {
+		t.Fatalf("matching retained return: code=%d\n%s", code, out)
+	}
+	f, _, err := loadDispatch(root, "feat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := f.Waves["retained"]
+	if w.State != "abandoned" || w.TerminalAt == "" || !w.Roles[role].Returned || w.Roles[role].Handle != "H1" {
+		t.Fatalf("late settlement changed identity or lost terminal fact: %+v", w)
+	}
+	if code, out, stderr := runClaim(t, root, "check", "--session", "foreign", "pkg/a.go"); code != 0 {
+		t.Fatalf("settled actor retained claim: code=%d\n%s%s", code, out, stderr)
 	}
 }
 

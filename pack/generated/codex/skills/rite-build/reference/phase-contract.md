@@ -6,7 +6,7 @@ Apply [`one-slice-cycle.md`](one-slice-cycle.md) and
 [`candidate-integrity.md`](../../devrites-lib/reference/candidate-integrity.md).
 `--parallel N` uses [`parallel-batch.md`](parallel-batch.md) for steps 2–8;
 Autocomplete also executes the shared
-[`workspace controller`](../../devrites-lib/reference/parallel-workspaces.md).
+[`workspace controller`](../../devrites-lib/reference/parallel-workspaces.md) (trigger `parallel-workspaces`).
 Spec Drift Guard still applies.
 
 1. **Gate.** Read core and ordered ACTIVE owner; use explicit SOURCE slug for

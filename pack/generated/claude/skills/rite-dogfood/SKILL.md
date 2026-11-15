@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-frontend-craft/reference/quality-standards.md","devrites-lib/reference/reply-contract.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"testing":["devrites-lib/reference/standards/testing.md"],"tooling":["devrites-lib/reference/standards/tooling.md"]},"workspace":["state.md","questions.md","dogfood.md"],"rootOnly":["devrites-lib/reference/standards/afk-hitl.md"]} -->
-> Read-set manifest: `devrites-engine context <slug> --skill rite-dogfood` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context <slug> --skill rite-dogfood` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-dogfood: diff-scoped browser QA
 

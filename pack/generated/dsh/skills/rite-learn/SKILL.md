@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/documentation.md","devrites-lib/reference/standards/tooling.md"],"workspace":["state.md","decisions.md","drift.md","evidence.md","review.md","seal.md","questions.md"],"workspaceByRole":{"retrospector":["state.md","decisions.md","drift.md","evidence.md","review.md","seal.md","questions.md"]},"triggers":{"agents":["devrites-lib/reference/standards/agents.md"]}} -->
-> Read-set manifest: `devrites-engine context --skills-root .dsh/skills <slug> --skill rite-learn` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .dsh/skills <slug> --skill rite-learn` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-learn: review durable lessons
 

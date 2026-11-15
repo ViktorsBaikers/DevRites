@@ -6,7 +6,7 @@ disable-model-invocation: true
 argument-hint: "[what the next session will focus on]"
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","rite-handoff/reference/handoff-template.md","devrites-lib/reference/reply-contract.md"],"triggers":{"hygiene":["devrites-lib/reference/standards/context-hygiene.md"]}} -->
-> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --skill rite-handoff` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --skill rite-handoff` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Trigger names map to the conditional rules in the sections that follow. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-handoff: chat-only context, into a fresh-agent doc
 

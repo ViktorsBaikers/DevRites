@@ -4,7 +4,7 @@ description: Check DevRites install, installed pack, or host configuration. Not 
 argument-hint: ""
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["state.md"]} -->
-> Read-set: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-doctor` (no workspace: `--out <path>`) bundles all files below, deduplicated.
+> Read-set: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-doctor` (no workspace: `--out <path>`) bundles all files below, deduplicated. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-doctor: DevRites diagnostics
 

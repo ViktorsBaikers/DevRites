@@ -48,7 +48,7 @@ Conflict, extra/missing commit, moved base, or cleanup failure is `gap`/STOP:
 preserve the worktree and commit. Without explicit reconciliation, use same-worktree serial.
 Parallel isolated writers use only [`parallel-batch.md`](parallel-batch.md) and,
 under Autocomplete, the shared
-[`workspace controller`](../../devrites-lib/reference/parallel-workspaces.md).
+[`workspace controller`](../../devrites-lib/reference/parallel-workspaces.md) (trigger `parallel-workspaces`).
 Same-worktree multi-writer / root-emulated worktrees stay forbidden.
 
 ## Prepare

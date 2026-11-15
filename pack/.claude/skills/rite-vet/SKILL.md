@@ -5,8 +5,8 @@ argument-hint: "[slug] [--cross-model] [--full]"
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-dispatch.md","devrites-lib/reference/standards/gates.md","rite-vet/reference/review-axes.md","rite-vet/reference/artifacts.md","rite-vet/reference/depth.md","rite-vet/reference/eng-lenses.md","rite-vet/reference/anti-patterns.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"cross-model":["rite-vet/reference/cross-model.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"grammar":["devrites-lib/reference/standards/spec-grammar.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"principles":["devrites-lib/reference/standards/principles.md"],"reslice":["devrites-lib/reference/standards/acceptance-preserving-reslice.md"],"testing":["devrites-lib/reference/standards/testing.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"yagni":["devrites-lib/reference/standards/patterns.md","devrites-lib/reference/standards/coding-style.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","strategy.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md"],"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-dispatch.md","devrites-lib/reference/standards/workflow-artifacts.md"],"workspaceByRole":{"doubt-reviewer":["spec.md","architecture.md","plan.md","tasks.md","test-plan.md","decisions.md","state.md"],"devex-reviewer":["spec.md","plan.md","tasks.md","decisions.md","state.md"],"plan-reviewer":["spec.md","plan.md","tasks.md","test-plan.md","decision-coverage.md","architecture.md","decisions.md","state.md"],"strategy-reviewer":["brief.md","spec.md","plan.md","decisions.md","decision-coverage.md","strategy.md","state.md"]}} -->
-> Read-set manifest: `devrites-engine context <slug> --phase vet` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+<!-- loads: {"always":["devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-dispatch.md","devrites-lib/reference/standards/gates.md","rite-vet/reference/review-axes.md","rite-vet/reference/artifacts.md","rite-vet/reference/depth.md","rite-vet/reference/eng-lenses.md","rite-vet/reference/anti-patterns.md","devrites-lib/reference/serialization-audit.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"assumption-delta":["devrites-lib/reference/standards/assumption-checkpoints.md"],"cross-model":["rite-vet/reference/cross-model.md"],"devex":["devrites-lib/reference/standards/developer-experience.md"],"dod":["devrites-lib/reference/standards/definition-of-done.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"errors":["devrites-lib/reference/standards/error-handling.md"],"grammar":["devrites-lib/reference/standards/spec-grammar.md"],"one-shot":["devrites-lib/reference/standards/one-shot-actions.md"],"performance":["devrites-lib/reference/standards/performance.md"],"principles":["devrites-lib/reference/standards/principles.md"],"reslice":["devrites-lib/reference/standards/acceptance-preserving-reslice.md"],"testing":["devrites-lib/reference/standards/testing.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"yagni":["devrites-lib/reference/standards/patterns.md","devrites-lib/reference/standards/coding-style.md"],"parallel-workspaces":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","strategy.md","architecture.md","plan.md","tasks.md","traceability.md","eng-review.md","test-plan.md","gates.md"],"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/elicitation.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-dispatch.md","devrites-lib/reference/standards/workflow-artifacts.md"],"workspaceByRole":{"doubt-reviewer":["spec.md","architecture.md","plan.md","tasks.md","test-plan.md","decisions.md","state.md"],"devex-reviewer":["spec.md","plan.md","tasks.md","decisions.md","state.md"],"plan-reviewer":["spec.md","plan.md","tasks.md","test-plan.md","traceability.md","decision-coverage.md","architecture.md","decisions.md","state.md"],"strategy-reviewer":["brief.md","spec.md","plan.md","decisions.md","decision-coverage.md","strategy.md","state.md"]}} -->
+> Read-set manifest: `devrites-engine context <slug> --phase vet` bundles every file named below into one deduplicated bundle. Trigger names map to the conditional rules in the sections that follow. Apply [controller load conditions](../devrites-lib/reference/phase-target-binding.md#controller-guidance-load) before controller work (trigger `parallel-workspaces`). Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 
 # /rite-vet: review the plan before build
@@ -71,13 +71,13 @@ plan declares a root-authored executable workflow file, read
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"plan declares root-authored executable workflow file","action":"emit exact admission; stale/missing authority uses PLAN_VET_REPAIR","return":"Vet READY cursor or exact technical replan"} -->
 ## Workflow
 
-0. **Orient.** Read core. Resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require state, and read plan,
+0. **Orient.** Read core. Resolve source per [phase target binding](../devrites-lib/reference/phase-target-binding.md#phase-target-binding), require state, and read plan,
    tasks, spec, decision coverage, optional strategy/design brief, decisions,
    assumptions, and state. Require approved Plan and `Decision coverage: CLEAR`;
    otherwise stop for Define or Clarify. Check placement (`get_architecture`),
    blast radius (`trace_path`), and reuse (`search_graph`) per [`code-navigation.md`](../devrites-lib/reference/standards/code-navigation.md).
    Under Autocomplete, return scheduling for its
-   [global frontier pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
+   [global frontier pass](../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier) (trigger `parallel-workspaces`)
    before cold/local recovery; preserve Vet's source-local return cursor.
 1. **Select depth.** Apply `reference/depth.md` exactly; never skip. Initial passes
    record engineering verdict and test-plan coverage. Valid Recovery rechecks
@@ -92,11 +92,29 @@ plan declares a root-authored executable workflow file, read
    global frontier pass with reviewer handles retained; standalone Vet stays
    source-local. Apply the shared protected validation window and identity
    recheck before reconciling returned accounts.
-1b. **Recovery recheck.** Require valid return cursor, accepted prior finding,
-   exact fingerprint/reproduction, repaired candidate identity, changed
-   paths/criteria, affected drift/evidence, and the recorded delta self-check.
-   Freeze that packet and dispatch each exact owning reviewer once,
-   fresh/read-only, limited to it — all its open fingerprints in that dispatch.
+1b. **Recovery recheck.** Root validates the existing return cursor, accepted prior
+   findings and each exact owning reviewer, fingerprint/reproduction, repaired
+   candidate identity, changed clauses/paths/criteria, affected drift/evidence,
+   and recorded delta self-check. Keep prior admitted wave/role/handle/return
+   provenance in the root-owned `eng-review.md` recovery record only. Missing
+   provenance uses step 1a's initial applicable review, never a forged recovery claim.
+   For folds requiring independent recheck, freeze the repaired candidate and
+   dispatch each exact owning reviewer once, fresh/read-only, covering all its
+   open fingerprints. For each owner, run in this order:
+
+   ```text
+   devrites-engine context <slug> --phase vet --role <owner> --recheck packets/<fold>.<owner>.inventory.md [--slice <id> ...] [--trigger <applicable-set>]
+   devrites-engine packet <slug> --wave <fresh-wave> --phase vet --role <owner> --recheck [--slice <id> ...] --focus packets/<fold>.<owner>.focus.md
+   devrites-engine dispatch <slug> open --phase vet --wave <fresh-wave> --role <owner> [--slice <id> ...] --packet packets/<fresh-wave>.<owner>.md
+   ```
+
+   Repeat `--slice <id>` once per affected slice, identically in all three
+   commands. No slice means plan-level affected recovery, not initial Vet. The
+   inventory contains neutral reproduction, each owner fingerprint, correction
+   scope, exact source/rule citations, and dependency-plus-traceability closure.
+   Focus rows keep `- <ID> <path:line> <text>`. Keep prior verdicts, scores, and
+   `*.return.md` links out of packets, inventories, and focus files. The engine
+   checks flag shapes, readability, and integrity; root checks semantic completeness.
    Under Autocomplete, before native wait use the same controller pass and retained
    handles as step 1a; standalone Vet stays source-local. Apply the same
    protected-window account admission.
@@ -125,13 +143,24 @@ plan declares a root-authored executable workflow file, read
    Do not fall through to steps 2–7. Retain evidenced unchanged coverage; changed
    global contract/uncertain impact requires full applicable review. Reopen historical
    findings only for affected invariants/dependencies.
+   The recheck still closes every unbuilt slice's write set under step 8. The plan
+   reviewer returns affected dimension bands plus the explicit `Regression:` verdict;
+   unchanged dimensions are outside this account, not newly passed. Root retains
+   valid prior coverage and uses the lowest applicable band across current accounts
+   without sending prior scores to seed any reviewer.
 2. **Challenge scope.** Apply review-axes §0; search accepted decisions.
    Harden to the smallest contract-complete plan, using marked topology action.
-   Then verify bidirectional ID-and-meaning traceability across spec/plan/
+   Steps 2 and 4 form one complete root-owned cross-artifact audit on the frozen
+   candidate: verify bidirectional ID-and-meaning traceability across spec/plan/
    tasks/test-plan/traceability, acceptance, terms, principles, anti-slop,
    and conventions; every slice and test-plan row maps to a live requirement
    and vice versa. Critical gaps/unexcepted principle breaches block. Record
-   rechecked result in `eng-review.md` §2 (Scope challenge).
+   inputs, artifact presence, dependency closure, and scope result in
+   `eng-review.md` §2 (Scope challenge); step 4 records its readiness result in §2b.
+   Consuming checklists may cite these results only within this root-owned frozen
+   pass, supported by current conversation evidence. Any input edit or unknown
+   dependency invalidates affected coverage; unknown impact requires the full
+   applicable audit. No persistent check cache or new verdict.
 3. **Preflight Build entry.** Under `reference/artifacts.md`, verify exact
    command/cwd/tool/version/prerequisite; output filters must preserve upstream
    failure. Verify dependencies from authoritative source plus nearest manifest.
@@ -147,7 +176,9 @@ plan declares a root-authored executable workflow file, read
    `devrites-engine check preconditions <slug>` (rows with `Run at` `vet`, including each
    `dependency-dry-run` and preserve-baseline row). A failure folds into Plan repair; only an
    owner-owned decision becomes a question, batched under the afk-hitl decision-chain rule.
-4. **Audit readiness.** For explicit workflow-only tasks, follow
+4. **Audit readiness.** Complete the same root audit from step 2 and record its
+   readiness mapping/result in `eng-review.md` §2b. For explicit workflow-only
+   tasks, follow
    [`workflow-artifacts.md`](../devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning):
    check AC/REQ → admitted WA behavior and executable proof, all admission fields,
    fixtures, bounds and root ownership, not product slice writer/closure checks.
@@ -164,6 +195,11 @@ plan declares a root-authored executable workflow file, read
    duplicated-contract, vague, or non-consuming proof fails closed. Each slice
    names a fast writer-safe check its wright can run; proof reachable only through
    root-owned full gates is a `mechanism` finding.
+   For canonical future-pool plans, apply the
+   [consumed-input contract](../devrites-lib/reference/workspace-artifact-schema.md#consumed-planning-inputs):
+   root and native reviewers verify `Consumed planning inputs` against actual design
+   use, not roadmap scope ownership. Missing real input parks only this source
+   under the shared controller policy; inventing design to keep the queue full is not repair.
 
    Technical gaps are `NEEDS REPLAN` and Plan repair — each finding marks
    itself `new_failure_mode` or names the already-pinned clause/fingerprint
@@ -195,33 +231,53 @@ plan declares a root-authored executable workflow file, read
    `devrites-engine gates lint <slug> --strict` and resolve every finding before
    READY; the readiness check refuses a missing or malformed ledger but does not
    replace this oracle-quality gate.
-7. **Narrow recheck after edits.** A slice-bound recheck builds its bundle and
-   opens its wave with `--slice <SLICE-ID>` per affected slice (every 5 rechecks
+7. **Narrow recheck after edits.** When the rules below require dispatch, validate
+   step 1b's prerequisites and root-only recovery record, then use its exact
+   context → packet → dispatch sequence for each owning reviewer on the frozen
+   repair candidate. Keep inventory/focus neutral and use a fresh wave. Missing
+   provenance requires step 1a's initial applicable review. A slice-bound recheck
+   repeats `--slice <id>` per affected slice in all three commands; no slice means
+   plan-level affected recovery (every 5 rechecks
    per slice need a reslice review, as in Build). **Workflow Artifact bytes-only:**
    after `OFFLINE_RECOVERY`, a correction leaving every admission/`WA-*` row
    unchanged records `Workflow Artifact reviewed identity: <re-preflight identity
    digest>` below the admission block; when `check drift` reports only
    `reviewed-identity-only`, the reviewer is one fresh `devrites-code-reviewer` on
    the prior-source→re-preflight diff against those rows (no drafter or plan
-   reviewer); green proceeds to step 8. Otherwise dispatch the exact plan reviewer once per
-   fold — one dispatch covering every open fingerprint, preserving
+   reviewer); green proceeds to step 8. Otherwise dispatch each exact owning reviewer once per
+   fold — one dispatch covering every open fingerprint that reviewer owns, preserving
    per correction/fingerprint accounting (each checked individually with its
-   accepted findings, changed paths/criteria, new identity, and recorded delta
-   self-check); it must return an explicit correction-created regression
-   verdict over touched invariants plus every dependent of each changed clause
-   (dep-graph and traceability lookup), not only fingerprint closure. Within one correction, no broad
+   neutral reproduction, changed clauses/paths/criteria, new identity, and recorded delta
+   self-check); it must return an explicit correction-created regression verdict
+   over touched invariants plus every dependent of each changed clause (dep-graph
+   and traceability lookup), not only fingerprint closure. The plan reviewer also
+   returns affected dimension bands. Unchanged
+   dimensions are not newly passed; root retains valid prior coverage and takes the
+   lowest applicable band across current accounts. Every unbuilt slice still needs
+   write-set closure; changed global contracts or unknown impact require full
+   applicable review. Within one correction, no broad
    third loop. If it changes plan, fold again. A closed input plus a distinct Critical/Important invariant returns
-   that new fingerprint as progress. Then close matrix and rerun ID/meaning audit.
+   that new fingerprint as progress. Then close matrix and recheck affected
+   ID/meaning mappings and their dependency/traceability closure under step 8.
 8. **Build readback and readiness.** Add a cited five-line readback to
    `eng-review.md` (artifacts.md §7 rows 1–5): outcome/ACs; IN/OUT/must-NOT; UI direction and architecture/
    critical flow; slice order/first slice; decisive proof/action-time gates. No implementer should need to invent product, architecture, or proof.
    Contradiction, ownerlessness, or material ambiguity blocks via Clarify or Plan.
+   Cite the recorded steps 2+4 audit for unchanged portions; re-read corrected
+   inputs and recheck everything affected by step-6 or later edits, including
+   dependent mappings outside edited slices. Unknown dependency/impact requires
+   the full applicable audit. Record refreshed results in §§2/2b before consuming
+   them here. This reuse never replaces native grammar/post-correction rereads,
+   mandatory phase-entry/exit checks, fresh required reviewer passes, preflight,
+   or proof. Neither successful `state apply-bundle` nor an unchanged readiness
+   digest grants readiness.
 
    Write exactly one `Implementation readiness: READY`, `NEEDS CLARIFICATION`,
    or `NEEDS REPLAN`. Root sets READY after every account, checklist,
    preflight, and sweep is green, including the
    [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md) marker sweep whose
-   `marker sweep:` line is recorded in `eng-review.md`; a kept hit blocks READY. Write phase/next step and emit one
+   `marker sweep:` line is recorded in `eng-review.md`; sweep current artifact
+   presence as well as content, not only unchanged spec bytes. A kept hit blocks READY. Write phase/next step and emit one
    `Readiness inputs SHA-256` with
    `devrites-engine check readiness --emit-binding <slug>`; normal readiness check
    must pass; workflow-only checks admission instead. For product work it replays Build-entry `check slice` on every unbuilt slice, so
@@ -229,11 +285,17 @@ plan declares a root-authored executable workflow file, read
    unbuilt slice's write set closed against the live tree (plan-reviewer
    dimension 6), so frontier gaps fold in one Plan repair, not one per slice; an
    affected recheck also closes every unbuilt slice and never defers a closure row.
-   A future sequence workspace prepared by lookahead or the main controller records
-   `Predecessor readiness: <predecessor> <digest>` from the predecessor's
-   `--emit-binding` hex; readiness re-checks it. Apply the native dependency-safety
-   axis to its explicit workspace declarations before early admission; stale
-   assumptions need affected re-Vet, never automatic rebinding.
+   For canonical future-pool preparation, require `Consumed planning inputs: none`
+   or unique comma-separated related slugs in `plan.md`. Record exactly one
+   `Predecessor readiness: <slug> <digest>` per declared producer in `eng-review.md`
+   using its current `--emit-binding` hex, including nonadjacent producers; for an
+   empty set write only `Predecessor readiness: none`. Duplicate, missing, extra, or
+   drifted bindings refuse READY. An unrelated adjacent predecessor needs no binding;
+   legacy absent declarations remain valid only outside canonical future admission.
+   Explicit separate-session lookahead still records its active predecessor binding.
+   Apply native dependency-safety review to explicit `Workspace dependencies`; only
+   durably BUILT/integrated producer checkpoints satisfy them. Planning digests never
+   substitute for those gates; stale inputs require affected re-Vet, never auto-rebinding.
    Record the per-input drift baseline alongside it:
    `devrites-engine check drift <slug> --record` — a later stale binding then
    names the exact artifact that moved instead of "something changed". An `ADVISORY

@@ -5,8 +5,8 @@ argument-hint: "<qid> \"<answer>\"  |  --drop <qid> [\"<reason>\"]  |  --batch <
 user-invocable: true
 disable-model-invocation: true
 ---
-<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","rite-resolve/reference/answer-protocol.md"],"triggers":{"standards":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/documentation.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
-> Read-set manifest: `devrites-engine context --skills-root .dsh/skills <slug> --skill rite-resolve` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+<!-- loads: {"always":["devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/core.md","rite-resolve/reference/answer-protocol.md"],"triggers":{"standards":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/documentation.md"],"parallel-workspaces":["devrites-lib/reference/parallel-workspaces.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
+> Read-set manifest: `devrites-engine context --skills-root .dsh/skills <slug> --skill rite-resolve` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Trigger names map to the conditional rules in the sections that follow. Apply [controller load conditions](../devrites-lib/reference/phase-target-binding.md#controller-guidance-load) before controller work (trigger `parallel-workspaces`). Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-resolve: answer the human gate
 
@@ -31,7 +31,7 @@ Pull these via `Read` when shaping the resolve:
 
 ## Operating rules
 
-- **Requires a selected source workspace.** Apply [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding); if none, **STOP** and
+- **Requires a selected source workspace.** Apply [phase target binding](../devrites-lib/reference/phase-target-binding.md#phase-target-binding); if none, **STOP** and
   tell the user to run `/rite-spec <feature>` first. If that source has no `questions.md`,
   report the missing required artifact and stop.
 - **One mutation per call.** A single qid (or `--batch` file) per invocation; never

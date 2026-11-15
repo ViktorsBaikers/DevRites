@@ -278,7 +278,7 @@ func TestContinuationCanonicalOwnerDiscoveredBeyondSourceAncestors(t *testing.T)
 		for _, duplicate := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/duplicate=%t", location, duplicate), func(t *testing.T) {
 				root := filepath.Join(t.TempDir(), ".devrites")
-				frontierFixture(t, root, "work", "source", "", "plan", "running", "/rite-spec child", 1, "2")
+				frontierFixture(t, root, "work", "source", "", "plan", "running", "/rite-vet source", 1, "2")
 				child := frontierFixture(t, root, location, "child", "source", "done", "shipped", "/rite-spec future", 2, "1")
 				roadmap := "Sequence root: source\nDecision: DEC-001\n\n| Position | Workspace |\n| --- | --- |\n| 1 | source |\n| 2 | child |\n| 3 | future |\n"
 				writeFile(t, filepath.Join(child, "decisions.md"), "## DEC-001\n\nApproved sequence.\n")

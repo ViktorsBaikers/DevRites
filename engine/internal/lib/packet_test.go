@@ -267,6 +267,147 @@ func packetTestWorkspace(t *testing.T) (root, workspace, sums string) {
 	return root, workspace, sums
 }
 
+func packetVetRecheckWorkspace(t *testing.T) (root, workspace, skills string) {
+	t.Helper()
+	root, workspace, _ = packetTestWorkspace(t)
+	skills = newSkillsRoot(t)
+	writeFile(t, filepath.Join(skills, "rite-vet", "SKILL.md"), `<!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["spec.md","tasks.md","traceability.md"]} -->`+"\n")
+	writeFile(t, filepath.Join(skills, "..", "agents", "devrites-plan-reviewer.md"), "# Plan reviewer\n")
+	writeFile(t, filepath.Join(workspace, "spec.md"), "# Spec\nAC-001: retain tenant scope.\nAC-002: retain dependent coverage.\n")
+	writeFile(t, filepath.Join(workspace, "traceability.md"), "# Traceability\nAC-001: SLICE-001\nAC-002: SLICE-002\n")
+	writeFile(t, filepath.Join(workspace, "tasks.md"), "# Tasks\n\n## SLICE-001 Primary\nDependencies: none\nCovers AC-001.\nprimary-slice-body\n\n## SLICE-002 Dependent\nDependencies: SLICE-001\nCovers AC-002.\ndependent-slice-body\n\n## SLICE-003 Unrelated\nDependencies: none\nunrelated-slice-body\n")
+	writeFile(t, filepath.Join(workspace, "inventory.md"), "inventory-alpha: reproduce lost tenant scope; inspect tasks.md and traceability.md dependency closure\n")
+	return root, workspace, skills
+}
+
+func TestPacketVetRecheckScopesRetainExactContext(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		role   string
+		slices []string
+		skill  bool
+	}{
+		{"plan", "plan-reviewer", nil, false},
+		{"one slice", "plan-reviewer", []string{"SLICE-001"}, false},
+		{"two slices", "plan-reviewer", []string{"SLICE-001", "SLICE-002"}, false},
+		{"skill plan", "plan-reviewer", nil, true},
+		{"skill two slices", "plan-reviewer", []string{"SLICE-002", "SLICE-001"}, true},
+		{"repeated slices", "plan-reviewer", []string{"SLICE-002", "SLICE-001", "SLICE-002"}, false},
+		{"reviewer wright lane", "code-reviewer.wright", nil, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, workspace, skills := packetVetRecheckWorkspace(t)
+			contextArgs := []string{"feature", "--role", tc.role, "--skills-root", skills, "--recheck", "inventory.md"}
+			if tc.skill {
+				contextArgs = append(contextArgs, "--skill", "rite-vet")
+			} else {
+				contextArgs = append(contextArgs, "--phase", "vet")
+			}
+			packetArgs := []string{"--wave", "v1", "--phase", "vet", "--role", tc.role, "--recheck"}
+			for _, id := range tc.slices {
+				contextArgs = append(contextArgs, "--slice", id)
+				packetArgs = append(packetArgs, "--slice", id)
+			}
+			contextIntegrityRun(t, root, contextArgs, 0)
+			label := strings.Join(tc.slices, "+")
+			name := "vet-" + tc.role
+			if label != "" {
+				name += "." + label
+			}
+			expected := readTestFile(t, filepath.Join(workspace, "ctx", name+".recheck.bundle.md"))
+			if code, out := runPacketT(t, root, packetArgs...); code != 0 {
+				t.Fatalf("render: code=%d %s", code, out)
+			}
+			packet := filepath.Join(workspace, "packets", "v1."+tc.role+".md")
+			text := readTestFile(t, packet)
+			retained := readTestFile(t, auditPacketContextPath(t, root, packet))
+			if retained != expected || !strings.Contains(text, fmt.Sprintf("context %x ", sha256.Sum256([]byte(expected)))) {
+				t.Fatal("packet did not retain and bind exact .recheck bytes")
+			}
+			if !strings.Contains(retained, "inventory-alpha:") || !strings.Contains(retained, "AC-002: SLICE-002") {
+				t.Fatal("recovery inventory or traceability missing")
+			}
+			if label == "" {
+				if strings.Contains(text, "\nSlice:") || !strings.Contains(retained, "unrelated-slice-body") {
+					t.Fatal("plan-level recovery changed unsliced workspace reads")
+				}
+				return
+			}
+			if !strings.Contains(text, "\nSlice: "+label+"\n") {
+				t.Fatalf("packet lost slice order or repetitions:\n%s", text)
+			}
+			for i, body := range []string{"primary-slice-body", "dependent-slice-body", "unrelated-slice-body"} {
+				want := 0
+				for _, id := range tc.slices {
+					if id == fmt.Sprintf("SLICE-%03d", i+1) {
+						want++
+					}
+				}
+				if got := strings.Count(retained, body); got != want {
+					t.Fatalf("%s occurrences=%d want=%d", body, got, want)
+				}
+			}
+			if !strings.Contains(retained, "- L13 ## SLICE-003 Unrelated") || !strings.Contains(retained, "tasks.md (by reference)") {
+				t.Fatal("unrelated slice is not reachable through tasks index")
+			}
+		})
+	}
+}
+
+func TestPacketRejectsInvalidRecoveryScopesBeforeWriting(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"build unsliced", []string{"--phase", "build", "--role", "code-reviewer", "--recheck"}},
+		{"review sliced", []string{"--phase", "review", "--role", "code-reviewer", "--slice", "SLICE-001", "--recheck"}},
+		{"spec sliced", []string{"--phase", "spec", "--role", "code-reviewer", "--slice", "SLICE-001", "--recheck"}},
+		{"vet roleless", []string{"--phase", "vet", "--recheck"}},
+		{"vet drafter", []string{"--phase", "vet", "--role", "plan-drafter", "--recheck"}},
+		{"vet wright", []string{"--phase", "vet", "--role", "slice-wright", "--slice", "SLICE-001", "--recheck"}},
+		{"wright two slices", []string{"--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001", "--slice", "SLICE-002"}},
+		{"wright repeated slice", []string{"--phase", "build", "--role", "slice-wright", "--slice", "SLICE-001", "--slice", "SLICE-001", "--recheck"}},
+		{"invalid first slice", []string{"--phase", "vet", "--role", "plan-reviewer", "--slice", "slice-001", "--slice", "SLICE-002", "--recheck"}},
+		{"invalid last slice", []string{"--phase", "vet", "--role", "plan-reviewer", "--slice", "SLICE-001", "--slice", "arbitrary", "--recheck"}},
+		{"joined slice", []string{"--phase", "vet", "--role", "plan-reviewer", "--slice", "SLICE-001+SLICE-002", "--recheck"}},
+		{"empty slice", []string{"--phase", "vet", "--role", "plan-reviewer", "--slice", "", "--recheck"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, workspace, _ := packetTestWorkspace(t)
+			args := append([]string{"--wave", "invalid"}, tc.args...)
+			if code, out := runPacketT(t, root, args...); code != 2 || !strings.Contains(out, "usage:") {
+				t.Fatalf("invalid recovery: code=%d %s", code, out)
+			}
+			if files, err := filepath.Glob(filepath.Join(workspace, "packets", "invalid.*")); err != nil || len(files) != 0 {
+				t.Fatalf("usage refusal wrote packet or retained context: %v (%v)", files, err)
+			}
+		})
+	}
+}
+
+func TestPacketMissingRecheckContextHintsRepeatSlices(t *testing.T) {
+	root, _, _ := packetTestWorkspace(t)
+	for _, phase := range []string{"build", "vet"} {
+		if code, out := runPacketT(t, root, "--wave", "v1", "--phase", phase, "--role", "security-auditor", "--slice", "SLICE-002", "--slice", "SLICE-001", "--slice", "SLICE-002", "--recheck"); code != 3 || !strings.Contains(out, "--slice SLICE-002 --slice SLICE-001 --slice SLICE-002 --recheck <inventory> first") || strings.Contains(out, "--slice SLICE-002+SLICE-001") {
+			t.Fatalf("%s missing-context hint lost repeated flags: code=%d %s", phase, code, out)
+		}
+	}
+}
+
+func TestPacketBuildRecheckPreservesRepeatedSlices(t *testing.T) {
+	root, workspace, _ := packetTestWorkspace(t)
+	const label = "SLICE-002+SLICE-001+SLICE-002"
+	const body = "build recovery selected both slices in caller order\n"
+	writeFile(t, filepath.Join(workspace, "ctx", "build-code-reviewer."+label+".recheck.bundle.md"), body)
+	if code, out := runPacketT(t, root, "--wave", "b2", "--phase", "build", "--role", "code-reviewer", "--slice", "SLICE-002", "--slice", "SLICE-001", "--slice", "SLICE-002", "--recheck"); code != 0 {
+		t.Fatalf("build recovery: code=%d %s", code, out)
+	}
+	packet := filepath.Join(workspace, "packets", "b2.code-reviewer.md")
+	if !strings.Contains(readTestFile(t, packet), "\nSlice: "+label+"\n") || readTestFile(t, auditPacketContextPath(t, root, packet)) != body {
+		t.Fatal("Build recovery lost slice order, repetitions or selected bundle")
+	}
+}
+
 func TestPacketRolesPassDispatchLints(t *testing.T) {
 	root, workspace, _ := packetTestWorkspace(t)
 	cases := []struct {

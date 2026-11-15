@@ -5,7 +5,7 @@ argument-hint: ""
 user-invocable: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":["state.md"]} -->
-> Read-set: `devrites-engine context <slug> --skill rite-doctor` (no workspace: `--out <path>`) bundles all files below, deduplicated.
+> Read-set: `devrites-engine context <slug> --skill rite-doctor` (no workspace: `--out <path>`) bundles all files below, deduplicated. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-doctor: DevRites diagnostics
 

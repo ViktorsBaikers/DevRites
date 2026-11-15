@@ -29,6 +29,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from typing import NoReturn
 
 PROBE_TIMEOUT_S = 180
 MIN_RUNS = 3
@@ -38,7 +39,7 @@ COST_FIELDS = ("context_bytes", "agent_minutes", "root_only_minutes")
 BLOCKING_GATES = ("blocking", "escalating")
 
 
-def fail(msg):
+def fail(msg) -> NoReturn:
     print(f"grade-lifecycle-benchmark: {msg}", file=sys.stderr)
     sys.exit(2)
 
@@ -179,7 +180,17 @@ def cost(run):
             except json.JSONDecodeError:
                 continue
     events = [e for e in events if e.get("ts")]
-    dispatches, wright, outcomes, abandoned, context_bytes = 0, 0, {}, 0, 0
+    dispatches, wright, outcomes, abandoned = 0, 0, {}, 0
+    context = {
+        "context_bytes": 0,
+        "context_invocations": 0,
+        "context_materialized_bytes": 0,
+        "context_materialized_invocations": 0,
+        "context_unchanged_bytes": 0,
+        "context_unchanged_invocations": 0,
+        "context_unclassified_bytes": 0,
+        "context_unclassified_invocations": 0,
+    }
     for event in events:
         role = event.get("role", "")
         if event.get("event") == "dispatch":
@@ -188,7 +199,13 @@ def cost(run):
         elif event.get("event") == "abandon":
             abandoned += 1
         elif event.get("event") == "context":
-            context_bytes += event.get("bytes", 0)
+            status = event.get("context_status")
+            if status not in ("materialized", "unchanged"):
+                status = "unclassified"
+            context["context_bytes"] += event.get("bytes", 0)
+            context["context_invocations"] += 1
+            context[f"context_{status}_bytes"] += event.get("bytes", 0)
+            context[f"context_{status}_invocations"] += 1
         if event.get("event") == "return" and event.get("note", "").startswith("outcome="):
             outcome = event["note"].split()[0].split("=", 1)[1]
             outcomes[outcome] = outcomes.get(outcome, 0) + 1
@@ -207,7 +224,7 @@ def cost(run):
         "active_minutes": round(active, 1),
         "root_only_minutes": round(root_only, 1),
         "root_only_fraction": round(root_only / active, 2) if active > 0 else None,
-        "context_bytes": context_bytes,
+        **context,
         "dispatches": dispatches,
         "wright_dispatches": wright,
         "questions": sum(text.count("\n## q-") for text in texts),
@@ -219,6 +236,8 @@ def cost(run):
 def transcript_tokens(run, host, transcripts):
     path = pathlib.Path(__file__).resolve().with_name("transcript-usage.py")
     spec = importlib.util.spec_from_file_location("transcript_usage", path)
+    if spec is None or spec.loader is None:
+        fail("transcript reporter has no Python loader")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.usage(workspaces(run), host, transcripts)
@@ -268,13 +287,12 @@ def compare(bench, sides, label):
         for i, report in enumerate(side_reports)
         if report["cost"] is None
     ]
-    drops = [
-        field
-        for field in COST_FIELDS
-        if summary.get(field, {}).get("baseline")
-        and summary[field].get("candidate")
-        and summary[field]["candidate"]["median"] < summary[field]["baseline"]["median"]
-    ]
+    drops = []
+    for field in COST_FIELDS:
+        by_side = summary.get(field, {})
+        baseline, candidate = by_side.get("baseline"), by_side.get("candidate")
+        if baseline and candidate and candidate["median"] < baseline["median"]:
+            drops.append(field)
     if not drops:
         reasons.append("no median drop in " + ", ".join(COST_FIELDS))
     return {
@@ -301,6 +319,7 @@ def main():
     parser.add_argument("--candidate-label")
     args = parser.parse_args()
     comparing = args.baseline is not None or args.candidate is not None
+    sides = None
     if comparing == (args.run is not None):
         fail("give --run, or --baseline and --candidate")
     if bool(args.transcripts) != bool(args.host):
@@ -346,7 +365,7 @@ def main():
         fail(f"probe file missing: probes/{bench['probe_file']}")
     bench["_dir"] = bench_dir
 
-    if comparing:
+    if sides is not None:
         report = compare(bench, sides, args.baseline_label)
     else:
         report = grade(bench, runs[0], args.host, transcripts)

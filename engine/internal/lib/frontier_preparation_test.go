@@ -661,7 +661,8 @@ func TestAutocompletePreparationReplannedParentPreservesSettledHistory(t *testin
 			frontierFixture(t, root, "work", "middle", "current16", "plan", "running", "/rite-plan", 2, "2")
 			frontierFixture(t, root, "work", "future17", "middle", "plan", "running", "/rite-plan", 3, "1")
 			writeFile(t, filepath.Join(source, "decisions.md"), "# Decisions\n\n## DEC-019\nInsert middle before future17.\n")
-			writeFile(t, filepath.Join(source, "roadmap.md"), "Sequence root: current16\nDecision: DEC-019\n\n| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | middle |\n| 3 | future17 |\n| 4 | future18 |\n")
+			// Legacy authority retains the immediate-successor preparation obligation.
+			writeFile(t, filepath.Join(source, "roadmap.md"), "| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | middle |\n| 3 | future17 |\n| 4 | future18 |\n")
 			poolVet(t, root, "current16")
 			before := controllerSnapshot(t, root)
 			lines, err := FrontierLines(root, "current16")
@@ -709,7 +710,8 @@ func preparationReparentedActorFixture(t *testing.T) (string, string) {
 	frontierFixture(t, root, "work", "middle", "current16", "plan", "running", "/rite-plan", 2, "2")
 	child := frontierFixture(t, root, "work", "future17", "middle", "plan", "running", "/rite-plan", 3, "1")
 	writeFile(t, filepath.Join(source, "decisions.md"), "# Decisions\n\n## DEC-019\nInsert middle before future17.\n")
-	writeFile(t, filepath.Join(source, "roadmap.md"), "Sequence root: current16\nDecision: DEC-019\n\n| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | middle |\n| 3 | future17 |\n| 4 | future18 |\n")
+	// Canonical pooled reparenting is covered separately; retain legacy admission here.
+	writeFile(t, filepath.Join(source, "roadmap.md"), "| Position | Workspace |\n| --- | --- |\n| 1 | current16 |\n| 2 | middle |\n| 3 | future17 |\n| 4 | future18 |\n")
 	writeFile(t, filepath.Join(child, "evidence.md"), "frontier-blocked: future18 — DEC-018 needs owner scope decision\n")
 	poolVet(t, root, "current16")
 	return root, child

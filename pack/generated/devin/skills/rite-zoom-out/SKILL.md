@@ -6,7 +6,7 @@ triggers:
   - user
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/tooling.md"],"workspace":["spec.md","plan.md","decisions.md","state.md"],"rootOnly":["devrites-lib/reference/standards/code-index.md"]} -->
-> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-zoom-out` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-zoom-out` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-zoom-out: step up one abstraction layer
 

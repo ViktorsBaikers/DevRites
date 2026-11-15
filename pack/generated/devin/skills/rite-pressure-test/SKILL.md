@@ -4,7 +4,7 @@ description: "Pressure-test a rough/vague idea: ideate, explore 3-5 approaches, 
 argument-hint: "[rough idea or plan to stress-test]"
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/intent-map.md"],"workspace":["decisions.md","questions.md"]} -->
-> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-pressure-test` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-pressure-test` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-pressure-test: diverge then converge
 

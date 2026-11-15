@@ -12,6 +12,69 @@ import (
 	"github.com/devrites/devrites/internal/acceptance"
 )
 
+func TestRunTaskGraphCheckResults(t *testing.T) {
+	for _, mode := range []struct {
+		name string
+		run  func(string, string, io.Writer, io.Writer) int
+	}{
+		{"advisory", RunTaskGraphCheck},
+		{"strict", RunTaskGraphCheckStrict},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			for _, tt := range []struct {
+				name       string
+				tasks      string
+				code       int
+				wantStdout string
+				wantStderr string
+			}{
+				{
+					name:       "valid DAG",
+					tasks:      "# Tasks\n\n## SLICE-001 A\nDependencies: none\n\n## SLICE-002 B\nDependencies: SLICE-001\n",
+					wantStdout: "task-graph: ok (2 slices)\n",
+				},
+				{
+					name:       "cycle",
+					tasks:      "# Tasks\n\n## SLICE-001 A\nDependencies: SLICE-002\n\n## SLICE-002 B\nDependencies: SLICE-001\n",
+					code:       3,
+					wantStdout: "task-graph: BLOCKED: dependency cycle:",
+				},
+				{
+					name:       "unknown dependency",
+					tasks:      "# Tasks\n\n## SLICE-001 A\nDependencies: SLICE-999\n",
+					code:       3,
+					wantStdout: "task-graph: BLOCKED: SLICE-001 depends on unknown slice SLICE-999\n",
+				},
+				{
+					name:       "missing tasks",
+					code:       2,
+					wantStderr: "task-graph: workspace artifact: tasks.md:",
+				},
+			} {
+				t.Run(tt.name, func(t *testing.T) {
+					root, feature := newWorkspace(t, "build")
+					if tt.tasks != "" {
+						writeFile(t, filepath.Join(feature, "tasks.md"), tt.tasks)
+					}
+					stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+					if code := mode.run(root, "feat", stdout, stderr); code != tt.code {
+						t.Fatalf("code=%d, want %d\n%s%s", code, tt.code, stdout, stderr)
+					}
+					if !strings.HasPrefix(stdout.String(), tt.wantStdout) || (tt.wantStdout == "" && stdout.Len() != 0) {
+						t.Fatalf("stdout=%q, want prefix %q", stdout, tt.wantStdout)
+					}
+					if !strings.HasPrefix(stderr.String(), tt.wantStderr) || (tt.wantStderr == "" && stderr.Len() != 0) {
+						t.Fatalf("stderr=%q, want prefix %q", stderr, tt.wantStderr)
+					}
+					if tt.code != 0 && (strings.Contains(stdout.String(), "ADVISORY") || strings.Contains(stdout.String(), "schedule:") || strings.Contains(stdout.String(), "task-graph: ok")) {
+						t.Fatalf("invalid graph emitted success or advisory output: %s", stdout)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestParseTaskGraphOK(t *testing.T) {
 	tasks := `# Tasks
 

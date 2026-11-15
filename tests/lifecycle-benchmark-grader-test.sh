@@ -201,9 +201,39 @@ import json, sys
 cost = json.load(sys.stdin)["cost"]
 want = {"agent_minutes": 20.0, "active_minutes": 25.0, "root_only_minutes": 11.0, "root_only_fraction": 0.44,
         "context_bytes": 1500, "dispatches": 2, "wright_dispatches": 1, "questions": 3, "wall_hours": 0.65,
+        "context_invocations": 2, "context_materialized_bytes": 0, "context_materialized_invocations": 0,
+        "context_unchanged_bytes": 0, "context_unchanged_invocations": 0,
+        "context_unclassified_bytes": 1500, "context_unclassified_invocations": 2,
         "return_outcomes": {"findings": 1}, "abandoned_waves": 1}
 if cost != want:
     sys.exit(f"FAIL: cost = {cost}, want {want}")
+'
+
+# Publication statuses partition context only; legacy and unknown statuses stay unclassified.
+variant context-status "$BENCH/reference/fixed/stock.go"
+mkdir -p "$T/context-status/.devrites/work/feat"
+cat >"$T/context-status/.devrites/work/feat/metrics.jsonl" <<'EOF'
+{"ts":"2026-10-20T09:40:00Z","event":"context","bytes":100,"context_status":"materialized"}
+{"ts":"2026-10-20T09:40:00Z","event":"context","bytes":100,"context_status":"unchanged"}
+{"ts":"2026-10-20T09:40:00Z","event":"context","bytes":50}
+{"ts":"2026-10-20T09:40:00Z","event":"context","bytes":25,"context_status":"unknown"}
+{"ts":"2026-10-20T09:40:00Z","event":"check","bytes":1000,"context_status":"materialized"}
+{"ts":"2026-10-20T09:40:00Z","event":"check","bytes":1000,"context_status":"unchanged"}
+{"ts":"2026-10-20T09:40:00Z","event":"check","bytes":1000}
+{"ts":"2026-10-20T09:40:00Z","event":"check","bytes":1000,"context_status":"unknown"}
+EOF
+python3 -I "$GRADER" --benchmark "$BENCH" --run "$T/context-status" | python3 -I -c '
+import json, sys
+cost = json.load(sys.stdin)["cost"]
+want = {"context_bytes": 275, "context_invocations": 4,
+        "context_materialized_bytes": 100, "context_materialized_invocations": 1,
+        "context_unchanged_bytes": 100, "context_unchanged_invocations": 1,
+        "context_unclassified_bytes": 75, "context_unclassified_invocations": 2}
+got = {key: value for key, value in cost.items() if key.startswith("context_")}
+if got != want:
+    sys.exit(f"FAIL: context cost = {got}, want {want}")
+if "tokens" in cost:
+    sys.exit("FAIL: tokens reported without transcripts")
 '
 
 # --transcripts adds the transcript-usage report as cost.tokens.

@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/agents.md"],"triggers":{"reslice":["rite-plan/reference/slicing.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","decisions.md","questions.md","evidence.md","touched-files.md","review.md","seal.md","polish-report.md","browser-evidence.md"],"workspaceByRole":{"upgrade-planner":["state.md","spec.md","plan.md","tasks.md","decisions.md","questions.md"]}} -->
-> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --skill rite-upgrade` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --skill rite-upgrade` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-upgrade: reconcile a released workspace safely
 

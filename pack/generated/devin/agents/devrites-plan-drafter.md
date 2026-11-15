@@ -83,27 +83,50 @@ principle-exception questions. List them for the root.
 
 ## Output format
 
-Return this result:
+Keep the role's `Outcome:` and admission text outside exactly one fenced `json`
+object. Put all bundle/result fields inside that object, retaining these names:
 
-```yaml
-mode: define | repair
-base_hashes: {}  # <path>: sha256 of the bytes you read, for every replace/patch target
-candidate_files:
-  - path: <requested canonical target>
-    operation: create | replace | patch
-    content: <complete file; create/replace only>
-    hunks: [] # patch only: {id, old_text, new_text}; old_text byte-exact, unique in the pinned file
-retired_ids: [] # tracked IDs (AC/REQ/HZN/SLICE/DEC/...) the delta removes on purpose
-acceptance_map: []
-dependency_order: []
-technical_decisions: []
-human_owned_choices: []
-validation_commands: []
-applicability_disposition: []
-self_attack_exposures: []
+```json
+{
+  "mode": "repair",
+  "base_hashes": {"<requested canonical target>": "<sha256 of bytes read>"},
+  "candidate_files": [
+    {
+      "path": "<requested canonical target>",
+      "operation": "patch",
+      "hunks": [
+        {"id": "<hunk ID>", "old_text": "<exact old clause>\n", "new_text": "<replacement clause>\n"}
+      ]
+    }
+  ],
+  "retired_ids": [],
+  "acceptance_map": [],
+  "dependency_order": [],
+  "technical_decisions": [],
+  "human_owned_choices": [],
+  "validation_commands": [],
+  "applicability_disposition": [],
+  "self_attack_exposures": [],
+  "remaining_findings": [],
+  "blocked_findings": []
+}
 ```
 
-The root saves the bundle as JSON and applies it with `devrites-engine state
+`mode` is `define` or `repair`; `operation` is `create`, `replace`, or `patch`.
+For create/replace, use `content` with the complete file instead of `hunks`.
+Pin every replace/patch target in `base_hashes`; `retired_ids` lists tracked
+AC/REQ/HZN/SLICE/DEC/... IDs intentionally removed. Include `remaining_findings`
+for partial returns and `blocked_findings` when human input blocks findings,
+under the whole-finding rules above; keep all other result fields even when empty.
+Use strict JSON string escaping for quotes, backslashes, and newlines. Decoded
+`old_text`/`new_text` retain byte-exact patch semantics; `old_text` must be unique
+in the pinned file. No YAML, comments, trailing commas, or extra JSON objects.
+
+The root extracts the fenced object verbatim into a JSON file, without conversion,
+reformatting, schema guessing, or hand-copying content/hunks. Malformed JSON goes
+back to the drafter for a bounded correction under existing admission and retry
+limits, never root guess-repair. Acceptance and independent review stay separate
+from transport. Root applies the accepted file with `devrites-engine state
 apply-bundle <slug> <bundle.json>`, which refuses a stale pin, a missing,
 duplicate, or overlapping `old_text`, an unlisted vanished ID, a new task-graph
 problem, new budget overshoot, or a new dated delta section, and writes nothing on refusal. Pin each

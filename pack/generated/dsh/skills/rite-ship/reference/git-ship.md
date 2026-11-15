@@ -2,6 +2,7 @@
 
 `/rite-ship` alone runs irreversible actions. A seal GO is never authorization for Git.
 Require fresh approval for one disclosed attempt plus native permission.
+With a retained controller or interleaved source checkpoints, load [lifecycle closeout and Ship](../../devrites-lib/reference/parallel-workspaces.md#lifecycle-closeout-and-ship) (trigger `parallel-workspaces`) before release planning or archive.
 
 ## The type-GO prompt (render verbatim, wait)
 

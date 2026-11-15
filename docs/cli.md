@@ -46,12 +46,12 @@ devrites-engine next [slug]
 devrites-engine frontier [slug]
 devrites-engine handoff [slug] [--resume]
 devrites-engine recall --paths <p1,p2,...> [--limit n]
-devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>] [--whole]
+devrites-engine context [slug] (--phase <p>|--skill <name>) [--role <r>] [--slice <SLICE-ID> ...] [--recheck <inventory>] [--whole]
 devrites-engine metrics record <slug> --phase <p> --event <e>
 devrites-engine metrics summary [slug]
-devrites-engine dispatch <slug> <open|start|seal|return|status|abandon|attribute>
+devrites-engine dispatch <slug> <open|check-spawn|start|seal|return|status|abandon|park|resume|attribute>
 devrites-engine candidate freeze <slug> --wave <w> (--slice <SLICE-ID>|--paths <path>...) [--base <ref>] [--worktree <path>]
-devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID>] [--recheck] [--checks <G-ID,...>] [--focus <file>]
+devrites-engine packet <slug> --wave <w> --phase <p> --role <r> [--slice <SLICE-ID> ...] [--recheck] [--checks <G-ID,...>] [--focus <file>]
 devrites-engine parallel <subcommand>
 devrites-engine gates <subcommand> <slug>
 devrites-engine claim <add|release|list|check>
@@ -59,6 +59,7 @@ devrites-engine note <add|list|check|rm> <slug>
 
 devrites-engine state resolve [--human] <qid> "<answer>"
 devrites-engine state merge-manifest <slug> [pred...]
+devrites-engine state create-sequence <controller> <target> --brief <file>
 devrites-engine state close <slug>
 devrites-engine migrate <slug> [--dry-run] [--answer id=choice]
 
@@ -77,6 +78,166 @@ unsupported. There are no legacy engine aliases, tombstones, agent-protocol
 versions, semantic-readiness digests, or compatibility telemetry.
 `check candidate` is additive; no existing engine command or public `/rite-*`
 workflow was removed or renamed.
+
+## Pending sequence workspaces
+
+Under Autocomplete with a canonical roadmap and effective parallel capacity above
+one, `frontier-create: controller=... target=... parent=...` selects a missing
+identity. `next` and `check continuation` expose it as a root-only `create:` row,
+after writer `picks:` and before native `launch:` rows. Root authors a substantive
+brief from recorded approved scope, then calls `state create-sequence`; a roadmap
+position alone is not scope approval. Refresh frontier after each creation.
+
+The command derives identity and remaining allowance, takes controller then target
+locks, and atomically publishes only `brief.md` and schema-4 pending Spec state.
+It does not advance ACTIVE, decrement the parent, assign release authority, or
+claim Spec completion. Native Spec/Clarify/Temper/Define/Plan/Vet still apply.
+Success prints `sequence-workspace: created|reused target=... position=... parent=...`.
+A matching live workspace is reused without resetting advanced state or evolved
+briefs, even when the pool is full or new openings are disabled. Conflicting,
+partial, archived or symlinked identities refuse. Exit 2 means invalid arguments;
+exit 3 includes refusal/recovery. A post-publication sync failure reports the
+published identity: preserve it and retry the same command, never delete/recreate.
+Publication requires native no-replace and directory-flush support; unsupported
+filesystems fail closed. Windows publication requires NTFS.
+
+The native root supplies internal `DEVRITES_HOST_CAPACITY` from actual total actor
+capacity per invocation; absent means one, malformed values refuse. This is not a
+new user option or the writer cap. All open/retained/unknown actor reservations
+count. Reserve a complete sealable roster before spawning; split oversized rosters
+into subwaves without omitting required reviews. Immediately before native launch,
+run `dispatch <source> check-spawn --wave <wave> [--role <role>]`; then record its
+actual handle with `start`. Settlement remains possible after eligibility changes.
+
+For a concrete human/dependency hold, settle every source actor and run
+`dispatch <source> park` before clearing the hold. The durable marker survives
+restart and hold removal. After resolution, `dispatch <source> resume` requires
+unchanged identity and free preparation capacity. Resource deferral is queued
+work, not a semantic hold or started-work credit. See the canonical
+[pool workflow](../pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md).
+
+
+## Context section index
+
+`context` keeps the complete bundle on disk and prints `index: L1-<N>` when it
+emits sections. Read that exact range first. Each index row has this form:
+
+```text
+L<start>-<end> sha256=<64 lowercase hex> bytes=<N> reuse=<rule|never> <label>
+```
+
+Ranges refer to the final bundle. The digest and byte count cover the exact rendered
+section, including its engine heading and trailing newlines, not the index. Only
+complete expanded pack rules in root bundles can say `reuse=rule`. A root may reuse
+one only when its identical label and digest were fully read in the same uncompacted
+conversation. Select current applicability on every phase; read workspace artifacts
+freshly. Fresh reviewers, compaction, uncertain reads, changed hashes, and
+`reuse=never` require reading the applicable section. No index means complete read.
+Disk equality is not evidence of a model read; standalone skill/system prompts are
+not cacheable through this protocol. See canonical `core.md` Context hygiene.
+
+## Bounded Vet recovery
+
+Vet reviewer recovery accepts `context <slug> --phase vet --role <owner>
+--recheck <inventory>` with zero, one, or repeated `--slice <SLICE-ID>` flags.
+`--skill rite-vet` also works for rechecks and uses the same `vet-...recheck.bundle.md`
+name. No slice means plan-level affected recovery, not an initial full Vet pass.
+Root/drafter/wright Vet rechecks are refused. Missing, unreadable, or empty inventory
+is exit 2; a named slice absent from tasks is exit 3.
+
+Render with `packet ... --phase vet --role <owner> --recheck` and the same repeated
+slice flags, then open a fresh dispatch wave with those flags and the rendered
+packet. Slice order and repetitions match context naming; callers supply each
+affected ID once. A wright packet requires exactly one slice flag. Build rechecks
+still require slices; Review rechecks remain unsupported. Retained wave contexts
+are immutable. Trigger retry suggestions preserve the original scope and flags.
+
+Root validates prior provenance and dependency/traceability closure before recovery;
+missing provenance routes the initial applicable review. Prior accounts stay in the
+root-owned review record, not reviewer packets. Engine flag/readability/integrity
+checks do not prove semantic completeness of the affected inventory.
+
+## Context cost accounting
+
+`metrics summary <slug>` retains existing totals and adds context-only counters:
+
+```text
+context_bytes context_invocations
+context_materialized_bytes context_materialized_invocations
+context_unchanged_bytes context_unchanged_invocations
+context_unclassified_bytes context_unclassified_invocations
+```
+
+Successful context publication records `context_status` as `materialized` or
+`unchanged`; publication failure records no context event. Legacy, absent, or unknown
+statuses enter `unclassified`. Non-context events never enter these partitions.
+The lifecycle benchmark cost report exposes the same fields; `--by-slice` is unchanged.
+An unsliced Vet recovery is not a per-slice repair round.
+
+Bytes count complete rendered bundles, including unchanged publications. These
+counters prove neither model reads nor token savings. Host token counts still require
+the existing optional transcript reporter; absent transcript input yields no token data.
+
+## Context section index
+
+`context` keeps the complete bundle on disk and prints `index: L1-<N>` when it
+emits sections. Read that exact range first. Each index row has this form:
+
+```text
+L<start>-<end> sha256=<64 lowercase hex> bytes=<N> reuse=<rule|never> <label>
+```
+
+Ranges refer to the final bundle. The digest and byte count cover the exact rendered
+section, including its engine heading and trailing newlines, not the index. Only
+complete expanded pack rules in root bundles can say `reuse=rule`. A root may reuse
+one only when its identical label and digest were fully read in the same uncompacted
+conversation. Select current applicability on every phase; read workspace artifacts
+freshly. Fresh reviewers, compaction, uncertain reads, changed hashes, and
+`reuse=never` require reading the applicable section. No index means complete read.
+Disk equality is not evidence of a model read; standalone skill/system prompts are
+not cacheable through this protocol. See canonical `core.md` Context hygiene.
+
+## Bounded Vet recovery
+
+Vet reviewer recovery accepts `context <slug> --phase vet --role <owner>
+--recheck <inventory>` with zero, one, or repeated `--slice <SLICE-ID>` flags.
+`--skill rite-vet` also works for rechecks and uses the same `vet-...recheck.bundle.md`
+name. No slice means plan-level affected recovery, not an initial full Vet pass.
+Root/drafter/wright Vet rechecks are refused. Missing, unreadable, or empty inventory
+is exit 2; a named slice absent from tasks is exit 3.
+
+Render with `packet ... --phase vet --role <owner> --recheck` and the same repeated
+slice flags, then open a fresh dispatch wave with those flags and the rendered
+packet. Slice order and repetitions match context naming; callers supply each
+affected ID once. A wright packet requires exactly one slice flag. Build rechecks
+still require slices; Review rechecks remain unsupported. Retained wave contexts
+are immutable. Trigger retry suggestions preserve the original scope and flags.
+
+Root validates prior provenance and dependency/traceability closure before recovery;
+missing provenance routes the initial applicable review. Prior accounts stay in the
+root-owned review record, not reviewer packets. Engine flag/readability/integrity
+checks do not prove semantic completeness of the affected inventory.
+
+## Context cost accounting
+
+`metrics summary <slug>` retains existing totals and adds context-only counters:
+
+```text
+context_bytes context_invocations
+context_materialized_bytes context_materialized_invocations
+context_unchanged_bytes context_unchanged_invocations
+context_unclassified_bytes context_unclassified_invocations
+```
+
+Successful context publication records `context_status` as `materialized` or
+`unchanged`; publication failure records no context event. Legacy, absent, or unknown
+statuses enter `unclassified`. Non-context events never enter these partitions.
+The lifecycle benchmark cost report exposes the same fields; `--by-slice` is unchanged.
+An unsliced Vet recovery is not a per-slice repair round.
+
+Bytes count complete rendered bundles, including unchanged publications. These
+counters prove neither model reads nor token savings. Host token counts still require
+the existing optional transcript reporter; absent transcript input yields no token data.
 
 ## Updates
 
@@ -379,6 +540,13 @@ that normalization succeeded. Neither waives malformed canonical authority,
 invalid AFK/path/readiness/security checks, or already-ready foreign Build.
 A generic local `serial: SLICE-002 — <reason>` does not waive cross-workspace
 preparation. A discharged deferral does not repeatedly trigger controller work.
+The planning drafter returns one strict JSON bundle. Save its fenced JSON object
+verbatim and run `state apply-bundle <slug> <bundle.json>...`; keep Outcome/admission
+text outside the object. Malformed JSON goes back to the drafter under existing
+bounded recovery, never through root YAML conversion or guessed repairs. Base pins
+and byte-exact patch anchors still govern application; a successful apply is not
+a readiness verdict.
+
 
 Ready independent foreign sources must participate in explicit repository-wide
 mixed selection and lease capacity/path reservations. Reserve the cohort with
@@ -439,6 +607,13 @@ A leading `--human` (for the answer, `--drop` and `--batch` forms:
 without it any `answered_by:` line in the resolved block, whatever its indentation or case, is removed.
 `state close` transactionally archives a shipped workspace and clears matching
 `ACTIVE`.
+
+The planning drafter returns one strict JSON bundle. Save its fenced JSON object
+verbatim and run `state apply-bundle <slug> <bundle.json>...`; keep Outcome/admission
+text outside the object. Malformed JSON goes back to the drafter under existing
+bounded recovery, never through root YAML conversion or guessed repairs. Base pins
+and byte-exact patch anchors still govern application; a successful apply is not
+a readiness verdict.
 
 Mutations share root-safety checks, feature locks, and atomic per-file writes.
 `state resolve` and `state apply-bundle` restore attempted files after returned

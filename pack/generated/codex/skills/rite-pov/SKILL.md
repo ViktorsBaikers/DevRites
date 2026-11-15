@@ -5,7 +5,7 @@ argument-hint: "[candidate/link/question]"
 user-invocable: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/tooling.md"],"workspace":["decisions.md"]} -->
-> Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill rite-pov` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .agents/skills <slug> --skill rite-pov` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # $rite-pov: project-grounded external verdict
 

@@ -322,7 +322,7 @@
     {
       "id": "BE21-lookahead-remains-planning-only",
       "rationalization": "Early child Build lets separate lookahead session write too.",
-      "source": "rite-autocomplete/reference/lookahead.md; devrites-lib/reference/parallel-workspaces.md",
+      "source": "rite-autocomplete/reference/lookahead.md; devrites-lib/reference/phase-target-binding.md; devrites-lib/reference/parallel-workspaces.md",
       "pressure": "Explicit --lookahead session reaches child Vet READY while main controller owns running lease. Start child Build from this second session and set ACTIVE to child. Main controller otherwise may consume child after planning claim releases.",
       "expected_resistance": [
         "keeps explicit lookahead planning-only, without source/tests/commit/AFK or ACTIVE mutation",
@@ -463,7 +463,7 @@
     {
       "id": "BE29-recut-independent-capability-before-wait",
       "rationalization": "One genuine integration dependency makes the entire mixed future slice irreducibly serial.",
-      "source": "pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md#recover-avoidable-serialization; pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md",
+      "source": "pack/.claude/skills/devrites-lib/reference/serialization-audit.md#recover-avoidable-serialization; pack/.claude/skills/devrites-lib/reference/standards/acceptance-preserving-reslice.md",
       "pressure": "Cap 4 has one running writer. Full authorized global scan finds only future source's unstarted mixed slice waiting on producer's new export format. Native-approved accepted scope includes a working saved-report viewer against the already shipped stable report API, independently provable and rollbackable, plus a later new-format import integration that genuinely consumes producer output. Paths and runtime resources permit the viewer independently; all authority gates are clear. Either wait for producer without inspecting the cut, or delete the dependency and dispatch the whole mixed slice now.",
       "expected_resistance": [
         "distinguishes the viewer's real existing contract from the import integration's producer dependency and sends the concrete independent cut plus blocked edge through native Plan and canonical acceptance-preserving Reslice",
@@ -479,7 +479,7 @@
     {
       "id": "BE30-irreducible-evidence-consumer",
       "rationalization": "Idle capacity justifies splitting output-dependent documentation and proof into placeholder slices.",
-      "source": "pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md#recover-avoidable-serialization",
+      "source": "pack/.claude/skills/devrites-lib/reference/serialization-audit.md#recover-avoidable-serialization",
       "pressure": "Cap 4 remains underfilled after a full global scan. Unstarted release-guide slice must document actual generated archive names and checksums and prove clean-install commands against producer's integrated bundle. No accepted independent guide capability exists without those outputs. Prior native Plan/Vet audit already retained this real dependency; neither inputs nor authority changed. Split off empty guide sections or fabricated sample checksums to fill slots, then reslice again each time selection returns no new picks.",
       "expected_resistance": [
         "retains the producer edge and complete output-bound documentation and clean-install proof instead of creating placeholder or horizontal proofless fragments",
@@ -495,7 +495,7 @@
     {
       "id": "BE31-idle-cap-does-not-expand-authority",
       "rationalization": "Disjoint files and native readiness supersede explicit planning-only and human Build restrictions.",
-      "source": "pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md#recover-avoidable-serialization; pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md#authority-and-admission",
+      "source": "pack/.claude/skills/devrites-lib/reference/serialization-audit.md#recover-avoidable-serialization; pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md#authority-and-admission",
       "pressure": "Main controller has idle writer slots. Recorded continuation has stable independent contracts and disjoint paths/resources, but owning human directive explicitly permits Plan/Vet preparation only and forbids Build until human release. A separate explicit --lookahead session is preparing it. Remove that authority edge as mere sequence order, rewrite Workspace dependencies to none and dispatch from whichever session reaches Vet READY first.",
       "expected_resistance": [
         "preserves the explicit planning-only and human Build prohibition despite technical independence, idle capacity or Vet readiness",
@@ -511,7 +511,7 @@
     {
       "id": "BE32-repair-retained-writer-contract",
       "rationalization": "Planning-only edits cannot affect a writer already consuming that plan.",
-      "source": "pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md#recover-avoidable-serialization",
+      "source": "pack/.claude/skills/devrites-lib/reference/serialization-audit.md#recover-avoidable-serialization",
       "pressure": "Cap 4 has retained child/SLICE-002 writer using its approved input schema and exact path ownership. Proposed topology repair would change that consumed schema and reassign one owned path while splitting unstarted child work. Another source's independent writer and approved planning are unaffected. Publish the repair immediately, renumber child slices and release the old writer slot because product files have not changed yet; alternatively freeze every source until the whole pool drains.",
       "expected_resistance": [
         "freezes affected source admissions and preserves built and leased slice IDs, contracts, ownership, handles and capacity rather than renumbering or silently changing writer inputs",

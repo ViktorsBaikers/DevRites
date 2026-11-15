@@ -1,9 +1,11 @@
 package lib
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -86,47 +88,220 @@ func TestCanonicalSectionMarkers(t *testing.T) {
 	}
 }
 
-// TestContextBundleTOCMatchesSections checks the engine-written TOC lists
-// every ===== section in order with its exact line range in the final file.
+// TestContextBundleTOCMatchesSections uses emitted entries, not source-shaped headers.
 func TestContextBundleTOCMatchesSections(t *testing.T) {
 	root, featureDir := newWorkspace(t, "build")
-	writeFile(t, filepath.Join(featureDir, "spec.md"), "# spec\nno trailing newline")
+	const source = "# spec\nUnicode café 世界\n===== fake source header =====\nno trailing newline"
+	writeFile(t, filepath.Join(featureDir, "spec.md"), source)
 	skills := newSkillsRoot(t)
-	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
-	args := []string{"feat", "--phase", "build", "--role", "slice-wright", "--trigger", "tdd", "--skills-root", skills}
-	if code := RunContext(root, args, stdout, stderr); code != 0 {
-		t.Fatalf("code=%d\n%s%s", code, stdout, stderr)
+	for _, role := range []string{"", "slice-wright"} {
+		args := []string{"feat", "--phase", "build", "--trigger", "tdd", "--skills-root", skills}
+		name := "build"
+		labels := []string{coreStandard, "devrites-lib/reference/standards/testing.md", "workspace/spec.md", "workspace/missing.md"}
+		if role != "" {
+			args = append(args, "--role", role)
+			name += "-" + role
+			labels = append([]string{"agents/devrites-slice-wright.md"}, labels...)
+		}
+		stdout := contextIntegrityRun(t, root, args, 0)
+		path := filepath.Join(featureDir, "ctx", name+".bundle.md")
+		index := contextTestReadIndex(t, path, stdout)
+		rows := contextIndexRowRE.FindAllStringSubmatch(index, -1)
+		if len(rows) != len(labels) {
+			t.Fatalf("want %d recorded sections, got %s", len(labels), index)
+		}
+		firstStart, _ := strconv.Atoi(rows[0][1])
+		if firstStart != strings.Count(index, "\n")+2 {
+			t.Fatalf("first section not immediately after index: %s", index)
+		}
+		previousEnd := 0
+		for i, row := range rows {
+			start, _ := strconv.Atoi(row[1])
+			end, _ := strconv.Atoi(row[2])
+			if row[6] != labels[i] || (i > 0 && start != previousEnd+1) {
+				t.Fatalf("unexpected boundary or label: %v", row)
+			}
+			body := contextTestReadLines(t, path, start, end)
+			contextTestSectionIdentity(t, row, body)
+			if !strings.HasPrefix(body, "===== "+labels[i]+" =====\n") {
+				t.Fatalf("wrong section start: %q", body)
+			}
+			wantReuse := "never"
+			if role == "" && i < 2 {
+				wantReuse = "rule"
+			}
+			if row[5] != wantReuse {
+				t.Fatalf("%s: reuse=%s, want %s", row[6], row[5], wantReuse)
+			}
+			if row[6] == "workspace/spec.md" && body != "===== workspace/spec.md =====\n"+source+"\n\n" {
+				t.Fatalf("source bytes changed: %q", body)
+			}
+			previousEnd = end
+		}
+		file, err := os.Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		scanner := bufio.NewScanner(file)
+		lines := 0
+		for scanner.Scan() {
+			lines++
+		}
+		err = scanner.Err()
+		if closeErr := file.Close(); closeErr != nil {
+			t.Fatal(closeErr)
+		}
+		if err != nil || lines != previousEnd {
+			t.Fatalf("last range misses final bytes: lines=%d end=%d error=%v", lines, previousEnd, err)
+		}
 	}
-	raw, err := os.ReadFile(filepath.Join(featureDir, "ctx", "build-slice-wright.bundle.md"))
+}
+
+var contextIndexRowRE = regexp.MustCompile(`(?m)^L([0-9]+)-([0-9]+) sha256=([0-9a-f]{64}) bytes=([0-9]+) reuse=(rule|never) (.+)$`)
+
+func contextTestReadLines(t *testing.T, path string, start, end int) string {
+	t.Helper()
+	file, err := os.Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
-	var headers []int // 1-based line numbers
-	for i, line := range lines {
-		if sectionHeaderRE.MatchString(line) {
-			headers = append(headers, i+1)
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	reader := bufio.NewReader(file)
+	var selected strings.Builder
+	for line := 1; line <= end; line++ {
+		text, err := reader.ReadString('\n')
+		if err != nil && (err != io.EOF || line != end || text == "") {
+			t.Fatalf("read L%d-%d at L%d: %v", start, end, line, err)
+		}
+		if line >= start {
+			selected.WriteString(text)
 		}
 	}
-	// Contract, core, testing, spec, missing workspace artifact.
-	if len(headers) != 5 || !strings.HasPrefix(lines[3], "<!-- sections:") || lines[4+len(headers)] != "" || headers[0] != len(headers)+6 {
-		t.Fatalf("TOC must follow the header comments and list all %d sections:\n%s", len(headers), raw)
+	return selected.String()
+}
+
+func contextTestReadIndex(t *testing.T, path, stdout string) string {
+	t.Helper()
+	match := regexp.MustCompile(`(?m)^index: L1-([0-9]+)$`).FindStringSubmatch(stdout)
+	if match == nil {
+		t.Fatalf("no stdout index range: %s", stdout)
 	}
-	entryRE := regexp.MustCompile(`^L(\d+)-(\d+) (.+)$`)
-	for i, h := range headers {
-		m := entryRE.FindStringSubmatch(lines[4+i])
-		if m == nil {
-			t.Fatalf("TOC entry %d malformed: %q", i, lines[4+i])
+	end, _ := strconv.Atoi(match[1])
+	index := contextTestReadLines(t, path, 1, end)
+	last := strings.Split(strings.TrimSuffix(index, "\n"), "\n")
+	if !contextIndexRowRE.MatchString(last[len(last)-1]) || strings.Contains(index, "===== ") {
+		t.Fatalf("index range includes body or lacks final row: %q", index)
+	}
+	return index
+}
+
+func contextTestSectionIdentity(t *testing.T, row []string, body string) {
+	t.Helper()
+	count, _ := strconv.Atoi(row[4])
+	if count != len(body) || row[3] != fmt.Sprintf("%x", sha256.Sum256([]byte(body))) {
+		t.Fatalf("rendered identity mismatch: %v for %q", row, body)
+	}
+}
+
+func TestContextSectionIdentityAndEligibility(t *testing.T) {
+	root, workspace := newWorkspace(t, "build")
+	skills := newSkillsRoot(t)
+	core := filepath.Join(skills, filepath.FromSlash(coreStandard))
+	include := filepath.Join(filepath.Dir(core), "included.md")
+	writeFile(t, core, "# core\n<!-- include:included.md -->\n")
+	writeFile(t, include, "## Shared\ncafé 世界")
+	args := []string{"feat", "--phase", "build", "--skills-root", skills}
+	path := filepath.Join(workspace, "ctx", "build.bundle.md")
+	readCore := func(args []string, path string) []string {
+		index := contextTestReadIndex(t, path, contextIntegrityRun(t, root, args, 0))
+		for _, row := range contextIndexRowRE.FindAllStringSubmatch(index, -1) {
+			if row[6] == coreStandard {
+				start, _ := strconv.Atoi(row[1])
+				end, _ := strconv.Atoi(row[2])
+				contextTestSectionIdentity(t, row, contextTestReadLines(t, path, start, end))
+				return row
+			}
 		}
-		start, _ := strconv.Atoi(m[1])
-		end, _ := strconv.Atoi(m[2])
-		wantEnd := len(lines)
-		if i+1 < len(headers) {
-			wantEnd = headers[i+1] - 1
+		t.Fatal("missing core section")
+		return nil
+	}
+	first := readCore(args, path)
+	if first[5] != "rule" {
+		t.Fatal("complete expanded root rule not reusable")
+	}
+	writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), "<!-- loads: {\"always\":[\"devrites-lib/reference/standards/testing.md\",\""+coreStandard+"\"]} -->\n")
+	shifted := readCore(args, path)
+	if shifted[1] == first[1] || shifted[3] != first[3] {
+		t.Fatal("moving an unchanged rule changed its identity or did not move it")
+	}
+	writeFile(t, include, "## Shared\nchanged")
+	changed := readCore(args, path)
+	if changed[3] == first[3] {
+		t.Fatal("included edit did not invalidate identity")
+	}
+	writeFile(t, core, "# core\n<!-- include:missing.md -->\n")
+	if row := readCore(args, path); row[5] != "never" {
+		t.Fatal("unresolved include marked reusable")
+	}
+	writeFile(t, core, "# core\n## Root\n<!-- root-only -->\nprivate root rule\n<!-- /root-only -->\n## Shared\nshared rule\n")
+	rolePath := filepath.Join(workspace, "ctx", "build-slice-wright.bundle.md")
+	row := readCore(append(args, "--role", "slice-wright"), rolePath)
+	start, _ := strconv.Atoi(row[1])
+	end, _ := strconv.Atoi(row[2])
+	body := contextTestReadLines(t, rolePath, start, end)
+	if row[5] != "never" || strings.Contains(body, "private root rule") || !strings.Contains(body, "shared rule") {
+		t.Fatalf("role filtering/reuse changed: %s", body)
+	}
+}
+
+func TestContextSectionIndexLabelsAndNonRules(t *testing.T) {
+	var bundle contextBundle
+	bundle.WriteString("header\n\n")
+	label := strings.Repeat("長", 140) + "\r\nfull label"
+	bundle.startSection(label, true)
+	bundle.WriteString("Unicode 世界\n===== source header =====\n\n")
+	seen := map[string]bool{}
+	writeContextData(&bundle, "missing", "missing", nil, os.ErrNotExist, seen, false)
+	writeContextData(&bundle, "inventory", "recheck inventory", []byte("finding\n"), nil, seen, false)
+	writeAnchorIndex(&bundle, ".", "rule.md", "rule.md", []byte("## Rule\ntext\n"), nil)
+	writeCitedSections(&bundle, "rule.md", []byte("## Rule\ntext\n"), []byte("rule.md § Rule"))
+	rendered := insertSectionTOC(&bundle)
+	rows := contextIndexRowRE.FindAllStringSubmatch(rendered, -1)
+	if len(rows) != 5 || rows[0][6] != strings.ReplaceAll(strings.ReplaceAll(label, "\r", "\\r"), "\n", "\\n") {
+		t.Fatalf("labels truncated, unescaped, or source heading indexed: %s", rendered)
+	}
+	lines := strings.SplitAfter(rendered, "\n")
+	for i, row := range rows {
+		start, _ := strconv.Atoi(row[1])
+		end, _ := strconv.Atoi(row[2])
+		contextTestSectionIdentity(t, row, strings.Join(lines[start-1:end], ""))
+		if i > 0 && row[5] != "never" {
+			t.Fatalf("partial or nonrule section reusable: %v", row)
 		}
-		if start != h || end != wantEnd || lines[start-1] != "===== "+m[3]+" =====" {
-			t.Fatalf("TOC entry %q: want L%d-%d for %q", lines[4+i], h, wantEnd, lines[h-1])
-		}
+	}
+}
+
+func TestContextEmptySectionIndexFallback(t *testing.T) {
+	var bundle contextBundle
+	bundle.WriteString("fallback body\n")
+	if got := insertSectionTOC(&bundle); got != "fallback body\n" {
+		t.Fatalf("empty-section fallback changed: %q", got)
+	}
+	root, workspace := newWorkspace(t, "build")
+	skills := newSkillsRoot(t)
+	writeFile(t, filepath.Join(skills, "rite-build", "SKILL.md"), "<!-- loads: {} -->\n")
+	args := []string{"feat", "--phase", "build", "--skills-root", skills}
+	stdout := contextIntegrityRun(t, root, args, 0)
+	if strings.Contains(stdout, "index:") {
+		t.Fatalf("empty bundle advertises index: %s", stdout)
+	}
+	body, err := os.ReadFile(filepath.Join(workspace, "ctx", "build.bundle.md"))
+	if err != nil || !bytes.Contains(body, []byte("devrites context bundle")) || bytes.Contains(body, []byte("<!-- sections:")) {
+		t.Fatalf("complete-read fallback unavailable: %s %v", body, err)
 	}
 }
 
@@ -263,5 +438,124 @@ func TestContextRecheckBundle(t *testing.T) {
 	// The wright keeps its unscoped bundle.
 	if code, out := run("--role", "slice-wright"); code != 0 {
 		t.Fatalf("slice-wright without --slice: code=%d\n%s", code, out)
+	}
+}
+
+func TestContextVetRecheckBundle(t *testing.T) {
+	root, featureDir := newWorkspace(t, "vet")
+	skills := newSkillsRoot(t)
+	writeFile(t, filepath.Join(skills, "rite-vet", "SKILL.md"), `<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/testing.md"],"workspace":["tasks.md","plan.md","traceability.md"]} -->`)
+	writeFile(t, filepath.Join(skills, "devrites-lib", "reference", "standards", "testing.md"), "# Testing\n\n## Closure\nclosure rule\n\n## Other\nuncited rule\n")
+	for _, role := range []string{"plan-reviewer", "security-auditor", "test-analyst"} {
+		writeFile(t, filepath.Join(skills, "..", "agents", "devrites-"+role+".md"), "# Independent reviewer\n")
+	}
+	tasks := "## SLICE-001 First\nfirst body AC-001\n\n## SLICE-002 Second\nsecond body AC-002\n\n## SLICE-003 Third\nthird body AC-003\n"
+	writeFile(t, filepath.Join(featureDir, "tasks.md"), tasks)
+	plan := strings.Repeat("whole plan content\n", 1100)
+	writeFile(t, filepath.Join(featureDir, "plan.md"), plan)
+	writeFile(t, filepath.Join(featureDir, "traceability.md"), "AC-003 dependency closure\n")
+	writeFile(t, filepath.Join(featureDir, "recheck.md"), "Neutral reproduction AC-003; correction scope; testing.md § Closure\n")
+	writeFile(t, filepath.Join(featureDir, "empty.md"), " \n")
+	if err := os.Mkdir(filepath.Join(featureDir, "inventory-dir"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	run := func(args ...string) (int, string) {
+		t.Helper()
+		var out bytes.Buffer
+		code := RunContext(root, append([]string{"--skills-root", skills}, args...), &out, &out)
+		return code, out.String()
+	}
+	for _, selector := range [][]string{{"--phase", "vet"}, {"--skill", "rite-vet"}} {
+		for _, ids := range [][]string{nil, {"SLICE-001"}, {"SLICE-002", "SLICE-001"}, {"SLICE-001", "SLICE-001"}} {
+			args := append([]string{"feat"}, selector...)
+			args = append(args, "--role", "plan-reviewer", "--recheck", "recheck.md")
+			name := "vet-plan-reviewer"
+			for _, id := range ids {
+				args = append(args, "--slice", id)
+			}
+			if len(ids) > 0 {
+				name += "." + strings.Join(ids, "+")
+			}
+			code, out := run(args...)
+			if code != 0 {
+				t.Fatalf("%v: code=%d\n%s", args, code, out)
+			}
+			path := filepath.Join(featureDir, "ctx", name+".recheck.bundle.md")
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			text := string(raw)
+			for _, want := range []string{"phase=vet", "Neutral reproduction AC-003", "closure rule", "SLICE-003 Third", "AC-003 dependency closure"} {
+				if !strings.Contains(text, want) {
+					t.Fatalf("%v: missing %q", args, want)
+				}
+			}
+			if strings.Contains(text, "uncited rule") {
+				t.Fatal("uncited rule inlined")
+			}
+			if len(ids) == 0 {
+				if !strings.Contains(text, tasks) || !strings.Contains(text, plan) || strings.Contains(out, "scope: slice") {
+					t.Fatal("unsliced Vet recovery narrowed workspace")
+				}
+			} else {
+				if strings.Contains(text, "third body") {
+					t.Fatal("unselected slice body inlined")
+				}
+				for _, id := range ids {
+					body := "first body"
+					if id == "SLICE-002" {
+						body = "second body"
+					}
+					if !strings.Contains(text, body) {
+						t.Fatalf("selected slice %s missing", id)
+					}
+				}
+			}
+			index := contextTestReadIndex(t, path, out)
+			for _, row := range contextIndexRowRE.FindAllStringSubmatch(index, -1) {
+				if row[5] != "never" {
+					t.Fatalf("recovery section reusable: %s", row[0])
+				}
+			}
+		}
+	}
+	for _, role := range []string{"security-auditor", "test-analyst"} {
+		if code, out := run("feat", "--phase", "vet", "--role", role, "--recheck", "recheck.md"); code != 0 {
+			t.Fatalf("%s: code=%d\n%s", role, code, out)
+		}
+	}
+	for _, tc := range []struct {
+		name string
+		args []string
+		code int
+	}{
+		{"roleless", []string{"feat", "--phase", "vet", "--recheck", "recheck.md"}, 2},
+		{"drafter", []string{"feat", "--phase", "vet", "--role", "plan-drafter", "--recheck", "recheck.md"}, 2},
+		{"wright", []string{"feat", "--phase", "vet", "--role", "slice-wright", "--recheck", "recheck.md"}, 2},
+		{"no slug", []string{"--skill", "rite-vet", "--role", "plan-reviewer", "--out", "unused.md", "--recheck", "recheck.md"}, 2},
+		{"missing value", []string{"feat", "--phase", "vet", "--role", "plan-reviewer", "--recheck"}, 2},
+		{"empty value", []string{"feat", "--phase", "vet", "--role", "plan-reviewer", "--recheck", ""}, 2},
+		{"flag value", []string{"feat", "--phase", "vet", "--role", "plan-reviewer", "--recheck", "--whole"}, 2},
+		{"missing inventory", []string{"feat", "--phase", "vet", "--role", "plan-reviewer", "--recheck", "missing.md"}, 2},
+		{"empty inventory", []string{"feat", "--phase", "vet", "--role", "plan-reviewer", "--recheck", "empty.md"}, 2},
+		{"nonregular inventory", []string{"feat", "--phase", "vet", "--role", "plan-reviewer", "--recheck", "inventory-dir"}, 2},
+		{"invalid slice", []string{"feat", "--phase", "vet", "--role", "plan-reviewer", "--recheck", "recheck.md", "--slice", "bad"}, 2},
+		{"unknown slice", []string{"feat", "--skill", "rite-vet", "--role", "plan-reviewer", "--recheck", "recheck.md", "--slice", "SLICE-999"}, 3},
+		{"review", []string{"feat", "--phase", "review", "--role", "plan-reviewer", "--recheck", "recheck.md", "--slice", "SLICE-001"}, 2},
+		{"skill build", []string{"feat", "--skill", "rite-build", "--role", "code-reviewer", "--recheck", "recheck.md", "--slice", "SLICE-001"}, 2},
+		{"unsliced build", []string{"feat", "--phase", "build", "--role", "code-reviewer", "--recheck", "recheck.md"}, 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if code, out := run(tc.args...); code != tc.code {
+				t.Fatalf("code=%d want %d\n%s", code, tc.code, out)
+			}
+		})
+	}
+	if code, out := run("feat", "--skill", "rite-vet", "--role", "plan-reviewer"); code != 0 {
+		t.Fatalf("ordinary skill context: code=%d\n%s", code, out)
+	}
+	if _, err := os.Stat(filepath.Join(featureDir, "ctx", "rite-vet-plan-reviewer.bundle.md")); err != nil {
+		t.Fatalf("ordinary skill filename changed: %v", err)
 	}
 }

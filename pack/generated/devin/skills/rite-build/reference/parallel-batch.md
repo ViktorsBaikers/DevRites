@@ -5,10 +5,26 @@
 Opt-in only. Default `/rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.md).
 
 Autocomplete executes the shared [global pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
-before local writers: actual immediate-successor preparation or narrow disclosed
-deferral, then global cohort admission. Consume fresh dispatch-return scheduling.
-Standalone Build stays local; select notices never broaden its picks. A placeholder
-is not preparation; one successor pipelines safely without preparing the whole roadmap.
+(trigger `parallel-workspaces`) before local-only scheduling. Canonical cap>1 uses
+the bounded [rolling preparation pool](../../devrites-lib/reference/parallel-workspaces.md#rolling-preparation-pool):
+admitted writers first, root creation second, then native preparation with remaining
+host slots. Consume fresh dispatch-return scheduling and refill per result. READY
+buffers occupy preparation slots until the first actual writer start; read-only
+Build does not release them. Legacy authority retains immediate-successor
+preparation or a concrete disclosed deferral. Standalone Build stays local, and
+cap 1 stays serial; select notices never broaden its picks.
+
+## Contents
+
+- [Entry](#entry)
+- [Dynamic selection and re-batching](#dynamic-selection-and-re-batching)
+- [Path-disjoint](#path-disjoint)
+- [Control vs workers](#control-vs-workers)
+- [Lifecycle](#lifecycle)
+- [Repair rounds](#repair-rounds)
+- [Engine verbs](#engine-verbs)
+- [Runtime isolation](#runtime-isolation)
+- [Host](#host)
 
 ## Entry
 
@@ -39,9 +55,17 @@ N_eff = min(
   AFK headroom         -- outside /rite-autocomplete only (max_slices, max_agents,
                           max_minutes, review queue). Autocomplete ignores those;
                           do not shrink this batch for them
-  host capacity        -- concurrent worktree writers + the runtime isolation table
+  host capacity        -- actual free actor slots after all retained/open/unknown roles
+                       -- plus concurrent worktree support and runtime isolation
 )
 ```
+
+Supply actual `DEVRITES_HOST_CAPACITY` per invocation and use the all-phase
+[host reservation/subwave protocol](../../devrites-lib/reference/parallel-dispatch.md#host-reservations-and-subwaves).
+Never infer native actor capacity from N. Missing host capability means one actor,
+not assumed concurrency. Resource deferral keeps work queued without inventing a
+semantic hold or weakening readiness. Root serializes AFK/authority/bookkeeping
+writes and uses controller-locked engine mutations; workers return artifacts.
 
 Select **greedily in plan order** with
 `devrites-engine parallel select --slug <slug> --cap N --from-plan`: ready set
@@ -59,8 +83,10 @@ host instead isolates that first writer for global refill. No pending work
 returns to the caller's next phase; no ready local work does not exhaust its
 authorized global frontier. A cap need not be filled.
 
-**Refill per landing; never wait for the batch.** Each sibling lands alone when
-green ([Lifecycle](#lifecycle) step 6). Re-read state, pending slices, and the
+**Refill per landing; never wait for the batch.** Refresh the shared frontier after
+each actor return and first actual writer start as well; these can free host or
+preparation capacity before landing. Each sibling lands alone when green
+([Lifecycle](#lifecycle) step 6). Re-read state, pending slices, and the
 tree; reselect: unlanded siblings hold
 their slots and paths, landed ones count as built, and only new picks print;
 `parallel add` starts each from the control tip and its wright dispatches at once.
@@ -128,7 +154,10 @@ means controller; CLI lease `--slice` uses source-qualified foreign keys.
    `devrites-slice-wright` native profile; source slug; allowlist; prove `HEAD==B`).
    Source-local waves use one role per sibling:
    `--role slice-wright.<SLICE-ID> --slice <SLICE-ID>`.
-   `start` every selected role across sources before waiting on any.
+   Reserve complete host-sized subwaves before `open`; immediately before each
+   native spawn run `dispatch <source> check-spawn --wave <w> --role <r>`, then
+   record its actual handle with `start`. Start every role in each admitted
+   subwave before waiting; queue remaining roles without shrinking required coverage.
    Shared `slice-wright` role is refused: one handle cannot track siblings.
    Linked worktrees run source checks with `DEVRITES_ROOT=<control>/.devrites`;
    source overrides never leak into controller lease mutations.
@@ -145,11 +174,13 @@ means controller; CLI lease `--slice` uses source-qualified foreign keys.
    Group recheck findings by owning role and changed surface. Each exact
    specialist rechecks its own fingerprints and the correction diff; code, test,
    and doubt remain separate dispatches, even on the same diff.
-   Reviewer fan-out does not shrink the writer batch. Reviewers queue at the
-   same cap as writers (10; see
-   [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#scale-limits)).
-   `max_agents` does not shrink it under autocomplete. Past that cap, queue a
-   second pass — a batch never assumes unbounded reviewers.
+   Reviewer fan-out does not shrink the writer lease or its required review roster.
+   Reviewers share actual host actor capacity with every retained writer and other
+   phase, with at most ten concurrent reviewers under
+   [`parallel-dispatch.md`](../../devrites-lib/reference/parallel-dispatch.md#scale-limits).
+   `max_agents` does not shrink required coverage under Autocomplete. Before opening,
+   split capacity-limited review into complete sealable subwaves, then reconcile
+   only after the full required inventory returns; never assume unbounded reviewers.
 5. Non-green siblings → **repair round** (below) in the same worktrees; lease
    stays `running` — no abort while repair budget remains. A green sibling →
    `parallel record-green`, then step 6 for it alone.

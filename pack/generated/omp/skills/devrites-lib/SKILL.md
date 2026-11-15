@@ -37,8 +37,12 @@ lifecycle state from chat or optional `README.md`.
   ([`workspace-artifact-schema.md`](reference/workspace-artifact-schema.md)).
 - [`reference/reply-contract.md`](reference/reply-contract.md): compact user-facing
   completion states. The host renders the response normally.
-- [`reference/parallel-workspaces.md`](reference/parallel-workspaces.md): explicit
-  phase targets, one isolated global controller, and source-owned proof.
+- [`reference/phase-target-binding.md`](reference/phase-target-binding.md): universal source binding and controller-load conditions.
+- [`reference/serialization-audit.md`](reference/serialization-audit.md): standalone Plan/Vet and unused-capacity audits.
+- [`reference/parallel-workspaces.md`](reference/parallel-workspaces.md): conditional
+  global scheduling, one isolated controller, and source-owned proof (trigger `parallel-workspaces`).
+- [`reference/parallel-dispatch.md`](reference/parallel-dispatch.md): all-phase host
+  reservations, complete sealable subwaves and pre-spawn checks.
 - [Autocomplete loop](skill://rite-autocomplete/reference/loop.md#early-preparation-admission):
   controller-only early preparation, bounded successor routing and normalization research.
 - [`reference/visual-playbooks/index.md`](reference/visual-playbooks/index.md): progressive
@@ -89,8 +93,9 @@ The engine is limited to:
   authoring rules in
   [`reference/standards/gates.md`](reference/standards/gates.md).
 - Atomic state: `state resolve` for answer/drop/batch, `state merge-manifest`
-  for the predecessor-chain union, `state set`/`state append` for cursor fields and
-  ledger sections, transactional `state close`, and `migrate`
+  for the predecessor-chain union, `state create-sequence` for pending Spec bootstrap,
+  `state set`/`state append` for cursor fields and ledger sections, transactional
+  `state close`, and `migrate`
   for fail-closed workspace-schema normalization.
 - `secret-scan`, `open-visual`, and `version` remain read-only helpers.
 - Offline, local `install`, `update`, and `uninstall`; their shell/npm callers

@@ -18,6 +18,7 @@ func autocompleteCLIFixture(t *testing.T) (string, string, string) {
 	t.Helper()
 	requireGit(t)
 	t.Setenv("DEVRITES_WORKSPACE", "")
+	t.Setenv("DEVRITES_HOST_CAPACITY", "64")
 	project := t.TempDir()
 	root := filepath.Join(project, ".devrites")
 	initGitRepo(t, project)

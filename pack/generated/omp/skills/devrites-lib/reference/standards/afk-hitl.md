@@ -89,20 +89,34 @@ charges, zero stops, and minimum-cap seeding; use its
 
 ### Sequence continuation (`continue_sequence`, `max_workspaces`)
 
-`continue_sequence: true` opens the next **recorded** continuation after Seal GO.
-Under `/rite-autocomplete`, absent means on, even in existing sentinels; `false` opts out.
+`continue_sequence: true` opens recorded continuations; serial/legacy continuation
+opens the immediate successor after Seal GO. Under `/rite-autocomplete`, absent
+means on, even in existing sentinels; `false` opts out of new openings. With valid
+canonical authority and effective cap>1, the
+[rolling preparation pool](skill://devrites-lib/reference/parallel-workspaces.md#rolling-preparation-pool) may
+open selected approved future work before predecessor completion. Its bounded
+preparation does not move ACTIVE or waive semantic dependencies and writer gates.
 `max_workspaces` (default 5): nonnegative decimal sequence budget, fail closed;
-charge new workspaces only, never resumes. `max_slices`/`afk_slices_remaining` stay **per workspace** outside active
-`/rite-autocomplete`, which uses its post-Vet pending count.
+charge new workspaces only, never resumes. `max_slices`/`afk_slices_remaining` stay
+**per workspace** outside active `/rite-autocomplete`, which uses its post-Vet pending count.
 
 The chain lives in root-owned `state.md` cursor fields, not in chat:
 `sequence_parent` (the immediately preceding workspace slug), `sequence_position`
 (1-based ordinal), `sequence_workspaces_remaining` (slots the chain may still
 open after this workspace), and — on the release milestone only —
-`sequence_role: release`. Seed exactly once from the recorded parent and its counter at creation.
-On resume, re-derive missing continuation fields from its `brief.md` parent/position
-and parent counter — same values, never a second charge. No recorded parent/position means no sequence membership. Counter only decreases;
-malformed values fail closed; `0` opens nothing.
+`sequence_role: release`. Serial/legacy native creation seeds these exactly once
+from the recorded parent and its counter. Canonical pool bootstrap instead uses
+`devrites-engine state create-sequence <controller> <target> --brief <file>` after
+root supplies a substantive approved-scope brief. It derives identity/budget and
+creates only real brief plus schema-4 pending Spec state, with no release role or
+parent decrement. Native Spec subsequently owns normal artifacts and any approved
+release-role assignment. Matching live targets reuse evolved bytes without a
+second charge, even when new openings are no longer permitted.
+Serial/legacy resume may re-derive missing continuation fields from recorded brief
+parent/position and parent counter, never a second charge. No recorded identity
+means no membership; pool creation rejects partial/conflicting identities rather
+than silently repairing them. Counter only decreases; malformed values fail closed;
+`0` opens nothing new.
 `sequence_role: release` makes `check candidate` and `check seal` require the
 candidate manifest to cover the whole recorded chain — run
 `devrites-engine state merge-manifest <slug>` before Prove.
@@ -125,8 +139,9 @@ candidate manifest to cover the whole recorded chain — run
 resume, else 10. Build's flag never rewrites AFK; explicit controller entry may
 update only mode/capacity. One cap covers all admitted sources, even explicit 1;
 standalone Build stays local. Follow the [global pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
-for immediate-successor preparation, narrow `frontier-blocked` deferrals,
-qualified foreign `serial:` handoff and automatic dispatch-return scheduling.
+(trigger `parallel-workspaces`) for canonical rolling preparation or legacy
+immediate-successor admission, durable parking/resume, resource deferrals, qualified
+foreign `serial:` handoff and per-return scheduling.
 These are scheduling disclosures, never readiness, isolation, proof or Ship waivers.
 
 ## Unattended resource envelope

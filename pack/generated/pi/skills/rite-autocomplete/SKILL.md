@@ -5,8 +5,8 @@ argument-hint: "[idea] [--ship|--yolo] [--max-slices N] [--parallel N] [--full] 
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"lookahead":["rite-autocomplete/reference/lookahead.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"],"rootOnly":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/workflow-artifacts.md","rite-autocomplete/reference/lookahead.md"]} -->
-> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase autocomplete` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+<!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/standards/one-shot-actions.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/acceptance-preserving-reslice.md","rite-autocomplete/reference/decision-policy.md","rite-autocomplete/reference/loop.md","rite-autocomplete/reference/stop-conditions.md","devrites-lib/reference/serialization-audit.md"],"triggers":{"workflow-artifacts":["devrites-lib/reference/standards/workflow-artifacts.md"],"lookahead":["rite-autocomplete/reference/lookahead.md"]},"workspace":["state.md","spec.md","plan.md","tasks.md","questions.md","decisions.md","drift.md","evidence.md","test-plan.md"],"rootOnly":["devrites-lib/reference/standards/afk-hitl.md","devrites-lib/reference/orchestration-profiles.md","devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/workflow-artifacts.md","rite-autocomplete/reference/lookahead.md"]} -->
+> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase autocomplete` bundles every file named below into one deduplicated bundle. Trigger names map to the conditional rules in the sections that follow. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 
 # /rite-autocomplete: full lifecycle, unattended
@@ -83,7 +83,7 @@ With `--lookahead` (trigger `lookahead`), follow
 [`lookahead.md`](reference/lookahead.md) instead of the steps below: plan the
 next sequence continuation through Vet in a second session, then stop.
 
-1. **Orient and parse.** Bind [source](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding);
+1. **Orient and parse.** Bind [source](../devrites-lib/reference/phase-target-binding.md#phase-target-binding);
    Keep validated overrides. With no source/override and missing/empty
    `ACTIVE`, run `devrites-engine frontier` without slug first. Use unique
    `frontier-source:` before asking. `frontier: none` without sequence
