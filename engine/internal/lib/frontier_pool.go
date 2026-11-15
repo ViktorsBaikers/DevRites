@@ -315,32 +315,41 @@ func nativeHostCapacity() (int, error) {
 	return n, nil
 }
 
-func hostReservations(root, source string, current *dispatchFile) (int, error) {
+type hostReservation struct {
+	source, wave, role string
+}
+
+func hostReservations(root, source string, current *dispatchFile) (int, hostReservation, error) {
 	nodes, err := frontierScan(root)
 	if err != nil {
-		return 0, err
+		return 0, hostReservation{}, err
 	}
 	used := 0
+	var first hostReservation
 	for _, n := range nodes {
 		if n.dir == "" {
-			return 0, fmt.Errorf("cannot reconcile retained host accounts for %s: %v", n.slug, n.problem)
+			return 0, hostReservation{}, fmt.Errorf("cannot reconcile retained host accounts for %s: %v", n.slug, n.problem)
 		}
 		account, err := preparationAccount(root, source, n, current)
 		if err != nil {
-			return 0, err
+			return 0, hostReservation{}, err
 		}
-		for _, wave := range account.Waves {
-			if !unresolvedWave(wave) {
+		for name, wave := range account.Waves {
+			// Host slots end at abandonment; fulfillment and claim settlement remain separate.
+			if wave.State == "abandoned" || !unresolvedWave(wave) {
 				continue
 			}
-			for _, role := range wave.Roles {
+			for nameRole, role := range wave.Roles {
 				if !role.Returned {
+					if used == 0 {
+						first = hostReservation{source: n.slug, wave: name, role: nameRole}
+					}
 					used++
 				}
 			}
 		}
 	}
-	return used, nil
+	return used, first, nil
 }
 
 func hostWaveAdmission(root, source string, current *dispatchFile, roles int) error {
@@ -348,12 +357,16 @@ func hostWaveAdmission(root, source string, current *dispatchFile, roles int) er
 	if err != nil {
 		return err
 	}
-	used, err := hostReservations(root, source, current)
+	used, first, err := hostReservations(root, source, current)
 	if err != nil {
 		return err
 	}
 	if roles > capacity-used {
-		return fmt.Errorf("resource deferral: native host capacity %d, retained reservations %d, complete wave requires %d; split required roster into sealable subwaves before open, retain full review barrier, and re-evaluate after actor settlement", capacity, used, roles)
+		reservation := ""
+		if used > 0 {
+			reservation = fmt.Sprintf("; live or unreconciled reservation %s/%s/%s", first.source, first.wave, first.role)
+		}
+		return fmt.Errorf("resource deferral: native host capacity %d, retained reservations %d, complete wave requires %d%s; split required roster into sealable subwaves before open, retain full review barrier, and re-evaluate after actor settlement", capacity, used, roles, reservation)
 	}
 	return nil
 }
@@ -446,7 +459,7 @@ func (p *preparationPool) hostPreparationAdmission(root, source string, current 
 	if err != nil {
 		return err
 	}
-	used, err := hostReservations(root, source, current)
+	used, _, err := hostReservations(root, source, current)
 	if err != nil {
 		return err
 	}

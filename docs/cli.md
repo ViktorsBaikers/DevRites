@@ -103,9 +103,14 @@ filesystems fail closed. Windows publication requires NTFS.
 
 The native root supplies internal `DEVRITES_HOST_CAPACITY` from actual total actor
 capacity per invocation; absent means one, malformed values refuse. This is not a
-new user option or the writer cap. All open/retained/unknown actor reservations
-count. Reserve a complete sealable roster before spawning; split oversized rosters
-into subwaves without omitting required reviews. Immediately before native launch,
+new user option or the writer cap. Unreturned roles in non-abandoned, incomplete
+waves reserve host slots, including unknown outcomes and spawn-before-start gaps.
+Abandonment releases host slots without deleting wave history, fabricating returns,
+or releasing writer claims; terminal confirmation and fulfillment checks remain
+separate. Root must reconcile native actors before abandoning their reservation.
+Refusals identify a live or unreconciled source/wave/role. Reserve a complete
+sealable roster before spawning; split oversized rosters without omitting reviews.
+Immediately before native launch,
 run `dispatch <source> check-spawn --wave <wave> [--role <role>]`; then record its
 actual handle with `start`. Settlement remains possible after eligibility changes.
 

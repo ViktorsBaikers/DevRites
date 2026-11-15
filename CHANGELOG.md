@@ -12,6 +12,9 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 
 ### Changed
 
+- Release abandoned dispatch host reservations independently of terminal-return
+  records; identify live or unreconciled blockers without raising native capacity
+  or deleting retained wave history.
 - Prepare approved canonical future workspaces through a bounded rolling pool in
   Autocomplete. Add atomic, retry-safe `state create-sequence` bootstrap, root
   creation routes, shared host reservations, pre-spawn checks and durable parking.
