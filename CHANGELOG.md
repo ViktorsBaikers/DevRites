@@ -24,6 +24,8 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 - Honor explicit preparation deferrals across related legacy workspaces, including
   held sequence maps. Route missing Plan-repair inputs to root reconciliation
   instead of repeating drafter launches; preserve independent preparation.
+- Require Vet to disposition remaining findings after a narrow recheck and consume
+  its next internal action; an older NEEDS REPLAN heading alone is not a stop.
 
 - Release abandoned dispatch host reservations independently of terminal-return
   records; identify live or unreconciled blockers without raising native capacity
