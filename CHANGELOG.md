@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.4.1](https://github.com/ViktorsBaikers/DevRites/compare/v7.4.0...v7.4.1) (2026-11-15)
+
+### Fixed
+
+* **devrites:** release abandoned host reservations ([#216](https://github.com/ViktorsBaikers/DevRites/issues/216)) ([8b58c65](https://github.com/ViktorsBaikers/DevRites/commit/8b58c657f5c964d725bd62fcf31200975eca5c9b))
+
 ## [7.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.11...v7.4.0) (2026-11-15)
 
 ### Added
