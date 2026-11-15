@@ -198,16 +198,13 @@ func preparationAdmission(root, source, phase string, purpose preparationPurpose
 const preparationInputReason = "Plan repair requires non-empty drift.md; controller must reconcile recorded findings and conflicting briefs before drafting; preserve scope and human holds"
 
 func preparationInputRepair(n *frontierWorkspace) (string, error) {
-	if workflow.ForAction(n.next).Verb != "plan" {
+	fields := strings.Fields(n.next)
+	if len(fields) < 2 || fields[1] != "repair" || workflow.ForAction(n.next).Verb != "plan" {
 		return "", nil
 	}
 	invoke, internal, err := internalPhaseEdge(n.next, n.slug)
 	if err != nil || !internal {
 		return "", err
-	}
-	fields := strings.Fields(invoke)
-	if len(fields) < 2 || fields[1] != "repair" {
-		return "", nil
 	}
 	raw, err := readBoundedRegularFile(filepath.Join(n.dir, "drift.md"), workspaceArtifactLimit)
 	if os.IsNotExist(err) || err == nil && len(bytes.TrimSpace(raw)) == 0 {

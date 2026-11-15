@@ -25,46 +25,33 @@ downstream dependency edges and traceability.
 
 ## repair (after Spec Drift Guard)
 
-A drift event stopped the build. Steps:
+Root preflight: missing/empty `drift.md` or `BLOCKED_INPUT` requires reconciliation
+of cited briefs/findings against current artifacts before dispatch. Record only
+evidenced open drift and provenance; explicitly supersede stale instructions. No
+remaining repair means select the supported next action, not manufacture drift.
+Missing authority/producer input requires a source-specific `frontier-blocked:`
+record with owner/resume trigger, then refresh. Narrow no-findings is not READY.
 
-Root preflight: if `drift.md` is absent/empty or a drafter returns `BLOCKED_INPUT`,
-reconcile the cited briefs and recorded findings against current artifacts before
-dispatch. Record only evidenced open drift and its provenance; supersede stale
-brief instructions explicitly. If no open repair remains, select the supported
-next native action instead of manufacturing drift. If authority or producer input
-is unavailable, record a source-specific `frontier-blocked:` constraint with its
-owner and re-evaluation trigger. Refresh continuation; do not repeat the unchanged
-draft or promote a narrow no-findings return to whole-plan READY.
-
-1. Read the `drift.md` entries and their classifications. Fold EVERY open entry
-   and accepted finding for the affected artifacts in ONE pass, never serially.
-2. If the user answered a drift question, encode that decision in `decisions.md`.
-   Fold each `decisions.md` carry-forward constraint into `Prior-slice learnings`
-   of the remaining slices it affects.
-3. Update `spec.md` (only the affected sections) and `plan.md`/`tasks.md` to match
-   reality. Fix acceptance wording only when its meaning stays the same. An
-   acceptance meaning change needs a user directive or a recorded user decision
+1. Fold every open classified drift entry and accepted finding for affected
+   artifacts in one pass.
+2. Record answered drift decisions in `decisions.md`; carry their constraints into
+   affected remaining slices and their `Prior-slice learnings`.
+3. Update affected `spec.md` sections and `plan.md`/`tasks.md`. Acceptance meaning
+   changes require a user directive or recorded user decision
    ([provenance](../../devrites-lib/reference/standards/acceptance-preserving-reslice.md));
-   without one, ask with a recommended option. **Failing case:** root rewords an
-   AC so a bound may be exceeded, records its own decision, and sends it to Vet.
-   **Write the pointer, not the history.** Name the findings a fold closes by ID, one line
-   of meaning each; never restate prior folds, prior DEC lists, or closed-round narrative in
-   `architecture.md`/`plan.md`/`tasks.md`/`traceability.md`. That text belongs in
-   `decisions.md`, or in `history/` via [Budget relocation](#revise) once closed, so each
-   fold appends a bounded line. A banner that grows with the round count is the defect.
-4. Mark each `drift.md` entry **resolved** with the resolution + date.
-5. **Self-check and self-attack the repaired candidate on the delta before
-   handoff** — re-verify every invariant the correction touched (acyclic
-   dependency graph, bidirectional traceability, Shared contract proof vs
-   boundary set, sizing, no correction-created regression), then probe the
-   delta against the reviewers' attack classes (race/observation windows,
-   alias escapes, ordering gaps, capability gaps, unbounded blocking,
-   happy-path-only coverage); fold a fix or a named bounded residual into
-   the same pass. Record both in the Plan
-   checkpoint; Vet's recheck verifies it rather than rediscovering the defect a
-   loop later.
-6. Resume at the corrected slice.
-Never quietly delete a requirement; use the marked action before contract edits.
+   otherwise ask with a recommended option. Root cannot authorize its own AC change.
+   **Write the pointer, not the history:** closed finding ID + one-line meaning.
+   Keep prior folds/DEC lists/round narratives out of architecture/plan/tasks/traceability;
+   use `decisions.md` or [Budget relocation](#revise) into history when closed.
+4. Mark resolved drift with resolution and date.
+5. Before handoff, self-check and self-attack the delta: acyclic dependencies,
+   bidirectional traceability, Shared contract proof/boundary coverage, sizing and
+   correction-created regression; probe races/observation windows, aliases, ordering,
+   capabilities, unbounded blocking and happy-path-only coverage. Fold fixes or named
+   bounded residuals into this pass. Record both checks in the Plan checkpoint for
+   Vet recheck, not rediscovery.
+6. Resume the corrected slice. Preserve requirements; use the marked action before
+   contract edits.
 
 ## reorder
 
