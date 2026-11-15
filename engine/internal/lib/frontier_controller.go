@@ -358,7 +358,7 @@ func frontierWriterRetention(root, source, controller, binding string, lease *pa
 				}
 				if !wright {
 					if slug == source && (isReviewerRole(role) || roleBase(role) == "proof-runner") {
-						return fmt.Errorf("source %s retains a protected reviewer/proof account; reconcile it before writer admission", source)
+						return fmt.Errorf("source %s retains a protected reviewer/proof account: wave %q role %q (state=%s, handle=%q); record its actual return, or confirm the actor never launched or has stopped before abandon --release; abandonment alone does not confirm termination", source, name, role, wave.State, actor.Handle)
 					}
 					continue
 				}

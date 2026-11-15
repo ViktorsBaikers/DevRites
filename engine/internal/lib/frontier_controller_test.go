@@ -109,6 +109,47 @@ func controllerLeaseRow(workspace, id, path string) parallel.LeaseSlice {
 	}
 }
 
+func TestAutocompleteControllerIdentifiesProtectedAccount(t *testing.T) {
+	for _, role := range []string{"code-reviewer", "proof-runner"} {
+		for _, waveState := range []string{"sealed", "abandoned"} {
+			t.Run(role+"/"+waveState, func(t *testing.T) {
+				root, dir := controllerFixture(t)
+				writeFile(t, filepath.Join(dir, "evidence.md"), "frontier-blocked: future17 — owner must settle DEC-017\n")
+				actor := &dispatchRole{}
+				if waveState == "sealed" {
+					actor.Handle = "native-protected"
+					actor.StartedAt = "2026-11-05T00:00:00Z"
+				}
+				ledger := &dispatchFile{Waves: map[string]*dispatchWave{
+					"retained-review": {Phase: "build", State: waveState, Roles: map[string]*dispatchRole{role: actor}},
+				}}
+				if err := saveDispatch(filepath.Join(dir, "dispatch.json"), ledger); err != nil {
+					t.Fatal(err)
+				}
+				before := controllerSnapshot(t, root)
+				code, out := controllerOpen(t, root, "current16", "next-writer", "SLICE-001")
+				if code != 3 {
+					t.Fatalf("protected account admitted writer: %d %s", code, out)
+				}
+				for _, want := range []string{"current16", `wave "retained-review"`, `role "` + role + `"`, "state=" + waveState, `handle="` + actor.Handle + `"`, "actual return", "confirm", "abandon --release"} {
+					if !strings.Contains(out, want) {
+						t.Errorf("protected account diagnostic missing %q: %s", want, out)
+					}
+				}
+				if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
+					t.Fatal("refused admission changed workflow state")
+				}
+				if code, out := controllerDispatch(t, root, "current16", "abandon", "--wave", "retained-review", "--reason", "host confirmed terminal actor", "--release"); code != 3 {
+					t.Fatalf("terminal reconciliation: %d %s", code, out)
+				}
+				if code, out := controllerOpen(t, root, "current16", "next-writer", "SLICE-001"); code != 0 {
+					t.Fatalf("terminal account still blocked writer: %d %s", code, out)
+				}
+			})
+		}
+	}
+}
+
 func TestAutocompleteControllerRefusesUnstartedSuccessorBeforeWorkflowWrites(t *testing.T) {
 	for _, tc := range []struct {
 		name  string

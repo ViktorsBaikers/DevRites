@@ -18,6 +18,10 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 
 ### Changed
 
+- Identify the source, wave, role, state and recorded handle blocking writer
+  admission behind a protected reviewer/proof account. Explain safe reconciliation
+  without treating abandonment as proof of actor termination.
+
 - Release abandoned dispatch host reservations independently of terminal-return
   records; identify live or unreconciled blockers without raising native capacity
   or deleting retained wave history.
