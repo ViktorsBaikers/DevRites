@@ -199,12 +199,12 @@ func TestCanonicalPreparationPoolMultiRoleCompetingWavesAndSettlement(t *testing
 	if !reflect.DeepEqual(before, controllerSnapshot(t, root)) {
 		t.Fatal("resource refusal wrote workflow")
 	}
-	if used, err := hostReservations(root, "current16", nil); err != nil || used != 2 {
+	if used, _, err := hostReservations(root, "current16", nil); err != nil || used != 2 {
 		t.Fatalf("spawn-before-start reservations %d %v", used, err)
 	}
 	controllerDispatch(t, root, "future17", "abandon", "--wave", "pair", "--reason", "host outcome unknown")
-	if used, err := hostReservations(root, "current16", nil); err != nil || used != 2 {
-		t.Fatalf("abandon lost unknown reservations %d %v", used, err)
+	if used, _, err := hostReservations(root, "current16", nil); err != nil || used != 0 {
+		t.Fatalf("abandon retained host reservations %d %v", used, err)
 	}
 	controllerDispatch(t, root, "future17", "abandon", "--wave", "pair", "--reason", "host confirmed no actors", "--release")
 	if code, out := preparationOpen(t, root, "future18", "plan", "plan-drafter", "after-settlement"); code != 0 {
@@ -239,10 +239,10 @@ func TestCanonicalPreparationPoolDetachedResearchAndArchivedAccountsConsumeHost(
 	for _, where := range []string{"work", "archive"} {
 		slug := "detached-" + where
 		dir := frontierFixture(t, root, where, slug, "", "spec", "running", "/rite-spec "+slug, 0, "")
-		raw, _ := json.Marshal(&dispatchFile{Waves: map[string]*dispatchWave{"research": {Phase: "spec", State: "abandoned", SequenceResearch: true, Roles: map[string]*dispatchRole{"evidence-scout": {}}}}})
+		raw, _ := json.Marshal(&dispatchFile{Waves: map[string]*dispatchWave{"research": {Phase: "spec", State: "open", SequenceResearch: true, Roles: map[string]*dispatchRole{"evidence-scout": {}}}}})
 		writeFile(t, filepath.Join(dir, "dispatch.json"), string(raw))
 	}
-	if used, err := hostReservations(root, "current16", nil); err != nil || used != 2 {
+	if used, _, err := hostReservations(root, "current16", nil); err != nil || used != 2 {
 		t.Fatalf("detached actors disappeared: %d %v", used, err)
 	}
 	if code, out := preparationOpen(t, root, "future17", "spec", "evidence-scout", "blocked"); code != 3 || !strings.Contains(out, "resource deferral") {
@@ -431,7 +431,7 @@ func TestCanonicalPreparationPoolLateAbandonedStartAndReturn(t *testing.T) {
 	if code, out := controllerDispatch(t, root, "future17", "return", "--wave", "unknown", "--role", "evidence-scout", "--handle", "late-native"); code != 0 {
 		t.Fatalf("late abandoned return refused: %d %s", code, out)
 	}
-	if used, err := hostReservations(root, "current16", nil); err != nil || used != 0 {
+	if used, _, err := hostReservations(root, "current16", nil); err != nil || used != 0 {
 		t.Fatalf("late terminal return leaked reservation: %d %v", used, err)
 	}
 }

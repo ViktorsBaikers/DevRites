@@ -626,7 +626,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 			if err != nil {
 				return nil, err
 			}
-			used, err := hostReservations(root, slug, nil)
+			used, _, err := hostReservations(root, slug, nil)
 			if err != nil {
 				return nil, err
 			}
