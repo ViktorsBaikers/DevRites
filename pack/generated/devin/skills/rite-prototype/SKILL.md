@@ -6,7 +6,7 @@ triggers:
   - user
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md"],"workspace":[]} -->
-> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-prototype` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .devin/skills <slug> --skill rite-prototype` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-prototype: answer one question with throwaway code
 

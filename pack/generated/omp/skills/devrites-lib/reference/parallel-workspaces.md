@@ -1,24 +1,8 @@
 # One controller, multiple workspace sources
 
-> Root-only: not inlined in --role bundles. Every phase uses target binding below;
+> Root-only: not inlined in --role bundles. Every phase uses
+> [phase target binding](phase-target-binding.md#phase-target-binding);
 > Autocomplete owns the global workflow. Standalone Build stays source-local.
-
-## Phase target binding
-
-For every lifecycle phase and cold handoff, resolve the existing explicit target
-or caller-supplied SOURCE slug first; use `.devrites/ACTIVE` only when neither is
-supplied. All workspace context, cursor, questions, artifact reads/writes, approval,
-candidate bindings and proof belong to that source. A missing source artifact
-routes its prerequisite; it never falls back to another workspace's artifacts.
-An explicit valid workspace does not require ACTIVE to name it or to exist.
-
-Carry SOURCE through every phase, nested resolution and cold handoff. Use existing
-slug arguments (`context <source>`, `handoff <source> --resume`). Qid-only
-`state resolve` retains its argv: bind only that invocation's `DEVRITES_ROOT` and
-`DEVRITES_WORKSPACE` as above, never a fabricated resolver slug or process-global
-change. Early future work preserves ACTIVE and the retained controller.
-Standalone Spec still sets ACTIVE; `--lookahead` remains planning/Vet-only.
-Target binding changes neither phase approval nor Ship authority.
 
 ## Authority and admission
 
@@ -54,37 +38,8 @@ assumptions; never auto-refresh digests or copy archives into live `work/`.
 
 ## Recover avoidable serialization
 
-At native Plan/Vet, and when a full global scan leaves writer capacity unused,
-audit the remaining frontier before treating serialization as irreducible:
-
-1. Name what each edge consumes: product/interface, integration evidence, shared
-   writable path, runtime resource or explicit authority. Sequence/release order
-   alone is not a product dependency; current recorded prohibitions still bind.
-2. Recut unstarted work only where an accepted vertical capability is functional,
-   independently provable and rollbackable against an already real contract.
-   Keep producer edges on actual consumers and dependent integration/proof.
-   Consolidate hub edits in their real producer; worktrees alone do not isolate
-   shared files, databases, ports, credentials or measurement windows.
-3. Root routes a concrete opportunity through native Plan and the canonical
-   [Reslice classifier](standards/acceptance-preserving-reslice.md), preserving
-   every acceptance meaning, prohibition, semantic link and proof obligation.
-   Carry the blocked edge/resource and proposed independent cut into the drafter
-   packet. Invalidate readiness, obtain affected Vet, then reselect; a proposed
-   split or green branch is not admission authority.
-4. Freeze admissions to affected sources during repair. Preserve built and leased
-   slice identities/contracts; drain/reconcile affected workers before publishing
-   a repair that changes their inputs. Unrelated source planning/writers continue.
-5. Preserve human/safety/access/resource gates and explicit planning-only bounds.
-   Classify any authority change through its owning decision; never replace an
-   explicit prohibition with inferred permission or create placeholder slices.
-
-Completion: either admit a currently approved independent cut, or retain
-`Serial rationale: <consumed contract/resource/authority; next unblock event>`
-in affected `tasks.md` slice blocks only when normal Plan write authority permits; otherwise
-report the existing blocker without planning writes. Revisit after relevant
-inputs change, not merely because capacity remains unused. Target width never
-justifies extra architecture, acceptance loss, premature proof or repeatedly
-reslicing unchanged work.
+Apply the complete [serialization audit](serialization-audit.md#recover-avoidable-serialization)
+at native Plan/Vet and when a full global scan leaves writer capacity unused.
 
 ## Continuous global frontier
 

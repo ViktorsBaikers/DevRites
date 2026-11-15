@@ -2,8 +2,11 @@ package lib
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -23,6 +26,98 @@ func TestMetricsSummaryReadsPastOversizedLine(t *testing.T) {
 	code := RunMetrics(root, []string{"summary", "feat"}, stdout, stderr)
 	if code != 0 || !strings.Contains(stdout.String(), "events=3") || !strings.Contains(stdout.String(), "unparsed=1") {
 		t.Fatalf("code=%d out=%q err=%q", code, stdout, stderr)
+	}
+}
+
+func TestMetricsSummaryContextPartitions(t *testing.T) {
+	root, featureDir := newWorkspace(t, "build")
+	ledger := `{"phase":"build","event":"context","role":"code-reviewer","bytes":100,"context_status":"materialized"}
+{"phase":"build","event":"context","role":"code-reviewer","bytes":100,"context_status":"unchanged"}
+{"phase":"build","event":"context","role":"code-reviewer","bytes":50}
+{"phase":"build","event":"context","role":"code-reviewer","bytes":25,"context_status":"future"}
+{"phase":"build","event":"packet","role":"code-reviewer","bytes":900,"context_status":"materialized"}
+`
+	writeFile(t, filepath.Join(featureDir, MetricsFile), ledger)
+	var out, stderr bytes.Buffer
+	if code := RunMetrics(root, []string{"summary", "feat"}, &out, &stderr); code != 0 {
+		t.Fatalf("summary code=%d: %s", code, &stderr)
+	}
+	want := "metrics summary: feat\n" +
+		fmt.Sprintf("  %-10s events=5 bytes=1175 (context=4 packet=1)\n", "build") +
+		"  roles:\n" +
+		fmt.Sprintf("    %-24s events=5 bytes=1175\n", "code-reviewer") +
+		"  total      events=5 bytes=1175\n" +
+		"  context_bytes=275 context_invocations=4\n" +
+		"  context_materialized_bytes=100 context_materialized_invocations=1\n" +
+		"  context_unchanged_bytes=100 context_unchanged_invocations=1\n" +
+		"  context_unclassified_bytes=75 context_unclassified_invocations=2\n"
+	if out.String() != want {
+		t.Fatalf("summary:\n%s\nwant:\n%s", &out, want)
+	}
+}
+
+func TestMetricsContextPublicationStatus(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		flags []string
+		phase string
+		role  string
+	}{
+		{"phase", []string{"--phase", "build"}, "build", ""},
+		{"skill", []string{"--skill", "rite-build"}, "rite-build", ""},
+		{"reviewer", []string{"--phase", "build", "--role", "code-reviewer", "--slice", "SLICE-001"}, "build", "code-reviewer"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, workspace, _, _ := contextIntegrityFixture(t)
+			writeFile(t, filepath.Join(workspace, "tasks.md"), "## SLICE-001 Publication\nGoal: inspect publication metrics.\n")
+			args := append([]string{"feat", "--skills-root", newSkillsRoot(t), "--out", "metrics.bundle.md"}, tc.flags...)
+			bundlePath := filepath.Join(workspace, "metrics.bundle.md")
+			ledgerPath := filepath.Join(workspace, MetricsFile)
+			repeatStatus := "unchanged"
+			if runtime.GOOS == "windows" {
+				repeatStatus = "materialized" // Private POSIX mode cannot be proven on Windows.
+			}
+			for i, status := range []string{"materialized", repeatStatus, "materialized"} {
+				if i == 2 {
+					writeFile(t, filepath.Join(workspace, "spec.md"), "# spec\nChanged input.\n")
+				}
+				contextIntegrityRun(t, root, args, 0)
+				body, err := os.ReadFile(bundlePath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				ledger, err := os.ReadFile(ledgerPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+				lines := bytes.Split(bytes.TrimSpace(ledger), []byte("\n"))
+				if len(lines) != i+1 {
+					t.Fatalf("invocation %d recorded %d events", i+1, len(lines))
+				}
+				var event metricEvent
+				if err := json.Unmarshal(lines[i], &event); err != nil {
+					t.Fatal(err)
+				}
+				if event.Event != "context" || event.Phase != tc.phase || event.Role != tc.role || event.ContextStatus != status || event.Bytes != int64(len(body)) {
+					t.Fatalf("invocation %d: event=%+v want status=%s bytes=%d", i+1, event, status, len(body))
+				}
+			}
+			before, err := os.ReadFile(ledgerPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Remove(bundlePath + ".sha256"); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Mkdir(bundlePath+".sha256", 0o700); err != nil {
+				t.Fatal(err)
+			}
+			contextIntegrityRun(t, root, args, 2)
+			after, err := os.ReadFile(ledgerPath)
+			if err != nil || !bytes.Equal(before, after) {
+				t.Fatalf("failed publication changed metrics: %v", err)
+			}
+		})
 	}
 }
 

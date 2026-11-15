@@ -106,6 +106,47 @@ Never restart/orphan the cohort or infer approval. Reviewers are read-only;
 accounts store evidence, never telemetry. Same-file writers stay serial.
 Capacity rejection is backpressure: retry batches; never shrink a roster.
 
+## Vet affected recovery
+
+Before a Vet recovery dispatch, root validates the return cursor, accepted prior
+findings and exact owner, repaired candidate identity, changed clauses/paths/criteria,
+affected drift/evidence, and delta self-check under [Vet steps 1b and 7](skill://rite-vet/SKILL.md).
+Keep prior admitted wave/role/handle/return provenance in the root-owned
+`eng-review.md` recovery record, never in reviewer inputs. Missing provenance uses
+the initial applicable review; changed global contracts or unknown impact require
+full applicable review. Do not manufacture a recovery claim to narrow that review.
+
+For each exact owning reviewer requiring a fresh read-only recheck, freeze the
+repaired candidate and cover all that owner's open fingerprints in one dispatch.
+Build context, render the packet, then open a fresh wave in this order:
+
+```text
+devrites-engine context --skills-root .omp/skills <slug> --phase vet --role <owner> --recheck packets/<fold>.<owner>.inventory.md [--slice <id> ...] [--trigger <applicable-set>]
+devrites-engine packet <slug> --wave <fresh-wave> --phase vet --role <owner> --recheck [--slice <id> ...] --focus packets/<fold>.<owner>.focus.md
+devrites-engine dispatch <slug> open --phase vet --wave <fresh-wave> --role <owner> [--slice <id> ...] --packet packets/<fresh-wave>.<owner>.md
+```
+
+Repeat `--slice <id>` once per affected slice in the same order in all three
+commands; never pass a joined slice token. Zero slices means plan-level affected
+recovery, not an initial Vet. Select every applicable context trigger. If context
+requires a trigger retry, preserve the recovery inventory, each selected slice,
+and all other selected options while adding the suggested applicable triggers.
+Continue with the dispatch contract's native launch, handle, seal, and return admission.
+
+The inventory supplies neutral reproduction, each owner fingerprint, correction
+scope, exact source/rule citations, and dependency-plus-traceability closure.
+Focus rows stay `- <ID> <path:line> <text>`. Neither packet, inventory, nor focus
+may contain prior verdicts, prior scores, or `*.return.md` links. Root checks
+semantic completeness; engine flag-shape, readability, and integrity checks do not.
+Each account must cover dependents of changed clauses, not only edited slices,
+and return an explicit correction-created `Regression:` verdict. The plan reviewer
+returns affected dimension bands, with unchanged dimensions outside that account,
+not newly passed. Root retains valid prior coverage and uses the lowest applicable
+band across current accounts without seeding reviewer scores. Every unbuilt
+slice still needs write-set closure. Vet's mechanism-only exception, same-seam
+rules, and correction/fingerprint and per-slice caps remain unchanged; this
+sequence adds no reviewer or discretionary retry round.
+
 ## Engineering lanes
 
 Classify each changed path by the runtime it executes in — from entry points, build

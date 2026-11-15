@@ -4,7 +4,7 @@
 
 Opt-in only. Default `/rite-build` stays [`one-slice-cycle.md`](one-slice-cycle.md).
 
-Autocomplete executes the shared [global pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
+Autocomplete executes the shared [global pass](../../devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier) (trigger `parallel-workspaces`)
 before local writers: actual immediate-successor preparation or narrow disclosed
 deferral, then global cohort admission. Consume fresh dispatch-return scheduling.
 Standalone Build stays local; select notices never broaden its picks. A placeholder

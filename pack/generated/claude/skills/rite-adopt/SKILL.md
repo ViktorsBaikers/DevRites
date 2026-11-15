@@ -5,7 +5,7 @@ argument-hint: "[path or area to adopt] [+ what you want to build next]"
 user-invocable: true
 ---
 <!-- loads: {"always":["rite-adopt/reference/adoption.md","rite-adopt/reference/anti-patterns.md","rite-polish/reference/ledger.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md"],"triggers":{"security":["devrites-lib/reference/standards/security.md"]},"rootOnly":["devrites-lib/reference/standards/code-index.md"]} -->
-> Read-set manifest: `devrites-engine context <slug> --skill rite-adopt` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+> Read-set manifest: `devrites-engine context <slug> --skill rite-adopt` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Trigger names map to the conditional rules in the sections that follow. Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-adopt: onboard existing code
 

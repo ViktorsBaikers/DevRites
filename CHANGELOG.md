@@ -2,6 +2,24 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## Unreleased
+
+### Changed
+
+- Load global scheduling conditionally while retaining universal source binding and
+  standalone serialization audits. Index context sections by rendered identity for
+  same-uncompacted-root rule reuse; fresh reviewers and workspace reads remain independent.
+- Reuse unchanged root planning audits only within their frozen pass, and read one
+  task-graph snapshot. Materialize drafter JSON verbatim and reference canonical
+  artifact definitions without dropping mandatory mirrors or observed evidence.
+- Support bounded Vet reviewer recovery with zero or repeated slice flags, immutable
+  packet contexts, and scope-preserving trigger retries. Keep prior review provenance
+  root-owned and unchanged dimensions outside fresh recovery verdicts.
+- Partition context publication bytes and invocation counts into materialized,
+  unchanged, and unclassified events without inferring model-token savings.
+- Refresh exact instruction and composed-bundle baselines for section identity metadata
+  and recovery contracts; raise the aggregate skill ceiling to 1,650,000 bytes.
+
 ## [7.3.11](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.10...v7.3.11) (2026-11-13)
 
 ### Fixed

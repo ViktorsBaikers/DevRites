@@ -15,6 +15,13 @@ workspace, not a summary, is the source of truth.
 - **Cut before load, not after.** Drop low-signal files, prior-turn dumps, and
   duplicate index queries before loading; later truncation cannot undo that cost.
   **Failing case:** five whole-file reads, then `/compact`, treated as cost control.
+- **Index first:** select the current manifest and triggers, then follow
+  [core Context hygiene](core.md#context-hygiene-end-of-every-phase): read the stdout
+  index range before section ranges. Only complete `reuse=rule` sections with an
+  identical label and rendered SHA-256 already read in the same uncompacted root
+  conversation may reuse text. Apply those rules again; freshly read workspace
+  artifacts. New sessions, compaction, uncertain prior reads, changed identities,
+  or absent indexes require complete applicable reads. Disk equality grants none.
 
 ## Dispatch packets
 
@@ -25,6 +32,10 @@ histories, duplicates, and raw transcripts from initial packets. Inspect seriali
 and long lines; line counts alone are insufficient. Within the host budget
 and working-set rule, split retrieval rather than truncate active obligations.
 Broaden retrieval when dependency boundaries are unknown.
+Fresh reviewer roles read their applicable sections independently; root rule reuse
+never transfers to a reviewer. Inventories, snippets, by-reference indexes and
+reviewer accounts are not reusable rule sections. Standalone skill/system prompts
+are outside this mechanism. Keep full bundles and current dependency reads.
 
 Packets are **by reference**: project-relative path + SHA-256 + line anchors
 (`path:start-end`) for every input; the reviewer reads the live file. Inline only the
@@ -47,7 +58,7 @@ Required review rosters and final proof remain. Preserve protected history uncha
 a compact current view references originals without omitting active requirements.
 
 **Compaction fallback:** after compaction or a resumed session, always run
-`devrites-engine handoff <source> --resume` first for the selected source per [phase target binding](../parallel-workspaces.md#phase-target-binding) — one
+`devrites-engine handoff <source> --resume` first for the selected source per [phase target binding](../phase-target-binding.md#phase-target-binding) — one
 deterministic resume record reduced from durable artifacts (cursor, `awaiting_human`,
 open `questions.md` gates, the `gates.md` reduction with unmet/stale ids,
 `decisions.md` dead ends, in-flight dispatch waves, and the read-next order over

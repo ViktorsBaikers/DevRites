@@ -168,6 +168,8 @@ approval remain mandatory. See the
 [controller workflow](../pack/.claude/skills/devrites-lib/reference/parallel-workspaces.md)
 and [worktree lifecycle](../pack/.claude/skills/rite-build/reference/parallel-batch.md).
 
+Every lifecycle phase always loads [source binding](../pack/.claude/skills/devrites-lib/reference/phase-target-binding.md). Global scheduling and controller recovery use the `parallel-workspaces` context trigger; Autocomplete always loads the scheduler. Define, Plan, Vet, and Autocomplete also always load the independent [serialization audit](../pack/.claude/skills/devrites-lib/reference/serialization-audit.md), so ordinary Plan/Vet auditing does not depend on a controller. Loading guidance does not activate one or grant authority.
+
 ## Engine boundary
 
 The engine owns deterministic:

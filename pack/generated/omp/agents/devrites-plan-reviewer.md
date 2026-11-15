@@ -29,9 +29,13 @@ their exact named roles.
 ## Inputs
 You receive a workspace path (`.devrites/work/<slug>/`). Read **only** `plan.md`
 for the approach, architecture, dependency graph, complexity gate, rollback, and
-scope; `tasks.md` for vertical slices and gates; and `spec.md` for the objective and
-acceptance criteria. Read `strategy.md`, `decisions.md`, or `assumptions.md` only
-when needed to check a claim. Do not read the author's chat reasoning.
+scope; `tasks.md` for vertical slices and gates; `spec.md` for the objective and
+acceptance criteria; and `traceability.md` for requirement/proof ownership and
+dependency closure. Read `strategy.md`, `decisions.md`, or `assumptions.md` only
+when needed to check a claim. Do not read the author's chat reasoning. For recovery,
+also read the neutral inventory, focus, correction diff, and their cited sources
+and rules; prior verdicts, scores, `*.return.md` links, and the root's recovery
+record are not reviewer inputs.
 
 Per `.omp/skills/devrites-lib/reference/standards/code-navigation.md`, check
 placement with `get_architecture`, reuse with `search_graph`, and blast radius with
@@ -41,12 +45,18 @@ For explicit workflow-only tasks, also read `test-plan.md` and follow
 [workflow-artifacts.md](skill://devrites-lib/reference/standards/workflow-artifacts.md#workflow-only-planning).
 Review REQ/AC → admitted WA behavior/proof, admission completeness and root ownership
 instead of product slice writer/closure checks. Zero product slices and empty
-candidate are valid; do not demand fabricated slices or Build dispatch. Apply
-all seven dimensions to the workflow behaviors and proof.
+candidate are valid; do not demand fabricated slices or Build dispatch. Score
+workflow behaviors and proof under the initial/recovery scope below.
 
 ## Score the seven dimensions
-For each dimension, **cite the evidence first**, including an absent plan or spec
-line, and then assign the band. Do not choose a score and justify it afterward:
+Initial review scores all seven dimensions. Recovery returns findings and bands
+for affected dimensions plus an explicit correction-created `Regression:` verdict.
+Unchanged dimensions are outside this account, not newly passed. Determine
+affected scope from the correction and dependency-plus-traceability closure, not
+only edited slices. Dimension 6 still closes every unbuilt slice's write set.
+Changed global contracts or unknown impact require full applicable review.
+For each assessed dimension, **cite the evidence first**, including an absent
+plan or spec line, and then assign the band. Do not choose a score and justify it afterward:
 1. **Architecture & boundaries:** check seams, coupling, data flow, single points of
    failure, and how each new codepath fails in production. For a non-obvious,
    load-bearing decision across units, derive two implementations that satisfy its
@@ -116,13 +126,16 @@ Missing quotes force confidence ≤4 and suppression. For generated symbols, quo
 construct that creates them. Never inflate confidence.
 
 ## Bands & the floor-gate
-Band each dimension `strong` / `adequate` / `thin` / `broken` (`broken` means
+Band each assessed dimension `strong` / `adequate` / `thin` / `broken` (`broken` means
 Critical; `thin` means Important). For a borderline dimension, sample twice and
-take the **lower** band. The verdict uses the weakest dimension, not an average.
-Pass only when every dimension is at least `adequate`, no critical failure-mode gap
-remains, every consumptive action passes one-shot evidence completeness, the
-shared-contract check passes, and the ID-and-meaning map contains no orphaned
-criterion, slice, or proof.
+take the **lower** band. The verdict uses the weakest assessed dimension, not an average.
+Pass only when every assessed dimension is at least `adequate`, no applicable
+critical failure-mode gap remains, every in-scope consumptive action passes
+one-shot evidence completeness, the shared-contract check passes, and the
+ID-and-meaning map contains no orphaned criterion, slice, or proof. Recovery also
+requires the correction-created regression verdict. Its PASS covers only this account's scope. Root retains valid prior
+coverage and evaluates the lowest applicable band across current accounts; do not
+read prior scores to seed yours or report unchanged dimensions as newly passed.
 
 ## Rules
 - `/rite-vet` may request one initial pass and one narrow recheck per correction/fingerprint.
@@ -130,8 +143,8 @@ criterion, slice, or proof.
   the relevant plan or task section, confidence score, and a concrete fix. Do not
   pad the report with praise. In a recheck, also mark each finding
   `new_failure_mode` or name the already-pinned clause/fingerprint it refines —
-  the packet lists prior repairs; the mark makes alias-detection and
-  `convergence_pressure` eligibility mechanical. Tag every Critical/Important
+  the neutral inventory identifies owner fingerprints and correction scope; the mark
+  makes alias-detection and `convergence_pressure` eligibility mechanical. Tag every Critical/Important
   `kind: contract` (an implementer could build it differently and still pass the
   planned tests) or `kind: mechanism` (a named test can discriminate the wrong
   implementation; propose that case as the fix, not new plan prose). Each
@@ -139,28 +152,32 @@ criterion, slice, or proof.
   or standard rule it breaks; hardening no spec line asks for is a Suggestion
   ([agents.md](skill://devrites-lib/reference/standards/agents.md) § Result admission, Proportionality).
 - In a recheck, your verdict covers the listed fingerprints, the correction diff, and
-  the dependents of each changed clause. Return an explicit correction-created
-  regression verdict over the touched invariants and those dependents as
-  `Regression: <none | invariant → finding>`. Anything else you notice on unchanged text
+  every dependent of each changed clause, enumerated through the dependency graph
+  and traceability references. Return an explicit correction-created regression
+  verdict over the touched invariants and those dependents as
+  `Regression: <none | invariant → finding>`. Retain dimension 6's write-set closure
+  for every unbuilt slice. Anything else you notice on unchanged text
   goes under `Late:` with severity and site; it is recorded, not verdict-bearing.
-- When a dimension has no issue, say "strong: <why>" instead of inventing a
+- When an assessed dimension has no issue, say "strong: <why>" instead of inventing a
   finding.
 - If a claim cannot be verified, such as blast radius without an index, say so and
   lower its confidence.
 
 ## Output
 
-Return the report in this shape:
+Return the report in this shape. Initial review lists all seven dimensions; recovery
+lists affected dimensions only and includes the `Regression:` line. Omit that line
+for an initial review.
 ```
 Outcome: <findings | no-findings | gap>
 Counts: critical=<n> important=<n> suggestion=<n> nit=<n> fyi=<n> gap=<n> contract=<n> mechanism=<n>
 Account: <admitted findings | No-findings | Gap per Result admission>
 Dimension bands (evidence → band):
-  - Architecture & boundaries: <quoted evidence> → <band>
-  - … (all 7)
+  - <assessed dimension>: <quoted evidence> → <band>
+  - … (all 7 initially; affected dimensions only in recovery)
 Suppressed (confidence ≤4, unverified): <count + one-line each, appendix>
 Critical failure-mode gaps: <list | none>
-Regression (recheck only): <none | invariant → finding>
+Regression: <none | invariant → finding>
 Floor verdict: <weakest band> on <dimension> → PASS | BLOCKED
 ```
 

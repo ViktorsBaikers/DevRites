@@ -5,8 +5,8 @@ argument-hint: "[feature-slug]"
 user-invocable: true
 ---
 
-<!-- loads: {"always":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/spec-grammar.md","rite-define/reference/plan-template.md","rite-define/reference/gates.md","rite-define/reference/anti-patterns.md","rite-plan/reference/slicing.md","rite-plan/reference/task-breakdown.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/state-workspace.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"agents":["devrites-lib/reference/standards/agents.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"frontend":["devrites-frontend-craft/reference/fullstack.md"],"principles":["devrites-lib/reference/standards/principles.md"],"visual":["devrites-lib/reference/visual-playbooks/index.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","strategy.md","design-brief.md","references.md"],"workspaceByRole":{"plan-drafter":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","strategy.md","design-brief.md","references.md","state.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
-> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase define` bundles every file named below into one deduplicated read. Trigger names map to the conditional rules in the sections that follow.
+<!-- loads: {"always":["devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/core.md","devrites-lib/reference/standards/code-navigation.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/spec-grammar.md","rite-define/reference/plan-template.md","rite-define/reference/gates.md","rite-define/reference/anti-patterns.md","rite-plan/reference/slicing.md","rite-plan/reference/task-breakdown.md","rite-spec/reference/acceptance-criteria.md","rite-spec/reference/state-workspace.md","devrites-lib/reference/serialization-audit.md"],"triggers":{"afk":["devrites-lib/reference/standards/afk-hitl.md"],"agents":["devrites-lib/reference/standards/agents.md"],"applicability":["devrites-lib/reference/standards/repository-topology.md","devrites-lib/reference/standards/data-integrity.md","devrites-lib/reference/standards/integration-reliability.md"],"documentation":["devrites-lib/reference/standards/documentation.md"],"elicitation":["devrites-lib/reference/standards/elicitation.md"],"frontend":["devrites-frontend-craft/reference/fullstack.md"],"principles":["devrites-lib/reference/standards/principles.md"],"visual":["devrites-lib/reference/visual-playbooks/index.md"],"workflow":["devrites-lib/reference/standards/development-workflow.md"],"workflow-artifacts":["devrites-lib/reference/workspace-artifact-schema.md"],"parallel-workspaces":["devrites-lib/reference/parallel-workspaces.md"]},"workspace":["brief.md","spec.md","state.md","decisions.md","assumptions.md","questions.md","decision-coverage.md","architecture.md","plan.md","tasks.md","traceability.md","strategy.md","design-brief.md","references.md"],"workspaceByRole":{"plan-drafter":["brief.md","spec.md","decision-coverage.md","questions.md","decisions.md","assumptions.md","architecture.md","strategy.md","design-brief.md","references.md","state.md"]},"rootOnly":["devrites-lib/reference/parallel-workspaces.md","devrites-lib/reference/phase-target-binding.md","devrites-lib/reference/standards/code-index.md","devrites-lib/reference/standards/afk-hitl.md"]} -->
+> Read-set manifest: `devrites-engine context --skills-root .pi/skills <slug> --phase define` bundles every file named below into one deduplicated bundle. Trigger names map to the conditional rules in the sections that follow. Apply [controller load conditions](../devrites-lib/reference/phase-target-binding.md#controller-guidance-load) before controller work (trigger `parallel-workspaces`). Read index-first under [core Context hygiene](../devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 
 # /rite-define: plan from the spec
@@ -59,7 +59,7 @@ Pull these via `Read` when shaping the plan:
 ## Workflow
 
 0. **Read `.pi/skills/devrites-lib/reference/standards/core.md`:** the always-on operating rules and anti-rationalizations.
-   Resolve source per [phase target binding](../devrites-lib/reference/parallel-workspaces.md#phase-target-binding), require its `state.md`, and
+   Resolve source per [phase target binding](../devrites-lib/reference/phase-target-binding.md#phase-target-binding), require its `state.md`, and
    re-open `spec.md` and apply [`spec-grammar.md`](../devrites-lib/reference/standards/spec-grammar.md)'s Native grammar re-read
    checklist. If there is no selected workspace, no `spec.md`, the checklist
    fails, or its readiness gate hasn't passed →
@@ -81,9 +81,10 @@ Pull these via `Read` when shaping the plan:
    applicable standard; a false `not applicable` is a blocking spec gap, not a planning
    shortcut.
 1a. **Draft from fresh context.** Freeze the planning inputs and dispatch
-   `devrites-plan-drafter` in `define` mode for one atomic candidate bundle:
+   `devrites-plan-drafter` in `define` mode for one atomic strict JSON candidate bundle:
    `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` with proof mapping.
-   Validate its bounded result; it does not write/ask, and returns human choices to root.
+   Validate its bounded result with Outcome/admission outside the one fenced object;
+   it does not write/ask, and returns `human_owned_choices` inside the object for root.
    In the same parallel wave, dispatch one `devrites-evidence-scout` per external
    capability the plan will rest on — OS/SDK/native API, permission or sandbox,
    file format, toolchain, or third-party behavior — that neither live code nor a
@@ -160,9 +161,9 @@ Pull these via `Read` when shaping the plan:
    and discriminating proof; a risk cannot live only in the architecture narrative.
 4a. **Persist traceability natively.** Drafter proposes; root writes
    `traceability.md` (`AC/REQ ID → slice → proof → evidence ID → files → status`).
-   Re-read spec/tasks/proof: require real IDs, meaning-preserving mappings, not
-   just labels. Reject orphans/inventions/false mappings. `/rite-prove` and
-   `/rite-seal` read it directly. Reference plan `Shared contract proof` rows from
+   Use fresh spec/tasks/proof reads to create real IDs and meaning-preserving
+   mappings, not just labels; the complete post-materialization audit is step 6a.
+   `/rite-prove` and `/rite-seal` read it directly. Reference plan `Shared contract proof` rows from
    existing slice/proof mappings; never create a second traceability system.
 5. **Complexity and deviations gate:** justify deviations from DevRites defaults
    (new dep, extra abstraction, second design system) in plan; else simplify.
@@ -170,19 +171,30 @@ Pull these via `Read` when shaping the plan:
    (absent → none). Reshape conflicts; intended genuine conflicts need Spec Drift
    Guard, a recorded decision, and a human-approved scoped principle exception.
    Never ready silent violations; `/rite-vet` re-scores this blocking gate.
-6. **Write** `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` — save the
-   accepted bundle under `packets/` and apply it with `devrites-engine state
-   apply-bundle <slug> <bundle.json>` before root reconciliation edits; update
-   `state.md` (phase: plan → next `/rite-vet`). When diagrams clarify, also write optional
+6. **Write** `architecture.md`, `plan.md`, `tasks.md`, and `traceability.md` — extract
+   the accepted fenced JSON object verbatim under `packets/`, without YAML conversion,
+   reformatting, schema guessing, or hand-copying content/hunks. Malformed JSON returns
+   to the drafter for bounded correction under existing admission/retry limits; root
+   never repairs it by guessing. Apply with `devrites-engine state apply-bundle <slug>
+   <bundle.json>` before root reconciliation edits; transport success grants no
+   approval or independent-review credit. Update `state.md` (phase: plan → next `/rite-vet`).
+   When diagrams clarify, also write optional
    `flows.md` (**Mermaid-first**). If a richer reviewable visual earns it, emit
    `visual/<flow>.html` + `visual/<flow>.outline.md` after loading matching playbooks from
    [`../devrites-lib/reference/visual-playbooks/index.md`](../devrites-lib/reference/visual-playbooks/index.md)
    (progressive; never preload all seven), link both from `flows.md`; outline is
    SSOT (wins). No Lavish or new phase required.
-6a. **Cross-artifact gate.** Read spec/tasks/traceability together: each buildable
-   AC/REQ maps to existing slice/proof; each slice maps to real acceptance;
-   names/prose agree. Missing, duplicate, contradictory, or meaning-changing
-   mappings block. Run
+6a. **Cross-artifact gate.** After materialization and root reconciliation, freeze
+   the planning inputs and perform one complete root-owned ID-and-meaning audit
+   across spec/architecture/plan/tasks/traceability and applicable proof owners:
+   each buildable AC/REQ maps to existing slice/proof; each slice maps to real
+   acceptance; names/prose agree. Reject missing, duplicate, invented, contradictory,
+   or meaning-changing mappings. Record inputs, artifact presence, dependency
+   closure, and result in the step-7 digest. Other consuming checklist sections
+   cite this audit only within this root-owned frozen pass, using current
+   conversation evidence. Any input edit or unknown dependency invalidates reuse
+   of affected coverage; unknown impact requires the complete audit again.
+   No persistent check cache or new verdict. Run
    `devrites-engine check task-graph <slug> --strict`; a malformed dependency graph, or a
    shared path written by `hubAdvisoryMin`+ slices with no `Serial rationale:`, blocks
    before Vet; no reviewer context for invalid tasks. Resolve each
@@ -192,6 +204,13 @@ Pull these via `Read` when shaping the plan:
    wiring, shared-contract proof, applicable outputs, and rollback; risk-first acyclic order;
    justified deviations; and every horizon item present, with blockers resolved, planning
    items resolved/validly spiked, and local/action entries bounded and owned.
+   Consume the recorded step-6a audit for unchanged coverage rather than repeating
+   it; re-read corrected inputs and re-audit affected dependency/traceability
+   closure before citing it. Retain all native grammar and post-correction rereads,
+   phase-entry/exit checks, and independent reviewer/proof requirements. Check
+   marker-sweep scope against current artifact presence, not only spec bytes;
+   new or changed in-scope artifacts require a fresh recorded sweep. A successful
+   `state apply-bundle` or unchanged readiness digest is not a readiness verdict.
    **Standalone: stop and confirm** before code. Render digest: `Intent` (one
    spec sentence), `Done means` (AC coverage x/y), `Plan sanity` (slice count +
    riskiest boundary/gate), `Expected build interruptions` (`none` or justified

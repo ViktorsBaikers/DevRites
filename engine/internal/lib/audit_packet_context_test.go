@@ -156,6 +156,145 @@ func TestAuditPacketRefusesChangedContextUnderSameWave(t *testing.T) {
 	}
 }
 
+func TestAuditVetRecheckContextIsImmutable(t *testing.T) {
+	for _, scope := range [][]string{nil, {"SLICE-001"}, {"SLICE-001", "SLICE-002"}} {
+		t.Run(fmt.Sprintf("%d slices", len(scope)), func(t *testing.T) {
+			root, workspace, skills := packetVetRecheckWorkspace(t)
+			flags := []string{"--phase", "vet", "--role", "plan-reviewer"}
+			for _, id := range scope {
+				flags = append(flags, "--slice", id)
+			}
+			contextArgs := append([]string{"feature", "--skills-root", skills, "--recheck", "inventory.md"}, flags...)
+			contextIntegrityRun(t, root, contextArgs, 0)
+			packetArgs := append([]string{"--wave", "v1", "--recheck"}, flags...)
+			if code, out := runPacketT(t, root, packetArgs...); code != 0 {
+				t.Fatalf("first packet: code=%d %s", code, out)
+			}
+			packet := filepath.Join(workspace, "packets", "v1.plan-reviewer.md")
+			prior := readTestFile(t, packet)
+			snapshot := auditPacketContextPath(t, root, packet)
+			original := readTestFile(t, snapshot)
+			if info, err := os.Lstat(snapshot); err != nil || !info.Mode().IsRegular() || (runtime.GOOS != "windows" && info.Mode().Perm() != 0o600) {
+				t.Fatalf("retained Vet context must be private and regular: %v %v", info, err)
+			}
+			if code, out := runPacketT(t, root, packetArgs...); code != 0 {
+				t.Fatalf("identical context re-render: code=%d %s", code, out)
+			}
+			writeFile(t, filepath.Join(workspace, "inventory.md"), "inventory-bravo: reproduce dependent traceability loss\n")
+			contextIntegrityRun(t, root, contextArgs, 0)
+			if code, out := runPacketT(t, root, packetArgs...); code != 3 {
+				t.Fatalf("same-wave replacement: code=%d %s", code, out)
+			}
+			if readTestFile(t, packet) != prior || readTestFile(t, snapshot) != original {
+				t.Fatal("refused replacement changed historical packet or read-set")
+			}
+			packetArgs[1] = "v2"
+			if code, out := runPacketT(t, root, packetArgs...); code != 0 {
+				t.Fatalf("fresh wave: code=%d %s", code, out)
+			}
+			freshPacket := filepath.Join(workspace, "packets", "v2.plan-reviewer.md")
+			fresh := readTestFile(t, auditPacketContextPath(t, root, freshPacket))
+			if !strings.Contains(original, "inventory-alpha:") || strings.Contains(fresh, "inventory-alpha:") || !strings.Contains(fresh, "inventory-bravo:") {
+				t.Fatal("fresh wave did not isolate corrected inventory")
+			}
+			for _, wave := range []string{"v2", "v1"} {
+				path := filepath.Join(workspace, "packets", wave+".plan-reviewer.md")
+				args := append([]string{"feature", "open", "--wave", wave, "--packet", path}, flags...)
+				var stdout, stderr bytes.Buffer
+				if code := RunDispatch(root, args, &stdout, &stderr); code != 0 {
+					t.Fatalf("dispatch %s: code=%d %s%s", wave, code, &stdout, &stderr)
+				}
+			}
+			if readTestFile(t, snapshot) != original {
+				t.Fatal("reacquired historical packet lost immutable context")
+			}
+		})
+	}
+}
+
+func TestAuditVetRecheckRejectsTamperedRetainedContext(t *testing.T) {
+	for _, scope := range [][]string{nil, {"SLICE-001"}, {"SLICE-001", "SLICE-002"}} {
+		for _, damage := range []string{"body", "body-and-sidecar"} {
+			t.Run(fmt.Sprintf("%d slices/%s", len(scope), damage), func(t *testing.T) {
+				root, workspace, skills := packetVetRecheckWorkspace(t)
+				flags := []string{"--phase", "vet", "--role", "plan-reviewer"}
+				for _, id := range scope {
+					flags = append(flags, "--slice", id)
+				}
+				contextIntegrityRun(t, root, append([]string{"feature", "--skills-root", skills, "--recheck", "inventory.md"}, flags...), 0)
+				packetArgs := append([]string{"--wave", "v1", "--recheck"}, flags...)
+				if code, out := runPacketT(t, root, packetArgs...); code != 0 {
+					t.Fatalf("render: code=%d %s", code, out)
+				}
+				packet := filepath.Join(workspace, "packets", "v1.plan-reviewer.md")
+				prior := readTestFile(t, packet)
+				snapshot := auditPacketContextPath(t, root, packet)
+				body := []byte(readTestFile(t, snapshot))
+				body[0] ^= 1
+				if err := os.WriteFile(snapshot, body, 0o600); err != nil {
+					t.Fatal(err)
+				}
+				if damage == "body-and-sidecar" {
+					writeFile(t, snapshot+".sha256", fmt.Sprintf("%x\n", sha256.Sum256(body)))
+				}
+				args := append([]string{"feature", "open", "--wave", "v1", "--packet", packet}, flags...)
+				var stdout, stderr bytes.Buffer
+				if code := RunDispatch(root, args, &stdout, &stderr); code != 3 {
+					t.Fatalf("tampered dispatch: code=%d %s%s", code, &stdout, &stderr)
+				}
+				if _, err := os.Stat(filepath.Join(workspace, "dispatch.json")); !os.IsNotExist(err) {
+					t.Fatalf("tampered context refusal published dispatch state: %v", err)
+				}
+				if code, out := runPacketT(t, root, packetArgs...); code != 3 {
+					t.Fatalf("tampered re-render: code=%d %s", code, out)
+				}
+				if readTestFile(t, packet) != prior || readTestFile(t, snapshot) != string(body) {
+					t.Fatal("refused re-render repaired or rebound damaged historical snapshot")
+				}
+			})
+		}
+	}
+}
+
+func TestAuditVetRecheckRefusesInvalidContextSources(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		inventory string
+		slices    []string
+		code      int
+	}{
+		{"missing inventory", "absent.md", nil, 2},
+		{"empty inventory", "empty.md", []string{"SLICE-001"}, 2},
+		{"nonregular inventory", "inventory-dir", []string{"SLICE-001", "SLICE-002"}, 2},
+		{"unknown slice", "inventory.md", []string{"SLICE-001", "SLICE-999"}, 3},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, workspace, skills := packetVetRecheckWorkspace(t)
+			if err := os.Remove(filepath.Join(workspace, "ctx", "build-code-reviewer.SLICE-001.recheck.bundle.md")); err != nil {
+				t.Fatal(err)
+			}
+			writeFile(t, filepath.Join(workspace, "empty.md"), " \n")
+			if err := os.Mkdir(filepath.Join(workspace, "inventory-dir"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			flags := []string{"--phase", "vet", "--role", "plan-reviewer"}
+			for _, id := range tc.slices {
+				flags = append(flags, "--slice", id)
+			}
+			contextIntegrityRun(t, root, append([]string{"feature", "--skills-root", skills, "--recheck", tc.inventory}, flags...), tc.code)
+			if files, err := filepath.Glob(filepath.Join(workspace, "ctx", "*.recheck.bundle.md")); err != nil || len(files) != 0 {
+				t.Fatalf("invalid recovery published context: %v (%v)", files, err)
+			}
+			if code, out := runPacketT(t, root, append([]string{"--wave", "invalid", "--recheck"}, flags...)...); code != 3 || !strings.Contains(out, "is missing") {
+				t.Fatalf("packet fell back to initial Vet context: code=%d %s", code, out)
+			}
+			if files, err := filepath.Glob(filepath.Join(workspace, "packets", "invalid.*")); err != nil || len(files) != 0 {
+				t.Fatalf("invalid recovery published packet: %v (%v)", files, err)
+			}
+		})
+	}
+}
+
 func TestAuditGeneratedContextBindingAcrossPhasesAndLanes(t *testing.T) {
 	for _, phase := range []string{"build", "vet", "review", "seal"} {
 		for _, override := range []string{"", "absolute", "relative", "external-absolute", "external-relative"} {

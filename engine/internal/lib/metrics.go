@@ -29,12 +29,13 @@ const metricsUsage = `usage: devrites-engine metrics <record|summary> ...
 `
 
 type metricEvent struct {
-	TS    string `json:"ts"`
-	Phase string `json:"phase"`
-	Event string `json:"event"`
-	Role  string `json:"role,omitempty"`
-	Bytes int64  `json:"bytes,omitempty"`
-	Note  string `json:"note,omitempty"`
+	TS            string `json:"ts"`
+	Phase         string `json:"phase"`
+	Event         string `json:"event"`
+	Role          string `json:"role,omitempty"`
+	Bytes         int64  `json:"bytes,omitempty"`
+	Note          string `json:"note,omitempty"`
+	ContextStatus string `json:"context_status,omitempty"`
 }
 
 // RunMetrics records or summarizes per-feature workflow events.
@@ -211,6 +212,11 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 	totalBytes := int64(0)
 	totalEvents := 0
 	bad := 0
+	type contextAgg struct {
+		bytes       int64
+		invocations int
+	}
+	var contextTotal, materialized, unchanged, unclassified contextAgg
 	// Each resume's minutes to the next dispatch, in ledger (append) order:
 	// "none" when another resume came first, "open" when no dispatch followed.
 	var resumeGaps []string
@@ -244,6 +250,19 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		agg.events++
 		agg.bytes += ev.Bytes
 		agg.byKind[ev.Event]++
+		if ev.Event == "context" {
+			contextTotal.bytes += ev.Bytes
+			contextTotal.invocations++
+			partition := &unclassified
+			switch ev.ContextStatus {
+			case "materialized":
+				partition = &materialized
+			case "unchanged":
+				partition = &unchanged
+			}
+			partition.bytes += ev.Bytes
+			partition.invocations++
+		}
 		if ts, err := time.Parse(time.RFC3339, ev.TS); err == nil && (ev.Event == "resume" || ev.Event == "dispatch") {
 			if ev.Event == "resume" {
 				if pendingResume != nil {
@@ -333,6 +352,10 @@ func metricsSummary(root string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, " unparsed=%d", bad)
 	}
 	fmt.Fprintln(stdout)
+	fmt.Fprintf(stdout, "  context_bytes=%d context_invocations=%d\n", contextTotal.bytes, contextTotal.invocations)
+	fmt.Fprintf(stdout, "  context_materialized_bytes=%d context_materialized_invocations=%d\n", materialized.bytes, materialized.invocations)
+	fmt.Fprintf(stdout, "  context_unchanged_bytes=%d context_unchanged_invocations=%d\n", unchanged.bytes, unchanged.invocations)
+	fmt.Fprintf(stdout, "  context_unclassified_bytes=%d context_unclassified_invocations=%d\n", unclassified.bytes, unclassified.invocations)
 	return 0
 }
 

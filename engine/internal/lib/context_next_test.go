@@ -3,6 +3,7 @@ package lib
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -390,7 +391,7 @@ func TestContextSuggestsTriggersFromFacts(t *testing.T) {
 	if !strings.Contains(out, "suggested=[") {
 		t.Fatalf("suggested line absent:\n%s", out)
 	}
-	if !strings.Contains(out, "triggers: apply with: devrites-engine context feat --phase build --role slice-wright --trigger ") {
+	if !strings.Contains(out, "triggers: apply with: devrites-engine context 'feat' --phase 'build' --role 'slice-wright' --trigger ") {
 		t.Fatalf("apply hint absent or malformed:\n%s", out)
 	}
 	if strings.Contains(out, "cross-model") && strings.Contains(out[strings.Index(out, "suggested="):], "cross-model") {
@@ -1293,5 +1294,115 @@ func TestContextRoleContractStubOnNativeHosts(t *testing.T) {
 	writeFile(t, filepath.Join(project, ".pi", "agents", "devrites-code-reviewer.md"), body)
 	if code, text, out := bundle(".pi"); code != 0 || !strings.Contains(text, "# reviewer body") || strings.Contains(text, "not inlined") {
 		t.Fatalf(".pi: want inlined body, code=%d\n%s\n%s", code, out, text)
+	}
+}
+
+func TestContextPhaseTargetAndSchedulerLoading(t *testing.T) {
+	const canonical = "../../../pack/.claude/skills"
+	const binding = "devrites-lib/reference/phase-target-binding.md"
+	const audit = "devrites-lib/reference/serialization-audit.md"
+	const scheduler = "devrites-lib/reference/parallel-workspaces.md"
+	bodies := make(map[string]string)
+	for _, path := range []string{binding, audit, scheduler} {
+		data, err := os.ReadFile(filepath.Join(canonical, path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(bytes.TrimSpace(data)) == 0 {
+			t.Fatalf("empty rule body: %s", path)
+		}
+		bodies[path] = string(data)
+	}
+	selectRules := func(paths []string) []string {
+		var selected []string
+		for _, path := range paths {
+			if _, ok := bodies[path]; ok {
+				selected = append(selected, path)
+			}
+		}
+		return selected
+	}
+	for _, phase := range []string{"spec", "clarify", "temper", "define", "plan", "vet", "autocomplete"} {
+		t.Run(phase, func(t *testing.T) {
+			raw, err := os.ReadFile(filepath.Join(canonical, "rite-"+phase, "SKILL.md"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			manifest, ok, err := parseLoadsManifest(string(raw))
+			if err != nil || !ok {
+				t.Fatalf("rite-%s manifest: found=%t err=%v", phase, ok, err)
+			}
+			// Keep shipped load decisions, isolating unrelated rules and workspace inputs.
+			fixture := loadsManifest{
+				Always:   selectRules(manifest.Always),
+				RootOnly: selectRules(manifest.RootOnly),
+				Triggers: make(map[string][]string),
+			}
+			if paths, ok := manifest.Triggers["parallel-workspaces"]; ok {
+				fixture.Triggers["parallel-workspaces"] = selectRules(paths)
+			}
+			payload, err := json.Marshal(fixture)
+			if err != nil {
+				t.Fatal(err)
+			}
+			skills := filepath.Join(t.TempDir(), "skills")
+			writeFile(t, filepath.Join(skills, "rite-"+phase, "SKILL.md"), "<!-- loads: "+string(payload)+" -->\n")
+			for path, body := range bodies {
+				writeFile(t, filepath.Join(skills, path), body)
+			}
+			writeFile(t, filepath.Join(skills, "..", "agents", "devrites-code-reviewer.md"), "# Reviewer\nRead-only independent review.\n")
+			modes := []struct {
+				name    string
+				role    string
+				trigger bool
+			}{
+				{"standalone-root", "", false},
+				{"standalone-reviewer", "code-reviewer", false},
+				{"controller-root", "", true},
+				{"controller-reviewer", "code-reviewer", true},
+			}
+			if phase == "autocomplete" {
+				modes = modes[:2] // Autocomplete always loads the scheduler, without a trigger.
+			}
+			for _, mode := range modes {
+				t.Run(mode.name, func(t *testing.T) {
+					root, featureDir := newWorkspace(t, phase)
+					args := []string{"feat", "--phase", phase, "--skills-root", skills}
+					name := phase
+					if mode.role != "" {
+						args = append(args, "--role", mode.role)
+						name += "-" + mode.role
+					}
+					if mode.trigger {
+						args = append(args, "--trigger", "parallel-workspaces")
+					}
+					stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+					if code := RunContext(root, args, stdout, stderr); code != 0 {
+						t.Fatalf("context: code=%d\n%s%s", code, stdout, stderr)
+					}
+					data, err := os.ReadFile(filepath.Join(featureDir, "ctx", name+".bundle.md"))
+					if err != nil {
+						t.Fatal(err)
+					}
+					text := string(data)
+					want := map[string]bool{
+						binding:   mode.role == "",
+						audit:     phase == "define" || phase == "plan" || phase == "vet" || phase == "autocomplete",
+						scheduler: mode.role == "" && (mode.trigger || phase == "autocomplete"),
+					}
+					for path, body := range bodies {
+						if want[path] {
+							if count := strings.Count(text, body); count != 1 {
+								t.Errorf("%s: complete rule body occurs %d times, want 1", path, count)
+							}
+							continue
+						}
+						if strings.Contains(text, body) || strings.Contains(text, "===== "+path+" =====") {
+							t.Errorf("%s: excluded rule was inlined", path)
+						}
+					}
+				})
+			}
+		})
 	}
 }

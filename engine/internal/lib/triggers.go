@@ -162,20 +162,37 @@ func afkAllowsParallel(content string) bool {
 func triggerApplyCommand(opts contextOpts, suggested []string) string {
 	parts := []string{"devrites-engine", "context"}
 	if opts.slug != "" {
-		parts = append(parts, opts.slug)
+		parts = append(parts, frontierQuote(opts.slug))
 	}
 	for _, flag := range []struct{ name, value string }{
 		{"--phase", opts.phase},
 		{"--skill", opts.skill},
 		{"--role", opts.role},
-		{"--slice", opts.slice},
 		{"--out", opts.out},
+		{"--recheck", opts.recheck},
 	} {
 		if flag.value != "" {
-			parts = append(parts, flag.name, flag.value)
+			parts = append(parts, flag.name, frontierQuote(flag.value))
 		}
 	}
-	parts = append(parts, "--trigger", strings.Join(suggested, ","))
+	for _, id := range opts.slices {
+		parts = append(parts, "--slice", frontierQuote(id))
+	}
+	var triggers []string
+	for _, names := range [2][]string{opts.triggers, suggested} {
+		for _, name := range names {
+			if !slices.Contains(triggers, name) {
+				triggers = append(triggers, name)
+			}
+		}
+	}
+	parts = append(parts, "--trigger", frontierQuote(strings.Join(triggers, ",")))
+	if opts.whole {
+		parts = append(parts, "--whole")
+	}
+	if opts.inlineContract {
+		parts = append(parts, "--inline-contract")
+	}
 	if opts.purpose.parent != "" {
 		parts = append(parts, "--prepare-for", frontierQuote(opts.purpose.parent))
 	}

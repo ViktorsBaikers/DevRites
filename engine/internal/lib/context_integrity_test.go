@@ -332,7 +332,7 @@ func TestContextRetainsTasksForScopeBodyAnchorsAndTriggerFacts(t *testing.T) {
 	if !ok {
 		t.Fatal("retained active slice disappeared")
 	}
-	var scoped, whole strings.Builder
+	var scoped, whole contextBundle
 	loaded, byReference := writeSliceEntry(&scoped, workspace, path, "workspace/tasks.md", data, nil, id, block, citedIDs(block), map[string]bool{})
 	if !loaded || !byReference || !strings.Contains(scoped.String(), "Goal: frontend agent handles AC-001") ||
 		!strings.Contains(scoped.String(), fmt.Sprintf("sha256: %x bytes: %d", sha256.Sum256(original), len(original))) ||

@@ -69,7 +69,7 @@ Before any HTML:
 - Standalone Spec sets ACTIVE to its target. Explicit lookahead and the existing
   Autocomplete controller's recorded-future preparation leave ACTIVE on the
   ordered owner; pass source slug explicitly, preserve claims and opening budget,
-  and use the shared [controller workflow](skill://devrites-lib/reference/parallel-workspaces.md).
+  and use the shared [controller workflow](skill://devrites-lib/reference/parallel-workspaces.md) (trigger `parallel-workspaces`).
   A new directory alone never authorizes future enrollment.
 - `/rite-spec` creates the workspace map, `brief.md`, `spec.md`, `decisions.md`,
   `assumptions.md`, `questions.md`, `state.md`, optional `references.md` /

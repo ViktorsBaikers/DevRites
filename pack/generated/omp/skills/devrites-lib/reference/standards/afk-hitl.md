@@ -124,7 +124,7 @@ candidate manifest to cover the whole recorded chain — run
 `--parallel N` wins over AFK `max_parallel`, else retained lease capacity on
 resume, else 10. Build's flag never rewrites AFK; explicit controller entry may
 update only mode/capacity. One cap covers all admitted sources, even explicit 1;
-standalone Build stays local. Follow the [global pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier)
+standalone Build stays local. Follow the [global pass](skill://devrites-lib/reference/parallel-workspaces.md#continuous-global-frontier) (trigger `parallel-workspaces`)
 for immediate-successor preparation, narrow `frontier-blocked` deferrals,
 qualified foreign `serial:` handoff and automatic dispatch-return scheduling.
 These are scheduling disclosures, never readiness, isolation, proof or Ship waivers.

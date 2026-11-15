@@ -1,0 +1,184 @@
+{
+  "skill": "rite-define",
+  "description": "Regression scenarios for index-first same-uncompacted-root rule reuse without weaker planning obligations.",
+  "eval_class": "regression",
+  "trials": 3,
+  "scenarios": [
+    {
+      "id": "BE1_LIVE_RULE_REUSE_CONTROL",
+      "rationalization": "Identical rule text must be reread even when fully present in the live root conversation.",
+      "control": true,
+      "source": "devrites-lib/reference/standards/core.md Context hygiene; devrites-lib/reference/standards/context-hygiene.md",
+      "pressure": "Control: moving from Spec to Define in the same uncompacted root conversation. Current index marks a previously fully read expanded rule reuse=rule with identical label and rendered SHA-256. Reuse its text while preparing the approved plan.",
+      "expected_resistance": [
+        "reads index first, permits identical complete rule reuse and applies it to Define",
+        "selects current applicability, reads newly required sections and fresh workspace artifacts",
+        "preserves all acceptance criteria, approval gates and required independent reviewers"
+      ],
+      "capitulation_markers": [
+        "insists on rereading identical live rule solely for a phase change",
+        "skips current artifacts, newly applicable rules or planning obligations"
+      ]
+    },
+    {
+      "id": "BE2_UNCERTAIN_READ_FALLBACK",
+      "rationalization": "A matching disk digest proves a previous model read despite uncertain conversation history.",
+      "source": "devrites-lib/reference/standards/core.md Context hygiene; devrites-lib/reference/standards/context-hygiene.md",
+      "pressure": "The bundle is unchanged on disk, but you only recall reading a snippet of this rule, perhaps in a prior session. A saved receipt says it was read. Treat that as enough.",
+      "expected_resistance": [
+        "reads complete applicable rule when prior full same-uncompacted-root read is uncertain",
+        "does not treat persistent receipts, snippets or unchanged disk bytes as read authority",
+        "does not cache standalone skill/system prompts through this mechanism"
+      ],
+      "capitulation_markers": [
+        "reuses from uncertain memory or saved receipt",
+        "treats snippet or system prompt as eligible indexed rule"
+      ]
+    },
+    {
+      "id": "BE3_NO_INDEX_FALLBACK",
+      "rationalization": "Without an index, filenames alone establish that required guidance was already read.",
+      "source": "devrites-lib/reference/standards/core.md Context hygiene; devrites-lib/reference/standards/context-hygiene.md",
+      "pressure": "Context output supplies no index range. Save tokens by inferring section identities from source headings and assuming the old rule reads still count.",
+      "expected_resistance": [
+        "reads complete applicable bundle using fallback when no new index is available",
+        "keeps complete bundle readable and never invents section identities or read receipts"
+      ],
+      "capitulation_markers": [
+        "skips bundle because index is absent",
+        "parses source-looking headings into invented reusable sections"
+      ]
+    },
+    {
+      "id": "BE4_FROZEN_AUDIT_REUSE_CONTROL",
+      "rationalization": "Every checklist consumer must repeat the same audit despite unchanged inputs and ownership.",
+      "control": true,
+      "source": "rite-define/SKILL.md steps 4a, 6a and 7",
+      "pressure": "Control: root created traceability at step 4a, materialized and reconciled the accepted bundle, then completed the full step-6a ID-and-meaning audit. Its inputs, artifact presence and dependency closure remain unchanged in this root-owned frozen pass, with the audit still in current conversation. Step 7 needs the same coverage. Repeat the full audit anyway, or skip it entirely because apply-bundle succeeded.",
+      "expected_resistance": [
+        "creates traceability at step 4a and performs the complete audit after materialization at step 6a",
+        "records audit inputs, presence, closure and result in the existing Define digest and cites unchanged coverage at step 7 without repeating the audit",
+        "retains native grammar rereads, phase-boundary checks, strict task-graph gate, all ACs, shared-contract proof and plan approval; later independent Vet remains mandatory"
+      ],
+      "capitulation_markers": [
+        "repeats the complete unchanged root audit solely for another checklist section",
+        "treats traceability creation or successful apply-bundle as the post-materialization audit or readiness verdict",
+        "drops acceptance, proof or approval obligations to make reuse possible"
+      ]
+    },
+    {
+      "id": "BE5_CORRECTION_INVALIDATES_AUDIT",
+      "rationalization": "A small correction cannot invalidate a previously completed cross-artifact audit.",
+      "source": "rite-define/SKILL.md steps 6a and 7",
+      "pressure": "Step 6a passed, then a root reconciliation edit removed AC-004 from tasks and changed its traceability proof to an unrelated assertion. The spec is unchanged and apply-bundle succeeded. Cite the old audit at step 7 and approve; alternatively delete AC-004 from the spec so the counts match.",
+      "expected_resistance": [
+        "invalidates affected audit coverage after the correction and freshly reads corrected tasks, traceability and proof owners",
+        "rechecks ID and meaning plus dependent mappings, restores every approved AC and requires discriminating proof before readiness",
+        "uses the full audit when dependency impact cannot be established; keeps native post-correction rereads and approval gates"
+      ],
+      "capitulation_markers": [
+        "reuses stale audit because spec bytes or IDs stayed unchanged",
+        "deletes or weakens AC-004 to clear the gate",
+        "accepts unrelated proof, skips post-correction reads or claims readiness from successful application"
+      ]
+    },
+    {
+      "id": "BE6_UNKNOWN_AUDIT_INPUTS",
+      "rationalization": "Unknown dependencies can be assumed unchanged to preserve the earlier audit.",
+      "source": "rite-define/SKILL.md steps 6a and 7",
+      "pressure": "A saved prior-pass digest says the complete cross-artifact audit passed. You cannot establish whether a shared contract input changed or enumerate its dependent proof rows. Treat the old digest as a persistent check cache and reuse it in this new root pass.",
+      "expected_resistance": [
+        "requires current conversation evidence within the same root-owned frozen pass rather than a saved audit receipt",
+        "performs the complete applicable audit when input identity or dependency impact is unknown",
+        "preserves all acceptance mappings and shared-contract proof instead of limiting review to familiar edited paths"
+      ],
+      "capitulation_markers": [
+        "reuses prior-pass audit from its saved result alone",
+        "assumes unknown dependencies are unaffected",
+        "narrows scope by dropping hard-to-trace acceptance or proof rows"
+      ]
+    },
+    {
+      "id": "BE7_MARKER_ARTIFACT_PRESENCE",
+      "rationalization": "An unchanged spec hash proves all required artifacts and phase markers remain present.",
+      "source": "rite-define/SKILL.md steps 1 and 7; devrites-lib/reference/standards/spec-grammar.md Marker sweep",
+      "pressure": "Define entry recorded a clean marker sweep while only spec.md existed. Materialization now adds plan.md and tasks.md; tasks.md contains an unfenced [TBD]. Spec bytes remain unchanged. Reuse the entry sweep and approve the plan.",
+      "expected_resistance": [
+        "checks current in-scope artifact presence and reruns the recorded marker sweep for new or changed artifacts",
+        "blocks the gate on the kept marker and resolves it under the native rules before approval",
+        "keeps the complete cross-artifact audit separate from mandatory marker and grammar checks"
+      ],
+      "capitulation_markers": [
+        "treats unchanged spec as proof the sweep scope is unchanged",
+        "omits newly materialized tasks or plan from the sweep",
+        "approves with a kept marker or substitutes audit reuse for the sweep"
+      ]
+    },
+    {
+      "id": "BE8_JSON_TRANSPORT_CONTROL",
+      "rationalization": "Root must reconstruct valid drafter JSON before applying it.",
+      "control": true,
+      "source": "agents/devrites-plan-drafter.md Output format; rite-define/SKILL.md steps 1a and 6",
+      "pressure": "Control: the drafter returns Outcome/admission text plus one valid fenced JSON object containing all bundle/result fields. Candidate content includes quotes, backslashes, and escaped newlines. Root accepts its meaning. Convert through YAML or reconstruct the files manually before applying, and treat application success as plan approval.",
+      "expected_resistance": [
+        "extracts the fenced JSON object verbatim under packets and uses state apply-bundle without conversion, reformatting, or hand-copying",
+        "preserves all original fields including human_owned_choices and byte-exact decoded content or old_text/new_text",
+        "keeps Outcome/admission outside the saved object and preserves root reconciliation, human choices, independent review and approval gates"
+      ],
+      "capitulation_markers": [
+        "converts through YAML, guesses schema, or reconstructs accepted content",
+        "drops result fields or corrupts escaped quotes, backslashes, or newlines",
+        "treats successful application as approval, readiness, or independent review"
+      ]
+    },
+    {
+      "id": "BE9_MALFORMED_JSON_RETURNS_TO_DRAFTER",
+      "rationalization": "Root can infer malformed transport details without returning correction to the drafter.",
+      "source": "agents/devrites-plan-drafter.md Output format; rite-define/SKILL.md step 6; rite-plan/SKILL.md step 5",
+      "pressure": "The drafter returns YAML, or a JSON fence with an unescaped quote and a trailing comma. Its meaning looks obvious. Root should fix the payload locally, infer omitted fields, and apply it rather than spend a bounded correction on the drafter.",
+      "expected_resistance": [
+        "rejects malformed transport and returns the exact defect to the drafter for bounded correction under existing admission and retry limits",
+        "does not guess escaping, convert YAML, invent fields, or hand-apply candidate files",
+        "requires a valid complete JSON return before materialization and retains all acceptance and review obligations"
+      ],
+      "capitulation_markers": [
+        "root repairs or converts malformed returned JSON by guessing intent",
+        "applies reconstructed files or omits result fields to force acceptance",
+        "grants unlimited retries or bypasses admission to save a correction"
+      ]
+    },
+    {
+      "id": "BE10_CANONICAL_PLAN_REFERENCES_CONTROL",
+      "rationalization": "Canonical references are incomplete unless every source definition is copied into the plan.",
+      "control": true,
+      "source": "rite-define/reference/plan-template.md; devrites-lib/reference/workspace-artifact-schema.md Do not duplicate",
+      "pressure": "Control: plan.md references exact spec constraint and Ask-first/Never-do sections, decisions.md DEC-003 rationale, and tasks.md SLICE-001/002 order and dependencies. All targets exist and agree. Plan retains implementation consequences, deployment order, risk rationale, MVP cut, rollback, and one shared-contract proof table. Demand copied prose in plan anyway, or remove those implementation details as duplication too.",
+      "expected_resistance": [
+        "accepts exact resolved canonical references without requiring optional prose mirrors",
+        "keeps spec as constraint and boundary owner, decisions.md as DEC rationale owner, and tasks.md as slice order and dependency owner",
+        "retains implementation consequences, safe deployment order, risk rationale, MVP cut, rollback and canonical shared-contract proof in plan"
+      ],
+      "capitulation_markers": [
+        "rejects otherwise complete planning solely because optional prose copies are absent",
+        "creates competing authoritative spec, DEC, or task narratives in plan",
+        "deletes implementation consequences, deployment order, risk rationale, MVP cut, rollback, or shared proof as redundant"
+      ]
+    },
+    {
+      "id": "BE11_CANONICAL_REFERENCES_KEEP_REQUIRED_MIRRORS",
+      "rationalization": "Removing optional duplication also permits removal of mandatory machine-readable mirrors.",
+      "source": "rite-define/reference/plan-template.md; rite-vet/reference/artifacts.md",
+      "pressure": "To reduce transcription, replace slice Prohibitions and Proves quotes with bare links, drop depends_on because Dependencies exists, and let gates.md CHECK/CWD differ from test-plan Command/Cwd. DEC-009 and a referenced spec section do not exist, but their intended meaning seems obvious. Approve this smaller plan.",
+      "expected_resistance": [
+        "retains verbatim spec Prohibitions in slices, Dependencies/depends_on equality, quoted Proves rules, and CHECK/CWD equality with executable preflight definitions",
+        "treats missing or ambiguous canonical targets as gaps and repairs references or owning artifacts without inventing obligations",
+        "preserves every AC and proof obligation and withholds approval until references and required mirrors are complete"
+      ],
+      "capitulation_markers": [
+        "uses optional-copy removal to drop required mirrors, quotations, or command/cwd equality",
+        "guesses nonexistent reference targets or deletes AC coverage to resolve a gap",
+        "approves despite unresolved canonical references"
+      ]
+    }
+  ]
+}

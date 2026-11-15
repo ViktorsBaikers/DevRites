@@ -4,7 +4,7 @@
 `state.md` `Awaiting human` clearance. This file is the reference for the three input
 shapes, the batch file format, and the `devrites-engine state resolve` rules.
 
-Select the source with shared [phase target binding](skill://devrites-lib/reference/parallel-workspaces.md#phase-target-binding) before applying these qid-only forms.
+Select the source with shared [phase target binding](skill://devrites-lib/reference/phase-target-binding.md#phase-target-binding) before applying these qid-only forms.
 
 ## Three input shapes
 

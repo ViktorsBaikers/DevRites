@@ -105,7 +105,7 @@ the turn: start picks first, then fill remaining slots from `frontier-concurrent
 Do not finish one listed source and reply.
 
 Check [stop-conditions.md](stop-conditions.md) before advancing. Discard stale
-pass evidence after source edits. Re-read the selected source before each phase per [phase target binding](../../devrites-lib/reference/parallel-workspaces.md#phase-target-binding). On a cold resume or
+pass evidence after source edits. Re-read the selected source before each phase per [phase target binding](../../devrites-lib/reference/phase-target-binding.md#phase-target-binding). On a cold resume or
 new activation, run `devrites-engine check regression <slug>`: `BLOCKED` names a
 durable fact lost since the last checkpoint — restore or route it through its
 owning phase before continuing; `unproven` does not block. After each phase's

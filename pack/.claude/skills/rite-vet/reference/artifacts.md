@@ -38,9 +38,9 @@ light | full (<trigger that escalated it>)     # every plan is vetted — light 
 - Built-in / completeness / distribution: <flags, with source citations>
 
 ## 2a. Build-entry preflight
-| Gate | Command + cwd | Tool/version | Prerequisite owner | Full provenance inputs | Fixture/smoke | Verdict |
+| Gate | Definition (test-plan.md Gate) | Tool/version | Prerequisite owner | Full provenance inputs | Fixture/smoke | Verdict |
 |---|---|---|---|---|---|---|
-| <test/browser/package> | <command · cwd> | <version> | <owner + item> | <tool/manifest/lockfile/config SHA-256> | <what ran> | pass/fail/blocked |
+| <test/browser/package> | test-plan.md#build-entry-preflight / <exact Gate cell> | <version> | <owner + item> | <tool/manifest/lockfile/config SHA-256> | <what ran> | pass/fail/blocked |
 
 ## 2b. Implementation readiness
 | Surface | Requirement/decision | Boundary/wiring | Slice | Proof | Verdict |
@@ -89,6 +89,14 @@ Suppressed (confidence ≤4, unverified): <count — one line each>
 - Entry/records: preflight <pass/fail/blocked>; checkpoints <none/list>;
   NOT-in-scope + existing written; plan <hardened | n Guard deltas>.
 ```
+
+`test-plan.md` owns executable preflight definitions. Each eng-review definition
+reference resolves to exactly one Gate row; an absent or ambiguous Gate is a gap,
+never an invented default. Keep observed tool/version, prerequisite state and owner,
+full provenance inputs, fixture/transcript, and verdict in the existing evidence
+columns. Retain the exact executed command and cwd in the observed transcript;
+a definition reference never substitutes for execution evidence. Shared-contract
+proof remains owned by `plan.md`; reference its row rather than copying its table.
 
 ## `test-plan.md`: the build-readable coverage target
 

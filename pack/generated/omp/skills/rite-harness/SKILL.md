@@ -6,7 +6,7 @@ user-invocable: true
 disable-model-invocation: true
 ---
 <!-- loads: {"always":["devrites-lib/reference/standards/core.md","devrites-lib/reference/reply-contract.md","rite-harness/reference/feature-map.md"],"triggers":{"testing":["devrites-lib/reference/standards/testing.md"],"tooling":["devrites-lib/reference/standards/tooling.md"]},"workspace":[]} -->
-> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite-harness` (no workspace: `--out <path>`) bundles every file named below into one deduplicated read.
+> Read-set manifest: `devrites-engine context --skills-root .omp/skills <slug> --skill rite-harness` (no workspace: `--out <path>`) bundles every file named below into one deduplicated bundle. Read index-first under [core Context hygiene](skill://devrites-lib/reference/standards/core.md#context-hygiene-end-of-every-phase).
 
 # /rite-harness: a verify skill agents can run
 
