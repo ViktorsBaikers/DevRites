@@ -27,10 +27,10 @@ downstream dependency edges and traceability.
 
 ## repair (after Spec Drift Guard)
 
-Root preflight: missing/empty `drift.md` or `BLOCKED_INPUT` requires reconciliation
-of cited briefs/findings against current artifacts before dispatch. Record only
-evidenced open drift and provenance; explicitly supersede stale instructions. No
-remaining repair means select the supported next action, not manufacture drift.
+Root preflight follows the canonical blocked-input action above for missing/empty
+`drift.md`. Reconcile cited briefs/findings against current artifacts before dispatch.
+Record only evidenced open drift/provenance; explicitly supersede stale instructions.
+No remaining repair means select the supported next action, not manufacture drift.
 Missing authority/producer input requires a source-specific `frontier-blocked:`
 record with owner/resume trigger, then refresh. Narrow no-findings is not READY.
 

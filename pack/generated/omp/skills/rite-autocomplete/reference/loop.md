@@ -182,7 +182,7 @@ Root owns earlier-phase recovery:
 3. Re-read state and `drift.md`/`evidence.md` after each return. Closed reproductions
    are progress; distinct Critical/Important invariants get separate budgets. Only
    unchanged fingerprints charge no-progress; Suggestion/Nit/FYI never prolong work.
-4. Consume `repair-input:` and `BLOCKED_INPUT` through root
+4. Consume `repair-input:` and canonical blocked-input diagnostics through root
    [Plan preflight](skill://rite-plan/reference/replan-and-repair.md#repair-after-spec-drift-guard),
    not another identical draft. Narrow no-findings closes only named findings, not
    the standing verdict. Record genuine holds as `frontier-blocked: <source> —
