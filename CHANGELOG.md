@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.4.0](https://github.com/ViktorsBaikers/DevRites/compare/v7.3.11...v7.4.0) (2026-11-15)
+
+### Added
+
+* **devrites:** reduce lifecycle context and recovery overhead ([#215](https://github.com/ViktorsBaikers/DevRites/issues/215)) ([941b2e7](https://github.com/ViktorsBaikers/DevRites/commit/941b2e77ad2c4761d38e9b7395095586107aaf35))
+
 ## Unreleased
 
 ### Changed
