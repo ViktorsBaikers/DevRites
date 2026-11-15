@@ -1,10 +1,15 @@
 package lib
 
 import (
+	"bufio"
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -500,4 +505,84 @@ func TestCanonicalPreparationPoolWrongPhaseHasOccupancyNotStartedCredit(t *testi
 	if !e.occupied || !e.retained || e.started {
 		t.Fatalf("wrong-phase actor became actual preparation credit: %+v", e)
 	}
+}
+
+func TestHostReservationsReleaseDeadAbandonedWriter(t *testing.T) {
+	root, _ := controllerFixture(t)
+	t.Setenv("DEVRITES_HOST_CAPACITY", "1")
+	writeFile(t, filepath.Join(root, "AFK"), "max_parallel: 10\n")
+	foreign := frontierFixture(t, root, "archive", "fulfillment", "", "spec", "running", "/rite-spec fulfillment", 0, "")
+	foreignPath := filepath.Join(foreign, "dispatch.json")
+	foreignBytes := `{"waves":{"fulfilled":{"phase":"build","state":"sealed","roles":{"slice-wright":{"handle":"foreign-native","started":"2026-01-01T00:00:00Z","returned":true}}}}}`
+	writeFile(t, foreignPath, foreignBytes)
+	if code, out := controllerOpen(t, root, "current16", "dead-writer", "SLICE-001"); code != 0 {
+		t.Fatalf("first wave: %d %s", code, out)
+	}
+	dead := reservationTestActor(t)
+	if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "dead-writer", "--role", "slice-wright", "--handle", strconv.Itoa(dead.Process.Pid)); code != 0 {
+		t.Fatalf("start writer: %d %s", code, out)
+	}
+	if err := dead.Process.Kill(); err != nil {
+		t.Fatal(err)
+	}
+	if err := dead.Wait(); err == nil {
+		t.Fatal("killed writer exited successfully")
+	}
+	if code, out := controllerDispatch(t, root, "current16", "abandon", "--wave", "dead-writer", "--reason", "writer process exited; host reconciliation finished"); code != 3 || !strings.Contains(out, "abandoned") {
+		t.Fatalf("abandon: %d %s", code, out)
+	}
+	if code, out := controllerOpen(t, root, "current16", "replacement", "SLICE-001"); code != 0 {
+		t.Fatalf("dead abandoned writer still consumes host slot: %d %s", code, out)
+	}
+	live := reservationTestActor(t)
+	if code, out := controllerDispatch(t, root, "current16", "start", "--wave", "replacement", "--role", "slice-wright", "--handle", strconv.Itoa(live.Process.Pid)); code != 0 {
+		t.Fatalf("start replacement: %d %s", code, out)
+	}
+	if code, out := controllerOpen(t, root, "current16", "oversubscribed", "SLICE-001"); code != 3 || !strings.Contains(out, "resource deferral") || !strings.Contains(out, "replacement") || strings.Contains(out, "dead-writer") {
+		t.Fatalf("live reservation not identified: %d %s", code, out)
+	}
+	if got, err := os.ReadFile(foreignPath); err != nil || string(got) != foreignBytes {
+		t.Fatalf("foreign sealed wave changed: %s %v", got, err)
+	}
+	account, _, err := loadDispatch(root, "current16")
+	if err != nil || account.Waves["dead-writer"] == nil || account.Waves["dead-writer"].Roles["slice-wright"].Returned {
+		t.Fatalf("abandonment deleted history or fabricated a return: %+v %v", account, err)
+	}
+}
+
+func reservationTestActor(t *testing.T) *exec.Cmd {
+	t.Helper()
+	cmd := exec.Command(os.Args[0], "-test.run=^TestHostReservationActor$") // #nosec G204 -- executes this test binary only.
+	cmd.Env = append(os.Environ(), "DEVRITES_RESERVATION_TEST_ACTOR=1")
+	input, err := cmd.StdinPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	output, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = input.Close()
+		if cmd.ProcessState == nil {
+			_ = cmd.Process.Kill()
+			_ = cmd.Wait()
+		}
+	})
+	if line, err := bufio.NewReader(output).ReadString('\n'); err != nil || line != "ready\n" {
+		t.Fatalf("actor did not start: %q %v", line, err)
+	}
+	return cmd
+}
+
+func TestHostReservationActor(t *testing.T) {
+	if os.Getenv("DEVRITES_RESERVATION_TEST_ACTOR") != "1" {
+		return
+	}
+	fmt.Println("ready")
+	_, _ = io.Copy(io.Discard, os.Stdin)
+	os.Exit(0)
 }
