@@ -184,6 +184,15 @@ Autocomplete remains caller for agent-owned earlier-phase gaps:
    from `drift.md`/`evidence.md`. A closed reproduction is progress. A different
    Critical/Important invariant gets a separate budget; Suggestion/Nit/FYI does
    not prolong the chain. Only a no-progress result charges the same fingerprint.
+   A `BLOCKED_INPUT` return is not a settled repair: root reconciles its named
+   missing/conflicting inputs before another draft. Consume `repair-input:` rows
+   as root preflight via [Plan repair](../../rite-plan/reference/replan-and-repair.md#repair-after-spec-drift-guard), not worker launches.
+   A bounded no-findings account closes only its named finding; read the standing
+   verdict and remaining findings before choosing the next affected repair/Vet.
+   If a real human/dependency constraint prevents that work, record
+   `frontier-blocked: <source> — <constraint; owner; re-evaluation trigger>` in
+   source evidence and refresh the frontier. Preserve narrower approved independent
+   work by giving it its own valid cursor only when the existing hold permits it.
 5. For failed consumptive action, spent authorization blocks only another real
    execution. Use retained evidence for offline diagnosis, repair, and narrow
    Vet; after READY, pause for fresh authorization.
@@ -214,3 +223,6 @@ applies. Distinct invariants are progress; unchanged resolver retries are not.
 Cycles, context pressure, compaction, duration and nested completion never create
 handoffs. Persist/resume until requested completion or a shared human/safety/
 access/parked-recovery stop.
+At a genuine parked stop, report the unresolved owner/action and resume condition.
+An unchanged `/rite-autocomplete` invocation is not a recovery action; consume
+required routes internally or persist the actual scheduling deferral first.

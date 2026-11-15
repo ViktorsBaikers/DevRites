@@ -12,6 +12,9 @@ func TestAutocompleteSchedulesAgentOwnedPlanningTogether(t *testing.T) {
 	writeFile(t, filepath.Join(root, "AFK"), "mode: autocomplete\nmax_parallel: 2\n")
 	frontierFixture(t, root, "work", "alpha", "", "plan", "running", "/rite-plan repair alpha", 1, "0")
 	frontierFixture(t, root, "work", "beta", "alpha", "plan", "blocked", "/rite-plan repair beta", 2, "0")
+	for _, slug := range []string{"alpha", "beta"} {
+		writeFile(t, filepath.Join(root, "work", slug, "drift.md"), "## DRIFT-001\nRepair the recorded planning contract mismatch.\n")
+	}
 	frontierFixture(t, root, "work", "gamma", "beta", "plan", "awaiting_human", "/rite-vet gamma", 3, "0")
 	frontierFixture(t, root, "work", "delta", "gamma", "define", "blocked", "/rite-define delta", 4, "0")
 
@@ -50,6 +53,7 @@ func TestAutocompleteBlockedPlanningCursorContinuesWithoutSibling(t *testing.T) 
 	root := filepath.Join(t.TempDir(), ".devrites")
 	writeFile(t, filepath.Join(root, "AFK"), "mode: autocomplete\nmax_parallel: 5\n")
 	frontierFixture(t, root, "work", "beta", "", "plan", "blocked", "/rite-plan repair beta", 1, "0")
+	writeFile(t, filepath.Join(root, "work", "beta", "drift.md"), "## DRIFT-001\nRepair the recorded planning contract mismatch.\n")
 	var out, errOut bytes.Buffer
 	if code := RunCheckContinuation(root, []string{"beta"}, &out, &errOut); code != 0 {
 		t.Fatalf("code=%d: %s", code, &errOut)
@@ -153,6 +157,7 @@ func TestAutocompleteSourceGODoesNotStopOtherWorkspaces(t *testing.T) {
 	dir := frontierFixture(t, root, "work", "hold", "", "seal", "awaiting_human", "/rite-seal hold", 1, "1")
 	writeFile(t, filepath.Join(dir, "questions.md"), "## q-go\nstatus: open\ngate: blocking\n")
 	frontierFixture(t, root, "work", "other", "hold", "plan", "blocked", "/rite-plan repair other", 2, "0")
+	writeFile(t, filepath.Join(root, "work", "other", "drift.md"), "## DRIFT-001\nRepair the recorded planning contract mismatch.\n")
 	var out, errOut bytes.Buffer
 	if code := RunCheckContinuation(root, []string{"hold"}, &out, &errOut); code != 0 {
 		t.Fatalf("code=%d: %s", code, &errOut)

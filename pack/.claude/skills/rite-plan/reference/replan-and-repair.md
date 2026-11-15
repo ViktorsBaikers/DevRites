@@ -27,6 +27,15 @@ downstream dependency edges and traceability.
 
 A drift event stopped the build. Steps:
 
+Root preflight: if `drift.md` is absent/empty or a drafter returns `BLOCKED_INPUT`,
+reconcile the cited briefs and recorded findings against current artifacts before
+dispatch. Record only evidenced open drift and its provenance; supersede stale
+brief instructions explicitly. If no open repair remains, select the supported
+next native action instead of manufacturing drift. If authority or producer input
+is unavailable, record a source-specific `frontier-blocked:` constraint with its
+owner and re-evaluation trigger. Refresh continuation; do not repeat the unchanged
+draft or promote a narrow no-findings return to whole-plan READY.
+
 1. Read the `drift.md` entries and their classifications. Fold EVERY open entry
    and accepted finding for the affected artifacts in ONE pass, never serially.
 2. If the user answered a drift question, encode that decision in `decisions.md`.

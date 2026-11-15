@@ -11,6 +11,7 @@ func TestCanonicalPreparationPoolReservedRepairCanUseHost(t *testing.T) {
 	t.Setenv("DEVRITES_HOST_CAPACITY", "1")
 	controllerLease(t, root, 2, controllerLeaseRow("", "SLICE-001", "src/current.go"))
 	frontierFixture(t, root, "work", "current16", "", "plan", "running", "/rite-plan repair current16", 1, "3")
+	writeFile(t, filepath.Join(root, "work", "current16", "drift.md"), "## DRIFT-001\nRepair the recorded planning contract mismatch.\n")
 	if code, out := controllerDispatch(t, root, "current16", "open", "--phase", "plan", "--wave", "repair", "--role", "plan-drafter"); code != 0 {
 		t.Fatalf("unlaunchable reserved writer blocked prerequisite repair: %d %s", code, out)
 	}

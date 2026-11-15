@@ -257,6 +257,7 @@ func TestCanonicalPreparationPoolDurableHoldAndResumeCapacity(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "evidence.md"), "frontier-blocked: future17 — missing contract from owner; retry after contract lands\n")
 	// Agent-owned blocked cursors alone do not override a concrete scheduling hold.
 	frontierFixture(t, root, "work", "future17", "current16", "plan", "blocked", "/rite-plan repair future17", 2, "2")
+	writeFile(t, filepath.Join(root, "work", "future17", "drift.md"), "## DRIFT-001\nRepair the recorded planning contract mismatch.\n")
 	for _, source := range []string{"current16", "future18"} {
 		p := canonicalPool(t, root, source)
 		if p.entry("future17").occupied || !p.entry("future19").selected || !strings.Contains(p.entry("future17").parked, "owner=current16") {

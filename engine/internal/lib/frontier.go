@@ -437,7 +437,6 @@ func FrontierLines(root, slug string) ([]string, error) {
 			blocked = true
 		}
 	}
-	deferred := map[string]string{}
 	prepared := map[string]bool{}
 	var concurrent []string
 	var concurrentSources []string
@@ -459,6 +458,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 		n := nodes[name]
 		action, reason := "complete", "archived predecessor; no writer admission"
 		held := false
+		preparationHeld := false
 		_, invalid := frontierChain(nodes, name)
 		entry := pool.entry(name)
 		if invalid != nil {
@@ -481,8 +481,24 @@ func FrontierLines(root, slug string) ([]string, error) {
 			if err != nil {
 				action, reason, n.selectionHeld = "repair", err.Error(), true
 			}
-			if mode && action == "prepare" && deferred[name] != "" {
-				action, reason, n.selectionHeld = "wait", "frontier-blocked: "+name+" — "+deferred[name], true
+			if mode && action == "prepare" {
+				parked := ""
+				if !pool.enabled {
+					var parkErr error
+					parked, parkErr = preparationParking(root, name, ordered, nodes)
+					if parkErr != nil {
+						return nil, parkErr
+					}
+				}
+				if parked != "" {
+					action, reason, n.selectionHeld, preparationHeld = "wait", parked, true, true
+					lines = append(lines, "frontier-blocked: "+name+" — "+parked)
+				} else if command, inputErr := preparationInputRepair(n); inputErr != nil {
+					return nil, inputErr
+				} else if command != "" {
+					action, reason, n.selectionHeld = "repair", preparationInputReason, true
+					lines = append(lines, "frontier-repair-input: "+command)
+				}
 			}
 			inheritedPreparation := preparatory[name] && preparatory[n.parent] && (n.phase == "frame" || preparationPhase(n.phase)) && action == "prepare"
 			if inheritedPreparation {
@@ -491,7 +507,7 @@ func FrontierLines(root, slug string) ([]string, error) {
 			if !n.selectionHeld {
 				live = append(live, name)
 			}
-			held = inheritedPreparation || action == "blocked" || err != nil || mode && action == "wait" && deferred[name] != ""
+			held = inheritedPreparation || preparationHeld || action == "blocked" || err != nil
 			switch action {
 			case "inspect", "prepare", "repair":
 				actionable = true
@@ -552,7 +568,6 @@ func FrontierLines(root, slug string) ([]string, error) {
 				}
 			}
 			if reason := sourceRecords.blocked[target]; reason != "" {
-				deferred[target] = reason
 				lines = append(lines, "frontier-blocked: "+target+" source="+name+" — "+reason+"; preparation deferred, not approved")
 				continue
 			}

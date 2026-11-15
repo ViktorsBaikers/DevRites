@@ -666,7 +666,7 @@ func frontierGlobalPriority(source string, lines []string) bool {
 				}
 			}
 		}
-		if strings.HasPrefix(line, "frontier-prepare:") || strings.HasPrefix(line, "frontier-create:") || strings.HasPrefix(line, "frontier-review-sequence:") {
+		if strings.HasPrefix(line, "frontier-prepare:") || strings.HasPrefix(line, "frontier-create:") || strings.HasPrefix(line, "frontier-review-sequence:") || strings.HasPrefix(line, "frontier-repair-input:") {
 			return true
 		}
 		if strings.HasPrefix(line, "frontier-workspace:") {
