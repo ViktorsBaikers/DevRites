@@ -28,6 +28,7 @@ func nativePublishRename(sourceParent, stage, targetParent *os.File, from, to st
 		trap = 276
 	}
 	const renameNoReplace = 1
+	// #nosec G103 -- NUL-terminated names are passed directly to renameat2; retained parent FDs confine both paths.
 	_, _, errno := syscall.Syscall6(trap, sourceParent.Fd(), uintptr(unsafe.Pointer(old)), targetParent.Fd(), uintptr(unsafe.Pointer(new)), renameNoReplace, 0)
 	runtime.KeepAlive(sourceParent)
 	runtime.KeepAlive(targetParent)

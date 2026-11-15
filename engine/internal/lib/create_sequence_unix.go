@@ -8,5 +8,6 @@ import (
 )
 
 func openSequenceBrief(path string) (*os.File, error) {
+	// #nosec G304 -- explicit brief input; caller checks regular-file identity and size, O_NOFOLLOW rejects symlinks.
 	return os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK|syscall.O_NOFOLLOW, 0)
 }

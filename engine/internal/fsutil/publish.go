@@ -52,17 +52,17 @@ func publishDirNoReplace(root *os.Root, from, to string, rename publishRenameFun
 	if err != nil {
 		return false, err
 	}
-	defer sourceParent.Close()
+	defer func() { _ = sourceParent.Close() }()
 	targetParent, err := openPublishParent(root, filepath.Dir(to))
 	if err != nil {
 		return false, err
 	}
-	defer targetParent.Close()
+	defer func() { _ = targetParent.Close() }()
 	stage, err := nativePublishOpen(sourceParent, filepath.Base(from), true, true)
 	if err != nil {
 		return false, err
 	}
-	defer stage.Close()
+	defer func() { _ = stage.Close() }()
 	if err := syncPublishTree(stage, sync); err != nil {
 		return false, err
 	}
@@ -92,12 +92,12 @@ func syncPublishedDir(root *os.Root, rel string, sync func(*os.File) error) erro
 	if err != nil {
 		return err
 	}
-	defer parent.Close()
+	defer func() { _ = parent.Close() }()
 	dir, err := nativePublishOpen(parent, filepath.Base(rel), true, false)
 	if err != nil {
 		return err
 	}
-	defer dir.Close()
+	defer func() { _ = dir.Close() }()
 	if err := syncPublishTree(dir, sync); err != nil {
 		return fmt.Errorf("sync published %q: %w", rel, err)
 	}

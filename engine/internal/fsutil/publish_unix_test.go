@@ -33,7 +33,7 @@ func TestPublishDirUsesRetainedRootAfterRename(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }()
 	for _, dir := range []string{"staging", "work"} {
 		if err := root.Mkdir(dir, 0o700); err != nil {
 			t.Fatal(err)

@@ -56,7 +56,7 @@ func runCreateSequence(root string, args []string, stdout, stderr io.Writer, pub
 		if err != nil {
 			return err
 		}
-		defer selected.Close()
+		defer func() { _ = selected.Close() }()
 		return state.WithFeatureIdentityLockIn(selected, target, func() error {
 			nodes, err := frontierScan(root)
 			if err != nil {
@@ -190,7 +190,7 @@ func readSequenceBrief(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	opened, err := file.Stat()
 	if err != nil {
 		return nil, err
@@ -234,7 +234,7 @@ func publishSequence(root *os.Root, target string, brief, cursor []byte, publish
 	if err != nil {
 		return false, err
 	}
-	defer parent.Close()
+	defer func() { _ = parent.Close() }()
 	opened, err := parent.Stat(".")
 	if err != nil {
 		return false, err
@@ -256,7 +256,7 @@ func publishSequence(root *os.Root, target string, brief, cursor []byte, publish
 	if err != nil {
 		return false, err
 	}
-	defer staged.Close()
+	defer func() { _ = staged.Close() }()
 	for _, artifact := range [...]struct {
 		name string
 		body []byte

@@ -15,7 +15,7 @@ func TestFeatureIdentityLockNeverCreatesWorkspace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }()
 	injected := errors.New("callback refused")
 	if err := WithFeatureIdentityLockIn(root, "future", func() error {
 		if _, err := root.Lstat("work"); !os.IsNotExist(err) {
@@ -66,7 +66,7 @@ func TestFeatureIdentityLockSharesExistingWriterExclusion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }()
 	const count = 40
 	var workers sync.WaitGroup
 	var active, value atomic.Int32
@@ -102,7 +102,7 @@ func TestFeatureIdentityLockRejectsInvalidSlugBeforeWrites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }()
 	for _, slug := range []string{"", "../outside", "bad/slug"} {
 		ran := false
 		if err := WithFeatureIdentityLockIn(root, slug, func() error { ran = true; return nil }); err == nil || ran {
