@@ -171,48 +171,44 @@ one release command (`/rite-autocomplete <release milestone> --ship`, or
 
 ## Backtrack without handing off
 
-Autocomplete remains caller for agent-owned earlier-phase gaps:
+Root owns earlier-phase recovery:
 
-1. Save the originating phase/action unless a valid native return cursor exists.
-2. On cold resume, reconcile the terminal cursor against durable fingerprint
-   accounting. Restore `return_next_action` only from the approved
-   `test-plan.md`/evidence action; ambiguity returns to Vet and never licenses
-   execution.
-3. Invoke required Plan repair, affected Vet, remediation, and proof inline.
-   Recovery Vet is a narrow Vet recheck of prior findings, changed paths/criteria,
-   and affected evidence; it never restarts unaffected axes. A nested `STOP`
-   ends that phase only; do not hand the intermediate command to the user.
-4. Re-read state after each nested phase. Reconcile exact causal fingerprints
-   from `drift.md`/`evidence.md`. A closed reproduction is progress. A different
-   Critical/Important invariant gets a separate budget; Suggestion/Nit/FYI does
-   not prolong the chain. Only a no-progress result charges the same fingerprint.
-5. For failed consumptive action, spent authorization blocks only another real
-   execution. Use retained evidence for offline diagnosis, repair, and narrow
-   Vet; after READY, pause for fresh authorization.
-6. Restore and consume the original cursor when prerequisites are green.
+1. Save the originating phase/action unless a valid return cursor exists. On cold
+   resume, reconcile durable fingerprints; restore `return_next_action` only from
+   approved `test-plan.md`/evidence. Ambiguity routes to Vet, not execution.
+2. Invoke Plan repair, affected Vet, remediation and proof inline. Nested `STOP`
+   ends only that phase. Recovery Vet covers prior findings, changed paths/criteria
+   and affected evidence, never unaffected axes.
+3. Re-read state and `drift.md`/`evidence.md` after each return. Closed reproductions
+   are progress; distinct Critical/Important invariants get separate budgets. Only
+   unchanged fingerprints charge no-progress; Suggestion/Nit/FYI never prolong work.
+4. Consume `repair-input:` and canonical blocked-input diagnostics through root
+   [Plan preflight](skill://rite-plan/reference/replan-and-repair.md#repair-after-spec-drift-guard),
+   not another identical draft. Narrow no-findings closes only named findings, not
+   the standing verdict. Record genuine holds as `frontier-blocked: <source> —
+   <constraint; owner; re-evaluation trigger>` in source evidence; refresh. Continue
+   independent work only within existing hold authority.
+5. Spent consumptive authorization blocks re-execution, not offline diagnosis,
+   repair or narrow Vet from retained evidence. After READY, request fresh authority.
+6. Restore and consume the original cursor once prerequisites pass.
 
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"loop tick sees Workflow Artifact trigger/state","action":"invoke classifier once under owner lock; no actor-history migration","return":"same loop cursor; no budget charge for verify/rerun"} -->
-Ask only for a human-owned decision or mandatory safety/access action. An open
-blocking question with `proposed` or option 1 labelled Recommended is not that
-decision: resolve it and continue. Three no-progress corrections of one exact
-fingerprint spend only its strategy: escalate inline per the
-[retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve),
-and park it after three escalations while independent work continues.
+Ask only for human-owned decisions or mandatory safety/access actions. Resolve
+blocking questions with `proposed`/Recommended options internally. Three unchanged
+corrections spend that fingerprint strategy: escalate inline per the
+[retry contract](skill://devrites-lib/reference/standards/afk-hitl.md#retry-cap-no-progress-loops-and-self-resolve);
+park after three escalations while independent work continues.
 
 ## Continuous caller obligation
 
-Execute each green slice/phase's `next_action` internally. Before replying, run
-`devrites-engine check continuation`: consume required `invoke:`/`launch:` routes
-and root-owned `create: controller=X target=Y parent=Z` actions under the shared
-global pass. For `create:`, author the approved substantive brief, call
-`state create-sequence`, then refresh; never dispatch into the missing target.
-Only `clear` permits reply. Canonical writer picks precede creation/preparation;
-legacy normalization/successor obligations retain their admission boundary.
-Local repair/picks/reconciliation/discharged deferrals keep their phase, not
-recursive Autocomplete. Route agent-owned NEEDS_REPLAN, budgeted Critical/Important recovery,
-independent work and recommended blocking answers internally; invoke repair or
-`state resolve` unless the [resolver-failure stop](stop-conditions.md#other-stop-classes)
-applies. Distinct invariants are progress; unchanged resolver retries are not.
-Cycles, context pressure, compaction, duration and nested completion never create
-handoffs. Persist/resume until requested completion or a shared human/safety/
-access/parked-recovery stop.
+Before reply, run `devrites-engine check continuation`; only `clear` permits reply.
+Consume `invoke:`, `launch:`, `repair-input:` and `create: controller=X target=Y
+parent=Z` internally. Creation requires an approved substantive brief,
+`state create-sequence`, then refresh—not dispatch into a missing workspace.
+Canonical writer picks precede preparation; legacy admission boundaries remain.
+Local repair/picks/reconciliation/discharged deferrals keep their owning phase.
+Route NEEDS_REPLAN, budgeted recovery and recommended answers to repair or
+`state resolve`, subject to [resolver-failure stops](stop-conditions.md#other-stop-classes).
+Cycles, context, compaction, duration and nested completion are not handoffs.
+Persist until completion or a human/safety/access/parked-recovery stop. Report
+the stop owner/action and resume condition—not the unchanged Autocomplete command.

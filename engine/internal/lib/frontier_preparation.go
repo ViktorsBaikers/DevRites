@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/devrites/devrites/internal/devritespaths"
 	"github.com/devrites/devrites/internal/parallel"
+	"github.com/devrites/devrites/internal/workflow"
 )
 
 type preparationPurpose struct {
@@ -98,15 +100,40 @@ func preparationAdmission(root, source, phase string, purpose preparationPurpose
 			return nil, err
 		}
 		if pool.enabled {
-			return nil, pool.admit(source, purpose)
+			if err := pool.admit(source, purpose); err != nil {
+				return nil, err
+			}
+			return nil, preparationInputAdmission(pool.nodes[source])
 		}
-	}
-	if purpose.parent == "" && !earlyPreparationPhase(phase) {
-		return nil, nil
 	}
 	mode, err := autocompleteMode(root)
 	if err != nil {
 		return nil, err
+	}
+	var nodes map[string]*frontierWorkspace
+	if mode && preparationPhase(phase) {
+		nodes, err = frontierScan(root)
+		if err != nil {
+			return nil, err
+		}
+		chain, err := frontierChain(nodes, source)
+		if err != nil {
+			return nil, err
+		}
+		ordered, _ := frontierRelated(nodes, chain)
+		parked, err := preparationParking(root, source, ordered, nodes)
+		if err != nil {
+			return nil, err
+		}
+		if parked != "" {
+			return nil, fmt.Errorf("frontier-blocked: %s — %s", source, parked)
+		}
+		if err := preparationInputAdmission(nodes[source]); err != nil {
+			return nil, err
+		}
+	}
+	if purpose.parent == "" && !earlyPreparationPhase(phase) {
+		return nil, nil
 	}
 	if purpose.parent == "" && !mode {
 		return nil, nil
@@ -127,9 +154,11 @@ func preparationAdmission(root, source, phase string, purpose preparationPurpose
 	if purpose.parent == "" && capacity <= 1 {
 		return nil, nil
 	}
-	nodes, err := frontierScan(root)
-	if err != nil {
-		return nil, err
+	if nodes == nil {
+		nodes, err = frontierScan(root)
+		if err != nil {
+			return nil, err
+		}
 	}
 	chain, err := frontierChain(nodes, source)
 	if err != nil {
@@ -164,6 +193,35 @@ func preparationAdmission(root, source, phase string, purpose preparationPurpose
 		return nil, err
 	}
 	return frontierPreparationAdmission(root, source, nodes, mapping, problem, allow && capacity > 1, records)
+}
+
+const preparationInputReason = "Plan repair requires non-empty drift.md; controller must reconcile recorded findings and conflicting briefs before drafting; preserve scope and human holds"
+
+func preparationInputRepair(n *frontierWorkspace) (string, error) {
+	fields := strings.Fields(n.next)
+	if len(fields) < 2 || fields[1] != "repair" || workflow.ForAction(n.next).Verb != "plan" {
+		return "", nil
+	}
+	invoke, internal, err := internalPhaseEdge(n.next, n.slug)
+	if err != nil || !internal {
+		return "", err
+	}
+	raw, err := readBoundedRegularFile(filepath.Join(n.dir, "drift.md"), workspaceArtifactLimit)
+	if os.IsNotExist(err) || err == nil && len(bytes.TrimSpace(raw)) == 0 {
+		return commandWithWorkspace(invoke, n.slug), nil
+	}
+	return "", err
+}
+
+func preparationInputAdmission(n *frontierWorkspace) error {
+	command, err := preparationInputRepair(n)
+	if err != nil {
+		return err
+	}
+	if command != "" {
+		return fmt.Errorf("%s: %s; root must consume repair-input: %s before dispatch open", n.slug, preparationInputReason, command)
+	}
+	return nil
 }
 
 // Validate the whole retained ledger before any current-scope classification or credit.

@@ -18,6 +18,15 @@ All notable changes to DevRites are documented here. The format follows [Keep a 
 
 ### Changed
 
+- Identify the source, wave, role, state and recorded handle blocking writer
+  admission behind a protected reviewer/proof account. Explain safe reconciliation
+  without treating abandonment as proof of actor termination.
+- Honor explicit preparation deferrals across related legacy workspaces, including
+  held sequence maps. Route missing Plan-repair inputs to root reconciliation
+  instead of repeating drafter launches; preserve independent preparation.
+- Require Vet to disposition remaining findings after a narrow recheck and consume
+  its next internal action; an older NEEDS REPLAN heading alone is not a stop.
+
 - Release abandoned dispatch host reservations independently of terminal-return
   records; identify live or unreconciled blockers without raising native capacity
   or deleting retained wave history.

@@ -58,17 +58,13 @@ plan declares a root-authored executable workflow file, read
   **NEEDS CLARIFICATION**.
 - Use lowest axis band; never average/round thin to ready. Search; resolve
   reversible technical choices; ask only human-owned.
-- Preserve a valid technical return cursor. Agent-owned `NEEDS REPLAN` returns
-  internally to its caller, not to the human; on a direct invocation there is
-  no caller, so Vet becomes it — save a return cursor
-  (`return_phase`/`return_next_action`) naming this Vet pass as the caller and
-  invoke `$rite-plan` repair inline under the same fingerprint caps. An
-  agent-owned verdict with budget remaining is never a user-facing command.
-- **Recovery recheck is bounded and batched.** A valid cursor plus open
-  fingerprints enters Recovery recheck; it does not start another Full Vet or
-  repeat unaffected axes/reviewers. One dispatch covers every open fingerprint
-  of the fold — each checked individually — with a mandatory correction-created
-  regression audit.
+- Preserve valid technical return cursors. Agent-owned `NEEDS REPLAN` with budget
+  remaining routes internally to Plan repair, never a user-facing command. On
+  direct invocation Vet owns the loop: save `return_phase`/`return_next_action`
+  for this pass and invoke repair inline under the same fingerprint caps.
+- **Recovery recheck is bounded and batched:** valid cursor + open fingerprints
+  enters Recovery, not Full Vet. Review each fold fingerprint individually in one
+  dispatch, with correction-created regression audit; retain unaffected coverage.
 - Refuse the rationalizations in [`anti-patterns`](reference/anti-patterns.md).
 <!-- workflow-artifact-adapter: {"module":"devrites-lib/reference/standards/workflow-artifacts.md","entry":"plan declares root-authored executable workflow file","action":"emit exact admission; stale/missing authority uses PLAN_VET_REPAIR","return":"Vet READY cursor or exact technical replan"} -->
 ## Workflow
@@ -233,34 +229,24 @@ plan declares a root-authored executable workflow file, read
    `devrites-engine gates lint <slug> --strict` and resolve every finding before
    READY; the readiness check refuses a missing or malformed ledger but does not
    replace this oracle-quality gate.
-7. **Narrow recheck after edits.** When the rules below require dispatch, validate
-   step 1b's prerequisites and root-only recovery record, then use its exact
-   context → packet → dispatch sequence for each owning reviewer on the frozen
-   repair candidate. Keep inventory/focus neutral and use a fresh wave. Missing
-   provenance requires step 1a's initial applicable review. A slice-bound recheck
-   repeats `--slice <id>` per affected slice in all three commands; no slice means
-   plan-level affected recovery (every 5 rechecks
-   per slice need a reslice review, as in Build). **Workflow Artifact bytes-only:**
-   after `OFFLINE_RECOVERY`, a correction leaving every admission/`WA-*` row
-   unchanged records `Workflow Artifact reviewed identity: <re-preflight identity
-   digest>` below the admission block; when `check drift` reports only
-   `reviewed-identity-only`, the reviewer is one fresh `devrites-code-reviewer` on
-   the prior-source→re-preflight diff against those rows (no drafter or plan
-   reviewer); green proceeds to step 8. Otherwise dispatch each exact owning reviewer once per
-   fold — one dispatch covering every open fingerprint that reviewer owns, preserving
-   per correction/fingerprint accounting (each checked individually with its
-   neutral reproduction, changed clauses/paths/criteria, new identity, and recorded delta
-   self-check); it must return an explicit correction-created regression verdict
-   over touched invariants plus every dependent of each changed clause (dep-graph
-   and traceability lookup), not only fingerprint closure. The plan reviewer also
-   returns affected dimension bands. Unchanged
-   dimensions are not newly passed; root retains valid prior coverage and takes the
-   lowest applicable band across current accounts. Every unbuilt slice still needs
-   write-set closure; changed global contracts or unknown impact require full
-   applicable review. Within one correction, no broad
-   third loop. If it changes plan, fold again. A closed input plus a distinct Critical/Important invariant returns
-   that new fingerprint as progress. Then close matrix and recheck affected
-   ID/meaning mappings and their dependency/traceability closure under step 8.
+7. **Narrow recheck after edits.** Use step 1b prerequisites, root-only recovery
+   record and context → packet → dispatch sequence on the frozen candidate, neutral
+   inventory/focus, fresh wave and exact owning reviewers. Missing provenance uses
+   1a. Repeat affected `--slice` flags identically; none means plan-level recovery.
+   Every five per-slice rechecks requires reslice review; fresh waves reset no caps.
+   **Workflow Artifact bytes-only:** after `OFFLINE_RECOVERY`, unchanged admission/
+   `WA-*` rows record `Workflow Artifact reviewed identity: <re-preflight identity digest>`
+   below admission. If `check drift` reports only `reviewed-identity-only`, dispatch
+   one fresh `devrites-code-reviewer` on prior-source→re-preflight diff against those
+   rows, no drafter/plan reviewer; green enters step 8. Otherwise apply 1b: one
+   dispatch per owner/fold, all owner fingerprints, individual accounting, neutral
+   reproductions/changed clauses/paths/criteria/identity/delta self-check. Require
+   Regression over touched invariants and all dependency/traceability dependents;
+   plan-reviewer returns affected bands. Retain unchanged coverage, lowest band,
+   all-unbuilt write-set closure; unknown impact/global changes need full applicable
+   review. No broad third loop per correction. Changed plan folds again; distinct
+   Critical/Important invariants are progress. Close matrix and affected ID/meaning
+   dependency/traceability closure in step 8.
 8. **Build readback and readiness.** Add a cited five-line readback to
    `eng-review.md` (artifacts.md §7 rows 1–5): outcome/ACs; IN/OUT/must-NOT; UI direction and architecture/
    critical flow; slice order/first slice; decisive proof/action-time gates. No implementer should need to invent product, architecture, or proof.
@@ -273,6 +259,15 @@ plan declares a root-authored executable workflow file, read
    mandatory phase-entry/exit checks, fresh required reviewer passes, preflight,
    or proof. Neither successful `state apply-bundle` nor an unchanged readiness
    digest grants readiness.
+
+   **After every recheck**, disposition each open/deferred `eng-review.md` finding:
+   closed + evidence; deferred under its existing rule; or blocking + exact missing
+   proof/input, owner and next action. Preserve history and the Late rule. Neither
+   folded drift/scoped no-findings nor an old NEEDS REPLAN heading decides readiness.
+   Recompute from admitted coverage: remaining technical obligations enter affected
+   repair/review inline; all satisfied enters readiness below. External holds need
+   source-specific `frontier-blocked:` owner/action/resume evidence. Static names
+   prove declarations only; keep action-time gates and spent-action authorization.
 
    Write exactly one `Implementation readiness: READY`, `NEEDS CLARIFICATION`,
    or `NEEDS REPLAN`. Root sets READY after every account, checklist,
@@ -308,9 +303,11 @@ plan declares a root-authored executable workflow file, read
    With READY, no pending remediation, and a valid technical return cursor,
    restore and consume the return cursor instead of defaulting to Build. Preserve
    it through admitted remediation. Only a real stop reaches the human.
-9. **Stop at the Vet boundary.** Show Build readback, scope verdict, lowest axis,
-   closed gaps, preflight, action checkpoints, and critical failures. Recommend
-   Build only when READY.
+9. **Return to caller.** Report readback, scope, lowest axis, dispositions, preflight,
+   action checkpoints and critical failures; recommend Build only when READY. Under
+   Autocomplete consume `check continuation` internally. An old verdict alone cannot
+   justify an unchanged Vet cursor, repeating its closed review or asking the user
+   to rerun Autocomplete. Only a concrete authorized hold stops the controller.
 
 > Do not replace interactive review with artifacts, change acceptance through
 > hardening, score without source evidence, or ignore unexplained complexity.
