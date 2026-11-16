@@ -2,6 +2,12 @@
 
 All notable changes to DevRites are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and DevRites adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Releases are generated automatically by [semantic-release](https://semantic-release.gitbook.io/) from Conventional Commits on `main`.
 
+## [7.4.2](https://github.com/ViktorsBaikers/DevRites/compare/v7.4.1...v7.4.2) (2026-11-16)
+
+### Fixed
+
+* **devrites:** reconcile blocked autocomplete preparation ([#217](https://github.com/ViktorsBaikers/DevRites/issues/217)) ([d1062b3](https://github.com/ViktorsBaikers/DevRites/commit/d1062b32fbe732f446b2b8b9085f2ac2bc4a05dd))
+
 ## [7.4.1](https://github.com/ViktorsBaikers/DevRites/compare/v7.4.0...v7.4.1) (2026-11-15)
 
 ### Fixed
